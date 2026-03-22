@@ -17,6 +17,7 @@ export default function AuthLayout() {
       <Stack.Screen name="read" />
       <Stack.Screen name="listen" />
       <Stack.Screen name="write" />
+      <Stack.Screen name="results" />
     </Stack>
   );
 }

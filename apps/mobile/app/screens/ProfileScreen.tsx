@@ -47,7 +47,7 @@ export default function ProfileScreen() {
 
       await setProfileCompletedInSession(true);
       alert("Profile created successfully");
-      router.replace("/(tabs)");
+      router.replace("/(auth)/read");
     } catch (error) {
       if (
         (error as { response?: { status?: number } })?.response?.status === 401
