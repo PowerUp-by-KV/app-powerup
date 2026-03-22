@@ -1,4 +1,11 @@
 import { useGoogleAuth } from "@/hooks/use-google-auth";
+import {
+  clearAuthState,
+  getApiErrorMessage,
+  setAuthToken,
+} from "@/services/auth-service";
+import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
+import { api } from "@/utils/api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -21,43 +28,115 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
 
-  const handleLogin = () => {
+  const handlePostAuthNavigation = (profileCompleted: boolean) => {
+    if (profileCompleted) {
+      router.replace("/(tabs)");
+      return;
+    }
+
+    router.replace("/(auth)/profile");
+  };
+
+  const persistAuthAndNavigate = async (auth: AuthResponse) => {
+    await saveAuthSession(auth);
+    setAuthToken(auth.access_token);
+    handlePostAuthNavigation(auth.profile_completed);
+  };
+
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Enter email and password");
       return;
     }
 
-    setIsLoading(true);
-    setTimeout(() => {
-      if (rememberMe) {
-        router.replace("/dashboard");
-      } else {
-        router.replace("/profile");
+    try {
+      setIsLoading(true);
+
+      const response = await api.post<AuthResponse>("/auth/login", {
+        email: email.trim(),
+        password,
+        remember_me: rememberMe,
+      });
+
+      await persistAuthAndNavigate(response.data);
+    } catch (error) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 401
+      ) {
+        await clearAuthState();
+        router.replace("/(auth)/login");
+        return;
       }
+
+      Alert.alert(
+        "Login Failed",
+        getApiErrorMessage(
+          error,
+          "Unable to login right now. Please try again.",
+        ),
+      );
+    } finally {
       setIsLoading(false);
-    }, 300);
+    }
   };
 
-<<<<<<< HEAD
   const handleGoogleLogin = async () => {
-    const result = await authenticateWithGoogle();
+    try {
+      setIsLoading(true);
+      const result = await authenticateWithGoogle();
 
-    if (result.status === "success") {
-      router.replace("/(tabs)");
-      return;
-    }
+      if (result.status === "error") {
+        Alert.alert("Google Login Failed", result.message);
+        return;
+      }
 
-    if (result.status === "error") {
-      Alert.alert("Google Login Failed", result.message);
-    }
-=======
-  const handleFakeOAuth = (provider: "Google" | "GitHub") => {
-    setIsLoading(true);
-    setTimeout(() => {
-      router.replace("/dashboard");
+      if (result.status !== "success") {
+        return;
+      }
+
+      const oauthEmail = result.oauth.email ?? email.trim();
+
+      if (!oauthEmail) {
+        Alert.alert(
+          "Google Login Failed",
+          "Unable to resolve email from Google account. Enter your email and try again.",
+        );
+        return;
+      }
+
+      if (!result.oauth.oauth_id_token) {
+        Alert.alert(
+          "Google Login Failed",
+          "Google did not return an ID token for backend login.",
+        );
+        return;
+      }
+
+      const response = await api.post<AuthResponse>("/auth/login", {
+        email: oauthEmail,
+        oauth_id_token: result.oauth.oauth_id_token,
+      });
+
+      await persistAuthAndNavigate(response.data);
+    } catch (error) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 401
+      ) {
+        await clearAuthState();
+        router.replace("/(auth)/login");
+        return;
+      }
+
+      Alert.alert(
+        "Google Login Failed",
+        getApiErrorMessage(
+          error,
+          "Unable to login with Google right now. Please try again.",
+        ),
+      );
+    } finally {
       setIsLoading(false);
-    }, 200);
->>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
+    }
   };
 
   return (
@@ -131,27 +210,8 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
-<<<<<<< HEAD
           <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
             <Text style={styles.link}>Don{"'"}t have an Account? Sign up</Text>
-=======
-          <TouchableOpacity
-            style={styles.oauthBtn}
-            onPress={() => handleFakeOAuth("GitHub")}
-            disabled={isLoading}
-          >
-            <Image
-              source={{
-                uri: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-              }}
-              style={styles.oauthIcon}
-            />
-            <Text style={styles.oauthText}>Continue with GitHub</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push("/register")}> 
-            <Text style={styles.link}>Don’t have an Account? Sign up</Text>
->>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
           </TouchableOpacity>
         </View>
       </View>

@@ -1,13 +1,16 @@
+import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
+import { setProfileCompletedInSession } from "@/services/auth-storage";
+import { submitOnboarding } from "@/services/onboarding-service";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  ImageBackground,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -15,15 +18,54 @@ export default function ProfileScreen() {
   const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
   const [college, setCollege] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!name || !mobile || !dob || !college) {
       alert("Please fill all fields");
       return;
     }
 
-    alert("Profile created successfully");
-    router.replace("/read");
+    if (mobile.trim().length < 10 || mobile.trim().length > 20) {
+      alert("Mobile number must be 10 to 20 characters");
+      return;
+    }
+
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob.trim())) {
+      alert("Date of birth must be DD/MM/YYYY");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await submitOnboarding({
+        name: name.trim(),
+        mobile: mobile.trim(),
+        dob: dob.trim(),
+        college: college.trim(),
+      });
+
+      await setProfileCompletedInSession(true);
+      alert("Profile created successfully");
+      router.replace("/(tabs)");
+    } catch (error) {
+      if (
+        (error as { response?: { status?: number } })?.response?.status === 401
+      ) {
+        await clearAuthState();
+        router.replace("/(auth)/login");
+        return;
+      }
+
+      alert(
+        getApiErrorMessage(
+          error,
+          "Unable to save onboarding details right now. Please try again.",
+        ),
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,8 +109,12 @@ export default function ProfileScreen() {
             onChangeText={setCollege}
           />
 
-          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-            <Text style={styles.btnText}>Continue</Text>
+          <TouchableOpacity
+            style={[styles.button, isLoading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            <Text style={styles.btnText}>Continue{isLoading ? "..." : ""}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -114,6 +160,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     alignItems: "center",
+  },
+
+  buttonDisabled: {
+    opacity: 0.7,
   },
 
   btnText: {

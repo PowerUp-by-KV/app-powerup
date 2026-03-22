@@ -1,4 +1,3 @@
-import { setToken } from "@/utils/auth";
 import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
@@ -36,7 +35,13 @@ const IOS_CLIENT_ID = resolveClientId(
 type GoogleAuthOutcome =
   | {
       status: "success";
-      token: string;
+      oauth: {
+        oauth_id_token?: string;
+        oauth_code?: string;
+        oauth_redirect_uri: string;
+        oauth_code_verifier?: string;
+        email?: string;
+      };
     }
   | {
       status: "cancelled";
@@ -47,18 +52,28 @@ type GoogleAuthOutcome =
       message: string;
     };
 
-const getTokenFromResult = (
-  response: AuthSession.AuthSessionResult,
-): string | null => {
-  if (response.type !== "success") {
-    return null;
+const decodeEmailFromIdToken = (idToken?: string): string | undefined => {
+  if (!idToken) {
+    return undefined;
   }
 
-  const idToken = response.params.id_token ?? response.authentication?.idToken;
-  const accessToken =
-    response.params.access_token ?? response.authentication?.accessToken;
+  try {
+    const parts = idToken.split(".");
+    if (parts.length < 2) {
+      return undefined;
+    }
 
-  return idToken ?? accessToken ?? null;
+    const payloadPart = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payloadPart.padEnd(
+      Math.ceil(payloadPart.length / 4) * 4,
+      "=",
+    );
+    const decoded = globalThis.atob(padded);
+    const payload = JSON.parse(decoded) as { email?: string };
+    return payload.email;
+  } catch {
+    return undefined;
+  }
 };
 
 export const useGoogleAuth = () => {
@@ -77,6 +92,8 @@ export const useGoogleAuth = () => {
     webClientId: WEB_CLIENT_ID,
     androidClientId: ANDROID_CLIENT_ID,
     iosClientId: IOS_CLIENT_ID,
+    responseType: AuthSession.ResponseType.IdToken,
+    usePKCE: false,
     redirectUri,
     scopes: ["openid", "profile", "email"],
     selectAccount: true,
@@ -117,20 +134,37 @@ export const useGoogleAuth = () => {
           };
         }
 
-        const token = getTokenFromResult(response);
+        const idToken =
+          response.params.id_token ??
+          response.authentication?.idToken ??
+          undefined;
+        const code = response.params.code ?? undefined;
+        const oauth = {
+          oauth_id_token: idToken,
+          oauth_code: code,
+          oauth_redirect_uri: request.redirectUri,
+          oauth_code_verifier: request.codeVerifier ?? undefined,
+          email: decodeEmailFromIdToken(idToken),
+        };
 
-        if (!token) {
+        const hasIdTokenFlow = Boolean(oauth.oauth_id_token);
+        const hasCodeFlow = Boolean(
+          oauth.oauth_code &&
+          oauth.oauth_redirect_uri &&
+          oauth.oauth_code_verifier,
+        );
+
+        if (!hasIdTokenFlow && !hasCodeFlow) {
           return {
             status: "error",
-            message: "Google sign-in succeeded but no token was returned.",
+            message:
+              "Google sign-in succeeded but required OAuth credentials were not returned.",
           };
         }
 
-        await setToken(token);
-
         return {
           status: "success",
-          token,
+          oauth,
         };
       } catch (error) {
         const message =

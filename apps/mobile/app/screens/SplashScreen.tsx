@@ -1,13 +1,13 @@
+import { restoreSession } from "@/services/auth-service";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Text,
-  StyleSheet,
   Animated,
-  TouchableOpacity,
   Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
 } from "react-native";
-import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -21,10 +21,13 @@ export default function SplashScreen() {
   useEffect(() => {
     const checkAuthAndNavigate = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
-        if (token) {
-          // User is already logged in, skip splash
-          router.replace("/");
+        const session = await restoreSession();
+        if (session) {
+          if (session.profile_completed) {
+            router.replace("/(tabs)");
+          } else {
+            router.replace("/(auth)/profile");
+          }
           return;
         }
       } catch (error) {
@@ -90,7 +93,9 @@ export default function SplashScreen() {
 
       {/* Center Content */}
       {showContent && (
-        <Animated.View style={[styles.centerContent, { opacity: contentOpacity }]}>
+        <Animated.View
+          style={[styles.centerContent, { opacity: contentOpacity }]}
+        >
           <Image
             source={{
               uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5qRo3DHpnxAUtNwv7575TUVhUZKHqtElokQ&s",
@@ -108,7 +113,9 @@ export default function SplashScreen() {
 
       {/* Bottom Right Button */}
       {showContent && (
-        <Animated.View style={[styles.buttonWrapper, { opacity: contentOpacity }]}>
+        <Animated.View
+          style={[styles.buttonWrapper, { opacity: contentOpacity }]}
+        >
           <TouchableOpacity
             style={styles.button}
             onPress={() => router.push("/(auth)/login")}
