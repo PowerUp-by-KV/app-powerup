@@ -1,14 +1,16 @@
+import { useGoogleAuth } from "@/hooks/use-google-auth";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  Alert,
+  ImageBackground,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  Image,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { GoogleLogo } from "../../src/components/svg";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -16,15 +18,15 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
 
   const handleLogin = () => {
     if (!email || !password) {
-      alert("Enter email and password");
+      Alert.alert("Error", "Enter email and password");
       return;
     }
 
-    // UI-only flow (no network calls)
     setIsLoading(true);
     setTimeout(() => {
       if (rememberMe) {
@@ -36,12 +38,17 @@ export default function LoginScreen() {
     }, 300);
   };
 
-  const handleFakeOAuth = (provider: "Google" | "GitHub") => {
-    setIsLoading(true);
-    setTimeout(() => {
-      router.replace("/(auth)/dashboard");
-      setIsLoading(false);
-    }, 200);
+  const handleGoogleLogin = async () => {
+    const result = await authenticateWithGoogle();
+
+    if (result.status === "success") {
+      router.replace("/(tabs)");
+      return;
+    }
+
+    if (result.status === "error") {
+      Alert.alert("Google Login Failed", result.message);
+    }
   };
 
   return (
@@ -64,19 +71,29 @@ export default function LoginScreen() {
             autoCapitalize="none"
           />
 
-          <TextInput
-            placeholder="Password"
-            secureTextEntry
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Text style={styles.eyeText}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.rememberRow}
             onPress={() => setRememberMe((prev) => !prev)}
           >
-            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+            <View
+              style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
+            >
               {rememberMe && <Text style={styles.checkboxTick}>✓</Text>}
             </View>
             <Text style={styles.rememberText}>Remember me</Text>
@@ -94,34 +111,19 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={styles.oauthBtn}
-            onPress={() => handleFakeOAuth("Google")}
-            disabled={isLoading}
+            onPress={handleGoogleLogin}
+            disabled={isLoading || isAuthenticating || !request}
           >
-            <Image
-              source={{
-                uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Google_Favicon_2025.svg/250px-Google_Favicon_2025.svg.png",
-              }}
-              style={styles.oauthIcon}
-            />
-            <Text style={styles.oauthText}>Continue with Google</Text>
+            <View style={{ marginRight: 10 }}>
+              <GoogleLogo width={22} height={22} />
+            </View>
+            <Text style={styles.oauthText}>
+              Continue with Google{isAuthenticating ? "..." : ""}
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.oauthBtn}
-            onPress={() => handleFakeOAuth("GitHub")}
-            disabled={isLoading}
-          >
-            <Image
-              source={{
-                uri: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
-              }}
-              style={styles.oauthIcon}
-            />
-            <Text style={styles.oauthText}>Continue with GitHub</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push("/(auth)/register")}> 
-            <Text style={styles.link}>Don’t have an Account? Sign up</Text>
+          <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
+            <Text style={styles.link}>Don{"'"}t have an Account? Sign up</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -156,6 +158,26 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 12,
+    paddingRight: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+  eyeText: {
+    fontSize: 18,
   },
   rememberRow: {
     flexDirection: "row",

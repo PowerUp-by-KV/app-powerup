@@ -1,20 +1,24 @@
+import { useGoogleAuth } from "@/hooks/use-google-auth";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  Alert,
+  ImageBackground,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  ImageBackground,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { GoogleLogo } from "../../src/components/svg";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isLoading] = useState(false);
+  const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
 
   const handleRegister = () => {
     const email_value = email.trim();
@@ -22,33 +26,47 @@ export default function RegisterScreen() {
     const confirmPassword_value = confirmPassword.trim();
 
     if (!email_value || !password_value || !confirmPassword_value) {
-      alert("All fields are required");
+      Alert.alert("Error", "All fields are required");
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_value)) {
-      alert("Please enter a valid email");
+      Alert.alert("Error", "Please enter a valid email");
       return;
     }
 
     if (password_value.length < 6) {
-      alert("Password must be at least 6 characters");
+      Alert.alert("Error", "Password must be at least 6 characters");
       return;
     }
 
     if (password_value !== confirmPassword_value) {
-      alert("Passwords do not match");
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
-    alert("Registration successful. Please login.");
+    Alert.alert("Success", "Registration successful. Please login.");
     router.replace("/(auth)/login");
   };
 
+  const handleGoogleRegister = async () => {
+    const result = await authenticateWithGoogle();
+
+    if (result.status === "success") {
+      router.replace("/(auth)/profile");
+      return;
+    }
+
+    if (result.status === "error") {
+      Alert.alert("Google Sign-up Failed", result.message);
+    }
+  };
 
   return (
     <ImageBackground
-      source={{ uri: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=500" }}
+      source={{
+        uri: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=500",
+      }}
       style={styles.background}
     >
       <View style={styles.overlay}>
@@ -77,23 +95,27 @@ export default function RegisterScreen() {
             onChangeText={setConfirmPassword}
           />
 
-          <TouchableOpacity style={styles.btn} onPress={handleRegister}>
-            <Text style={styles.btnText}>Register</Text>
+          <TouchableOpacity
+            style={[styles.btn, isLoading && styles.disabledBtn]}
+            disabled={isLoading}
+            onPress={handleRegister}
+          >
+            <Text style={styles.btnText}>Register{isLoading ? "..." : ""}</Text>
           </TouchableOpacity>
 
           <Text style={styles.or}>OR</Text>
 
           <TouchableOpacity
-            style={styles.googleBtn}
-            onPress={() => router.replace("/(auth)/profile")}
+            style={styles.oauthBtn}
+            onPress={handleGoogleRegister}
+            disabled={isLoading || isAuthenticating || !request}
           >
-            <Image
-              source={{
-                uri: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Google_Favicon_2025.svg/250px-Google_Favicon_2025.svg.png",
-              }}
-              style={styles.icon}
-            />
-            <Text style={styles.googleText}>Continue with Google</Text>
+            <View style={{ marginRight: 10 }}>
+              <GoogleLogo width={22} height={22} />
+            </View>
+            <Text style={styles.oauthText}>
+              Continue with Google{isAuthenticating ? "..." : ""}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
@@ -139,18 +161,25 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  btnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  or: { textAlign: "center", marginVertical: 20 },
-  googleBtn: {
+  or: {
+    textAlign: "center",
+    marginVertical: 12,
+    color: "#333",
+  },
+  oauthBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "#ddd",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 8,
+    marginBottom: 10,
   },
-  icon: { width: 22, height: 22, marginRight: 10 },
-  googleText: { fontSize: 16 },
+  oauthText: {
+    fontSize: 15,
+  },
+  btnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  disabledBtn: { opacity: 0.7 },
   link: { marginTop: 15, textAlign: "center", color: "blue" },
 });
