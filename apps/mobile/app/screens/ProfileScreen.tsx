@@ -23,7 +23,7 @@ export default function ProfileScreen() {
     }
 
     alert("Profile created successfully");
-    router.replace("/(auth)/dashboard");
+    router.replace("/read");
   };
 
   return (

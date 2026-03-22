@@ -45,8 +45,13 @@ export default function RegisterScreen() {
       return;
     }
 
+<<<<<<< HEAD
     Alert.alert("Success", "Registration successful. Please login.");
     router.replace("/(auth)/login");
+=======
+    alert("Registration successful. Please login.");
+    router.replace("/login");
+>>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
   };
 
   const handleGoogleRegister = async () => {
@@ -64,9 +69,13 @@ export default function RegisterScreen() {
 
   return (
     <ImageBackground
+<<<<<<< HEAD
       source={{
         uri: "https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=500",
       }}
+=======
+      source={{ uri: "https://images.unsplash.com/photo-1508780709619-79562169bc64" }}
+>>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
       style={styles.background}
     >
       <View style={styles.overlay}>
@@ -106,9 +115,14 @@ export default function RegisterScreen() {
           <Text style={styles.or}>OR</Text>
 
           <TouchableOpacity
+<<<<<<< HEAD
             style={styles.oauthBtn}
             onPress={handleGoogleRegister}
             disabled={isLoading || isAuthenticating || !request}
+=======
+            style={styles.googleBtn}
+            onPress={() => router.replace("/profile")}
+>>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
           >
             <View style={{ marginRight: 10 }}>
               <GoogleLogo width={22} height={22} />
@@ -118,7 +132,7 @@ export default function RegisterScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+          <TouchableOpacity onPress={() => router.push("/login")}>
             <Text style={styles.link}>Already have an account? Login</Text>
           </TouchableOpacity>
         </View>

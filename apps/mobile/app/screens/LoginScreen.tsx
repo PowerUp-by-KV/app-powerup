@@ -30,14 +30,15 @@ export default function LoginScreen() {
     setIsLoading(true);
     setTimeout(() => {
       if (rememberMe) {
-        router.replace("/(tabs)/dashboard");
+        router.replace("/dashboard");
       } else {
-        router.replace("/(auth)/profile");
+        router.replace("/profile");
       }
       setIsLoading(false);
     }, 300);
   };
 
+<<<<<<< HEAD
   const handleGoogleLogin = async () => {
     const result = await authenticateWithGoogle();
 
@@ -49,6 +50,14 @@ export default function LoginScreen() {
     if (result.status === "error") {
       Alert.alert("Google Login Failed", result.message);
     }
+=======
+  const handleFakeOAuth = (provider: "Google" | "GitHub") => {
+    setIsLoading(true);
+    setTimeout(() => {
+      router.replace("/dashboard");
+      setIsLoading(false);
+    }, 200);
+>>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
   };
 
   return (
@@ -122,8 +131,27 @@ export default function LoginScreen() {
             </Text>
           </TouchableOpacity>
 
+<<<<<<< HEAD
           <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
             <Text style={styles.link}>Don{"'"}t have an Account? Sign up</Text>
+=======
+          <TouchableOpacity
+            style={styles.oauthBtn}
+            onPress={() => handleFakeOAuth("GitHub")}
+            disabled={isLoading}
+          >
+            <Image
+              source={{
+                uri: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              }}
+              style={styles.oauthIcon}
+            />
+            <Text style={styles.oauthText}>Continue with GitHub</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => router.push("/register")}> 
+            <Text style={styles.link}>Don’t have an Account? Sign up</Text>
+>>>>>>> c9bbd3aa9ad3e2e82558186199802fe2e575033b
           </TouchableOpacity>
         </View>
       </View>

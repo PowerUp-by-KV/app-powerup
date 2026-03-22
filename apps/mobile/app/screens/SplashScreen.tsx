@@ -24,7 +24,7 @@ export default function SplashScreen() {
         const token = await AsyncStorage.getItem("token");
         if (token) {
           // User is already logged in, skip splash
-          router.replace("/(tabs)");
+          router.replace("/");
           return;
         }
       } catch (error) {
