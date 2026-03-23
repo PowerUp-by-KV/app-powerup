@@ -84,8 +84,10 @@ export const updateListeningAssessment = async (
   return response.data;
 };
 
-export const createListeningAttempt = async () => {
-  const response = await api.post<ListeningAttempt>("/listening/attempts");
+export const createListeningAttempt = async (assessmentId: string) => {
+  const response = await api.post<ListeningAttempt>("/listening/attempts", {
+    assessment_id: assessmentId,
+  });
   return response.data;
 };
 

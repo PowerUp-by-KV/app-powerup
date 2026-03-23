@@ -77,8 +77,10 @@ export const updateAssessment = async (
   return response.data;
 };
 
-export const createReadingAttempt = async () => {
-  const response = await api.post<ReadingAttempt>("/reading/attempts");
+export const createReadingAttempt = async (assessmentId: string) => {
+  const response = await api.post<ReadingAttempt>("/reading/attempts", {
+    assessment_id: assessmentId,
+  });
   return response.data;
 };
 

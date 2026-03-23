@@ -34,7 +34,11 @@ export default function ListeningScreen() {
       setError(null);
       const data = await fetchListeningAssessments(true);
       setAssessments(data);
-      setScreen("assessments");
+      if (data.length > 0) {
+        await handleSelectAssessment(data[0]);
+      } else {
+        setScreen("assessments");
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load assessments");
       setScreen("assessments");
@@ -50,12 +54,31 @@ export default function ListeningScreen() {
       const assessmentData = await fetchListeningAssessment(assessment.id);
       setSelectedAssessment(assessmentData);
       setQuestions(assessmentData.questions);
-      const attempt = await createListeningAttempt();
-      setAttemptId(attempt.id);
       setSelected({});
       setScreen("attempt");
+      setAttemptId(null);
+
+      // Kick off attempt creation in background to avoid UI block. It may still be pending at submit time.
+      createListeningAttempt(assessmentData.id)
+        .then((attempt) => {
+          setAttemptId(attempt.id);
+          setError(null);
+        })
+        .catch((err: any) => {
+          console.warn("Listening attempt init failed", err);
+          // Do not block user; they can still answer and submit.
+          if (err?.response?.status !== 422) {
+            setError(
+              (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
+            );
+          } else {
+            setError(null);
+          }
+        });
     } catch (err: any) {
+      console.error("Failed to load assessment:", err);
       setError(err.message || "Failed to load assessment");
+      setScreen("assessments");
     } finally {
       setIsLoading(false);
     }
@@ -71,17 +94,83 @@ export default function ListeningScreen() {
 
   const allAnswered = Object.keys(selected).length === questions.length;
 
+  const calculateScore = () => {
+    const totalMarks = questions.reduce((sum, q) => sum + (q.points || 1), 0);
+    const obtainedMarks = questions.reduce((sum, q) => {
+      const userAnswer = selected[q.id!];
+      const correctOption = q.options.find((opt) => opt.is_correct);
+      return sum + ((userAnswer === correctOption?.id) ? (q.points || 1) : 0);
+    }, 0);
+
+    const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
+    return {
+      totalMarks,
+      obtainedMarks,
+      percentage,
+      isPassed: percentage >= 60,
+    };
+  };
+
   const handleNext = async () => {
-    if (!attemptId || !allAnswered) return;
+    if (!allAnswered) return;
 
     try {
       setIsLoading(true);
       setError(null);
+
+      let currentAttemptId = attemptId;
+      if (!currentAttemptId) {
+        try {
+          const attempt = await createListeningAttempt(selectedAssessment?.id || "");
+          currentAttemptId = attempt.id;
+          setAttemptId(attempt.id);
+        } catch (createErr: any) {
+          console.warn("createListeningAttempt failed", createErr);
+          const score = calculateScore();
+          setAssessmentResult({
+            type: "listening",
+            title: selectedAssessment?.title || "Listening Assessment",
+            ...score,
+          });
+          setError(
+            (createErr?.response?.data?.message as string) ||
+              createErr.message ||
+              "Could not create attempt; results saved locally."
+          );
+          router.push("/write");
+          return;
+        }
+      }
+
       const answers = Object.entries(selected).map(([questionId, selectedOptionId]) => ({
         question_id: questionId,
         selected_option_id: selectedOptionId,
       }));
-      const response = await submitListeningAttempt(attemptId, answers);
+
+      let response: any;
+      try {
+        response = await submitListeningAttempt(currentAttemptId, answers);
+      } catch (submitErr: any) {
+        console.warn("submitListeningAttempt failed", submitErr);
+        const submitMsg =
+          (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
+
+        // If server times out, fallback to client-side grading (avoid dead-end) and continue.
+        if (submitMsg.toLowerCase().includes("timeout")) {
+          const score = calculateScore();
+          setAssessmentResult({
+            type: "listening",
+            title: selectedAssessment?.title || "Listening Assessment",
+            ...score,
+          });
+          setError(null);
+          router.push("/write");
+          return;
+        }
+
+        setError(submitMsg);
+        return;
+      }
       
       // Calculate marks based on correct answers
       let obtainedMarks = 0;
@@ -117,7 +206,7 @@ export default function ListeningScreen() {
       // Navigate to writing assessment
       router.push("/write");
     } catch (err: any) {
-      setError(err.message || "Failed to submit answers");
+      setError(err.message || "Failed to submit answers (timeout or network error). Please retry.");
     } finally {
       setIsLoading(false);
     }

@@ -82,8 +82,10 @@ export const updateGrammarAssessment = async (
   return response.data;
 };
 
-export const createGrammarAttempt = async () => {
-  const response = await api.post<GrammarAttempt>("/grammar/attempts");
+export const createGrammarAttempt = async (assessmentId: string) => {
+  const response = await api.post<GrammarAttempt>("/grammar/attempts", {
+    assessment_id: assessmentId,
+  });
   return response.data;
 };
 

@@ -28,7 +28,11 @@ export default function ReadingScreen() {
       setError(null);
       const data = await fetchAssessments();
       setAssessments(data);
-      setScreen("assessments");
+      if (data.length > 0) {
+        await handleSelectAssessment(data[0]);
+      } else {
+        setScreen("assessments");
+      }
     } catch (err: any) {
       console.error("Assessments Error:", err.response?.data || err.message);
       setError(err.message || "Failed to load assessments");
@@ -50,17 +54,26 @@ export default function ReadingScreen() {
       setAttemptId(null);
 
       // Kick off attempt creation in background to avoid UI block. It may still be pending at submit time.
-      createReadingAttempt()
-        .then((attempt) => setAttemptId(attempt.id))
+      createReadingAttempt(assessmentData.id)
+        .then((attempt) => {
+          setAttemptId(attempt.id);
+          setError(null);
+        })
         .catch((err: any) => {
           console.warn("Reading attempt init failed", err);
-          // Do not block user; submit path does an on-demand retry.
-          setError(
-            (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
-          );
+          // Do not block user; they can still answer and submit.
+          if (err?.response?.status !== 422) {
+            setError(
+              (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
+            );
+          } else {
+            setError(null);
+          }
         });
     } catch (err: any) {
+      console.error("Failed to load assessment:", err);
       setError(err.message || "Failed to load assessment");
+      setScreen("assessments");
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +112,7 @@ export default function ReadingScreen() {
       let currentAttemptId = attemptId;
       if (!currentAttemptId) {
         try {
-          const attempt = await createReadingAttempt();
+          const attempt = await createReadingAttempt(selectedAssessment?.id || "");
           currentAttemptId = attempt.id;
           setAttemptId(attempt.id);
         } catch (createErr: any) {
