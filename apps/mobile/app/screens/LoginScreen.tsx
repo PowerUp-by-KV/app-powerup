@@ -34,7 +34,7 @@ export default function LoginScreen() {
       return;
     }
 
-    router.replace("/(auth)/profile");
+    router.replace("/(auth)/google-success");
   };
 
   const persistAuthAndNavigate = async (auth: AuthResponse) => {

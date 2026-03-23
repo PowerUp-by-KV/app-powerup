@@ -33,7 +33,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    router.replace("/(auth)/profile");
+    router.replace("/(auth)/google-success");
   };
 
   const handleRegister = async () => {

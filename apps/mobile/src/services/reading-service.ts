@@ -52,8 +52,7 @@ export type SubmitAttemptPayload = {
 
 // API Calls
 export const fetchAssessments = async (isActive?: boolean) => {
-  const params = isActive !== undefined ? { is_active: isActive } : undefined;
-  const response = await api.get<Assessment[]>("/reading/assessments", { params });
+  const response = await api.get<Assessment[]>("/reading/assessments");
   return response.data;
 };
 
