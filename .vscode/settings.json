@@ -1,7 +1,23 @@
 {
+<<<<<<< HEAD
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
+=======
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.turbo": true,
+    "**/.expo": true
+>>>>>>> 4c1ec14a8bbec5877770981ae358b705e0d7d2f9
   }
 }

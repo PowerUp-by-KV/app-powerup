@@ -1,0 +1,6 @@
+appId: com.powerup.app
+---
+- launchApp
+- assertVisible: "Home"
+- tapOn: "Settings"
+- assertVisible: "Settings"

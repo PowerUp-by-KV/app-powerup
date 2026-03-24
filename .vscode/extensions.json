@@ -1,1 +1,12 @@
+<<<<<<< HEAD
 { "recommendations": ["expo.vscode-expo-tools"] }
+=======
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "expo.vscode-expo-tools"
+  ]
+}
+>>>>>>> 4c1ec14a8bbec5877770981ae358b705e0d7d2f9
