@@ -15,6 +15,7 @@ export default function ReadingScreen() {
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [attemptNumber, setAttemptNumber] = useState<number>(0);
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +62,13 @@ export default function ReadingScreen() {
       setSelected({});
       setScreen("attempt");
       setAttemptId(null);
+      setAttemptNumber(0);
 
       // Kick off attempt creation in background to avoid UI block. It may still be pending at submit time.
       createReadingAttempt(assessmentData.id)
         .then((attempt) => {
           setAttemptId(attempt.id);
+          setAttemptNumber((prev) => (prev || 0) + 1);
           setError(null);
         })
         .catch((err: any) => {
@@ -170,6 +173,7 @@ export default function ReadingScreen() {
           const attempt = await createReadingAttempt(selectedAssessment?.id || "");
           currentAttemptId = attempt.id;
           setAttemptId(attempt.id);
+          setAttemptNumber((prev) => (prev || 0) + 1);
         } catch (createErr: any) {
           console.warn("createReadingAttempt failed", createErr);
           const score = calculateScore();
@@ -311,13 +315,17 @@ export default function ReadingScreen() {
       {screen === "attempt" && (
         <>
           <Text style={styles.title}>{selectedAssessment?.title}</Text>
+          {attemptId ? (
+            <Text style={styles.infoText}>Attempt {attemptNumber} started (ID: {attemptId})</Text>
+          ) : (
+            !isLoading && (
+              <Text style={styles.infoText}>Starting your reading attempt. If this takes more than a few seconds, please retry.</Text>
+            )
+          )}
           {error && (
             <View style={styles.errorContainer}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
-          )}
-          {!attemptId && !isLoading && (
-            <Text style={styles.infoText}>Starting your reading attempt. If this takes more than a few seconds, please retry.</Text>
           )}
           <FlatList
             style={styles.list}
