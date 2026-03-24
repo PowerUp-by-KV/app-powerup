@@ -8,6 +8,7 @@ import {
   ActivityIndicator
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Audio } from "expo-av";
 import { fetchListeningAssessments, fetchListeningAssessment, createListeningAttempt, submitListeningAttempt } from "@/services/listening-service";
 import { ListeningAssessment, ListeningQuestion } from "@/services/listening-service";
 import { setAssessmentResult } from "@/services/results-service";
@@ -23,24 +24,56 @@ export default function ListeningScreen() {
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
 
   useEffect(() => {
     loadAssessments();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync();
+      }
+    };
+  }, [sound]);
+
   const loadAssessments = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchListeningAssessments(true);
+      let data = await fetchListeningAssessments(true);
+      console.debug("Listening assessments (active=true)", data);
+
+      // fallback: if no active assessments, try without active filter
+      if (data.length === 0) {
+        console.warn("No active assessments found, trying unfiltered retrieval.");
+        data = await fetchListeningAssessments();
+        console.debug("Listening assessments (no filter)", data);
+      }
+
       setAssessments(data);
+
       if (data.length > 0) {
         await handleSelectAssessment(data[0]);
       } else {
+        setError("No listening assessments available from API. Please seed /listening/assessments with is_active=true.");
         setScreen("assessments");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to load assessments");
+      const errorMsg = err.message || "Failed to load assessments";
+      // Check for timeout/network errors
+      if (errorMsg.toLowerCase().includes("timeout") ||
+          errorMsg.toLowerCase().includes("network") ||
+          errorMsg.toLowerCase().includes("connection") ||
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ENOTFOUND" ||
+          err?.code === "ECONNREFUSED") {
+        setError("Network timeout. Please check your connection and try again.");
+      } else {
+        setError(errorMsg);
+      }
       setScreen("assessments");
     } finally {
       setIsLoading(false);
@@ -49,6 +82,13 @@ export default function ListeningScreen() {
 
   const handleSelectAssessment = async (assessment: ListeningAssessment) => {
     try {
+      // Clean up existing audio
+      if (sound) {
+        await sound.unloadAsync();
+        setSound(null);
+        setIsPlaying(false);
+      }
+
       setIsLoading(true);
       setError(null);
       const assessmentData = await fetchListeningAssessment(assessment.id);
@@ -68,24 +108,86 @@ export default function ListeningScreen() {
           console.warn("Listening attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            setError(
-              (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
-            );
+            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            // Check for timeout/network errors
+            if (errorMsg.toLowerCase().includes("timeout") ||
+                errorMsg.toLowerCase().includes("network") ||
+                errorMsg.toLowerCase().includes("connection") ||
+                err?.code === "ECONNABORTED" ||
+                err?.code === "ENOTFOUND" ||
+                err?.code === "ECONNREFUSED") {
+              setError("Network timeout. Please check your connection and try again.");
+            } else {
+              setError(errorMsg);
+            }
           } else {
             setError(null);
           }
         });
     } catch (err: any) {
       console.error("Failed to load assessment:", err);
-      setError(err.message || "Failed to load assessment");
+      const errorMsg = err.message || "Failed to load assessment";
+      // Check for timeout/network errors
+      if (errorMsg.toLowerCase().includes("timeout") ||
+          errorMsg.toLowerCase().includes("network") ||
+          errorMsg.toLowerCase().includes("connection") ||
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ENOTFOUND" ||
+          err?.code === "ECONNREFUSED") {
+        setError("Network timeout. Please check your connection and try again.");
+      } else {
+        setError(errorMsg);
+      }
       setScreen("assessments");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const playAudio = () => {
-    setIsPlaying((prev) => !prev);
+  const playAudio = async () => {
+    if (!selectedAssessment?.audio_url) {
+      setError("No audio available for this assessment");
+      return;
+    }
+
+    try {
+      setAudioLoading(true);
+      setError(null);
+
+      if (isPlaying && sound) {
+        // Pause current audio
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else if (sound) {
+        // Resume paused audio
+        await sound.playAsync();
+        setIsPlaying(true);
+      } else {
+        // Load and play new audio
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          { uri: selectedAssessment.audio_url },
+          { shouldPlay: true }
+        );
+        setSound(newSound);
+        setIsPlaying(true);
+
+        // Set up playback status update
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded) {
+            setIsPlaying(status.isPlaying);
+            if (status.didJustFinish) {
+              setIsPlaying(false);
+            }
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error("Audio playback error:", err);
+      setError("Failed to load audio. Please check your connection and try again.");
+      setIsPlaying(false);
+    } finally {
+      setAudioLoading(false);
+    }
   };
 
   const setAnswer = (id: string, optionId: string) => {
@@ -156,7 +258,14 @@ export default function ListeningScreen() {
           (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout")) {
+        if (submitMsg.toLowerCase().includes("timeout") ||
+            submitMsg.toLowerCase().includes("network") ||
+            submitMsg.toLowerCase().includes("connection") ||
+            submitMsg.toLowerCase().includes("aborted") ||
+            submitErr?.code === "ECONNABORTED" ||
+            submitErr?.code === "ENOTFOUND" ||
+            submitErr?.code === "ECONNREFUSED" ||
+            submitErr?.code === "ETIMEDOUT") {
           const score = calculateScore();
           setAssessmentResult({
             type: "listening",
@@ -236,21 +345,30 @@ export default function ListeningScreen() {
               </TouchableOpacity>
             </View>
           )}
-          <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-            data={assessments}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.assessmentItem}
-                onPress={() => handleSelectAssessment(item)}
-              >
-                <Text style={styles.assessmentTitle}>{item.title}</Text>
-                <Text style={styles.assessmentDesc}>{item.description}</Text>
+          {assessments.length === 0 && !isLoading ? (
+            <View style={styles.noDataContainer}>
+              <Text style={styles.noDataText}>No listening assessments available right now.</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={loadAssessments}>
+                <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
-            )}
-          />
+            </View>
+          ) : (
+            <FlatList
+              style={styles.list}
+              contentContainerStyle={styles.listContent}
+              data={assessments}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.assessmentItem}
+                  onPress={() => handleSelectAssessment(item)}
+                >
+                  <Text style={styles.assessmentTitle}>{item.title}</Text>
+                  <Text style={styles.assessmentDesc}>{item.description}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </>
       )}
 
@@ -262,8 +380,14 @@ export default function ListeningScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
-          <TouchableOpacity style={styles.audioBtn} onPress={playAudio}>
-            <Text style={styles.audioBtnText}>{isPlaying ? "Pause Audio" : "Play Audio"}</Text>
+          <TouchableOpacity 
+            style={[styles.audioBtn, audioLoading && styles.disabled]} 
+            onPress={playAudio}
+            disabled={audioLoading}
+          >
+            <Text style={styles.audioBtnText}>
+              {audioLoading ? "Loading..." : isPlaying ? "Pause Audio" : "Play Audio"}
+            </Text>
           </TouchableOpacity>
           <Text style={styles.audioInfo}>
             {selectedAssessment?.audio_duration_seconds 
@@ -324,6 +448,8 @@ const styles = StyleSheet.create({
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
   loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
+  noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  noDataText: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 12 },
   card: { marginBottom: 15 },
   question: { fontSize: 16, marginBottom: 8, fontWeight: "600" },
   audioBtn: {

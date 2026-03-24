@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator
 } from "react-native";
 import { useRouter } from "expo-router";
+import { clearAuthSession } from "@/services/auth-storage";
 import { fetchAssessments, fetchAssessment, createReadingAttempt, submitReadingAttempt } from "@/services/reading-service";
 import { Assessment, Question } from "@/services/reading-service";
 import { setAssessmentResult } from "@/services/results-service";
@@ -35,7 +36,15 @@ export default function ReadingScreen() {
       }
     } catch (err: any) {
       console.error("Assessments Error:", err.response?.data || err.message);
-      setError(err.message || "Failed to load assessments");
+      const errorMsg = getErrorMessage(err);
+
+      if (err?.response?.status === 401) {
+        setError(errorMsg);
+        redirectToLogin();
+        return;
+      }
+
+      setError(errorMsg);
       setScreen("assessments");
     } finally {
       setIsLoading(false);
@@ -63,16 +72,33 @@ export default function ReadingScreen() {
           console.warn("Reading attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            setError(
-              (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
-            );
+            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            // Check for timeout/network errors
+            if (errorMsg.toLowerCase().includes("timeout") ||
+                errorMsg.toLowerCase().includes("network") ||
+                errorMsg.toLowerCase().includes("connection") ||
+                err?.code === "ECONNABORTED" ||
+                err?.code === "ENOTFOUND" ||
+                err?.code === "ECONNREFUSED") {
+              setError("Network timeout. Please check your connection and try again.");
+            } else {
+              setError(errorMsg);
+            }
           } else {
             setError(null);
           }
         });
     } catch (err: any) {
       console.error("Failed to load assessment:", err);
-      setError(err.message || "Failed to load assessment");
+      const errorMsg = getErrorMessage(err);
+
+      if (err?.response?.status === 401) {
+        setError(errorMsg);
+        redirectToLogin();
+        return;
+      }
+
+      setError(errorMsg);
       setScreen("assessments");
     } finally {
       setIsLoading(false);
@@ -100,6 +126,35 @@ export default function ReadingScreen() {
       percentage,
       isPassed: percentage >= 60,
     };
+  };
+
+  const getErrorMessage = (err: any): string => {
+    if (err?.response?.status === 401) {
+      return "Session expired or unauthorized. Please login again.";
+    }
+
+    const errorMsg =
+      err?.response?.data?.message || err?.message || "Failed to load data";
+
+    if (
+      errorMsg.toString().toLowerCase().includes("timeout") ||
+      errorMsg.toString().toLowerCase().includes("network") ||
+      errorMsg.toString().toLowerCase().includes("connection") ||
+      err?.code === "ECONNABORTED" ||
+      err?.code === "ENOTFOUND" ||
+      err?.code === "ECONNREFUSED" ||
+      err?.code === "ETIMEDOUT"
+    ) {
+      return "Network timeout. Please check your connection and try again.";
+    }
+
+    return errorMsg;
+  };
+
+  const redirectToLogin = () => {
+    clearAuthSession().finally(() => {
+      router.replace("/(auth)/login");
+    });
   };
 
   const handleNext = async () => {
@@ -147,7 +202,14 @@ export default function ReadingScreen() {
           (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout")) {
+        if (submitMsg.toLowerCase().includes("timeout") ||
+            submitMsg.toLowerCase().includes("network") ||
+            submitMsg.toLowerCase().includes("connection") ||
+            submitMsg.toLowerCase().includes("aborted") ||
+            submitErr?.code === "ECONNABORTED" ||
+            submitErr?.code === "ENOTFOUND" ||
+            submitErr?.code === "ECONNREFUSED" ||
+            submitErr?.code === "ETIMEDOUT") {
           const score = calculateScore();
           setAssessmentResult({
             type: "reading",
@@ -197,7 +259,13 @@ export default function ReadingScreen() {
       // Navigate to listening assessment
       router.push("/listen");
     } catch (err: any) {
-      setError(err.message || "Failed to submit answers");
+      const errorMsg = getErrorMessage(err);
+      if (err?.response?.status === 401) {
+        setError(errorMsg);
+        redirectToLogin();
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }

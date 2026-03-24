@@ -35,7 +35,18 @@ export default function WritingScreen() {
         setScreen("assessments");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to load assessments");
+      const errorMsg = err.message || "Failed to load assessments";
+      // Check for timeout/network errors
+      if (errorMsg.toLowerCase().includes("timeout") ||
+          errorMsg.toLowerCase().includes("network") ||
+          errorMsg.toLowerCase().includes("connection") ||
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ENOTFOUND" ||
+          err?.code === "ECONNREFUSED") {
+        setError("Network timeout. Please check your connection and try again.");
+      } else {
+        setError(errorMsg);
+      }
       setScreen("assessments");
     } finally {
       setIsLoading(false);
@@ -63,16 +74,36 @@ export default function WritingScreen() {
           console.warn("Grammar attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            setError(
-              (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit."
-            );
+            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            // Check for timeout/network errors
+            if (errorMsg.toLowerCase().includes("timeout") ||
+                errorMsg.toLowerCase().includes("network") ||
+                errorMsg.toLowerCase().includes("connection") ||
+                err?.code === "ECONNABORTED" ||
+                err?.code === "ENOTFOUND" ||
+                err?.code === "ECONNREFUSED") {
+              setError("Network timeout. Please check your connection and try again.");
+            } else {
+              setError(errorMsg);
+            }
           } else {
             setError(null);
           }
         });
     } catch (err: any) {
       console.error("Failed to load assessment:", err);
-      setError(err.message || "Failed to load assessment");
+      const errorMsg = err.message || "Failed to load assessment";
+      // Check for timeout/network errors
+      if (errorMsg.toLowerCase().includes("timeout") ||
+          errorMsg.toLowerCase().includes("network") ||
+          errorMsg.toLowerCase().includes("connection") ||
+          err?.code === "ECONNABORTED" ||
+          err?.code === "ENOTFOUND" ||
+          err?.code === "ECONNREFUSED") {
+        setError("Network timeout. Please check your connection and try again.");
+      } else {
+        setError(errorMsg);
+      }
       setScreen("assessments");
     } finally {
       setIsLoading(false);
@@ -144,7 +175,14 @@ export default function WritingScreen() {
           (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout")) {
+        if (submitMsg.toLowerCase().includes("timeout") ||
+            submitMsg.toLowerCase().includes("network") ||
+            submitMsg.toLowerCase().includes("connection") ||
+            submitMsg.toLowerCase().includes("aborted") ||
+            submitErr?.code === "ECONNABORTED" ||
+            submitErr?.code === "ENOTFOUND" ||
+            submitErr?.code === "ECONNREFUSED" ||
+            submitErr?.code === "ETIMEDOUT") {
           const score = calculateScore();
           setAssessmentResult({
             type: "writing",
