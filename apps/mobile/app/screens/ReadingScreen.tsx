@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { clearAuthSession } from "@/services/auth-storage";
-import { fetchAssessments, fetchAssessment, createReadingAttempt, submitReadingAttempt } from "@/services/reading-service";
+import {
+  fetchAssessments,
+  fetchAssessment,
+  createReadingAttempt,
+  submitReadingAttempt,
+} from "@/services/reading-service";
 import { Assessment, Question } from "@/services/reading-service";
 import { setAssessmentResult } from "@/services/results-service";
 
 export default function ReadingScreen() {
   const router = useRouter();
-  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">("loading");
+  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">(
+    "loading",
+  );
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -31,7 +43,7 @@ export default function ReadingScreen() {
       const data = await fetchAssessments();
       setAssessments(data);
       if (data.length > 0) {
-        await handleSelectAssessment(data[0]);
+        await handleSelectAssessment(data[0]!);
       } else {
         setScreen("assessments");
       }
@@ -75,14 +87,19 @@ export default function ReadingScreen() {
           console.warn("Reading attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            const errorMsg =
+              (err?.response?.data?.message as string) ||
+              err.message ||
+              "Unable to initialize attempt yet. Retry will occur on submit.";
             // Check for timeout/network errors
-            if (errorMsg.toLowerCase().includes("timeout") ||
-                errorMsg.toLowerCase().includes("network") ||
-                errorMsg.toLowerCase().includes("connection") ||
-                err?.code === "ECONNABORTED" ||
-                err?.code === "ENOTFOUND" ||
-                err?.code === "ECONNREFUSED") {
+            if (
+              errorMsg.toLowerCase().includes("timeout") ||
+              errorMsg.toLowerCase().includes("network") ||
+              errorMsg.toLowerCase().includes("connection") ||
+              err?.code === "ECONNABORTED" ||
+              err?.code === "ENOTFOUND" ||
+              err?.code === "ECONNREFUSED"
+            ) {
               setError("Network timeout. Please check your connection and try again.");
             } else {
               setError(errorMsg);
@@ -119,7 +136,7 @@ export default function ReadingScreen() {
     const obtainedMarks = questions.reduce((sum, q) => {
       const userAnswer = selected[q.id!];
       const correctOption = q.options.find((opt) => opt.is_correct);
-      return sum + ((userAnswer === correctOption?.id) ? (q.points || 1) : 0);
+      return sum + (userAnswer === correctOption?.id ? q.points || 1 : 0);
     }, 0);
 
     const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
@@ -136,8 +153,7 @@ export default function ReadingScreen() {
       return "Session expired or unauthorized. Please login again.";
     }
 
-    const errorMsg =
-      err?.response?.data?.message || err?.message || "Failed to load data";
+    const errorMsg = err?.response?.data?.message || err?.message || "Failed to load data";
 
     if (
       errorMsg.toString().toLowerCase().includes("timeout") ||
@@ -185,7 +201,7 @@ export default function ReadingScreen() {
           setError(
             (createErr?.response?.data?.message as string) ||
               createErr.message ||
-              "Could not create attempt; results saved locally."
+              "Could not create attempt; results saved locally.",
           );
           router.push("/listen");
           return;
@@ -199,21 +215,25 @@ export default function ReadingScreen() {
 
       let response: any;
       try {
-        response = await submitReadingAttempt(currentAttemptId, answers);
+        response = await submitReadingAttempt(currentAttemptId!, answers);
       } catch (submitErr: any) {
         console.warn("submitReadingAttempt failed", submitErr);
         const submitMsg =
-          (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
+          (submitErr?.response?.data?.message as string) ||
+          submitErr.message ||
+          "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout") ||
-            submitMsg.toLowerCase().includes("network") ||
-            submitMsg.toLowerCase().includes("connection") ||
-            submitMsg.toLowerCase().includes("aborted") ||
-            submitErr?.code === "ECONNABORTED" ||
-            submitErr?.code === "ENOTFOUND" ||
-            submitErr?.code === "ECONNREFUSED" ||
-            submitErr?.code === "ETIMEDOUT") {
+        if (
+          submitMsg.toLowerCase().includes("timeout") ||
+          submitMsg.toLowerCase().includes("network") ||
+          submitMsg.toLowerCase().includes("connection") ||
+          submitMsg.toLowerCase().includes("aborted") ||
+          submitErr?.code === "ECONNABORTED" ||
+          submitErr?.code === "ENOTFOUND" ||
+          submitErr?.code === "ECONNREFUSED" ||
+          submitErr?.code === "ETIMEDOUT"
+        ) {
           const score = calculateScore();
           setAssessmentResult({
             type: "reading",
@@ -249,7 +269,7 @@ export default function ReadingScreen() {
       }
 
       const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
-      
+
       // Store result
       setAssessmentResult({
         type: "reading",
@@ -296,11 +316,9 @@ export default function ReadingScreen() {
             </View>
           )}
           <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
             data={assessments}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: Assessment }) => (
               <TouchableOpacity
                 style={styles.assessmentItem}
                 onPress={() => handleSelectAssessment(item)}
@@ -316,10 +334,14 @@ export default function ReadingScreen() {
         <>
           <Text style={styles.title}>{selectedAssessment?.title}</Text>
           {attemptId ? (
-            <Text style={styles.infoText}>Attempt {attemptNumber} started (ID: {attemptId})</Text>
+            <Text style={styles.infoText}>
+              Attempt {attemptNumber} started (ID: {attemptId})
+            </Text>
           ) : (
             !isLoading && (
-              <Text style={styles.infoText}>Starting your reading attempt. If this takes more than a few seconds, please retry.</Text>
+              <Text style={styles.infoText}>
+                Starting your reading attempt. If this takes more than a few seconds, please retry.
+              </Text>
             )
           )}
           {error && (
@@ -327,25 +349,21 @@ export default function ReadingScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
+          {selectedAssessment?.passage_text && (
+            <View style={styles.card}>
+              <Text style={styles.passage}>{selectedAssessment.passage_text}</Text>
+            </View>
+          )}
           <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
             data={questions}
-            ListHeaderComponent={
-              selectedAssessment?.passage_text ? (
-                <View style={styles.card}>
-                  <Text style={styles.passage}>{selectedAssessment.passage_text}</Text>
-                </View>
-              ) : null
-            }
             keyExtractor={(item) => item.id || ""}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }: { item: Question; index: number }) => (
               <View style={styles.card}>
                 <Text style={styles.question}>
                   {index + 1}. {item.question_text}
                 </Text>
 
-                {item.options.map((option) => (
+                {item.options.map((option: any) => (
                   <TouchableOpacity
                     key={option.id || ""}
                     style={[
@@ -383,8 +401,8 @@ export default function ReadingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#fff' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
   loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
   card: { marginBottom: 15 },
@@ -417,7 +435,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: "#f9f9f9"
+    backgroundColor: "#f9f9f9",
   },
   assessmentTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
   assessmentDesc: { fontSize: 14, color: "#666" },
@@ -432,7 +450,7 @@ const styles = StyleSheet.create({
     backgroundColor: "blue",
     paddingVertical: 15,
     alignItems: "center",
-    borderRadius: 5
+    borderRadius: 5,
   },
   btnSmall: {
     backgroundColor: "#4F46E5",
@@ -441,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 6,
     alignSelf: "flex-end",
-    marginTop: 12
+    marginTop: 12,
   },
   btnContinue: {
     backgroundColor: "#4F46E5",
@@ -450,5 +468,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   disabled: { backgroundColor: "#ccc" },
-  btnText: { color: "#fff", fontWeight: "bold" }
+  btnText: { color: "#fff", fontWeight: "bold" },
 });

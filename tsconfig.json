@@ -1,14 +1,12 @@
 {
-  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "module": "ESNext",
+    "module": "esnext",
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
+    "skipLibCheck": true,
     "paths": {
-      "@/*": [
-        "apps/mobile/src/*"
-      ]
+      "@/*": ["apps/mobile/src/*"]
     }
   },
   "include": [

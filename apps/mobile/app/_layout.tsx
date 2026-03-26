@@ -1,35 +1,21 @@
-<<<<<<< HEAD
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Slot } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import Toast from "react-native-toast-message";
-
-import { useColorScheme } from "@/hooks/use-color-scheme";
-
-export default function RootLayout() {
-=======
-import "../global.css";
-
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import "react-native-reanimated";
 import { Provider } from "react-redux";
+import Toast from "react-native-toast-message";
+import "react-native-reanimated";
 
-import { useColorScheme } from "@/components/useColorScheme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { store } from "@/store";
+
+import "../global.css";
 
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "(auth)",
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -61,21 +47,22 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
->>>>>>> 4c1ec14a8bbec5877770981ae358b705e0d7d2f9
   const colorScheme = useColorScheme();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-<<<<<<< HEAD
-      <Slot />
-      <StatusBar style="auto" />
-      <Toast />
-=======
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* Auth Stack */}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+        {/* Tabs Stack */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+        {/* Modals */}
         <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+        <Stack.Screen name="onboarding" options={{ presentation: "modal" }} />
       </Stack>
->>>>>>> 4c1ec14a8bbec5877770981ae358b705e0d7d2f9
+      <Toast />
     </ThemeProvider>
   );
 }

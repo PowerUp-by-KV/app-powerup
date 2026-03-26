@@ -6,8 +6,7 @@ import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID =
-  "617587192867-b28cp4lrbjpgo6k14au20p4pd1i6lu4d.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "617587192867-b28cp4lrbjpgo6k14au20p4pd1i6lu4d.apps.googleusercontent.com";
 
 const resolveClientId = (value: string | undefined): string | undefined => {
   if (!value) {
@@ -23,14 +22,11 @@ const resolveClientId = (value: string | undefined): string | undefined => {
   return normalized;
 };
 
-const WEB_CLIENT_ID =
-  resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) ?? GOOGLE_CLIENT_ID;
-const ANDROID_CLIENT_ID = resolveClientId(
-  process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID,
-);
-const IOS_CLIENT_ID = resolveClientId(
-  process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS,
-);
+const WEB_CLIENT_ID = resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) ?? GOOGLE_CLIENT_ID;
+const ANDROID_CLIENT_ID =
+  resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID) ?? WEB_CLIENT_ID;
+const IOS_CLIENT_ID =
+  resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS) ?? WEB_CLIENT_ID;
 
 type GoogleAuthOutcome =
   | {
@@ -63,11 +59,8 @@ const decodeEmailFromIdToken = (idToken?: string): string | undefined => {
       return undefined;
     }
 
-    const payloadPart = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const padded = payloadPart.padEnd(
-      Math.ceil(payloadPart.length / 4) * 4,
-      "=",
-    );
+    const payloadPart = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = payloadPart.padEnd(Math.ceil(payloadPart.length / 4) * 4, "=");
     const decoded = globalThis.atob(padded);
     const payload = JSON.parse(decoded) as { email?: string };
     return payload.email;
@@ -99,92 +92,76 @@ export const useGoogleAuth = () => {
     selectAccount: true,
   });
 
-  const authenticateWithGoogle =
-    useCallback(async (): Promise<GoogleAuthOutcome> => {
-      if (!request) {
+  const authenticateWithGoogle = useCallback(async (): Promise<GoogleAuthOutcome> => {
+    if (!request) {
+      return {
+        status: "error",
+        message: "Google auth is still initializing. Try again in a moment.",
+      };
+    }
+
+    try {
+      setIsAuthenticating(true);
+      const response = await promptAsync();
+
+      if (response.type === "cancel" || response.type === "dismiss") {
         return {
-          status: "error",
-          message: "Google auth is still initializing. Try again in a moment.",
+          status: "cancelled",
+          message: "Google sign-in was cancelled.",
         };
       }
 
-      if (Platform.OS === "android" && !ANDROID_CLIENT_ID) {
+      if (response.type !== "success") {
         return {
           status: "error",
-          message:
-            "Android Google client ID is missing. Set EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID in .env with a valid Android OAuth client ID.",
+          message: "Google sign-in did not complete successfully.",
         };
       }
 
-      try {
-        setIsAuthenticating(true);
-        const response = await promptAsync();
+      const idToken = response.params.id_token ?? response.authentication?.idToken ?? undefined;
+      const code = response.params.code ?? undefined;
+      const oauth = {
+        oauth_id_token: idToken,
+        oauth_code: code,
+        oauth_redirect_uri: request.redirectUri,
+        oauth_code_verifier: request.codeVerifier ?? undefined,
+        email: decodeEmailFromIdToken(idToken),
+      };
 
-        if (response.type === "cancel" || response.type === "dismiss") {
-          return {
-            status: "cancelled",
-            message: "Google sign-in was cancelled.",
-          };
-        }
+      const hasIdTokenFlow = Boolean(oauth.oauth_id_token);
+      const hasCodeFlow = Boolean(
+        oauth.oauth_code && oauth.oauth_redirect_uri && oauth.oauth_code_verifier,
+      );
 
-        if (response.type !== "success") {
-          return {
-            status: "error",
-            message: "Google sign-in did not complete successfully.",
-          };
-        }
-
-        const idToken =
-          response.params.id_token ??
-          response.authentication?.idToken ??
-          undefined;
-        const code = response.params.code ?? undefined;
-        const oauth = {
-          oauth_id_token: idToken,
-          oauth_code: code,
-          oauth_redirect_uri: request.redirectUri,
-          oauth_code_verifier: request.codeVerifier ?? undefined,
-          email: decodeEmailFromIdToken(idToken),
-        };
-
-        const hasIdTokenFlow = Boolean(oauth.oauth_id_token);
-        const hasCodeFlow = Boolean(
-          oauth.oauth_code &&
-          oauth.oauth_redirect_uri &&
-          oauth.oauth_code_verifier,
-        );
-
-        if (!hasIdTokenFlow && !hasCodeFlow) {
-          return {
-            status: "error",
-            message:
-              "Google sign-in succeeded but required OAuth credentials were not returned.",
-          };
-        }
-
-        return {
-          status: "success",
-          oauth,
-        };
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : "Unexpected auth error";
-
-        if (message.toLowerCase().includes("redirect_uri_mismatch")) {
-          return {
-            status: "error",
-            message: `Google rejected the redirect URI. Add this URI in Google Cloud Console -> OAuth client -> Authorized redirect URIs: ${redirectUri}`,
-          };
-        }
-
+      if (!hasIdTokenFlow && !hasCodeFlow) {
         return {
           status: "error",
-          message,
+          message: "Google sign-in succeeded but required OAuth credentials were not returned.",
         };
-      } finally {
-        setIsAuthenticating(false);
       }
-    }, [promptAsync, redirectUri, request]);
+
+      return {
+        status: "success",
+        oauth,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unexpected auth error";
+
+      if (message.toLowerCase().includes("redirect_uri_mismatch")) {
+        return {
+          status: "error",
+          message: `Google rejected the redirect URI. Add this URI in Google Cloud Console -> OAuth client -> Authorized redirect URIs: ${redirectUri}`,
+        };
+      }
+
+      return {
+        status: "error",
+        message,
+      };
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [promptAsync, redirectUri, request]);
 
   return {
     request,

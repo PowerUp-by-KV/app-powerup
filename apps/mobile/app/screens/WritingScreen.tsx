@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, FlatList, TextInput,
-  TouchableOpacity, StyleSheet, ActivityIndicator
+  View,
+  Text,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchGrammarAssessments, fetchGrammarAssessment, createGrammarAttempt, submitGrammarAttempt } from "@/services/grammar-service";
+import {
+  fetchGrammarAssessments,
+  fetchGrammarAssessment,
+  createGrammarAttempt,
+  submitGrammarAttempt,
+} from "@/services/grammar-service";
 import { GrammarAssessment, GrammarQuestion } from "@/services/grammar-service";
 import { setAssessmentResult } from "@/services/results-service";
 
 export default function WritingScreen() {
   const router = useRouter();
-  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">("loading");
+  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">(
+    "loading",
+  );
   const [assessments, setAssessments] = useState<GrammarAssessment[]>([]);
   const [selectedAssessment, setSelectedAssessment] = useState<GrammarAssessment | null>(null);
   const [questions, setQuestions] = useState<GrammarQuestion[]>([]);
@@ -30,19 +42,21 @@ export default function WritingScreen() {
       const data = await fetchGrammarAssessments(true);
       setAssessments(data);
       if (data.length > 0) {
-        await handleSelectAssessment(data[0]);
+        await handleSelectAssessment(data[0]!);
       } else {
         setScreen("assessments");
       }
     } catch (err: any) {
       const errorMsg = err.message || "Failed to load assessments";
       // Check for timeout/network errors
-      if (errorMsg.toLowerCase().includes("timeout") ||
-          errorMsg.toLowerCase().includes("network") ||
-          errorMsg.toLowerCase().includes("connection") ||
-          err?.code === "ECONNABORTED" ||
-          err?.code === "ENOTFOUND" ||
-          err?.code === "ECONNREFUSED") {
+      if (
+        errorMsg.toLowerCase().includes("timeout") ||
+        errorMsg.toLowerCase().includes("network") ||
+        errorMsg.toLowerCase().includes("connection") ||
+        err?.code === "ECONNABORTED" ||
+        err?.code === "ENOTFOUND" ||
+        err?.code === "ECONNREFUSED"
+      ) {
         setError("Network timeout. Please check your connection and try again.");
       } else {
         setError(errorMsg);
@@ -74,14 +88,19 @@ export default function WritingScreen() {
           console.warn("Grammar attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            const errorMsg =
+              (err?.response?.data?.message as string) ||
+              err.message ||
+              "Unable to initialize attempt yet. Retry will occur on submit.";
             // Check for timeout/network errors
-            if (errorMsg.toLowerCase().includes("timeout") ||
-                errorMsg.toLowerCase().includes("network") ||
-                errorMsg.toLowerCase().includes("connection") ||
-                err?.code === "ECONNABORTED" ||
-                err?.code === "ENOTFOUND" ||
-                err?.code === "ECONNREFUSED") {
+            if (
+              errorMsg.toLowerCase().includes("timeout") ||
+              errorMsg.toLowerCase().includes("network") ||
+              errorMsg.toLowerCase().includes("connection") ||
+              err?.code === "ECONNABORTED" ||
+              err?.code === "ENOTFOUND" ||
+              err?.code === "ECONNREFUSED"
+            ) {
               setError("Network timeout. Please check your connection and try again.");
             } else {
               setError(errorMsg);
@@ -94,12 +113,14 @@ export default function WritingScreen() {
       console.error("Failed to load assessment:", err);
       const errorMsg = err.message || "Failed to load assessment";
       // Check for timeout/network errors
-      if (errorMsg.toLowerCase().includes("timeout") ||
-          errorMsg.toLowerCase().includes("network") ||
-          errorMsg.toLowerCase().includes("connection") ||
-          err?.code === "ECONNABORTED" ||
-          err?.code === "ENOTFOUND" ||
-          err?.code === "ECONNREFUSED") {
+      if (
+        errorMsg.toLowerCase().includes("timeout") ||
+        errorMsg.toLowerCase().includes("network") ||
+        errorMsg.toLowerCase().includes("connection") ||
+        err?.code === "ECONNABORTED" ||
+        err?.code === "ENOTFOUND" ||
+        err?.code === "ECONNREFUSED"
+      ) {
         setError("Network timeout. Please check your connection and try again.");
       } else {
         setError(errorMsg);
@@ -114,7 +135,9 @@ export default function WritingScreen() {
     setAnswers({ ...answers, [id]: text });
   };
 
-  const allAnswered = Object.keys(answers).length === questions.length && Object.values(answers).every(a => a.trim().length > 0);
+  const allAnswered =
+    Object.keys(answers).length === questions.length &&
+    Object.values(answers).every((a) => a.trim().length > 0);
 
   const calculateScore = () => {
     // For essay/writing assessments, calculate based on question count
@@ -154,7 +177,7 @@ export default function WritingScreen() {
           setError(
             (createErr?.response?.data?.message as string) ||
               createErr.message ||
-              "Could not create attempt; results saved locally."
+              "Could not create attempt; results saved locally.",
           );
           router.push("/results");
           return;
@@ -168,21 +191,25 @@ export default function WritingScreen() {
 
       let submitResponse: any;
       try {
-        submitResponse = await submitGrammarAttempt(currentAttemptId, submissionAnswers);
+        submitResponse = await submitGrammarAttempt(currentAttemptId!, submissionAnswers);
       } catch (submitErr: any) {
         console.warn("submitGrammarAttempt failed", submitErr);
         const submitMsg =
-          (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
+          (submitErr?.response?.data?.message as string) ||
+          submitErr.message ||
+          "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout") ||
-            submitMsg.toLowerCase().includes("network") ||
-            submitMsg.toLowerCase().includes("connection") ||
-            submitMsg.toLowerCase().includes("aborted") ||
-            submitErr?.code === "ECONNABORTED" ||
-            submitErr?.code === "ENOTFOUND" ||
-            submitErr?.code === "ECONNREFUSED" ||
-            submitErr?.code === "ETIMEDOUT") {
+        if (
+          submitMsg.toLowerCase().includes("timeout") ||
+          submitMsg.toLowerCase().includes("network") ||
+          submitMsg.toLowerCase().includes("connection") ||
+          submitMsg.toLowerCase().includes("aborted") ||
+          submitErr?.code === "ECONNABORTED" ||
+          submitErr?.code === "ENOTFOUND" ||
+          submitErr?.code === "ECONNREFUSED" ||
+          submitErr?.code === "ETIMEDOUT"
+        ) {
           const score = calculateScore();
           setAssessmentResult({
             type: "writing",
@@ -197,9 +224,9 @@ export default function WritingScreen() {
         setError(submitMsg);
         return;
       }
-      
+
       const score = calculateScore();
-      
+
       // Store result
       setAssessmentResult({
         type: "writing",
@@ -241,11 +268,9 @@ export default function WritingScreen() {
             </View>
           )}
           <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
             data={assessments}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: GrammarAssessment }) => (
               <TouchableOpacity
                 style={styles.assessmentItem}
                 onPress={() => handleSelectAssessment(item)}
@@ -267,11 +292,9 @@ export default function WritingScreen() {
             </View>
           )}
           <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
             data={questions}
             keyExtractor={(item) => item.id || ""}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }: { item: GrammarQuestion; index: number }) => (
               <View style={styles.card}>
                 <Text style={styles.question}>
                   {index + 1}. {item.question_text}
@@ -302,8 +325,8 @@ export default function WritingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#fff' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
   loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
   card: { marginBottom: 15 },
@@ -315,7 +338,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     minHeight: 80,
-    textAlignVertical: "top"
+    textAlignVertical: "top",
   },
   list: { flexGrow: 1 },
   listContent: { paddingBottom: 16 },
@@ -325,7 +348,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: "#f9f9f9"
+    backgroundColor: "#f9f9f9",
   },
   assessmentTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
   assessmentDesc: { fontSize: 14, color: "#666" },
@@ -339,7 +362,7 @@ const styles = StyleSheet.create({
     backgroundColor: "green",
     paddingVertical: 15,
     alignItems: "center",
-    borderRadius: 5
+    borderRadius: 5,
   },
   btnSmall: {
     backgroundColor: "#4F46E5",
@@ -348,7 +371,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 6,
     alignSelf: "flex-end",
-    marginTop: 12
+    marginTop: 12,
   },
   btnContinue: {
     backgroundColor: "#4F46E5",
@@ -357,5 +380,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   disabled: { backgroundColor: "#ccc" },
-  btnText: { color: "#fff", fontWeight: "bold" }
+  btnText: { color: "#fff", fontWeight: "bold" },
 });

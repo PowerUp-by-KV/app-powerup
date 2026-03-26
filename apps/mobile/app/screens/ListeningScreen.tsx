@@ -5,17 +5,24 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Audio } from "expo-av";
-import { fetchListeningAssessments, fetchListeningAssessment, createListeningAttempt, submitListeningAttempt } from "@/services/listening-service";
+import { Audio, AVPlaybackStatus } from "expo-av";
+import {
+  fetchListeningAssessments,
+  fetchListeningAssessment,
+  createListeningAttempt,
+  submitListeningAttempt,
+} from "@/services/listening-service";
 import { ListeningAssessment, ListeningQuestion } from "@/services/listening-service";
 import { setAssessmentResult } from "@/services/results-service";
 
 export default function ListeningScreen() {
   const router = useRouter();
-  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">("loading");
+  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">(
+    "loading",
+  );
   const [assessments, setAssessments] = useState<ListeningAssessment[]>([]);
   const [selectedAssessment, setSelectedAssessment] = useState<ListeningAssessment | null>(null);
   const [questions, setQuestions] = useState<ListeningQuestion[]>([]);
@@ -58,18 +65,22 @@ export default function ListeningScreen() {
       if (data.length > 0) {
         await handleSelectAssessment(data[0]);
       } else {
-        setError("No listening assessments available from API. Please seed /listening/assessments with is_active=true.");
+        setError(
+          "No listening assessments available from API. Please seed /listening/assessments with is_active=true.",
+        );
         setScreen("assessments");
       }
     } catch (err: any) {
       const errorMsg = err.message || "Failed to load assessments";
       // Check for timeout/network errors
-      if (errorMsg.toLowerCase().includes("timeout") ||
-          errorMsg.toLowerCase().includes("network") ||
-          errorMsg.toLowerCase().includes("connection") ||
-          err?.code === "ECONNABORTED" ||
-          err?.code === "ENOTFOUND" ||
-          err?.code === "ECONNREFUSED") {
+      if (
+        errorMsg.toLowerCase().includes("timeout") ||
+        errorMsg.toLowerCase().includes("network") ||
+        errorMsg.toLowerCase().includes("connection") ||
+        err?.code === "ECONNABORTED" ||
+        err?.code === "ENOTFOUND" ||
+        err?.code === "ECONNREFUSED"
+      ) {
         setError("Network timeout. Please check your connection and try again.");
       } else {
         setError(errorMsg);
@@ -80,7 +91,8 @@ export default function ListeningScreen() {
     }
   };
 
-  const handleSelectAssessment = async (assessment: ListeningAssessment) => {
+  const handleSelectAssessment = async (assessment: ListeningAssessment | undefined) => {
+    if (!assessment) return;
     try {
       // Clean up existing audio
       if (sound) {
@@ -108,14 +120,19 @@ export default function ListeningScreen() {
           console.warn("Listening attempt init failed", err);
           // Do not block user; they can still answer and submit.
           if (err?.response?.status !== 422) {
-            const errorMsg = (err?.response?.data?.message as string) || err.message || "Unable to initialize attempt yet. Retry will occur on submit.";
+            const errorMsg =
+              (err?.response?.data?.message as string) ||
+              err.message ||
+              "Unable to initialize attempt yet. Retry will occur on submit.";
             // Check for timeout/network errors
-            if (errorMsg.toLowerCase().includes("timeout") ||
-                errorMsg.toLowerCase().includes("network") ||
-                errorMsg.toLowerCase().includes("connection") ||
-                err?.code === "ECONNABORTED" ||
-                err?.code === "ENOTFOUND" ||
-                err?.code === "ECONNREFUSED") {
+            if (
+              errorMsg.toLowerCase().includes("timeout") ||
+              errorMsg.toLowerCase().includes("network") ||
+              errorMsg.toLowerCase().includes("connection") ||
+              err?.code === "ECONNABORTED" ||
+              err?.code === "ENOTFOUND" ||
+              err?.code === "ECONNREFUSED"
+            ) {
               setError("Network timeout. Please check your connection and try again.");
             } else {
               setError(errorMsg);
@@ -128,12 +145,14 @@ export default function ListeningScreen() {
       console.error("Failed to load assessment:", err);
       const errorMsg = err.message || "Failed to load assessment";
       // Check for timeout/network errors
-      if (errorMsg.toLowerCase().includes("timeout") ||
-          errorMsg.toLowerCase().includes("network") ||
-          errorMsg.toLowerCase().includes("connection") ||
-          err?.code === "ECONNABORTED" ||
-          err?.code === "ENOTFOUND" ||
-          err?.code === "ECONNREFUSED") {
+      if (
+        errorMsg.toLowerCase().includes("timeout") ||
+        errorMsg.toLowerCase().includes("network") ||
+        errorMsg.toLowerCase().includes("connection") ||
+        err?.code === "ECONNABORTED" ||
+        err?.code === "ENOTFOUND" ||
+        err?.code === "ECONNREFUSED"
+      ) {
         setError("Network timeout. Please check your connection and try again.");
       } else {
         setError(errorMsg);
@@ -166,13 +185,13 @@ export default function ListeningScreen() {
         // Load and play new audio
         const { sound: newSound } = await Audio.Sound.createAsync(
           { uri: selectedAssessment.audio_url },
-          { shouldPlay: true }
+          { shouldPlay: true },
         );
         setSound(newSound);
         setIsPlaying(true);
 
         // Set up playback status update
-        newSound.setOnPlaybackStatusUpdate((status) => {
+        newSound.setOnPlaybackStatusUpdate((status: any) => {
           if (status.isLoaded) {
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
@@ -201,7 +220,7 @@ export default function ListeningScreen() {
     const obtainedMarks = questions.reduce((sum, q) => {
       const userAnswer = selected[q.id!];
       const correctOption = q.options.find((opt) => opt.is_correct);
-      return sum + ((userAnswer === correctOption?.id) ? (q.points || 1) : 0);
+      return sum + (userAnswer === correctOption?.id ? q.points || 1 : 0);
     }, 0);
 
     const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
@@ -237,7 +256,7 @@ export default function ListeningScreen() {
           setError(
             (createErr?.response?.data?.message as string) ||
               createErr.message ||
-              "Could not create attempt; results saved locally."
+              "Could not create attempt; results saved locally.",
           );
           router.push("/write");
           return;
@@ -250,22 +269,29 @@ export default function ListeningScreen() {
       }));
 
       let response: any;
+      if (!currentAttemptId) {
+        throw new Error("Failed to create attempt");
+      }
       try {
         response = await submitListeningAttempt(currentAttemptId, answers);
       } catch (submitErr: any) {
         console.warn("submitListeningAttempt failed", submitErr);
         const submitMsg =
-          (submitErr?.response?.data?.message as string) || submitErr.message || "Failed to submit answers.";
+          (submitErr?.response?.data?.message as string) ||
+          submitErr.message ||
+          "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
-        if (submitMsg.toLowerCase().includes("timeout") ||
-            submitMsg.toLowerCase().includes("network") ||
-            submitMsg.toLowerCase().includes("connection") ||
-            submitMsg.toLowerCase().includes("aborted") ||
-            submitErr?.code === "ECONNABORTED" ||
-            submitErr?.code === "ENOTFOUND" ||
-            submitErr?.code === "ECONNREFUSED" ||
-            submitErr?.code === "ETIMEDOUT") {
+        if (
+          submitMsg.toLowerCase().includes("timeout") ||
+          submitMsg.toLowerCase().includes("network") ||
+          submitMsg.toLowerCase().includes("connection") ||
+          submitMsg.toLowerCase().includes("aborted") ||
+          submitErr?.code === "ECONNABORTED" ||
+          submitErr?.code === "ENOTFOUND" ||
+          submitErr?.code === "ECONNREFUSED" ||
+          submitErr?.code === "ETIMEDOUT"
+        ) {
           const score = calculateScore();
           setAssessmentResult({
             type: "listening",
@@ -280,20 +306,20 @@ export default function ListeningScreen() {
         setError(submitMsg);
         return;
       }
-      
+
       // Calculate marks based on correct answers
       let obtainedMarks = 0;
       let totalMarks = 0;
-      
+
       if (response && response.correct_count !== undefined) {
         obtainedMarks = response.correct_count;
         totalMarks = questions.length;
       } else {
         // Fallback: calculate from questions
-        questions.forEach(q => {
+        questions.forEach((q) => {
           totalMarks += q.points || 1;
           const userAnswer = selected[q.id!];
-          const correctOption = q.options.find(opt => opt.is_correct);
+          const correctOption = q.options.find((opt) => opt.is_correct);
           if (userAnswer === correctOption?.id) {
             obtainedMarks += q.points || 1;
           }
@@ -301,7 +327,7 @@ export default function ListeningScreen() {
       }
 
       const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
-      
+
       // Store result
       setAssessmentResult({
         type: "listening",
@@ -354,11 +380,9 @@ export default function ListeningScreen() {
             </View>
           ) : (
             <FlatList
-              style={styles.list}
-              contentContainerStyle={styles.listContent}
               data={assessments}
               keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
+              renderItem={({ item }: { item: ListeningAssessment }) => (
                 <TouchableOpacity
                   style={styles.assessmentItem}
                   onPress={() => handleSelectAssessment(item)}
@@ -380,8 +404,8 @@ export default function ListeningScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
-          <TouchableOpacity 
-            style={[styles.audioBtn, audioLoading && styles.disabled]} 
+          <TouchableOpacity
+            style={[styles.audioBtn, audioLoading && styles.disabled]}
             onPress={playAudio}
             disabled={audioLoading}
           >
@@ -390,23 +414,21 @@ export default function ListeningScreen() {
             </Text>
           </TouchableOpacity>
           <Text style={styles.audioInfo}>
-            {selectedAssessment?.audio_duration_seconds 
+            {selectedAssessment?.audio_duration_seconds
               ? `Audio length: ${selectedAssessment.audio_duration_seconds}s`
               : "Tap Play to hear the audio passage."}
           </Text>
 
           <FlatList
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
             data={questions}
             keyExtractor={(item) => item.id || ""}
-            renderItem={({ item, index }) => (
+            renderItem={({ item, index }: { item: ListeningQuestion; index: number }) => (
               <View style={styles.card}>
                 <Text style={styles.question}>
                   {index + 1}. {item.question_text}
                 </Text>
 
-                {item.options.map((option) => (
+                {item.options.map((option: any) => (
                   <TouchableOpacity
                     key={option.id || ""}
                     style={[
@@ -444,12 +466,12 @@ export default function ListeningScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#fff' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
+  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
   loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
-  noDataContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  noDataText: { fontSize: 16, color: '#333', textAlign: 'center', marginBottom: 12 },
+  noDataContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 32 },
+  noDataText: { fontSize: 16, color: "#333", textAlign: "center", marginBottom: 12 },
   card: { marginBottom: 15 },
   question: { fontSize: 16, marginBottom: 8, fontWeight: "600" },
   audioBtn: {
@@ -458,7 +480,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     alignSelf: "flex-start",
-    marginBottom: 12
+    marginBottom: 12,
   },
   audioBtnText: { color: "#fff", fontWeight: "bold" },
   choiceButton: {
@@ -467,11 +489,11 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    marginBottom: 8
+    marginBottom: 8,
   },
   choiceSelected: {
     borderColor: "#4F46E5",
-    backgroundColor: "#EEF2FF"
+    backgroundColor: "#EEF2FF",
   },
   choiceText: { color: "#333" },
   choiceTextSelected: { color: "#4F46E5", fontWeight: "bold" },
@@ -484,7 +506,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: "#f9f9f9"
+    backgroundColor: "#f9f9f9",
   },
   assessmentTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
   assessmentDesc: { fontSize: 14, color: "#666" },
@@ -498,7 +520,7 @@ const styles = StyleSheet.create({
     backgroundColor: "blue",
     paddingVertical: 15,
     alignItems: "center",
-    borderRadius: 5
+    borderRadius: 5,
   },
   btnSmall: {
     backgroundColor: "#4F46E5",
@@ -507,7 +529,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 6,
     alignSelf: "flex-end",
-    marginTop: 12
+    marginTop: 12,
   },
   btnContinue: {
     backgroundColor: "#4F46E5",
@@ -516,5 +538,5 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   disabled: { backgroundColor: "#ccc" },
-  btnText: { color: "#fff", fontWeight: "bold" }
+  btnText: { color: "#fff", fontWeight: "bold" },
 });
