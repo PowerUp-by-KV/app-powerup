@@ -1,22 +1,10 @@
 import { useGoogleAuth } from "@/hooks/use-google-auth";
-import {
-  clearAuthState,
-  getApiErrorMessage,
-  setAuthToken,
-} from "@/services/auth-service";
+import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
 import { api } from "@/utils/api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-  Alert,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { GoogleLogo } from "../../src/components/svg";
 
 export default function LoginScreen() {
@@ -60,9 +48,7 @@ export default function LoginScreen() {
 
       await persistAuthAndNavigate(response.data);
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } })?.response?.status === 401
-      ) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
         router.replace("/(auth)/login");
         return;
@@ -70,10 +56,7 @@ export default function LoginScreen() {
 
       Alert.alert(
         "Login Failed",
-        getApiErrorMessage(
-          error,
-          "Unable to login right now. Please try again.",
-        ),
+        getApiErrorMessage(error, "Unable to login right now. Please try again."),
       );
     } finally {
       setIsLoading(false);
@@ -105,10 +88,7 @@ export default function LoginScreen() {
       }
 
       if (!result.oauth.oauth_id_token) {
-        Alert.alert(
-          "Google Login Failed",
-          "Google did not return an ID token for backend login.",
-        );
+        Alert.alert("Google Login Failed", "Google did not return an ID token for backend login.");
         return;
       }
 
@@ -119,9 +99,7 @@ export default function LoginScreen() {
 
       await persistAuthAndNavigate(response.data);
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } })?.response?.status === 401
-      ) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
         router.replace("/(auth)/login");
         return;
@@ -129,10 +107,7 @@ export default function LoginScreen() {
 
       Alert.alert(
         "Google Login Failed",
-        getApiErrorMessage(
-          error,
-          "Unable to login with Google right now. Please try again.",
-        ),
+        getApiErrorMessage(error, "Unable to login with Google right now. Please try again."),
       );
     } finally {
       setIsLoading(false);
@@ -144,195 +119,82 @@ export default function LoginScreen() {
       source={{
         uri: "https://images.unsplash.com/photo-1508780709619-79562169bc64",
       }}
-      style={styles.background}
+      className="flex-1"
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Login</Text>
+      <View className="flex-1 justify-center items-center bg-black/40">
+        <View className="w-[85%] max-w-[400px] bg-white p-6 rounded-2xl shadow-lg">
+          <Text className="text-2xl text-center mb-4 font-bold text-gray-800">Login</Text>
 
           <TextInput
             placeholder="Email"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-3 text-gray-800"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            placeholderTextColor="#999"
           />
 
-          <View style={styles.passwordContainer}>
+          <View className="flex-row items-center border border-gray-300 rounded-lg mb-3 pr-2">
             <TextInput
               placeholder="Password"
               secureTextEntry={!showPassword}
-              style={styles.passwordInput}
+              className="flex-1 px-3 py-3 text-base text-gray-800"
               value={password}
               onChangeText={setPassword}
+              placeholderTextColor="#999"
             />
-            <TouchableOpacity
-              onPress={() => setShowPassword(!showPassword)}
-              style={styles.eyeIcon}
-            >
-              <Text style={styles.eyeText}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} className="p-2">
+              <Text className="text-lg">{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
-            style={styles.rememberRow}
+            className="flex-row items-center mb-3"
             onPress={() => setRememberMe((prev) => !prev)}
           >
             <View
-              style={[styles.checkbox, rememberMe && styles.checkboxChecked]}
+              className={`w-5 h-5 border rounded justify-center items-center mr-2 ${
+                rememberMe ? "bg-indigo-600 border-indigo-600" : "border-gray-600"
+              }`}
             >
-              {rememberMe && <Text style={styles.checkboxTick}>✓</Text>}
+              {rememberMe && <Text className="text-white text-sm font-bold">✓</Text>}
             </View>
-            <Text style={styles.rememberText}>Remember me</Text>
+            <Text className="text-base text-gray-700">Remember me</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.loginBtn, isLoading && styles.disabledBtn]}
+            className={`bg-indigo-600 py-3 rounded-lg items-center ${
+              isLoading ? "opacity-70" : ""
+            }`}
             disabled={isLoading}
             onPress={handleLogin}
           >
-            <Text style={styles.btnText}>Login{isLoading ? "..." : ""}</Text>
+            <Text className="text-white font-bold">Login{isLoading ? "..." : ""}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.or}>OR</Text>
+          <Text className="text-center my-3 text-gray-600">OR</Text>
 
           <TouchableOpacity
-            style={styles.oauthBtn}
+            className="flex-row items-center justify-center border border-gray-300 py-3 rounded-lg mb-2"
             onPress={handleGoogleLogin}
             disabled={isLoading || isAuthenticating || !request}
           >
-            <View style={{ marginRight: 10 }}>
+            <View className="mr-2">
               <GoogleLogo width={22} height={22} />
             </View>
-            <Text style={styles.oauthText}>
+            <Text className="text-base text-gray-800">
               Continue with Google{isAuthenticating ? "..." : ""}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
-            <Text style={styles.link}>Don{"'"}t have an Account? Sign up</Text>
+            <Text className="mt-4 text-center text-blue-500">
+              Don{"'"}t have an Account? Sign up
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { flex: 1 },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  card: {
-    width: "85%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 14,
-  },
-  title: {
-    fontSize: 28,
-    textAlign: "center",
-    marginBottom: 15,
-    fontWeight: "bold",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 12,
-    paddingRight: 10,
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-  },
-  eyeIcon: {
-    padding: 8,
-  },
-  eyeText: {
-    fontSize: 18,
-  },
-  rememberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 1,
-    borderColor: "#888",
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  checkboxChecked: {
-    backgroundColor: "#4F46E5",
-    borderColor: "#4F46E5",
-  },
-  checkboxTick: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  rememberText: {
-    fontSize: 15,
-  },
-  loginBtn: {
-    backgroundColor: "#4F46E5",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  disabledBtn: {
-    opacity: 0.7,
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  or: {
-    textAlign: "center",
-    marginVertical: 12,
-    color: "#333",
-  },
-  oauthBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  oauthIcon: {
-    width: 22,
-    height: 22,
-    marginRight: 10,
-  },
-  oauthText: {
-    fontSize: 15,
-  },
-  link: {
-    marginTop: 15,
-    textAlign: "center",
-    color: "blue",
-  },
-});

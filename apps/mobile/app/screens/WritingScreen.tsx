@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import {
   fetchGrammarAssessments,
@@ -189,9 +181,8 @@ export default function WritingScreen() {
         answer_text: text,
       }));
 
-      let submitResponse: any;
       try {
-        submitResponse = await submitGrammarAttempt(currentAttemptId!, submissionAnswers);
+        await submitGrammarAttempt(currentAttemptId, submissionAnswers);
       } catch (submitErr: any) {
         console.warn("submitGrammarAttempt failed", submitErr);
         const submitMsg =
@@ -243,27 +234,23 @@ export default function WritingScreen() {
     }
   };
 
-  const handleContinue = () => {
-    router.push("/results");
-  };
-
   return (
-    <View style={styles.container}>
+    <View className="flex-1 p-[15px] bg-white">
       {screen === "loading" && (
-        <View style={styles.centerContainer}>
+        <View className="flex-1 justify-center items-center p-5">
           <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Loading assessments...</Text>
+          <Text className="mt-3 text-base text-gray-600">Loading assessments...</Text>
         </View>
       )}
 
       {screen === "assessments" && (
         <>
-          <Text style={styles.title}>Grammar Assessments</Text>
+          <Text className="text-2xl font-bold mb-4">Grammar Assessments</Text>
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={loadAssessments}>
-                <Text style={styles.retryText}>Retry</Text>
+            <View className="bg-red-100 p-3 rounded mb-3">
+              <Text className="text-red-700 text-sm">{error}</Text>
+              <TouchableOpacity className="bg-red-600 p-2 rounded mt-2" onPress={loadAssessments}>
+                <Text className="text-white font-semibold text-center">Retry</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -272,11 +259,11 @@ export default function WritingScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }: { item: GrammarAssessment }) => (
               <TouchableOpacity
-                style={styles.assessmentItem}
+                className="p-4 border border-gray-300 rounded mb-3 bg-gray-100"
                 onPress={() => handleSelectAssessment(item)}
               >
-                <Text style={styles.assessmentTitle}>{item.title}</Text>
-                <Text style={styles.assessmentDesc}>{item.description}</Text>
+                <Text className="text-base font-semibold mb-1">{item.title}</Text>
+                <Text className="text-sm text-gray-700">{item.description}</Text>
               </TouchableOpacity>
             )}
           />
@@ -285,23 +272,23 @@ export default function WritingScreen() {
 
       {screen === "attempt" && (
         <>
-          <Text style={styles.title}>{selectedAssessment?.title}</Text>
+          <Text className="text-2xl font-bold mb-4">{selectedAssessment?.title}</Text>
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View className="bg-red-100 p-3 rounded mb-3">
+              <Text className="text-red-700 text-sm">{error}</Text>
             </View>
           )}
           <FlatList
             data={questions}
             keyExtractor={(item) => item.id || ""}
             renderItem={({ item, index }: { item: GrammarQuestion; index: number }) => (
-              <View style={styles.card}>
-                <Text style={styles.question}>
+              <View className="mb-[15px]">
+                <Text className="text-base mb-2 font-semibold">
                   {index + 1}. {item.question_text}
                 </Text>
 
                 <TextInput
-                  style={styles.input}
+                  className="border border-gray-300 mt-2 p-3 rounded text-base"
                   multiline
                   placeholder="Write your answer..."
                   value={answers[item.id!] || ""}
@@ -312,73 +299,14 @@ export default function WritingScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.btnSmall, (!allAnswered || isLoading) && styles.disabled]}
+            className={`bg-indigo-600 py-3 px-4 items-center rounded-lg self-end mt-3 ${!allAnswered || isLoading ? "bg-gray-400" : ""}`}
             disabled={!allAnswered || isLoading}
             onPress={handleSubmit}
           >
-            <Text style={styles.btnText}>{isLoading ? "Submitting..." : "Submit"}</Text>
+            <Text className="text-white font-bold">{isLoading ? "Submitting..." : "Submit"}</Text>
           </TouchableOpacity>
         </>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
-  card: { marginBottom: 15 },
-  question: { fontSize: 16, marginBottom: 8, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginTop: 8,
-    padding: 10,
-    borderRadius: 5,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  list: { flexGrow: 1 },
-  listContent: { paddingBottom: 16 },
-  assessmentItem: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: "#f9f9f9",
-  },
-  assessmentTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
-  assessmentDesc: { fontSize: 14, color: "#666" },
-  errorContainer: { backgroundColor: "#FEE2E2", padding: 12, borderRadius: 6, marginBottom: 12 },
-  errorText: { color: "#DC2626", fontSize: 14 },
-  retryBtn: { backgroundColor: "#DC2626", padding: 8, borderRadius: 4, marginTop: 8 },
-  retryText: { color: "#fff", fontWeight: "600", textAlign: "center" },
-  successText: { fontSize: 20, fontWeight: "bold", color: "#16A34A", marginBottom: 8 },
-  successDesc: { fontSize: 14, color: "#666", marginBottom: 24 },
-  btn: {
-    backgroundColor: "green",
-    paddingVertical: 15,
-    alignItems: "center",
-    borderRadius: 5,
-  },
-  btnSmall: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    borderRadius: 6,
-    alignSelf: "flex-end",
-    marginTop: 12,
-  },
-  btnContinue: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  disabled: { backgroundColor: "#ccc" },
-  btnText: { color: "#fff", fontWeight: "bold" },
-});

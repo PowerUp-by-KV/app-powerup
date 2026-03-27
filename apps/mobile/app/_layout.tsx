@@ -3,14 +3,14 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import "react-native-reanimated";
 import { Provider } from "react-redux";
 import Toast from "react-native-toast-message";
-import "react-native-reanimated";
+import { StatusBar } from "expo-status-bar";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { store } from "@/store";
-
 import "../global.css";
+import { store } from "@/store";
 
 export { ErrorBoundary } from "expo-router";
 
@@ -51,16 +51,12 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack screenOptions={{ headerShown: false }}>
-        {/* Auth Stack */}
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-
-        {/* Tabs Stack */}
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-
-        {/* Modals */}
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-        <Stack.Screen name="onboarding" options={{ presentation: "modal" }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(auth)/splash" options={{ headerShown: false }} />
       </Stack>
       <Toast />
     </ThemeProvider>

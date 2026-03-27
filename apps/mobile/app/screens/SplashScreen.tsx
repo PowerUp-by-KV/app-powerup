@@ -1,13 +1,7 @@
 import { restoreSession } from "@/services/auth-service";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-} from "react-native";
+import { Animated, Image, Text, TouchableOpacity } from "react-native";
 
 export default function SplashScreen() {
   const router = useRouter();
@@ -73,10 +67,20 @@ export default function SplashScreen() {
   });
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor: bgColor }]}>
+    <Animated.View
+      style={[
+        { flex: 1, justifyContent: "center", alignItems: "center" },
+        { backgroundColor: bgColor },
+      ]}
+    >
       {/* Initial Text */}
       {!showContent && (
-        <Animated.Text style={[styles.initialText, { opacity: textOpacity }]}>
+        <Animated.Text
+          style={[
+            { fontSize: 28, fontWeight: "bold", color: "#3D5AFE", letterSpacing: 2 },
+            { opacity: textOpacity },
+          ]}
+        >
           HEXAWARE
         </Animated.Text>
       )}
@@ -84,7 +88,13 @@ export default function SplashScreen() {
       {/* Expanding Circle */}
       <Animated.View
         style={[
-          styles.circle,
+          {
+            position: "absolute",
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            backgroundColor: "#3D5AFE",
+          },
           {
             transform: [{ scale: scaleAnim }],
           },
@@ -94,18 +104,23 @@ export default function SplashScreen() {
       {/* Center Content */}
       {showContent && (
         <Animated.View
-          style={[styles.centerContent, { opacity: contentOpacity }]}
+          style={[
+            { position: "absolute", top: "35%", alignItems: "center", paddingHorizontal: 30 },
+            { opacity: contentOpacity },
+          ]}
         >
           <Image
             source={{
               uri: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5qRo3DHpnxAUtNwv7575TUVhUZKHqtElokQ&s",
             }}
-            style={styles.logo}
+            className="w-[200px] h-[80px] mb-5"
           />
 
-          <Text style={styles.title}>Welcome to Hexaware Learning</Text>
+          <Text className="text-xl text-white font-bold text-center mb-2">
+            Welcome to Hexaware Learning
+          </Text>
 
-          <Text style={styles.subtitle}>
+          <Text className="text-gray-400 text-center">
             Build skills, practice speaking, and track your learning progress.
           </Text>
         </Animated.View>
@@ -114,84 +129,16 @@ export default function SplashScreen() {
       {/* Bottom Right Button */}
       {showContent && (
         <Animated.View
-          style={[styles.buttonWrapper, { opacity: contentOpacity }]}
+          style={[{ position: "absolute", bottom: 10, right: 7 }, { opacity: contentOpacity }]}
         >
           <TouchableOpacity
-            style={styles.button}
+            className="bg-blue-600 py-3 px-8 rounded-full"
             onPress={() => router.push("/(auth)/login")}
           >
-            <Text style={styles.buttonText}>Get Started</Text>
+            <Text className="text-white text-base font-bold">Get Started</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  initialText: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#3D5AFE",
-    letterSpacing: 2,
-  },
-
-  circle: {
-    position: "absolute",
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#3D5AFE",
-  },
-
-  centerContent: {
-    position: "absolute",
-    top: "35%",
-    alignItems: "center",
-    paddingHorizontal: 30,
-  },
-
-  logo: {
-    width: 200,
-    height: 80,
-    marginBottom: 20,
-  },
-
-  title: {
-    fontSize: 22,
-    color: "white",
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 10,
-  },
-
-  subtitle: {
-    color: "#9CA3AF",
-    textAlign: "center",
-  },
-
-  buttonWrapper: {
-    position: "absolute",
-    bottom: 40,
-    right: 30,
-  },
-
-  button: {
-    backgroundColor: "#3D5AFE",
-    paddingVertical: 14,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-  },
-
-  buttonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-});

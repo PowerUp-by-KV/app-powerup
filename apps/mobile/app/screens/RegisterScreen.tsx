@@ -8,15 +8,7 @@ import {
 } from "@/services/auth-service";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-  Alert,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { GoogleLogo } from "../../src/components/svg";
 
 export default function RegisterScreen() {
@@ -74,9 +66,7 @@ export default function RegisterScreen() {
       Alert.alert("Success", "Registration successful.");
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } })?.response?.status === 401
-      ) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
         router.replace("/(auth)/login");
         return;
@@ -84,10 +74,7 @@ export default function RegisterScreen() {
 
       Alert.alert(
         "Registration Failed",
-        getApiErrorMessage(
-          error,
-          "Unable to register right now. Please try again.",
-        ),
+        getApiErrorMessage(error, "Unable to register right now. Please try again."),
       );
     } finally {
       setIsLoading(false);
@@ -137,19 +124,14 @@ export default function RegisterScreen() {
           oauth_code_verifier: result.oauth.oauth_code_verifier,
         });
       } else {
-        Alert.alert(
-          "Google Sign-up Failed",
-          "Google did not return complete OAuth credentials.",
-        );
+        Alert.alert("Google Sign-up Failed", "Google did not return complete OAuth credentials.");
         return;
       }
 
       Alert.alert("Success", "Google registration successful.");
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } })?.response?.status === 401
-      ) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
         router.replace("/(auth)/login");
         return;
@@ -157,10 +139,7 @@ export default function RegisterScreen() {
 
       Alert.alert(
         "Google Sign-up Failed",
-        getApiErrorMessage(
-          error,
-          "Unable to complete Google sign-up right now. Please try again.",
-        ),
+        getApiErrorMessage(error, "Unable to complete Google sign-up right now. Please try again."),
       );
     } finally {
       setIsLoading(false);
@@ -172,119 +151,67 @@ export default function RegisterScreen() {
       source={{
         uri: "https://images.unsplash.com/photo-1508780709619-79562169bc64",
       }}
-      style={styles.background}
+      className="flex-1"
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Create Account</Text>
+      <View className="flex-1 justify-center items-center bg-black/40">
+        <View className="w-[85%] max-w-[400px] bg-white p-6 rounded-2xl shadow-lg">
+          <Text className="text-2xl text-center mb-6 font-bold text-gray-800">Create Account</Text>
 
           <TextInput
             placeholder="Email"
             keyboardType="email-address"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={email}
             onChangeText={setEmail}
+            placeholderTextColor="#999"
           />
           <TextInput
             placeholder="Password"
             secureTextEntry
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={password}
             onChangeText={setPassword}
+            placeholderTextColor="#999"
           />
           <TextInput
             placeholder="Confirm Password"
             secureTextEntry
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
+            placeholderTextColor="#999"
           />
 
           <TouchableOpacity
-            style={[styles.btn, isLoading && styles.disabledBtn]}
+            className={`bg-indigo-600 py-3 rounded-lg items-center ${
+              isLoading ? "opacity-70" : ""
+            }`}
             disabled={isLoading}
             onPress={handleRegister}
           >
-            <Text style={styles.btnText}>Register{isLoading ? "..." : ""}</Text>
+            <Text className="text-white font-bold text-base">Register{isLoading ? "..." : ""}</Text>
           </TouchableOpacity>
 
-          <Text style={styles.or}>OR</Text>
+          <Text className="text-center my-3 text-gray-600">OR</Text>
 
           <TouchableOpacity
-            style={styles.oauthBtn}
+            className="flex-row items-center justify-center border border-gray-300 py-3 rounded-lg mb-2"
             onPress={handleGoogleRegister}
             disabled={isLoading || isAuthenticating || !request}
           >
-            <View style={{ marginRight: 10 }}>
+            <View className="mr-2">
               <GoogleLogo width={22} height={22} />
             </View>
-            <Text style={styles.oauthText}>
+            <Text className="text-base text-gray-800">
               Continue with Google{isAuthenticating ? "..." : ""}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-            <Text style={styles.link}>Already have an account? Login</Text>
+            <Text className="mt-4 text-center text-blue-500">Already have an account? Login</Text>
           </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { flex: 1 },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  card: {
-    width: "85%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 14,
-  },
-  title: {
-    fontSize: 28,
-    textAlign: "center",
-    marginBottom: 25,
-    fontWeight: "bold",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  btn: {
-    backgroundColor: "#4F46E5",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  or: {
-    textAlign: "center",
-    marginVertical: 12,
-    color: "#333",
-  },
-  oauthBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  oauthText: {
-    fontSize: 15,
-  },
-  btnText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  disabledBtn: { opacity: 0.7 },
-  link: { marginTop: 15, textAlign: "center", color: "blue" },
-});

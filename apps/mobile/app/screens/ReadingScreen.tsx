@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { clearAuthSession } from "@/services/auth-storage";
 import {
@@ -296,22 +289,22 @@ export default function ReadingScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 p-[15px] bg-white">
       {screen === "loading" && (
-        <View style={styles.centerContainer}>
+        <View className="flex-1 justify-center items-center p-5">
           <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Loading assessments...</Text>
+          <Text className="mt-3 text-base text-gray-600">Loading assessments...</Text>
         </View>
       )}
 
       {screen === "assessments" && (
         <>
-          <Text style={styles.title}>Reading Assessments</Text>
+          <Text className="text-2xl font-bold mb-4">Reading Assessments</Text>
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity style={styles.retryBtn} onPress={loadAssessments}>
-                <Text style={styles.retryText}>Retry</Text>
+            <View className="bg-red-100 p-3 rounded mb-3">
+              <Text className="text-red-700 text-sm">{error}</Text>
+              <TouchableOpacity className="bg-red-600 p-2 rounded mt-2" onPress={loadAssessments}>
+                <Text className="text-white font-semibold text-center">Retry</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -320,10 +313,10 @@ export default function ReadingScreen() {
             keyExtractor={(item) => item.id}
             renderItem={({ item }: { item: Assessment }) => (
               <TouchableOpacity
-                style={styles.assessmentItem}
+                className="p-4 border border-gray-300 rounded mb-3 bg-gray-100"
                 onPress={() => handleSelectAssessment(item)}
               >
-                <Text style={styles.assessmentTitle}>{item.title}</Text>
+                <Text className="text-base font-semibold mb-1">{item.title}</Text>
               </TouchableOpacity>
             )}
           />
@@ -332,52 +325,53 @@ export default function ReadingScreen() {
 
       {screen === "attempt" && (
         <>
-          <Text style={styles.title}>{selectedAssessment?.title}</Text>
+          <Text className="text-2xl font-bold mb-4">{selectedAssessment?.title}</Text>
           {attemptId ? (
-            <Text style={styles.infoText}>
+            <Text className="text-blue-900 text-sm mb-2">
               Attempt {attemptNumber} started (ID: {attemptId})
             </Text>
           ) : (
             !isLoading && (
-              <Text style={styles.infoText}>
+              <Text className="text-blue-900 text-sm mb-2">
                 Starting your reading attempt. If this takes more than a few seconds, please retry.
               </Text>
             )
           )}
           {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View className="bg-red-100 p-3 rounded mb-3">
+              <Text className="text-red-700 text-sm">{error}</Text>
             </View>
           )}
           {selectedAssessment?.passage_text && (
-            <View style={styles.card}>
-              <Text style={styles.passage}>{selectedAssessment.passage_text}</Text>
+            <View className="mb-[15px]">
+              <Text className="text-base mb-4 text-gray-800">
+                {selectedAssessment.passage_text}
+              </Text>
             </View>
           )}
           <FlatList
             data={questions}
             keyExtractor={(item) => item.id || ""}
             renderItem={({ item, index }: { item: Question; index: number }) => (
-              <View style={styles.card}>
-                <Text style={styles.question}>
+              <View className="mb-[15px]">
+                <Text className="text-base mb-2 font-semibold">
                   {index + 1}. {item.question_text}
                 </Text>
 
                 {item.options.map((option: any) => (
                   <TouchableOpacity
                     key={option.id || ""}
-                    style={[
-                      styles.choiceButton,
-                      selected[item.id!] === option.id && styles.choiceSelected,
-                    ]}
+                    className={`border border-gray-300 rounded py-[10px] px-3 mb-2 ${
+                      selected[item.id!] === option.id ? "border-indigo-600 bg-indigo-100" : ""
+                    }`}
                     onPress={() => setAnswer(item.id!, option.id!)}
                   >
                     <Text
-                      style={
+                      className={`${
                         selected[item.id!] === option.id
-                          ? styles.choiceTextSelected
-                          : styles.choiceText
-                      }
+                          ? "text-indigo-600 font-bold"
+                          : "text-gray-800"
+                      }`}
                     >
                       {option.option_text}
                     </Text>
@@ -388,85 +382,14 @@ export default function ReadingScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.btnSmall, (!allAnswered || isLoading) && styles.disabled]}
+            className={`bg-indigo-600 py-3 px-4 items-center rounded-lg self-end mt-3 ${!allAnswered || isLoading ? "bg-gray-400" : ""}`}
             disabled={!allAnswered || isLoading}
             onPress={handleNext}
           >
-            <Text style={styles.btnText}>{isLoading ? "Submitting..." : "Submit"}</Text>
+            <Text className="text-white font-bold">{isLoading ? "Submitting..." : "Submit"}</Text>
           </TouchableOpacity>
         </>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#fff" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 16 },
-  loadingText: { marginTop: 12, fontSize: 16, color: "#666" },
-  card: { marginBottom: 15 },
-  question: { fontSize: 16, marginBottom: 8, fontWeight: "600" },
-  passage: { fontSize: 16, marginBottom: 16, color: "#333" },
-  choiceButton: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
-  choiceSelected: {
-    borderColor: "#4F46E5",
-    backgroundColor: "#EEF2FF",
-  },
-  choiceText: {
-    color: "#333",
-  },
-  choiceTextSelected: {
-    color: "#4F46E5",
-    fontWeight: "bold",
-  },
-  list: { flexGrow: 1 },
-  listContent: { paddingBottom: 16 },
-  assessmentItem: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: "#f9f9f9",
-  },
-  assessmentTitle: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
-  assessmentDesc: { fontSize: 14, color: "#666" },
-  errorContainer: { backgroundColor: "#FEE2E2", padding: 12, borderRadius: 6, marginBottom: 12 },
-  errorText: { color: "#DC2626", fontSize: 14 },
-  infoText: { color: "#1E3A8A", fontSize: 14, marginBottom: 8 },
-  retryBtn: { backgroundColor: "#DC2626", padding: 8, borderRadius: 4, marginTop: 8 },
-  retryText: { color: "#fff", fontWeight: "600", textAlign: "center" },
-  successText: { fontSize: 20, fontWeight: "bold", color: "#16A34A", marginBottom: 8 },
-  successDesc: { fontSize: 14, color: "#666", marginBottom: 24 },
-  btn: {
-    backgroundColor: "blue",
-    paddingVertical: 15,
-    alignItems: "center",
-    borderRadius: 5,
-  },
-  btnSmall: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    borderRadius: 6,
-    alignSelf: "flex-end",
-    marginTop: 12,
-  },
-  btnContinue: {
-    backgroundColor: "#4F46E5",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 6,
-  },
-  disabled: { backgroundColor: "#ccc" },
-  btnText: { color: "#fff", fontWeight: "bold" },
-});

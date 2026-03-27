@@ -3,14 +3,7 @@ import { setProfileCompletedInSession } from "@/services/auth-storage";
 import { submitOnboarding } from "@/services/onboarding-service";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import {
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -49,19 +42,14 @@ export default function ProfileScreen() {
       alert("Profile created successfully");
       router.replace("/(auth)/read");
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } })?.response?.status === 401
-      ) {
+      if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
         router.replace("/(auth)/login");
         return;
       }
 
       alert(
-        getApiErrorMessage(
-          error,
-          "Unable to save onboarding details right now. Please try again.",
-        ),
+        getApiErrorMessage(error, "Unable to save onboarding details right now. Please try again."),
       );
     } finally {
       setIsLoading(false);
@@ -73,101 +61,59 @@ export default function ProfileScreen() {
       source={{
         uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
       }}
-      style={styles.background}
+      className="flex-1"
       resizeMode="cover"
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Complete Your Profile</Text>
+      <View className="flex-1 justify-center items-center bg-black/40">
+        <View className="w-[85%] max-w-[400px] bg-white p-6 rounded-2xl shadow-lg">
+          <Text className="text-2xl text-center mb-6 font-bold text-gray-800">
+            Complete Your Profile
+          </Text>
 
           <TextInput
             placeholder="Full Name"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={name}
             onChangeText={setName}
+            placeholderTextColor="#999"
           />
 
           <TextInput
             placeholder="Mobile Number"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             keyboardType="number-pad"
             value={mobile}
             onChangeText={setMobile}
+            placeholderTextColor="#999"
           />
 
           <TextInput
             placeholder="Date of Birth (DD/MM/YYYY)"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={dob}
             onChangeText={setDob}
+            placeholderTextColor="#999"
           />
 
           <TextInput
             placeholder="College Name"
-            style={styles.input}
+            className="border border-gray-300 px-3 py-3 rounded-lg mb-4 text-gray-800"
             value={college}
             onChangeText={setCollege}
+            placeholderTextColor="#999"
           />
 
           <TouchableOpacity
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            className={`bg-indigo-600 py-3 rounded-lg items-center ${
+              isLoading ? "opacity-70" : ""
+            }`}
             onPress={handleSubmit}
             disabled={isLoading}
           >
-            <Text style={styles.btnText}>Continue{isLoading ? "..." : ""}</Text>
+            <Text className="text-white font-bold text-base">Continue{isLoading ? "..." : ""}</Text>
           </TouchableOpacity>
         </View>
       </View>
     </ImageBackground>
   );
 }
-
-const styles = StyleSheet.create({
-  background: { flex: 1 },
-
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-
-  card: {
-    width: "85%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    padding: 25,
-    borderRadius: 14,
-  },
-
-  title: {
-    fontSize: 28,
-    textAlign: "center",
-    marginBottom: 25,
-    fontWeight: "bold",
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-
-  button: {
-    backgroundColor: "#4F46E5",
-    padding: 14,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-
-  btnText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-});
