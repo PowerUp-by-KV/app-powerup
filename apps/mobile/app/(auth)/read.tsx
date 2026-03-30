@@ -1,2 +1,2 @@
-import ReadingScreen from "../screens/ReadingScreen";
+import ReadingScreen from "../../src/components/ReadingScreen";
 export default ReadingScreen;

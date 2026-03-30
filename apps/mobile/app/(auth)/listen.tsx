@@ -1,2 +1,2 @@
-import ListeningScreen from "../screens/ListeningScreen";
+import ListeningScreen from "../../src/components/ListeningScreen";
 export default ListeningScreen;

@@ -1,2 +1,2 @@
-import WritingScreen from "../screens/WritingScreen";
+import WritingScreen from "../../src/components/WritingScreen";
 export default WritingScreen;

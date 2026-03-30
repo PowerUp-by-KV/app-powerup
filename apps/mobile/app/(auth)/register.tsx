@@ -1,3 +1,3 @@
-import RegisterScreen from "../screens/RegisterScreen";
+import RegisterScreen from "../../src/components/RegisterScreen";
 
 export default RegisterScreen;

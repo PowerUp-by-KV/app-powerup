@@ -1,2 +1,2 @@
-import GoogleSuccessScreen from "../screens/GoogleSuccessScreen";
+import GoogleSuccessScreen from "../../src/components/GoogleSuccessScreen";
 export default GoogleSuccessScreen;
