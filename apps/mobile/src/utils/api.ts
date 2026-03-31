@@ -1,9 +1,7 @@
 import { clearAuthSession, getAuthSession } from "@/services/auth-storage";
 import axios from "axios";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL?.trim() ||
-  "https://b8ltrdc5-8000.inc1.devtunnels.ms/api/v1";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL?.trim() ?? "http://localhost:3000/api/v1";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

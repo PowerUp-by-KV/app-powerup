@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";

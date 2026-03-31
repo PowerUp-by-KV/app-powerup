@@ -9,7 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { GoogleLogo } from "../../src/components/svg";
+import { GoogleLogo } from "@/components/svg";
 
 export default function RegisterScreen() {
   const router = useRouter();

@@ -5,8 +5,6 @@ import { useCallback, useMemo, useState } from "react";
 
 WebBrowser.maybeCompleteAuthSession();
 
-const GOOGLE_CLIENT_ID = "617587192867-b28cp4lrbjpgo6k14au20p4pd1i6lu4d.apps.googleusercontent.com";
-
 const resolveClientId = (value: string | undefined): string | undefined => {
   if (!value) {
     return undefined;
@@ -20,6 +18,10 @@ const resolveClientId = (value: string | undefined): string | undefined => {
 
   return normalized;
 };
+
+const GOOGLE_CLIENT_ID =
+  resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) ??
+  "617587192867-b28cp4lrbjpgo6k14au20p4pd1i6lu4d.apps.googleusercontent.com";
 
 const WEB_CLIENT_ID = resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID) ?? GOOGLE_CLIENT_ID;
 const ANDROID_CLIENT_ID =
@@ -47,6 +49,29 @@ type GoogleAuthOutcome =
       message: string;
     };
 
+const decodeBase64 = (base64: string): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+  let str = base64.replace(/=+$/, "");
+  let output = "";
+  let buffer = 0;
+  let bits = 0;
+
+  for (let i = 0; i < str.length; i += 1) {
+    const val = chars.indexOf(str.charAt(i));
+    if (val === -1) continue;
+
+    buffer = (buffer << 6) | val;
+    bits += 6;
+
+    if (bits >= 8) {
+      bits -= 8;
+      output += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+
+  return output;
+};
+
 const decodeEmailFromIdToken = (idToken?: string): string | undefined => {
   if (!idToken) {
     return undefined;
@@ -60,7 +85,7 @@ const decodeEmailFromIdToken = (idToken?: string): string | undefined => {
 
     const payloadPart = parts[1]!.replace(/-/g, "+").replace(/_/g, "/");
     const padded = payloadPart.padEnd(Math.ceil(payloadPart.length / 4) * 4, "=");
-    const decoded = globalThis.atob(padded);
+    const decoded = decodeBase64(padded);
     const payload = JSON.parse(decoded) as { email?: string };
     return payload.email;
   } catch {

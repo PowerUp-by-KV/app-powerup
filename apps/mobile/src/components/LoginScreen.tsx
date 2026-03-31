@@ -5,7 +5,7 @@ import { api } from "@/utils/api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Alert, ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { GoogleLogo } from "../../src/components/svg";
+import { GoogleLogo } from "@/components/svg";
 
 export default function LoginScreen() {
   const router = useRouter();

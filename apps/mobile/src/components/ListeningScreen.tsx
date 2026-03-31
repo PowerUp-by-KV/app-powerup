@@ -11,6 +11,36 @@ import {
 import { ListeningAssessment, ListeningQuestion } from "@/services/listening-service";
 import { setAssessmentResult } from "@/services/results-service";
 
+interface HttpError {
+  name?: string;
+  message?: string;
+  code?: string;
+  response?: {
+    status?: number;
+    data?: { message?: string };
+  };
+}
+
+const isHttpError = (error: unknown): error is HttpError =>
+  typeof error === "object" &&
+  error !== null &&
+  ("message" in error || "code" in error || "response" in error);
+
+const normalizeError = (error: unknown): Error & HttpError => {
+  if (error instanceof Error) return error as Error & HttpError;
+  if (isHttpError(error)) {
+    return {
+      ...(error as HttpError),
+      name: (error as HttpError).name || "Error",
+      message: (error as HttpError).message ?? "An unknown error occurred",
+    } as Error & HttpError;
+  }
+  return { name: "Error", message: "An unknown error occurred" } as Error & HttpError;
+};
+
+const isSubmitResponse = (value: unknown): value is { correct_count?: number } =>
+  typeof value === "object" && value !== null && "correct_count" in value;
+
 export default function ListeningScreen() {
   const router = useRouter();
   const [screen, setScreen] = useState<"loading" | "assessments" | "attempt" | "submission">(
@@ -27,26 +57,88 @@ export default function ListeningScreen() {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
 
-  useEffect(() => {
-    loadAssessments();
-  }, []);
+  const handleSelectAssessment = useCallback(
+    async (assessment: ListeningAssessment | undefined) => {
+      if (!assessment) return;
+      try {
+        // Clean up existing audio
+        if (sound) {
+          await sound.unloadAsync();
+          setSound(null);
+          setIsPlaying(false);
+        }
 
-  useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
+        setIsLoading(true);
+        setError(null);
+        const assessmentData = await fetchListeningAssessment(assessment.id);
+        setSelectedAssessment(assessmentData);
+        setQuestions(assessmentData.questions);
+        setSelected({});
+        setScreen("attempt");
+        setAttemptId(null);
+
+        // Kick off attempt creation in background to avoid UI block. It may still be pending at submit time.
+        createListeningAttempt(assessmentData.id)
+          .then((attempt) => {
+            setAttemptId(attempt.id);
+            setError(null);
+          })
+          .catch((errUnknown) => {
+            const err = normalizeError(errUnknown);
+            console.warn("Listening attempt init failed", err);
+            if (err.response?.status !== 422) {
+              const errorMsg =
+                err.response?.data?.message ||
+                err.message ||
+                "Unable to initialize attempt yet. Retry will occur on submit.";
+              if (
+                errorMsg.toLowerCase().includes("timeout") ||
+                errorMsg.toLowerCase().includes("network") ||
+                errorMsg.toLowerCase().includes("connection") ||
+                err.code === "ECONNABORTED" ||
+                err.code === "ENOTFOUND" ||
+                err.code === "ECONNREFUSED"
+              ) {
+                setError("Network timeout. Please check your connection and try again.");
+              } else {
+                setError(errorMsg);
+              }
+            } else {
+              setError(null);
+            }
+          });
+      } catch (errUnknown) {
+        const err = normalizeError(errUnknown);
+        console.error("Failed to load assessment:", err);
+        const errorMsg = err.message || "Failed to load assessment";
+
+        if (
+          errorMsg.toLowerCase().includes("timeout") ||
+          errorMsg.toLowerCase().includes("network") ||
+          errorMsg.toLowerCase().includes("connection") ||
+          err.code === "ECONNABORTED" ||
+          err.code === "ENOTFOUND" ||
+          err.code === "ECONNREFUSED"
+        ) {
+          setError("Network timeout. Please check your connection and try again.");
+        } else {
+          setError(errorMsg);
+        }
+        setScreen("assessments");
+      } finally {
+        setIsLoading(false);
       }
-    };
-  }, [sound]);
+    },
+    [sound],
+  );
 
-  const loadAssessments = async () => {
+  const loadAssessments = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
       let data = await fetchListeningAssessments(true);
       console.debug("Listening assessments (active=true)", data);
 
-      // fallback: if no active assessments, try without active filter
       if (data.length === 0) {
         console.warn("No active assessments found, trying unfiltered retrieval.");
         data = await fetchListeningAssessments();
@@ -63,16 +155,16 @@ export default function ListeningScreen() {
         );
         setScreen("assessments");
       }
-    } catch (err: any) {
+    } catch (errUnknown) {
+      const err = normalizeError(errUnknown);
       const errorMsg = err.message || "Failed to load assessments";
-      // Check for timeout/network errors
       if (
         errorMsg.toLowerCase().includes("timeout") ||
         errorMsg.toLowerCase().includes("network") ||
         errorMsg.toLowerCase().includes("connection") ||
-        err?.code === "ECONNABORTED" ||
-        err?.code === "ENOTFOUND" ||
-        err?.code === "ECONNREFUSED"
+        err.code === "ECONNABORTED" ||
+        err.code === "ENOTFOUND" ||
+        err.code === "ECONNREFUSED"
       ) {
         setError("Network timeout. Please check your connection and try again.");
       } else {
@@ -82,79 +174,19 @@ export default function ListeningScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [handleSelectAssessment]);
 
-  const handleSelectAssessment = async (assessment: ListeningAssessment | undefined) => {
-    if (!assessment) return;
-    try {
-      // Clean up existing audio
+  useEffect(() => {
+    loadAssessments();
+  }, [loadAssessments]);
+
+  useEffect(() => {
+    return () => {
       if (sound) {
-        await sound.unloadAsync();
-        setSound(null);
-        setIsPlaying(false);
+        sound.unloadAsync();
       }
-
-      setIsLoading(true);
-      setError(null);
-      const assessmentData = await fetchListeningAssessment(assessment.id);
-      setSelectedAssessment(assessmentData);
-      setQuestions(assessmentData.questions);
-      setSelected({});
-      setScreen("attempt");
-      setAttemptId(null);
-
-      // Kick off attempt creation in background to avoid UI block. It may still be pending at submit time.
-      createListeningAttempt(assessmentData.id)
-        .then((attempt) => {
-          setAttemptId(attempt.id);
-          setError(null);
-        })
-        .catch((err: any) => {
-          console.warn("Listening attempt init failed", err);
-          // Do not block user; they can still answer and submit.
-          if (err?.response?.status !== 422) {
-            const errorMsg =
-              (err?.response?.data?.message as string) ||
-              err.message ||
-              "Unable to initialize attempt yet. Retry will occur on submit.";
-            // Check for timeout/network errors
-            if (
-              errorMsg.toLowerCase().includes("timeout") ||
-              errorMsg.toLowerCase().includes("network") ||
-              errorMsg.toLowerCase().includes("connection") ||
-              err?.code === "ECONNABORTED" ||
-              err?.code === "ENOTFOUND" ||
-              err?.code === "ECONNREFUSED"
-            ) {
-              setError("Network timeout. Please check your connection and try again.");
-            } else {
-              setError(errorMsg);
-            }
-          } else {
-            setError(null);
-          }
-        });
-    } catch (err: any) {
-      console.error("Failed to load assessment:", err);
-      const errorMsg = err.message || "Failed to load assessment";
-      // Check for timeout/network errors
-      if (
-        errorMsg.toLowerCase().includes("timeout") ||
-        errorMsg.toLowerCase().includes("network") ||
-        errorMsg.toLowerCase().includes("connection") ||
-        err?.code === "ECONNABORTED" ||
-        err?.code === "ENOTFOUND" ||
-        err?.code === "ECONNREFUSED"
-      ) {
-        setError("Network timeout. Please check your connection and try again.");
-      } else {
-        setError(errorMsg);
-      }
-      setScreen("assessments");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+  }, [sound]);
 
   const playAudio = async () => {
     if (!selectedAssessment?.audio_url) {
@@ -184,7 +216,7 @@ export default function ListeningScreen() {
         setIsPlaying(true);
 
         // Set up playback status update
-        newSound.setOnPlaybackStatusUpdate((status: any) => {
+        newSound.setOnPlaybackStatusUpdate((status: AVPlaybackStatus) => {
           if (status.isLoaded) {
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
@@ -193,7 +225,8 @@ export default function ListeningScreen() {
           }
         });
       }
-    } catch (err: any) {
+    } catch (errUnknown) {
+      const err = normalizeError(errUnknown);
       console.error("Audio playback error:", err);
       setError("Failed to load audio. Please check your connection and try again.");
       setIsPlaying(false);
@@ -238,7 +271,8 @@ export default function ListeningScreen() {
           const attempt = await createListeningAttempt(selectedAssessment?.id || "");
           currentAttemptId = attempt.id;
           setAttemptId(attempt.id);
-        } catch (createErr: any) {
+        } catch (createErrUnknown: unknown) {
+          const createErr = normalizeError(createErrUnknown);
           console.warn("createListeningAttempt failed", createErr);
           const score = calculateScore();
           setAssessmentResult({
@@ -247,7 +281,7 @@ export default function ListeningScreen() {
             ...score,
           });
           setError(
-            (createErr?.response?.data?.message as string) ||
+            createErr.response?.data?.message ||
               createErr.message ||
               "Could not create attempt; results saved locally.",
           );
@@ -261,18 +295,17 @@ export default function ListeningScreen() {
         selected_option_id: selectedOptionId,
       }));
 
-      let response: any;
+      let response: unknown;
       if (!currentAttemptId) {
         throw new Error("Failed to create attempt");
       }
       try {
         response = await submitListeningAttempt(currentAttemptId, answers);
-      } catch (submitErr: any) {
-        console.warn("submitListeningAttempt failed", submitErr);
+      } catch (submitErr: unknown) {
+        const submitError = normalizeError(submitErr);
+        console.warn("submitListeningAttempt failed", submitError);
         const submitMsg =
-          (submitErr?.response?.data?.message as string) ||
-          submitErr.message ||
-          "Failed to submit answers.";
+          submitError.response?.data?.message || submitError.message || "Failed to submit answers.";
 
         // If server times out, fallback to client-side grading (avoid dead-end) and continue.
         if (
@@ -280,10 +313,10 @@ export default function ListeningScreen() {
           submitMsg.toLowerCase().includes("network") ||
           submitMsg.toLowerCase().includes("connection") ||
           submitMsg.toLowerCase().includes("aborted") ||
-          submitErr?.code === "ECONNABORTED" ||
-          submitErr?.code === "ENOTFOUND" ||
-          submitErr?.code === "ECONNREFUSED" ||
-          submitErr?.code === "ETIMEDOUT"
+          submitError.code === "ECONNABORTED" ||
+          submitError.code === "ENOTFOUND" ||
+          submitError.code === "ECONNREFUSED" ||
+          submitError.code === "ETIMEDOUT"
         ) {
           const score = calculateScore();
           setAssessmentResult({
@@ -304,7 +337,7 @@ export default function ListeningScreen() {
       let obtainedMarks = 0;
       let totalMarks = 0;
 
-      if (response && response.correct_count !== undefined) {
+      if (isSubmitResponse(response) && response.correct_count !== undefined) {
         obtainedMarks = response.correct_count;
         totalMarks = questions.length;
       } else {
@@ -333,7 +366,8 @@ export default function ListeningScreen() {
 
       // Navigate to writing assessment
       router.push("/write");
-    } catch (err: any) {
+    } catch (errUnknown: unknown) {
+      const err = normalizeError(errUnknown);
       setError(err.message || "Failed to submit answers (timeout or network error). Please retry.");
     } finally {
       setIsLoading(false);
@@ -419,7 +453,7 @@ export default function ListeningScreen() {
                   {index + 1}. {item.question_text}
                 </Text>
 
-                {item.options.map((option: any) => (
+                {item.options.map((option: ListeningQuestion["options"][number]) => (
                   <TouchableOpacity
                     key={option.id || ""}
                     className={`border border-gray-300 rounded py-[10px] px-3 mb-2 ${
