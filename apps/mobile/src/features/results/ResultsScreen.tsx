@@ -10,8 +10,6 @@ interface OverallStats {
   isPassed: boolean;
 }
 
-interface ResultsScreenProps {}
-
 const initialOverallStats: OverallStats = {
   totalMarks: 0,
   obtainedMarks: 0,
@@ -19,7 +17,7 @@ const initialOverallStats: OverallStats = {
   isPassed: false,
 };
 
-export function ResultsScreen({}: ResultsScreenProps): React.ReactElement {
+export function ResultsScreen(): React.ReactElement {
   const router = useRouter();
   const [results, setResults] = useState<AssessmentResult[]>([]);
   const [overall, setOverall] = useState<OverallStats>(initialOverallStats);

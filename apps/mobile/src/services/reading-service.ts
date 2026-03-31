@@ -52,7 +52,8 @@ export type SubmitAttemptPayload = {
 
 // API Calls
 export const fetchAssessments = async (isActive?: boolean) => {
-  const response = await api.get<Assessment[]>("/reading/assessments");
+  const query = isActive === undefined ? "" : `?is_active=${isActive}`;
+  const response = await api.get<Assessment[]>(`/reading/assessments${query}`);
   return response.data;
 };
 
@@ -68,12 +69,9 @@ export const createAssessment = async (payload: AssessmentPayload) => {
 
 export const updateAssessment = async (
   assessmentId: string,
-  payload: Partial<AssessmentPayload>
+  payload: Partial<AssessmentPayload>,
 ) => {
-  const response = await api.patch<Assessment>(
-    `/reading/assessments/${assessmentId}`,
-    payload
-  );
+  const response = await api.patch<Assessment>(`/reading/assessments/${assessmentId}`, payload);
   return response.data;
 };
 
@@ -84,10 +82,7 @@ export const createReadingAttempt = async (assessmentId: string) => {
   return response.data;
 };
 
-export const submitReadingAttempt = async (
-  attemptId: string,
-  answers: SubmitAttemptPayload
-) => {
+export const submitReadingAttempt = async (attemptId: string, answers: SubmitAttemptPayload) => {
   const response = await api.post(`/reading/attempts/${attemptId}/submit`, answers);
   return response.data;
 };

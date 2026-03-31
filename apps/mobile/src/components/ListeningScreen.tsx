@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { Audio, AVPlaybackStatus } from "expo-av";
@@ -338,10 +338,6 @@ export default function ListeningScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleContinue = () => {
-    router.push("/write");
   };
 
   return (
