@@ -1,59 +1,30 @@
-import "../global.css";
+/**
+ * app/_layout.tsx — Root Expo Router layout
+ *
+ * Phase 1: Expo Router Stack navigator, mirrors old AppNavigator.
+ * Phase 3: Wrapped with Redux <Provider store={store}> — all screens now
+ *          have store access via useAppDispatch / useAppSelector.
+ */
+import "../global.css"; // NativeWind CSS entrypoint — imported once at the root
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { useFonts } from "expo-font";
+import React from "react";
 import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import "react-native-reanimated";
 import { Provider } from "react-redux";
 
-import { useColorScheme } from "@/components/useColorScheme";
-import { store } from "@/store";
-
-export { ErrorBoundary } from "expo-router";
-
-export const unstable_settings = {
-  initialRouteName: "(tabs)",
-};
-
-SplashScreen.preventAutoHideAsync();
+import store from "../src/store/store";
 
 export default function RootLayout() {
-  const [loaded, error] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  });
-
-  useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  if (!loaded) {
-    return null;
-  }
-
   return (
     <Provider store={store}>
-      <RootLayoutNav />
-    </Provider>
-  );
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      <Stack screenOptions={{ headerTitleAlign: "center" }}>
+        <Stack.Screen name="index" options={{ title: "Home" }} />
+        <Stack.Screen name="resume" options={{ title: "Resume" }} />
+        <Stack.Screen name="session-picker" options={{ title: "Choose Session" }} />
+        <Stack.Screen name="mock-interview/index" options={{ title: "Mock Interviews" }} />
+        <Stack.Screen name="mock-interview/[sessionId]" options={{ title: "Mock Interview" }} />
+        <Stack.Screen name="mock-interview/result/[sessionId]" options={{ title: "Results" }} />
+        <Stack.Screen name="interview/[sessionId]" options={{ title: "Interview Coach" }} />
       </Stack>
-    </ThemeProvider>
+    </Provider>
   );
 }
