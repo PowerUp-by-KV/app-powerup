@@ -8,7 +8,7 @@ export const useLogout = () => {
   const logout = async () => {
     try {
       await clearAuthState();
-      router.replace("/(auth)/splash");
+      router.replace("/splash");
     } catch (error) {
       console.error("Logout error:", error);
     }

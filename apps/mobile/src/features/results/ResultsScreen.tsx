@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
-import { AssessmentResult, getAllResults, getOverallStats } from "@/services/results-service";
+import { getAllResults, getOverallStats } from "@/services/results-service";
+import { AssessmentResult } from "@/services/results-service";
+
+interface ResultsScreenProps {}
 
 interface OverallStats {
   totalMarks: number;
@@ -9,8 +12,6 @@ interface OverallStats {
   percentage: number;
   isPassed: boolean;
 }
-
-interface ResultsScreenProps {}
 
 const initialOverallStats: OverallStats = {
   totalMarks: 0,
