@@ -1,6 +1,13 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "https://b8ltrdc5-8000.inc1.devtunnels.ms/";
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) {
+  throw new Error(
+    "EXPO_PUBLIC_API_URL environment variable is required. " +
+      "Please set it in your .env file. For local development, use: http://localhost:8000/api",
+  );
+}
 
 export const api = createApi({
   reducerPath: "api",

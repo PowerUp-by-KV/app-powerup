@@ -162,8 +162,10 @@ export function WritingScreen() {
           console.warn("createGrammarAttempt failed", createErr);
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "grammar"}-${Date.now()}`,
             type: "writing",
             title: selectedAssessment?.title || "Grammar Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(
@@ -203,8 +205,10 @@ export function WritingScreen() {
         ) {
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "grammar"}-${Date.now()}`,
             type: "writing",
             title: selectedAssessment?.title || "Grammar Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(null);
@@ -220,8 +224,10 @@ export function WritingScreen() {
 
       // Store result
       setAssessmentResult({
+        id: `${selectedAssessment?.id || "grammar"}-${Date.now()}`,
         type: "writing",
         title: selectedAssessment?.title || "Grammar Assessment",
+        score: score.obtainedMarks,
         ...score,
       });
 

@@ -1,10 +1,18 @@
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
-import { api } from "@/utils/api";
+import { useLoginMutation } from "@/utils/api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { GoogleLogo } from "@/components/svg";
 
 export function LoginScreen() {
@@ -15,6 +23,7 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
+  const [login] = useLoginMutation();
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
@@ -40,13 +49,13 @@ export function LoginScreen() {
     try {
       setIsLoading(true);
 
-      const response = await api.post<AuthResponse>("/auth/login", {
+      const response = await login({
         email: email.trim(),
         password,
         remember_me: rememberMe,
-      });
+      }).unwrap();
 
-      await persistAuthAndNavigate(response.data);
+      await persistAuthAndNavigate(response);
     } catch (error) {
       if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
@@ -92,12 +101,12 @@ export function LoginScreen() {
         return;
       }
 
-      const response = await api.post<AuthResponse>("/auth/login", {
+      const response = await login({
         email: oauthEmail,
         oauth_id_token: result.oauth.oauth_id_token,
-      });
+      }).unwrap();
 
-      await persistAuthAndNavigate(response.data);
+      await persistAuthAndNavigate(response);
     } catch (error) {
       if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();
@@ -119,159 +128,94 @@ export function LoginScreen() {
       source={{
         uri: "https://images.unsplash.com/photo-1508780709619-79562169bc64",
       }}
-      style={{ flex: 1 }}
+      className="flex-1"
+      resizeMode="cover"
     >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <View
-          style={{
-            width: "85%",
-            maxWidth: 400,
-            backgroundColor: "white",
-            padding: 24,
-            borderRadius: 16,
-            elevation: 5,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              textAlign: "center",
-              marginBottom: 16,
-              fontWeight: "bold",
-              color: "#1F2937",
-            }}
-          >
-            Login
-          </Text>
+      <ScrollView className="flex-1" contentContainerClassName="grow justify-center py-10">
+        <View className="grow justify-center items-center px-6">
+          <View className="w-full max-w-[420px] bg-white/95 rounded-[32px] p-8 border border-slate-300/25 shadow-2xl backdrop-blur-xl">
+            <View className="items-center mb-4">
+              <View className="w-16 h-1 bg-indigo-600 rounded mb-4" />
+              <Text className="text-4xl font-black text-center tracking-tight text-slate-900">
+                Welcome Back
+              </Text>
+            </View>
+            <Text className="text-base text-center mb-16 text-slate-600 font-bold leading-relaxed">
+              Sign in to your account and continue learning.
+            </Text>
 
-          <TextInput
-            placeholder="Email"
-            style={{
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 12,
-              color: "#1F2937",
-              fontSize: 16,
-            }}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            placeholderTextColor="#999"
-          />
+            <View className="space-y-3.5 mb-6">
+              <TextInput
+                placeholder="Email"
+                keyboardType="email-address"
+                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              borderRadius: 8,
-              marginBottom: 12,
-              paddingRight: 8,
-            }}
-          >
-            <TextInput
-              placeholder="Password"
-              secureTextEntry={!showPassword}
-              style={{
-                flex: 1,
-                paddingHorizontal: 12,
-                paddingVertical: 12,
-                fontSize: 16,
-                color: "#1F2937",
-              }}
-              value={password}
-              onChangeText={setPassword}
-              placeholderTextColor="#999"
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 8 }}>
-              <Text style={{ fontSize: 18 }}>{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
-            </TouchableOpacity>
-          </View>
+              <View className="flex-row items-center border border-slate-200 rounded-2xl bg-white pr-4 overflow-hidden">
+                <TextInput
+                  placeholder="Password"
+                  secureTextEntry={!showPassword}
+                  className="flex-1 text-base text-slate-900 py-3.5 pl-4"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholderTextColor="#94A3B8"
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  className="px-3 py-2.5"
+                  disabled={isLoading}
+                >
+                  <Text className="text-lg">{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          <TouchableOpacity
-            style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}
-            onPress={() => setRememberMe((prev) => !prev)}
-          >
-            <View
-              style={{
-                width: 20,
-                height: 20,
-                borderWidth: 1,
-                borderColor: rememberMe ? "#4F46E5" : "#4B5563",
-                borderRadius: 4,
-                justifyContent: "center",
-                alignItems: "center",
-                marginRight: 8,
-                backgroundColor: rememberMe ? "#4F46E5" : "transparent",
-              }}
+            <TouchableOpacity
+              className={`rounded-2xl py-4 items-center mb-5.5 bg-indigo-600 ${isLoading ? "opacity-75" : ""}`}
+              disabled={isLoading}
+              onPress={handleLogin}
             >
-              {rememberMe && (
-                <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>✓</Text>
-              )}
+              <Text className="text-white text-base font-bold">
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Text>
+            </TouchableOpacity>
+
+            <View className="flex-row items-center mb-5.5">
+              <View className="flex-1 h-px bg-slate-200" />
+              <Text className="mx-3 text-slate-400 text-[11px] font-semibold tracking-[0.32em]">
+                OR
+              </Text>
+              <View className="flex-1 h-px bg-slate-200" />
             </View>
-            <Text style={{ fontSize: 16, color: "#374151" }}>Remember me</Text>
-          </TouchableOpacity>
 
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#4F46E5",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              opacity: isLoading ? 0.7 : 1,
-            }}
-            disabled={isLoading}
-            onPress={handleLogin}
-          >
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Login{isLoading ? "..." : ""}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-row items-center justify-center border border-slate-200 rounded-2xl py-3.5 mb-4.5 bg-slate-50 ${isLoading || isAuthenticating || !request ? "opacity-60" : ""}`}
+              onPress={handleGoogleLogin}
+              disabled={isLoading || isAuthenticating || !request}
+            >
+              <View className="mr-3">
+                <GoogleLogo width={22} height={22} />
+              </View>
+              <Text className="text-slate-900 text-base font-bold">
+                {isAuthenticating ? "Signing in..." : "Continue with Google"}
+              </Text>
+            </TouchableOpacity>
 
-          <Text style={{ textAlign: "center", marginVertical: 12, color: "#4B5563" }}>OR</Text>
-
-          <TouchableOpacity
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 8,
-              opacity: isLoading || isAuthenticating || !request ? 0.5 : 1,
-            }}
-            onPress={handleGoogleLogin}
-            disabled={isLoading || isAuthenticating || !request}
-          >
-            <View style={{ marginRight: 8 }}>
-              <GoogleLogo width={22} height={22} />
+            <View className="flex-row justify-center items-center">
+              <Text className="text-slate-600 text-sm">Don't have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/register")} disabled={isLoading}>
+                <Text className="text-indigo-600 text-sm font-bold">Sign Up</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 16, color: "#1F2937" }}>
-              Continue with Google{isAuthenticating ? "..." : ""}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.push("/register")}>
-            <Text style={{ marginTop: 16, textAlign: "center", color: "#3B82F6", fontSize: 14 }}>
-              Don{"'"}t have an Account? Sign up
-            </Text>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </ImageBackground>
   );
 }

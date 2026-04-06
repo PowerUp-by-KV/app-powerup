@@ -187,8 +187,10 @@ export function ReadingScreen() {
           console.warn("createReadingAttempt failed", createErr);
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "reading"}-${Date.now()}`,
             type: "reading",
             title: selectedAssessment?.title || "Reading Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(
@@ -229,8 +231,10 @@ export function ReadingScreen() {
         ) {
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "reading"}-${Date.now()}`,
             type: "reading",
             title: selectedAssessment?.title || "Reading Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(null);
@@ -265,12 +269,14 @@ export function ReadingScreen() {
 
       // Store result
       setAssessmentResult({
+        id: `${selectedAssessment?.id || "reading"}-${Date.now()}`,
         type: "reading",
         title: selectedAssessment?.title || "Reading Assessment",
         totalMarks,
         obtainedMarks,
         percentage,
         isPassed: percentage >= 60, // 60% pass threshold
+        score: obtainedMarks,
       });
 
       // Navigate to listening assessment

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
-import { Audio, AVPlaybackStatus } from "expo-av";
+import { Audio } from "expo-av";
 import {
   fetchListeningAssessments,
   fetchListeningAssessment,
@@ -242,8 +242,10 @@ export function ListeningScreen() {
           console.warn("createListeningAttempt failed", createErr);
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "listening"}-${Date.now()}`,
             type: "listening",
             title: selectedAssessment?.title || "Listening Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(
@@ -287,8 +289,10 @@ export function ListeningScreen() {
         ) {
           const score = calculateScore();
           setAssessmentResult({
+            id: `${selectedAssessment?.id || "listening"}-${Date.now()}`,
             type: "listening",
             title: selectedAssessment?.title || "Listening Assessment",
+            score: score.obtainedMarks,
             ...score,
           });
           setError(null);
@@ -323,12 +327,14 @@ export function ListeningScreen() {
 
       // Store result
       setAssessmentResult({
+        id: `${selectedAssessment?.id || "listening"}-${Date.now()}`,
         type: "listening",
         title: selectedAssessment?.title || "Listening Assessment",
         totalMarks,
         obtainedMarks,
         percentage,
         isPassed: percentage >= 60,
+        score: obtainedMarks,
       });
 
       // Navigate to writing assessment
@@ -338,10 +344,6 @@ export function ListeningScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleContinue = () => {
-    router.push("/write");
   };
 
   return (

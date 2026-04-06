@@ -3,7 +3,7 @@ import { setProfileCompletedInSession } from "@/services/auth-storage";
 import { submitOnboarding } from "@/services/onboarding-service";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { ImageBackground, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -61,124 +61,73 @@ export function ProfileScreen() {
       source={{
         uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
       }}
-      style={{ flex: 1 }}
+      className="flex-1"
+      resizeMode="cover"
     >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(0, 0, 0, 0.4)",
-        }}
-      >
-        <View
-          style={{
-            width: "85%",
-            maxWidth: 400,
-            backgroundColor: "white",
-            padding: 24,
-            borderRadius: 16,
-            elevation: 5,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              textAlign: "center",
-              marginBottom: 24,
-              fontWeight: "bold",
-              color: "#1F2937",
-            }}
-          >
-            Complete Your Profile
-          </Text>
-
-          <TextInput
-            placeholder="Full Name"
-            style={{
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              color: "#1F2937",
-              fontSize: 16,
-            }}
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            placeholder="Mobile Number"
-            style={{
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              color: "#1F2937",
-              fontSize: 16,
-            }}
-            keyboardType="number-pad"
-            value={mobile}
-            onChangeText={setMobile}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            placeholder="Date of Birth (DD/MM/YYYY)"
-            style={{
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              color: "#1F2937",
-              fontSize: 16,
-            }}
-            value={dob}
-            onChangeText={setDob}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            placeholder="College Name"
-            style={{
-              borderWidth: 1,
-              borderColor: "#D1D5DB",
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              color: "#1F2937",
-              fontSize: 16,
-            }}
-            value={college}
-            onChangeText={setCollege}
-            placeholderTextColor="#999"
-          />
-
-          <TouchableOpacity
-            style={{
-              backgroundColor: "#4F46E5",
-              paddingVertical: 12,
-              borderRadius: 8,
-              alignItems: "center",
-              opacity: isLoading ? 0.7 : 1,
-            }}
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            <Text style={{ color: "white", fontWeight: "bold", fontSize: 16 }}>
-              Continue{isLoading ? "..." : ""}
+      <ScrollView className="flex-1" contentContainerClassName="flex-1 justify-center py-10">
+        <View className="flex-1 justify-center items-center px-6">
+          <View className="w-full max-w-[420px] bg-white/95 rounded-[32px] p-8 border border-slate-300/25 shadow-2xl backdrop-blur-xl">
+            <View className="items-center mb-4">
+              <View className="w-16 h-1 bg-indigo-600 rounded mb-4" />
+              <Text className="text-4xl font-black text-center tracking-tight text-slate-900">
+                Complete Profile
+              </Text>
+            </View>
+            <Text className="text-base text-center mb-16 text-slate-600 font-bold leading-relaxed">
+              Help us personalize your learning experience
             </Text>
-          </TouchableOpacity>
+
+            <View className="space-y-3.5 mb-6">
+              <TextInput
+                placeholder="Full Name"
+                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+
+              <TextInput
+                placeholder="Mobile Number"
+                keyboardType="number-pad"
+                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
+                value={mobile}
+                onChangeText={setMobile}
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+
+              <TextInput
+                placeholder="Date of Birth (DD/MM/YYYY)"
+                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
+                value={dob}
+                onChangeText={setDob}
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+
+              <TextInput
+                placeholder="College/University"
+                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
+                value={college}
+                onChangeText={setCollege}
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+            </View>
+
+            <TouchableOpacity
+              className={`rounded-2xl py-4 items-center mb-5.5 bg-indigo-600 ${isLoading ? "opacity-75" : ""}`}
+              disabled={isLoading}
+              onPress={handleSubmit}
+            >
+              <Text className="text-white text-base font-bold">
+                {isLoading ? "Processing..." : "Continue"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </ImageBackground>
   );
 }

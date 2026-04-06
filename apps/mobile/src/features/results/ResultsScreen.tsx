@@ -4,8 +4,6 @@ import { useRouter } from "expo-router";
 import { getAllResults, getOverallStats } from "@/services/results-service";
 import { AssessmentResult } from "@/services/results-service";
 
-interface ResultsScreenProps {}
-
 interface OverallStats {
   totalMarks: number;
   obtainedMarks: number;
@@ -20,7 +18,7 @@ const initialOverallStats: OverallStats = {
   isPassed: false,
 };
 
-export function ResultsScreen({}: ResultsScreenProps): React.ReactElement {
+export function ResultsScreen(): React.ReactElement {
   const router = useRouter();
   const [results, setResults] = useState<AssessmentResult[]>([]);
   const [overall, setOverall] = useState<OverallStats>(initialOverallStats);
@@ -70,7 +68,7 @@ export function ResultsScreen({}: ResultsScreenProps): React.ReactElement {
       <View className="h-2 bg-gray-200 rounded overflow-hidden">
         <View
           className={`h-full rounded ${item.isPassed ? "bg-green-600" : "bg-red-600"}`}
-          style={{ width: `${item.percentage}%` }}
+          style={{ width: `${Math.min(100, Math.max(0, item.percentage))}%` }}
         />
       </View>
     </View>
@@ -113,7 +111,7 @@ export function ResultsScreen({}: ResultsScreenProps): React.ReactElement {
         contentContainerStyle={{ marginBottom: 16 }}
         scrollEnabled={false}
         data={results}
-        keyExtractor={(item) => item.type}
+        keyExtractor={(item) => item.id}
         renderItem={renderResultItem}
         ListEmptyComponent={() => (
           <Text className="text-center text-sm text-gray-500">No results available yet.</Text>
