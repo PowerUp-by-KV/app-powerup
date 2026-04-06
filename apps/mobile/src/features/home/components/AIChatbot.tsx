@@ -89,7 +89,7 @@ export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () 
       <View className="flex-1 bg-transparent">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="absolute bottom-[80px] left-5 width-[320px] height-[480px] bg-white rounded-[25px] overflow-hidden shadow-2xl shadow-black/20 elevation-15 border border-[#F8F9FA]"
+          className="absolute bottom-[80px] left-5 bg-white rounded-[25px] overflow-hidden shadow-2xl shadow-black/20 elevation-15 border border-[#F8F9FA]"
           style={{ width: 320, height: 480 }}
         >
           {/* Header */}

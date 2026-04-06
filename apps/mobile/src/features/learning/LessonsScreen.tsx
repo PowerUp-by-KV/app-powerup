@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { grammarTopics } from "@/constants/grammarData";
@@ -7,9 +7,11 @@ import { ArrowLeft, Clock, BarChart2, ChevronRight, CheckCircle } from "lucide-r
 export const LessonsScreen = () => {
   const { chapterId, chapterTitle, topicId } = useLocalSearchParams();
 
-  const topicData = grammarTopics.find((t) => t.id === topicId);
-  const chapterData = topicData?.chapters.find((ch) => ch.id === chapterId);
-  const subtopics = chapterData?.subtopics || [];
+  const subtopics = useMemo(() => {
+    const topicData = grammarTopics.find((t) => t.id === topicId);
+    const chapterData = topicData?.chapters.find((ch) => ch.id === chapterId);
+    return chapterData?.subtopics || [];
+  }, [topicId, chapterId]);
 
   const renderLesson = ({ item }: { item: any }) => (
     <TouchableOpacity

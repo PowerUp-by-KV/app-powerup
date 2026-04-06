@@ -1,20 +1,21 @@
 import React from "react";
 import { Tabs } from "expo-router";
+import Colors from "@/constants/Colors";
 import { Home, Zap, Trophy, Gift, User, Star, LineChart } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#6366F1",
-        tabBarInactiveTintColor: "#94A3B8",
+        tabBarActiveTintColor: Colors.light.primary,
+        tabBarInactiveTintColor: Colors.light.textMuted,
         tabBarStyle: {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           height: 60,
           paddingBottom: 10,
           paddingTop: 10,
-          backgroundColor: "#FFF",
+          backgroundColor: Colors.light.background,
           elevation: 20,
           borderTopWidth: 0,
         },
@@ -24,7 +25,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "home",
+          title: "Home",
           tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
@@ -38,21 +39,21 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: "progress",
+          title: "Progress",
           tabBarIcon: ({ color, size }) => <LineChart size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
-          title: "leaderboard",
+          title: "Leaderboard",
           tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="rewards"
         options={{
-          title: "rewards",
+          title: "Rewards",
           tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
         }}
       />
@@ -66,7 +67,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: "profile",
+          title: "Profile",
           tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />

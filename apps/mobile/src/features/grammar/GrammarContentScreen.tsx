@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,22 +18,31 @@ export const GrammarContentScreen = () => {
   const { subtopic: subtopicRaw } = useLocalSearchParams();
   const initialSubtopic = typeof subtopicRaw === "string" ? JSON.parse(subtopicRaw) : subtopicRaw;
 
-  let chapterSubtopics: any[] = [];
-  let initialIndex = 0;
-  let topicTitle = "";
-  let chapterTitle = "";
+  const { chapterSubtopics, initialIndex, topicTitle, chapterTitle } = useMemo(() => {
+    let subtopics: any[] = [];
+    let index = 0;
+    let tTitle = "";
+    let cTitle = "";
 
-  grammarTopics.forEach((topic) => {
-    topic.chapters.forEach((chapter) => {
-      const foundIndex = chapter.subtopics.findIndex((st) => st.id === initialSubtopic?.id);
-      if (foundIndex !== -1) {
-        chapterSubtopics = chapter.subtopics;
-        initialIndex = foundIndex;
-        topicTitle = topic.title;
-        chapterTitle = chapter.title;
-      }
+    grammarTopics.forEach((topic) => {
+      topic.chapters.forEach((chapter) => {
+        const foundIndex = chapter.subtopics.findIndex((st) => st.id === initialSubtopic?.id);
+        if (foundIndex !== -1) {
+          subtopics = chapter.subtopics;
+          index = foundIndex;
+          tTitle = topic.title;
+          cTitle = chapter.title;
+        }
+      });
     });
-  });
+
+    return {
+      chapterSubtopics: subtopics,
+      initialIndex: index,
+      topicTitle: tTitle,
+      chapterTitle: cTitle,
+    };
+  }, [initialSubtopic?.id]);
 
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const flatListRef = useRef<FlatList>(null);

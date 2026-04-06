@@ -30,7 +30,7 @@ export const RadarChart = ({ data }: RadarChartProps) => {
   const traits = [
     { key: "Honesty-Humility", label: "Honesty-Humility", color: "#4CAF50" },
     { key: "Emotionality", label: "Emotionality", color: "#FFB74D" },
-    { key: "Extraversion", label: "eXtroversion", color: "#FF8A65" },
+    { key: "Extraversion", label: "Extraversion", color: "#FF8A65" },
     { key: "Agreeableness", label: "Agreeableness", color: "#E91E63" },
     { key: "Conscientiousness", label: "Conscientiousness", color: "#9575CD" },
     { key: "Openness to Experience", label: "Openness", color: "#2196F3" },

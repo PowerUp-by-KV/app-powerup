@@ -12,16 +12,8 @@ export const LearningModulesScreen = () => {
   const totalMinutes = Math.floor(totalSeconds / 60);
 
   const handlePress = (item: any) => {
-    if (item.id === "grammar") {
-      router.push("/grammar");
-    } else if (item.id === "reading") {
-      router.push({ pathname: "/ReadingPractice", params: { readingId: "r1" } });
-    } else if (item.id === "verbal") {
-      router.push("/VerbalCategories");
-    } else if (item.id === "listening") {
-      router.push("/listening");
-    } else if (item.id === "behavioural") {
-      router.push("/behavioural");
+    if (item.route) {
+      router.push(item.route);
     } else {
       router.push({ pathname: "/topics", params: { moduleId: item.id, moduleTitle: item.title } });
     }

@@ -16,6 +16,7 @@ export const LEARNING_MODULES = [
     icon: "book",
     gradient: ["#4A90E2", "#357ABD"],
     topicsCount: 15,
+    route: "/grammar",
   },
   {
     id: "reading",
@@ -24,6 +25,7 @@ export const LEARNING_MODULES = [
     icon: "book-open",
     gradient: ["#50E3C2", "#3CB371"],
     topicsCount: 10,
+    route: { pathname: "/ReadingPractice", params: { readingId: "r1" } },
   },
   {
     id: "listening",
@@ -32,6 +34,7 @@ export const LEARNING_MODULES = [
     icon: "headphones",
     gradient: ["#9013FE", "#7B1FA2"],
     topicsCount: 12,
+    route: "/listening",
   },
   {
     id: "verbal",
@@ -40,6 +43,7 @@ export const LEARNING_MODULES = [
     icon: "mic",
     gradient: ["#F5A623", "#E67E22"],
     topicsCount: 8,
+    route: "/VerbalCategories",
   },
   {
     id: "behavioural",
@@ -48,6 +52,7 @@ export const LEARNING_MODULES = [
     icon: "brain",
     gradient: ["#6366F1", "#8B5CF6"],
     topicsCount: 10,
+    route: "/behavioural",
   },
 ];
 

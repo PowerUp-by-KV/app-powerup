@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -27,28 +27,34 @@ export const ExerciseScreen = () => {
   const { lessonId } = useLocalSearchParams();
   const { updateLessonCompletion } = useAppContext();
 
-  let lessonExercises: any[] = [];
+  const lessonExercises = useMemo(() => {
+    let exercises: any[] = [];
+    const safeTopics = grammarTopics || [];
 
-  const safeTopics = grammarTopics || [];
-  safeTopics.forEach((topic) => {
-    if (topic && topic.chapters) {
-      topic.chapters.forEach((chapter) => {
-        if (chapter && chapter.subtopics) {
-          const subtopic = chapter.subtopics.find((st) => st.id === lessonId);
-          if (subtopic) {
-            lessonExercises = subtopic.exercises || [];
+    // Search in real grammar data
+    for (const topic of safeTopics) {
+      if (topic?.chapters) {
+        for (const chapter of topic.chapters) {
+          if (chapter?.subtopics) {
+            const subtopic = chapter.subtopics.find((st) => st.id === lessonId);
+            if (subtopic) {
+              exercises = subtopic.exercises || [];
+              break;
+            }
           }
         }
-      });
+      }
+      if (exercises.length > 0) break;
     }
-  });
 
-  if (lessonExercises.length === 0) {
-    const fallbackList =
-      MOCK_EXERCISES && MOCK_EXERCISES.length > 0 ? (MOCK_EXERCISES[0]?.questions ?? []) : [];
-    const foundExercises = MOCK_EXERCISES?.find((e: any) => e.lessonId === lessonId);
-    lessonExercises = foundExercises?.questions ?? fallbackList;
-  }
+    // Fallback to mock data if not found in topics
+    if (exercises.length === 0) {
+      const fallbackList = MOCK_EXERCISES?.[0]?.questions ?? [];
+      const foundExercises = MOCK_EXERCISES?.find((e: any) => e.lessonId === lessonId);
+      exercises = foundExercises?.questions ?? fallbackList;
+    }
+    return exercises;
+  }, [lessonId]);
 
   const totalQuestions = lessonExercises.length;
   const [currentIndex, setCurrentIndex] = useState(0);

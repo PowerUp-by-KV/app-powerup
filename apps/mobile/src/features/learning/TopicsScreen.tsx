@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { grammarTopics } from "@/constants/grammarData";
@@ -11,7 +11,7 @@ export const TopicsScreen = () => {
   const { moduleId, moduleTitle } = useLocalSearchParams();
   const { grammarProgress } = useAppContext();
 
-  const topicData = grammarTopics.find((t) => t.id === moduleId);
+  const topicData = useMemo(() => grammarTopics.find((t) => t.id === moduleId), [moduleId]);
   const chaptersForTopic = topicData?.chapters || [];
 
   const renderTopic = ({ item }: { item: any }) => {
