@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { grammarTopics as mockGrammarTopics } from "@/constants/grammarData";
 
 // Define the comprehensive Progress interfaces
 interface ChapterProgress {
@@ -18,27 +19,44 @@ interface AppContextType {
   updateLessonCompletion: (topicId: string, chapterId: string, lessonId: string) => void;
 }
 
-// Placeholder for grammarTopics since the constant file might be missing or moved to API
-// In a real scenario, this would ideally be fetched from the API and stored in state
-const grammarTopics: any[] = [];
-
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
+  // Initialize grammar topics from mock data so lookups in updateLessonCompletion work
+  // This is stored in state so it can be replaced with API data later.
+  const [grammarTopics, setGrammarTopics] = useState<any[]>(mockGrammarTopics);
+
+  useEffect(() => {
+    // Optional: fetch real grammar topics from API and replace mock data
+    // async function loadGrammarTopics() {
+    //   try {
+    //     const data = await api.getGrammarTopics();
+    //     setGrammarTopics(data);
+    //   } catch (e) {
+    //     // keep mock data on error
+    //   }
+    // }
+    // loadGrammarTopics();
+  }, []);
+
   // Initialize progress data with 25% for all topics and chapters
   const [grammarProgress, setGrammarProgress] = useState<GrammarProgress>(() => {
     const initialProgress: GrammarProgress = {};
     grammarTopics.forEach((topic) => {
-      initialProgress[topic.id] = {
+      const topicId = topic.id;
+      const topicEntry: TopicProgress = {
         progress: 25,
         chapters: {},
       };
+
       topic.chapters.forEach((chapter: any) => {
-        initialProgress[topic.id].chapters[chapter.id] = {
+        topicEntry.chapters[chapter.id] = {
           progress: 25,
           completedLessons: [],
         };
       });
+
+      initialProgress[topicId] = topicEntry;
     });
     return initialProgress;
   });

@@ -1,28 +1,22 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   Modal,
   TouchableOpacity,
   TextInput,
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Dimensions,
 } from "react-native";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
-import { X, Send, Bot, User, Trash2 } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { X, Send, Bot, Trash2 } from "lucide-react-native";
 
-const { height } = Dimensions.get("window");
-
-const AIChatbot = ({ visible, onClose }) => {
+export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   const [messages, setMessages] = useState([
     { id: "1", text: "Hello! I'm your AI English Tutor. How can I help you today?", sender: "bot" },
   ]);
   const [inputText, setInputText] = useState("");
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
 
   const sendMessage = () => {
     if (inputText.trim() === "") return;
@@ -42,7 +36,7 @@ const AIChatbot = ({ visible, onClose }) => {
     }, 1000);
   };
 
-  const getBotResponse = (text) => {
+  const getBotResponse = (text: string) => {
     const input = text.toLowerCase();
     if (input.includes("hello") || input.includes("hi"))
       return "Hi there! Ready for some English practice?";
@@ -65,29 +59,24 @@ const AIChatbot = ({ visible, onClose }) => {
     ]);
   };
 
-  const renderMessage = ({ item }) => (
+  const renderMessage = ({ item }: { item: any }) => (
     <View
-      style={[
-        styles.messageWrapper,
-        item.sender === "user" ? styles.userMessageWrapper : styles.botMessageWrapper,
-      ]}
+      className={`flex-row mb-5 max-w-[85%] ${item.sender === "user" ? "self-end justify-end" : "self-start"}`}
     >
       {item.sender === "bot" && (
-        <View style={styles.botIconSmall}>
-          <Bot size={16} color={COLORS.white} />
+        <View className="w-7 h-7 rounded-full bg-[#6366F1] justify-center items-center mr-2 mt-1">
+          <Bot size={16} color="#FFF" />
         </View>
       )}
       <View
-        style={[
-          styles.messageBubble,
-          item.sender === "user" ? styles.userBubble : styles.botBubble,
-        ]}
+        className={`p-3 rounded-[18px] ${
+          item.sender === "user"
+            ? "bg-[#6366F1] rounded-br-[5px]"
+            : "bg-[#F8F9FA] rounded-bl-[5px] flex-1"
+        }`}
       >
         <Text
-          style={[
-            styles.messageText,
-            item.sender === "user" ? styles.userMessageText : styles.botMessageText,
-          ]}
+          className={`text-[15px] leading-5 font-medium ${item.sender === "user" ? "text-white" : "text-black"}`}
         >
           {item.text}
         </Text>
@@ -97,29 +86,32 @@ const AIChatbot = ({ visible, onClose }) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View className="flex-1 bg-transparent">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.chatContainer}
+          className="absolute bottom-[80px] left-5 width-[320px] height-[480px] bg-white rounded-[25px] overflow-hidden shadow-2xl shadow-black/20 elevation-15 border border-[#F8F9FA]"
+          style={{ width: 320, height: 480 }}
         >
           {/* Header */}
-          <LinearGradient colors={["#6366F1", "#8B5CF6"]} style={styles.header}>
-            <View style={styles.headerInfo}>
-              <Bot size={24} color={COLORS.white} />
-              <View style={styles.headerTextContainer}>
-                <Text style={styles.headerTitle}>AI Tutor</Text>
-                <Text style={styles.headerStatus}>Online • Ready to help</Text>
+          <View className="flex-row items-center justify-between p-5 pt-6.5 bg-[#6366F1]">
+            <View className="flex-row items-center">
+              <Bot size={24} color="#FFF" />
+              <View className="ml-3">
+                <Text className="text-white text-lg font-bold">AI Tutor</Text>
+                <Text className="text-white text-[12px] opacity-80 font-medium">
+                  Online • Ready to help
+                </Text>
               </View>
             </View>
-            <View style={styles.headerActions}>
-              <TouchableOpacity onPress={clearChat} style={styles.headerIcon}>
-                <Trash2 size={20} color={COLORS.white} />
+            <View className="flex-row items-center">
+              <TouchableOpacity onPress={clearChat} className="ml-[15px]">
+                <Trash2 size={20} color="#FFF" />
               </TouchableOpacity>
-              <TouchableOpacity onPress={onClose} style={styles.headerIcon}>
-                <X size={24} color={COLORS.white} />
+              <TouchableOpacity onPress={onClose} className="ml-[15px]">
+                <X size={24} color="#FFF" />
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
 
           {/* Chat List */}
           <FlatList
@@ -127,26 +119,26 @@ const AIChatbot = ({ visible, onClose }) => {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.messageList}
+            contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
             onLayout={() => flatListRef.current?.scrollToEnd()}
           />
 
           {/* Input Area */}
-          <View style={styles.inputArea}>
+          <View className="flex-row items-center p-[15px] bg-white border-t border-[#F8F9FA]">
             <TextInput
-              style={styles.input}
+              className="flex-1 bg-[#F8F9FA] rounded-[25px] px-5 py-2.5 max-h-[100px] text-[15px] font-medium color-black"
               placeholder="Type your question..."
               value={inputText}
               onChangeText={setInputText}
               multiline
             />
             <TouchableOpacity
-              style={[styles.sendButton, inputText.trim() === "" && styles.sendButtonDisabled]}
+              className={`w-[45px] h-[45px] rounded-[22.5px] justify-center items-center ml-2.5 bg-[#6366F1] ${inputText.trim() === "" ? "bg-[#94A3B8] opacity-50" : ""}`}
               onPress={sendMessage}
               disabled={inputText.trim() === ""}
             >
-              <Send size={20} color={COLORS.white} />
+              <Send size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -154,145 +146,3 @@ const AIChatbot = ({ visible, onClose }) => {
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "transparent", // Make overlay transparent to feel like a floating panel
-  },
-  chatContainer: {
-    position: "absolute",
-    bottom: 150, // Positioned above the AI button (which is at bottom 80)
-    left: 20,
-    width: 320,
-    height: 480,
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 15,
-    borderWidth: 1,
-    borderColor: COLORS.background,
-  },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 20,
-    paddingTop: 25,
-  },
-  headerInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerTextContainer: {
-    marginLeft: 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: COLORS.white,
-    ...FONTS.bold,
-  },
-  headerStatus: {
-    fontSize: 12,
-    color: COLORS.white,
-    opacity: 0.8,
-    ...FONTS.medium,
-  },
-  headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerIcon: {
-    marginLeft: 15,
-  },
-  messageList: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  messageWrapper: {
-    flexDirection: "row",
-    marginBottom: 20,
-    maxWidth: "85%",
-  },
-  userMessageWrapper: {
-    alignSelf: "flex-end",
-    justifyContent: "flex-end",
-  },
-  botMessageWrapper: {
-    alignSelf: "flex-start",
-  },
-  botIconSmall: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#6366F1",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-    marginTop: 5,
-  },
-  messageBubble: {
-    padding: 12,
-    borderRadius: 18,
-    flexShrink: 1, // Crucial for text wrapping in a row
-  },
-
-  userBubble: {
-    backgroundColor: "#6366F1",
-    borderBottomRightRadius: 5,
-  },
-  botBubble: {
-    backgroundColor: COLORS.background,
-    borderBottomLeftRadius: 5,
-  },
-  messageText: {
-    fontSize: 15,
-    lineHeight: 20,
-    ...FONTS.medium,
-  },
-  userMessageText: {
-    color: COLORS.white,
-  },
-  botMessageText: {
-    color: COLORS.black,
-  },
-  inputArea: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.background,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    maxHeight: 100,
-    fontSize: 15,
-    ...FONTS.medium,
-    color: COLORS.black,
-  },
-  sendButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: "#6366F1",
-    justifyContent: "center",
-    alignItems: "center",
-    marginLeft: 10,
-  },
-  sendButtonDisabled: {
-    backgroundColor: COLORS.gray,
-    opacity: 0.5,
-  },
-});
-
-export default AIChatbot;

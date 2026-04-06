@@ -2,22 +2,17 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Animated,
-  Dimensions,
   Modal,
   FlatList,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { readingData } from "@/constants/readingData";
-import { ArrowLeft, Clock, BookOpen, Volume2, ChevronRight, X, Info } from "lucide-react-native";
+import { ArrowLeft, Clock, BookOpen, ChevronRight, X } from "lucide-react-native";
 import { useWindowDimensions } from "react-native";
 import { MCQOption } from "@/features/learning/components";
-
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 
 export const ReadingPracticeScreen = () => {
@@ -29,9 +24,8 @@ export const ReadingPracticeScreen = () => {
   const initialIndex = readingData.findIndex((r) => r.id === initialId);
   const [activeIndex, setActiveIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
 
-  // Track state for each passage
   const [passageStates, setPassageStates] = useState(
-    readingData.map((r) => ({
+    readingData.map(() => ({
       currentQuestionIndex: 0,
       selectedOption: null,
       score: 0,
@@ -40,12 +34,12 @@ export const ReadingPracticeScreen = () => {
   );
 
   const [timer, setTimer] = useState(0);
-  const [isRunning, setIsRunning] = useState(true);
-  const [selectedWord, setSelectedWord] = useState(null);
+  const [isRunning] = useState(true);
+  const [selectedWord, setSelectedWord] = useState<any>(null);
   const [showVocabModal, setShowVocabModal] = useState(false);
 
-  const timerRef = useRef(null);
-  const flatListRef = useRef(null);
+  const timerRef = useRef<any>(null);
+  const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
     if (isRunning) {
@@ -53,27 +47,28 @@ export const ReadingPracticeScreen = () => {
         setTimer((prev) => prev + 1);
       }, 1000);
     } else {
-      clearInterval(timerRef.current);
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-    return () => clearInterval(timerRef.current);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [isRunning]);
 
-  const formatTime = (seconds) => {
+  const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const currentPassage = readingData[activeIndex];
-  const currentState = passageStates[activeIndex];
+  const currentPassage = readingData[activeIndex] || readingData[0];
 
-  const handleAnswer = (option, passageIndex) => {
-    const pData = readingData[passageIndex];
-    const pState = passageStates[passageIndex];
-    const currentQuestion = pData.questions[pState.currentQuestionIndex];
+  const handleAnswer = (option: string, passageIndex: number) => {
+    const pData = readingData[passageIndex] || readingData[0];
+    const pState = passageStates[passageIndex] || passageStates[0];
+    const currentQuestion = pData.questions[pState.currentQuestionIndex] || pData.questions[0];
 
     const newStates = [...passageStates];
-    newStates[passageIndex].selectedOption = option;
+    (newStates[passageIndex] as any).selectedOption = option;
     setPassageStates(newStates);
 
     setTimeout(() => {
@@ -83,16 +78,15 @@ export const ReadingPracticeScreen = () => {
       }
 
       const updatedStates = [...passageStates];
-      if (pState.currentQuestionIndex < pData.questions.length - 1) {
-        updatedStates[passageIndex] = {
+      if (pState.currentQuestionIndex < (pData?.questions?.length || 0) - 1) {
+        (updatedStates[passageIndex] as any) = {
           ...updatedStates[passageIndex],
           currentQuestionIndex: pState.currentQuestionIndex + 1,
           selectedOption: null,
           score: newScore,
         };
       } else {
-        // Last question: update score but don't finish yet
-        updatedStates[passageIndex] = {
+        (updatedStates[passageIndex] as any) = {
           ...updatedStates[passageIndex],
           score: newScore,
         };
@@ -101,7 +95,7 @@ export const ReadingPracticeScreen = () => {
     }, 1200);
   };
 
-  const handleWordTap = (word, passageIndex) => {
+  const handleWordTap = (word: string, passageIndex: number) => {
     const vocab = readingData[passageIndex].vocabulary;
     const vocabItem = vocab.find((v) => v.word.toLowerCase().includes(word.toLowerCase()));
     if (vocabItem) {
@@ -110,7 +104,7 @@ export const ReadingPracticeScreen = () => {
     }
   };
 
-  const renderParagraph = (text, vocab, passageIndex) => {
+  const renderParagraph = (text: string, vocab: any[], passageIndex: number) => {
     const words = text.split(" ");
     return words.map((word, index) => {
       const cleanWord = word.replace(/[.,!?;:]/g, "");
@@ -119,7 +113,7 @@ export const ReadingPracticeScreen = () => {
       return (
         <Text
           key={index}
-          style={[styles.paragraphText, isVocab && styles.highlightedWord]}
+          className={`text-[17px] leading-[28px] ${isVocab ? "text-[#EC4899] font-bold underline" : "text-[#475569] font-normal"}`}
           onPress={() => isVocab && handleWordTap(cleanWord, passageIndex)}
         >
           {word}{" "}
@@ -128,77 +122,85 @@ export const ReadingPracticeScreen = () => {
     });
   };
 
-  const renderPassagePage = ({ item: passage, index: passageIndex }) => {
-    const state = passageStates[passageIndex];
-    const currentQuestion = passage.questions[state.currentQuestionIndex];
+  const renderPassagePage = ({
+    item: passage,
+    index: passageIndex,
+  }: {
+    item: any;
+    index: number;
+  }) => {
+    const state = passageStates[passageIndex] || passageStates[0];
+    const currentQuestion = passage.questions[state.currentQuestionIndex] || passage.questions[0];
     const totalQuestions = passage.questions.length;
 
-    if (state.isFinished) {
+    if (state?.isFinished) {
       return (
-        <View style={[styles.pageContainer, { width: CONTAINER_WIDTH }]}>
-          <View style={styles.finishedCard}>
-            <BookOpen size={60} color={COLORS.primary} />
-            <Text style={styles.finishedTitle}>Passage Completed!</Text>
-            <Text style={styles.finishedScore}>
-              Score: {state.score}/{totalQuestions}
-            </Text>
-            <TouchableOpacity
-              style={styles.resultsButton}
-              onPress={() =>
-                router.replace({
-                  pathname: "/ReadingResult",
-                  params: {
-                    readingId: passage.id,
-                    title: passage.title,
-                    score: state.score,
-                    totalQuestions: totalQuestions,
-                    time: timer,
-                  },
-                })
-              }
-            >
-              <Text style={styles.resultsButtonText}>View Overall Results</Text>
-            </TouchableOpacity>
-            {passageIndex < readingData.length - 1 && (
-              <Text style={styles.swipeHint}>Swipe left for next passage →</Text>
-            )}
-          </View>
+        <View
+          style={{ width: CONTAINER_WIDTH }}
+          className="flex-1 justify-center items-center p-[30px] bg-white"
+        >
+          <BookOpen size={60} color="#6366F1" />
+          <Text className="text-2xl text-black font-bold mt-5">Passage Completed!</Text>
+          <Text className="text-lg text-[#6366F1] font-bold my-2.5">
+            Score: {state?.score || 0}/{totalQuestions}
+          </Text>
+          <TouchableOpacity
+            className="bg-[#6366F1] py-[15px] px-[30px] rounded-[15px] mt-5"
+            onPress={() =>
+              router.replace({
+                pathname: "/ReadingResult",
+                params: {
+                  readingId: passage.id,
+                  title: passage.title,
+                  score: state.score,
+                  totalQuestions: totalQuestions,
+                  time: timer,
+                },
+              })
+            }
+          >
+            <Text className="text-white font-bold">View Overall Results</Text>
+          </TouchableOpacity>
+          {passageIndex < readingData.length - 1 && (
+            <Text className="mt-10 text-[#64748B] font-medium">Swipe left for next passage →</Text>
+          )}
         </View>
       );
     }
 
+    if (!state || !currentQuestion) return null;
+
     return (
       <View
-        style={[
-          styles.pageContainer,
-          {
-            width: CONTAINER_WIDTH,
-            paddingHorizontal: windowWidth > 1200 ? 100 : windowWidth > 800 ? 50 : 20,
-          },
-        ]}
+        style={{ width: CONTAINER_WIDTH }}
+        className={`flex-1 ${windowWidth > 1200 ? "px-[100px]" : windowWidth > 800 ? "px-[50px]" : "px-5"}`}
       >
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 20 }}
         >
-          <View style={styles.passageCard}>
-            <Text style={styles.passageHeader}>Read the passage</Text>
-            <Text style={styles.paragraphContainer}>
-              {renderParagraph(passage.paragraph, passage.vocabulary, passageIndex)}
+          <View className="bg-white p-[25px] rounded-[25px] mb-5 shadow-sm shadow-black/5 elevation-2">
+            <Text className="text-[12px] text-[#6366F1] font-bold mb-2.5 uppercase tracking-widest">
+              Read the passage
             </Text>
+            <View className="flex-row flex-wrap">
+              {renderParagraph(passage.paragraph, passage.vocabulary, passageIndex)}
+            </View>
           </View>
 
-          <View style={styles.questionSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressText}>
+          <View className="mt-2.5">
+            <View className="flex-row justify-between items-center mb-[15px]">
+              <Text className="text-sm text-[#64748B] font-medium">
                 Question {state.currentQuestionIndex + 1}/{totalQuestions}
               </Text>
             </View>
 
-            <Text style={styles.questionText}>{currentQuestion.question}</Text>
+            <Text className="text-[22px] text-black mb-[25px] font-bold leading-[30px]">
+              {currentQuestion.question}
+            </Text>
 
-            <View style={styles.optionsContainer}>
-              {currentQuestion.options.map((option, optIdx) => {
+            <View className="w-full">
+              {currentQuestion.options.map((option: string, optIdx: number) => {
                 const isSelected = state.selectedOption === option;
                 const isCorrect = option === currentQuestion.answer;
                 const showFeedback = !!state.selectedOption;
@@ -218,55 +220,52 @@ export const ReadingPracticeScreen = () => {
               })}
             </View>
 
-            {/* Manual Finish button for the last question */}
             {state.selectedOption && state.currentQuestionIndex === totalQuestions - 1 && (
               <TouchableOpacity
-                style={[
-                  styles.resultsButton,
-                  { marginTop: 30, alignSelf: "center", width: "100%" },
-                ]}
+                className="bg-[#6366F1] flex-row justify-center items-center py-[15px] px-[30px] rounded-[15px] mt-[30px] w-full"
                 onPress={() => {
                   const finalStates = [...passageStates];
-                  finalStates[passageIndex].isFinished = true;
+                  (finalStates[passageIndex] as any).isFinished = true;
                   setPassageStates(finalStates);
                 }}
               >
-                <Text style={styles.resultsButtonText}>Finish Passage</Text>
-                <ChevronRight size={20} color={COLORS.white} />
+                <Text className="text-white font-bold mr-2">Finish Passage</Text>
+                <ChevronRight size={20} color="white" />
               </TouchableOpacity>
             )}
           </View>
-          <View style={{ height: 100 }} />
+          <View className="h-[100px]" />
         </ScrollView>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="bg-white p-5 pt-[60px] flex-row items-center border-b border-[#F1F5F9]">
         <TouchableOpacity
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center mr-[15px]"
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.topicLabel}>Reading • Practice</Text>
-            <Text style={styles.headerTitle} numberOfLines={1}>
-              {currentPassage.title}
+        <View className="flex-1 flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="text-[10px] text-[#6366F1] font-bold uppercase tracking-widest mb-0.5">
+              Reading • Practice
+            </Text>
+            <Text className="text-[18px] text-black font-bold" numberOfLines={1}>
+              {currentPassage?.title || "Reading Passage"}
             </Text>
           </View>
-          <View style={styles.timerContainer}>
-            <Clock size={16} color={COLORS.primary} />
-            <Text style={styles.timerText}>{formatTime(timer)}</Text>
+          <View className="flex-row items-center bg-[#6366F1]/10 px-3 py-1.5 rounded-[20px]">
+            <Clock size={16} color="#6366F1" />
+            <Text className="text-sm text-[#6366F1] ml-1.5 font-bold">{formatTime(timer)}</Text>
           </View>
         </View>
       </View>
 
-      <View style={styles.centeredContainer}>
+      <View className="flex-1 w-full self-center">
         <FlatList
           ref={flatListRef}
           data={readingData}
@@ -286,57 +285,66 @@ export const ReadingPracticeScreen = () => {
             offset: CONTAINER_WIDTH * index,
             index,
           })}
-          initialScrollIndex={initialIndex}
+          initialScrollIndex={initialIndex !== -1 ? initialIndex : 0}
         />
       </View>
 
-      {/* Vocabulary Modal */}
       <Modal
         visible={showVocabModal}
         transparent={true}
         animationType="slide"
         onRequestClose={() => setShowVocabModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.vocabModalCard}>
-            <View style={styles.modalHeader}>
-              <View style={styles.vocabBadge}>
-                <BookOpen size={16} color={COLORS.white} />
-                <Text style={styles.vocabBadgeText}>Vocabulary</Text>
+        <View className="flex-1 bg-black/50 justify-end">
+          <View className="bg-white rounded-t-[30px] p-[30px] min-h-[350px]">
+            <View className="flex-row justify-between items-center mb-[25px]">
+              <View className="flex-row items-center bg-[#EC4899] px-[15px] py-2 rounded-full">
+                <BookOpen size={16} color="white" />
+                <Text className="text-white text-[12px] ml-2 font-bold">Vocabulary</Text>
               </View>
               <TouchableOpacity onPress={() => setShowVocabModal(false)}>
-                <X size={24} color={COLORS.gray} />
+                <X size={24} color="#64748B" />
               </TouchableOpacity>
             </View>
 
             {selectedWord && (
               <View>
-                <View style={styles.wordRow}>
-                  <Text style={styles.wordTitle}>{selectedWord.word}</Text>
-                  <View style={styles.posTag}>
-                    <Text style={styles.posText}>{selectedWord.pos}</Text>
+                <View className="flex-row items-center mb-1.25">
+                  <Text className="text-[28px] text-black font-bold mr-[15px]">
+                    {selectedWord.word}
+                  </Text>
+                  <View className="bg-[#F8F9FA] px-2.5 py-0.5 rounded-[5px]">
+                    <Text className="text-[12px] text-[#64748B] italic font-medium">
+                      {selectedWord.pos}
+                    </Text>
                   </View>
                 </View>
 
-                <Text style={styles.pronunciationText}>{selectedWord.pronunciation}</Text>
+                <Text className="text-base text-[#64748B] mb-5 font-normal">
+                  {selectedWord.pronunciation}
+                </Text>
 
-                <View style={styles.divider} />
+                <View className="h-[1px] bg-[#F1F5F9] mb-5" />
 
-                <View style={styles.vocabDetail}>
-                  <Text style={styles.vocabLabel}>Meaning:</Text>
-                  <Text style={styles.vocabMeaning}>{selectedWord.meaning}</Text>
+                <View className="mb-5">
+                  <Text className="text-sm text-[#6366F1] font-bold mb-1.25">Meaning:</Text>
+                  <Text className="text-base text-[#475569] leading-[22px] font-medium">
+                    {selectedWord.meaning}
+                  </Text>
                 </View>
 
-                <View style={styles.vocabDetail}>
-                  <Text style={styles.vocabLabel}>Example:</Text>
-                  <Text style={styles.vocabExample}>"{selectedWord.example}"</Text>
+                <View className="mb-5">
+                  <Text className="text-sm text-[#6366F1] font-bold mb-1.25">Example:</Text>
+                  <Text className="text-base text-[#64748B] italic leading-[22px] font-normal">
+                    "{selectedWord.example}"
+                  </Text>
                 </View>
 
                 <TouchableOpacity
-                  style={styles.gotItButton}
+                  className="bg-[#6366F1] py-[15px] rounded-[15px] items-center mt-2.5"
                   onPress={() => setShowVocabModal(false)}
                 >
-                  <Text style={styles.gotItText}>Got it!</Text>
+                  <Text className="text-white text-base font-bold">Got it!</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -346,343 +354,5 @@ export const ReadingPracticeScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  pageContainer: {
-    flex: 1,
-  },
-  finishedCard: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-    backgroundColor: COLORS.white,
-  },
-  finishedTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginTop: 20,
-  },
-  finishedScore: {
-    fontSize: 18,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    marginVertical: 10,
-  },
-  resultsButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 15,
-    marginTop: 20,
-  },
-  resultsButtonText: {
-    color: COLORS.white,
-    ...FONTS.bold,
-  },
-  swipeHint: {
-    marginTop: 40,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  header: {
-    backgroundColor: COLORS.white,
-    padding: SIZES.padding,
-    paddingTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerInfo: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  topicLabel: {
-    fontSize: 10,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  timerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.primary + "15",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  timerText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    marginLeft: 6,
-    ...FONTS.bold,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-    paddingBottom: 40,
-  },
-  passageCard: {
-    backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: 25,
-    marginBottom: 20,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  passageHeader: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  paragraphContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  paragraphText: {
-    fontSize: 17,
-    color: COLORS.darkGray,
-    lineHeight: 28,
-    ...FONTS.regular,
-  },
-  highlightedWord: {
-    color: COLORS.secondary,
-    ...FONTS.bold,
-    textDecorationLine: "underline",
-  },
-  questionSection: {
-    marginTop: 10,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    backgroundColor: COLORS.white,
-  },
-  difficultyText: {
-    fontSize: 10,
-    ...FONTS.bold,
-  },
-  progressText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  questionText: {
-    fontSize: 22,
-    color: COLORS.black,
-    marginBottom: 25,
-    ...FONTS.bold,
-    lineHeight: 30,
-  },
-  optionsContainer: {
-    width: "100%",
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 15,
-    backgroundColor: COLORS.white,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-  },
-  selectedOption: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "05",
-  },
-  optionIndex: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  selectedOptionIndex: {
-    backgroundColor: COLORS.primary,
-  },
-  optionIndexText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.bold,
-  },
-  selectedOptionIndexText: {
-    color: COLORS.white,
-  },
-  optionText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    flex: 1,
-    ...FONTS.medium,
-  },
-  selectedOptionText: {
-    color: COLORS.primary,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  vocabModalCard: {
-    backgroundColor: COLORS.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 30,
-    minHeight: 350,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  vocabBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.secondary,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  vocabBadgeText: {
-    color: COLORS.white,
-    fontSize: 12,
-    marginLeft: 8,
-    ...FONTS.bold,
-  },
-  wordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  wordTitle: {
-    fontSize: 28,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginRight: 15,
-  },
-  posTag: {
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 5,
-  },
-  posText: {
-    fontSize: 12,
-    color: COLORS.gray,
-    fontStyle: "italic",
-    ...FONTS.medium,
-  },
-  pronunciationText: {
-    fontSize: 16,
-    color: COLORS.gray,
-    marginBottom: 20,
-    ...FONTS.regular,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: COLORS.lightGray,
-    marginBottom: 20,
-  },
-  vocabDetail: {
-    marginBottom: 20,
-  },
-  vocabLabel: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    marginBottom: 5,
-  },
-  vocabMeaning: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    lineHeight: 22,
-    ...FONTS.medium,
-  },
-  vocabExample: {
-    fontSize: 16,
-    color: COLORS.gray,
-    fontStyle: "italic",
-    lineHeight: 22,
-    ...FONTS.regular,
-  },
-  gotItButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 15,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  gotItText: {
-    color: COLORS.white,
-    fontSize: 16,
-    ...FONTS.bold,
-  },
-  correctOption: {
-    borderColor: COLORS.success,
-    backgroundColor: COLORS.success + "10",
-  },
-  wrongOption: {
-    borderColor: COLORS.error,
-    backgroundColor: COLORS.error + "10",
-  },
-  correctOptionIndex: {
-    backgroundColor: COLORS.success,
-  },
-  wrongOptionIndex: {
-    backgroundColor: COLORS.error,
-  },
-  correctOptionText: {
-    color: COLORS.success,
-    ...FONTS.bold,
-  },
-  wrongOptionText: {
-    color: COLORS.error,
-    ...FONTS.bold,
-  },
-  centeredContainer: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "center",
-  },
-});
 
 // export default ReadingPracticeScreen;

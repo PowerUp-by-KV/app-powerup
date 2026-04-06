@@ -34,12 +34,14 @@ const timeTrackingSlice = createSlice({
 
 export const { incrementTime, resetTime } = timeTrackingSlice.actions;
 
-export const selectTimeForModule = (state: any, moduleId: string) =>
+import { RootState } from "@/store";
+
+export const selectTimeForModule = (state: RootState, moduleId: string) =>
   state.timeTracking.timeSpentPerModule[moduleId] || 0;
 
-export const selectTotalTime = (state: any) =>
+export const selectTotalTime = (state: RootState) =>
   Object.values(state.timeTracking.timeSpentPerModule).reduce(
-    (total: any, time: any) => total + time,
+    (total: number, time: number) => total + time,
     0,
   );
 

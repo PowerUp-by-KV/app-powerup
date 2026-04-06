@@ -1,3 +1,3 @@
-export * from "./GrammarScreen";
-export * from "./GrammarContentScreen";
-export * from "./ExerciseScreen";
+export { GrammarScreen } from "./GrammarScreen";
+export { GrammarContentScreen } from "./GrammarContentScreen";
+export { ExerciseScreen } from "./ExerciseScreen";

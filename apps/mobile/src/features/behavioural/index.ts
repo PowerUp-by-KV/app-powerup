@@ -1,2 +1,2 @@
-export * from "./BehaviouralScreen";
-export * from "./BehaviouralResultScreen";
+export { BehaviouralScreen } from "./BehaviouralScreen";
+export { BehaviouralResultScreen } from "./BehaviouralResultScreen";

@@ -1,52 +1,50 @@
-import React, { useState, useRef } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  TouchableOpacity,
-  Animated,
-} from "react-native";
+import React from "react";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { listeningData } from "@/constants/listeningData";
-import { Headphones, ChevronRight, ArrowLeft, PlayCircle } from "lucide-react-native";
-
+import { Headphones, ArrowLeft, PlayCircle } from "lucide-react-native";
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 
 export const ListeningScreen = () => {
   useTimeTracker("listening");
-  const renderItem = ({ item, index }) => {
+
+  const renderItem = ({ item }: { item: any }) => {
     return (
       <TouchableOpacity
-        style={styles.card}
+        className="bg-white rounded-[20px] p-5 flex-row items-center mb-[15px] shadow-sm shadow-black/5 elevation-2"
         activeOpacity={0.8}
         onPress={() =>
           router.push({ pathname: "/ListeningPractice", params: { lessonId: item.id } })
         }
       >
-        <View style={styles.iconContainer}>
-          <Headphones size={24} color={COLORS.primary} />
+        <View className="w-[50px] h-[50px] rounded-[15px] bg-[#6366F1]/10 justify-center items-center mr-[15px]">
+          <Headphones size={24} color="#6366F1" />
         </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.lessonTitle}>{item.title}</Text>
-          <Text style={styles.lessonSubtitle}>{item.questions.length} Questions</Text>
+        <View className="flex-1">
+          <Text className="text-[18px] text-black font-bold">{item.title}</Text>
+          <Text className="text-[13px] text-[#64748B] font-medium mt-0.5">
+            {item.questions.length} Questions
+          </Text>
         </View>
-        <PlayCircle size={28} color={COLORS.primary} />
+        <PlayCircle size={28} color="#6366F1" />
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] flex-row items-center bg-white rounded-b-[30px] shadow-sm shadow-black/10 elevation-4">
+        <TouchableOpacity
+          className="w-[45px] h-[45px] rounded-full bg-[#F8F9FA] justify-center items-center mr-[15px]"
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#000" />
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>Listening Exercises</Text>
-          <Text style={styles.headerSub}>Improve your English listening skills</Text>
+          <Text className="text-[24px] text-black font-bold">Listening Exercises</Text>
+          <Text className="text-[14px] text-[#64748B] font-normal">
+            Improve your English listening skills
+          </Text>
         </View>
       </View>
 
@@ -54,92 +52,9 @@ export const ListeningScreen = () => {
         data={listeningData}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 20, paddingTop: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  backButton: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  listContent: {
-    padding: SIZES.padding,
-    paddingTop: 20,
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    backgroundColor: COLORS.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  lessonTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  lessonSubtitle: {
-    fontSize: 13,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginTop: 2,
-  },
-});
-
-// export default ListeningScreen;

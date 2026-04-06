@@ -1,54 +1,33 @@
 import React from "react";
-import { StyleSheet, View, Text } from "react-native";
-import { COLORS, SIZES, FONTS } from "@/constants/theme";
+import { View, Text } from "react-native";
 
 interface ProgressBarProps {
   progress: number;
   label?: string;
   color?: string;
   style?: any;
+  className?: string;
 }
 
-const ProgressBar = ({ progress, label, color, style }: ProgressBarProps) => {
+export const ProgressBar = ({
+  progress,
+  label,
+  color,
+  style,
+  className = "",
+}: ProgressBarProps) => {
   return (
-    <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
-      <View style={styles.barBackground}>
+    <View className={`w-full my-2.5 ${className}`} style={style}>
+      {label && <Text className="text-sm text-[#475569] mb-[5px] font-medium">{label}</Text>}
+      <View className="h-2.5 bg-[#E2E8F0] rounded-[5px] overflow-hidden">
         <View
-          style={[
-            styles.barForeground,
-            {
-              width: `${Math.min(100, progress)}%`,
-              backgroundColor: color || COLORS.primary,
-            },
-          ]}
+          style={{
+            width: `${Math.min(100, progress)}%`,
+            backgroundColor: color || "#6366F1",
+          }}
+          className="h-full rounded-[5px]"
         />
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: "100%",
-    marginVertical: 10,
-  },
-  label: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    marginBottom: 5,
-    ...FONTS.medium,
-  },
-  barBackground: {
-    height: 10,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 5,
-    overflow: "hidden",
-  },
-  barForeground: {
-    height: "100%",
-    borderRadius: 5,
-  },
-});
-
-export default ProgressBar;

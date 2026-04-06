@@ -1,35 +1,23 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  Image,
-} from "react-native";
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Image } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Star, Zap, Play, ChevronRight, Book } from "lucide-react-native";
-import { COLORS, FONTS, SIZES, GRADIENTS } from "@/constants/theme";
-import { USER_PROFILE } from "@/constants/mockData";
 import { useUser } from "@/features/profile/hooks/UserContext";
+import { useAppSelector } from "@/store/hooks";
+import { selectTotalTime } from "@/store/slices/timeTrackingSlice";
 
 import { Card } from "@/features/learning/components";
 import { ProgressBar } from "@/features/progress/components";
 import { AIButton } from "./components/AIButton";
-import LearningPath from "./components/LearningPath/LearningPath";
-import AIChatbot from "./components/AIChatbot";
-
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { selectTotalTime } from "@/store/slices/timeTrackingSlice";
+import { LearningPath } from "./components/LearningPath/LearningPath";
+import { AIChatbot } from "./components/AIChatbot";
 
 export const HomeScreen = () => {
   const { user } = useUser();
   const [isChatVisible, setIsChatVisible] = useState(false);
 
-  const totalSeconds = useSelector(selectTotalTime);
+  const totalSeconds = useAppSelector(selectTotalTime);
   const totalMinutes = Math.floor(totalSeconds / 60);
   const timeDisplay = totalSeconds < 60 ? `${totalSeconds} seconds` : `${totalMinutes} minutes`;
 
@@ -41,65 +29,69 @@ export const HomeScreen = () => {
   const currentDayIndex = new Date().getDay();
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
+      <ScrollView
+        style={{ flex: 1 }}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
+      >
+        {/* Header Section */}
+        <View className="flex-row justify-between items-center mb-6 mt-2.5">
           <View>
-            <Text style={styles.greeting}>Hi, {(user?.name || "User").split(" ")[0]}</Text>
-            <Text style={styles.subGreeting}>Ready to learn today?</Text>
+            <Text className="text-[28px] text-black font-bold">
+              Hi, {(user?.name || "User").split(" ")[0]}
+            </Text>
+            <Text className="text-sm text-[#64748B] font-medium">Ready to learn today?</Text>
           </View>
 
-          <View style={styles.headerRight}>
-            <View style={styles.statsRow}>
-              <View style={[styles.statBadge, { backgroundColor: COLORS.quaternary + "15" }]}>
-                <Zap size={14} color={COLORS.quaternary} fill={COLORS.quaternary} />
-                <Text style={[styles.statText, { color: COLORS.quaternary }]}>
-                  {user.streak || 0}
-                </Text>
+          <View className="flex-row items-center">
+            <View className="flex-row mr-3">
+              <View className="flex-row items-center px-2.5 py-1 rounded-xl ml-2 bg-[#F59E0B]/15">
+                <Zap size={14} color="#F59E0B" fill="#F59E0B" />
+                <Text className="text-sm font-bold ml-1 text-[#F59E0B]">{user.streak || 0}</Text>
               </View>
-              <View style={[styles.statBadge, { backgroundColor: COLORS.secondary + "15" }]}>
-                <Star size={14} color={COLORS.secondary} fill={COLORS.secondary} />
-                <Text style={[styles.statText, { color: COLORS.secondary }]}>
-                  {user.points || 0}
-                </Text>
+              <View className="flex-row items-center px-2.5 py-1 rounded-xl ml-2 bg-[#6366F1]/15">
+                <Star size={14} color="#6366F1" fill="#6366F1" />
+                <Text className="text-sm font-bold ml-1 text-[#6366F1]">{user.points || 0}</Text>
               </View>
             </View>
             <TouchableOpacity
-              style={styles.profileCircle}
+              className="w-[50px] h-[50px] rounded-full bg-[#6366F1] justify-center items-center"
               onPress={() => router.push("/(tabs)/profile")}
             >
               {user.avatarUri ? (
-                <Image source={{ uri: user.avatarUri }} style={styles.avatarMiniImage} />
+                <Image
+                  source={{ uri: user.avatarUri }}
+                  className="w-full h-full rounded-full"
+                  style={{ resizeMode: "cover" }}
+                />
               ) : (
-                <Text style={styles.profileInitial}>{(user?.name || "U")[0]}</Text>
+                <Text className="text-white text-xl font-bold">{(user?.name || "U")[0]}</Text>
               )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Streak Tracker */}
-        <Card style={styles.streakCard}>
-          <View style={styles.streakHeader}>
-            <Text style={styles.streakTitle}>Weekly Streak</Text>
-            <View style={styles.streakCountContainer}>
-              <Zap size={18} color={COLORS.quaternary} fill={COLORS.quaternary} />
-              <Text style={styles.streakCount}>{user.streak} Days</Text>
+        {/* Streak Tracker Card */}
+        <Card className="mb-5">
+          <View className="flex-row justify-between items-center mb-[15px]">
+            <Text className="text-[18px] text-black font-semibold">Weekly Streak</Text>
+            <View className="flex-row items-center bg-[#F59E0B]/20 px-2.5 py-1 rounded-[15px]">
+              <Zap size={18} color="#F59E0B" fill="#F59E0B" />
+              <Text className="text-sm text-[#F59E0B] ml-1 font-bold">{user.streak} Days</Text>
             </View>
           </View>
-          <View style={styles.daysContainer}>
+          <View className="flex-row justify-between">
             {days.map((day, index) => (
-              <View key={index} style={styles.dayItem}>
+              <View key={index} className="items-center">
                 <View
-                  style={[
-                    styles.dayCircle,
-                    index <= currentDayIndex ? styles.dayCircleActive : styles.dayCircleInactive,
-                  ]}
+                  className={`w-[35px] h-[35px] rounded-full justify-center items-center ${
+                    index <= currentDayIndex ? "bg-[#F59E0B]" : "bg-[#E2E8F0]"
+                  }`}
                 >
                   <Text
-                    style={[
-                      styles.dayText,
-                      index <= currentDayIndex ? styles.dayTextActive : styles.dayTextInactive,
-                    ]}
+                    className={`text-xs font-bold ${index <= currentDayIndex ? "text-white" : "text-[#64748B]"}`}
                   >
                     {day}
                   </Text>
@@ -109,63 +101,65 @@ export const HomeScreen = () => {
           </View>
         </Card>
 
-        {/* Quick Actions */}
-        <View style={styles.sectionRow}>
+        {/* Quick Actions Row */}
+        <View className="flex-row justify-between mb-5">
           <TouchableOpacity
-            style={styles.quickAction}
+            className="w-[48%] rounded-2xl overflow-hidden"
             activeOpacity={0.9}
             onPress={() => router.push("/subscription")}
           >
-            <LinearGradient colors={GRADIENTS.premium} style={styles.quickActionGradient}>
-              <Star size={24} color={COLORS.white} fill={COLORS.white} />
-              <Text style={styles.quickActionTitle}>Unlock Premium</Text>
-              <Text style={styles.quickActionSub}>Get AI Tutor access</Text>
+            <LinearGradient
+              colors={["#FFAD60", "#FF8C42"]}
+              className="p-4 h-[120px] justify-center"
+            >
+              <Star size={24} color="white" fill="white" />
+              <Text className="text-white text-base mt-2.5 font-bold">Unlock Premium</Text>
+              <Text className="text-white text-xs opacity-80 font-normal">Get AI Tutor access</Text>
             </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.quickAction}
+            className="w-[48%] rounded-2xl overflow-hidden"
             activeOpacity={0.9}
             onPress={() => router.push("/(tabs)/DailyQuest")}
           >
-            <LinearGradient colors={GRADIENTS.quest} style={styles.quickActionGradient}>
-              <Zap size={24} color={COLORS.white} fill={COLORS.white} />
-              <Text style={styles.quickActionTitle}>Daily Quest</Text>
-              <Text style={styles.quickActionSub}>Earn 50 XP today</Text>
+            <LinearGradient
+              colors={["#6366F1", "#8B5CF6"]}
+              className="p-4 h-[120px] justify-center"
+            >
+              <Zap size={24} color="white" fill="white" />
+              <Text className="text-white text-base mt-2.5 font-bold">Daily Quest</Text>
+              <Text className="text-white text-xs opacity-80 font-normal">Earn 50 XP today</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        {/* Learning Today */}
-        <Card style={styles.learningCard}>
-          <View style={styles.learningTopRow}>
-            <View style={styles.circularProgressContainer}>
-              <View style={styles.circularProgressInner}>
-                <Text style={styles.progressPercent}>{progress}%</Text>
+        {/* Learning Today Section */}
+        <Card className="mb-5 p-[15px]">
+          <View className="flex-row items-center mb-[15px]">
+            <View className="w-[60px] h-[60px] rounded-full bg-[#6366F1]/15 justify-center items-center mr-[15px]">
+              <View className="w-[46px] h-[46px] rounded-full bg-white justify-center items-center">
+                <Text className="text-xs text-[#6366F1] font-bold">{progress}%</Text>
               </View>
             </View>
-            <View style={styles.learningTextContainer}>
-              <Text style={styles.learningTitle}>Learning Today</Text>
-              <Text style={styles.learningSub}>{timeDisplay} spent today</Text>
+            <View className="flex-1">
+              <Text className="text-[18px] text-black font-bold">Learning Today</Text>
+              <Text className="text-sm text-[#64748B] font-normal">{timeDisplay} spent today</Text>
             </View>
           </View>
 
-          <ProgressBar
-            progress={progress}
-            color={COLORS.primary}
-            style={styles.learningProgressBar}
-          />
+          <ProgressBar progress={progress} color="#6366F1" className="h-2 rounded-[4px] mb-5" />
 
           <TouchableOpacity
-            style={styles.continueButton}
+            className="bg-[#6366F1] flex-row justify-center items-center py-[14px] rounded-[15px]"
             onPress={() => router.push("/LearningModules")}
           >
-            <Text style={styles.continueText}>Continue Learning</Text>
-            <Play size={16} color={COLORS.white} fill={COLORS.white} />
+            <Text className="text-white text-base mr-2.5 font-bold">Continue Learning</Text>
+            <Play size={16} color="white" fill="white" />
           </TouchableOpacity>
         </Card>
 
-        {/* Learning Path */}
+        {/* Learning Path Hierarchy */}
         <LearningPath
           data={[
             { id: 0, title: "Pre-assessment", type: "start", status: "current" },
@@ -181,294 +175,33 @@ export const HomeScreen = () => {
           onContinuePress={() => router.push({ pathname: "/GrammarContent", params: { dayId: 0 } })}
         />
 
-        {/* Categories Preview */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Featured Modules</Text>
+        {/* Featured Modules Header */}
+        <View className="flex-row justify-between items-center mb-[15px]">
+          <Text className="text-xl text-black font-bold">Featured Modules</Text>
           <TouchableOpacity onPress={() => router.push("/LearningModules")}>
-            <Text style={styles.seeAll}>See All</Text>
+            <Text className="text-sm text-[#6366F1] font-medium">See All</Text>
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.modulePreview} onPress={() => router.push("/grammar")}>
-          <Card style={styles.modulePreviewCard}>
-            <View style={[styles.moduleIconContainer, { backgroundColor: COLORS.primary + "20" }]}>
-              <Book size={24} color={COLORS.primary} />
+        {/* Featured Module Item */}
+        <TouchableOpacity className="mb-[15px]" onPress={() => router.push("/grammar")}>
+          <Card className="flex-row items-center p-[15px]">
+            <View className="w-[50px] h-[50px] rounded-xl bg-[#6366F1]/20 justify-center items-center mr-[15px]">
+              <Book size={24} color="#6366F1" />
             </View>
-            <View style={styles.modulePreviewText}>
-              <Text style={styles.moduleTitle}>Grammar Mastery</Text>
-              <Text style={styles.moduleDesc}>Master tenses and structures</Text>
+            <View className="flex-1">
+              <Text className="text-base text-black font-semibold">Grammar Mastery</Text>
+              <Text className="text-sm text-[#64748B] font-normal">
+                Master tenses and structures
+              </Text>
             </View>
-            <ChevronRight size={20} color={COLORS.lightGray} />
+            <ChevronRight size={20} color="#CBD5E1" />
           </Card>
         </TouchableOpacity>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
 
       <AIButton onPress={() => setIsChatVisible(true)} />
       <AIChatbot visible={isChatVisible} onClose={() => setIsChatVisible(false)} />
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 24,
-    marginTop: 10,
-  },
-  greeting: {
-    fontSize: 28,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  subGreeting: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  statsRow: {
-    flexDirection: "row",
-    marginRight: 12,
-  },
-  statBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    marginLeft: 8,
-  },
-  statText: {
-    fontSize: 14,
-    ...FONTS.bold,
-    marginLeft: 4,
-  },
-  profileCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  profileInitial: {
-    color: COLORS.white,
-    fontSize: 20,
-    ...FONTS.bold,
-  },
-  avatarMiniImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 25,
-    resizeMode: "cover",
-  },
-  streakCard: {
-    marginBottom: 20,
-  },
-  streakHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  streakTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.semiBold,
-  },
-  streakCountContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.quaternary + "20",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
-  },
-  streakCount: {
-    fontSize: 14,
-    color: COLORS.quaternary,
-    marginLeft: 5,
-    ...FONTS.bold,
-  },
-  daysContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  dayItem: {
-    alignItems: "center",
-  },
-  dayCircle: {
-    width: 35,
-    height: 35,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dayCircleActive: {
-    backgroundColor: COLORS.quaternary,
-  },
-  dayCircleInactive: {
-    backgroundColor: COLORS.lightGray,
-  },
-  dayText: {
-    fontSize: 12,
-    ...FONTS.bold,
-  },
-  dayTextActive: {
-    color: COLORS.white,
-  },
-  dayTextInactive: {
-    color: COLORS.gray,
-  },
-  sectionRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 20,
-  },
-  quickAction: {
-    width: "48%",
-    borderRadius: SIZES.radius,
-    overflow: "hidden",
-  },
-  quickActionGradient: {
-    padding: 16,
-    height: 120,
-    justifyContent: "center",
-  },
-  quickActionTitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    marginTop: 10,
-    ...FONTS.bold,
-  },
-  quickActionSub: {
-    color: COLORS.white,
-    fontSize: 12,
-    opacity: 0.8,
-    ...FONTS.regular,
-  },
-  learningCard: {
-    marginBottom: 20,
-    padding: 15,
-  },
-  learningTopRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  circularProgressContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  circularProgressInner: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  progressPercent: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  learningTextContainer: {
-    flex: 1,
-  },
-  learningTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  learningSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  learningProgressBar: {
-    height: 8,
-    borderRadius: 4,
-    marginBottom: 20,
-  },
-  continueButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 14,
-    borderRadius: 15,
-  },
-  continueText: {
-    color: COLORS.white,
-    fontSize: 16,
-    marginRight: 10,
-    ...FONTS.bold,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  seeAll: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.medium,
-  },
-  modulePreview: {
-    marginBottom: 15,
-  },
-  modulePreviewCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-  },
-  moduleIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  modulePreviewText: {
-    flex: 1,
-  },
-  moduleTitle: {
-    fontSize: 16,
-    color: COLORS.black,
-    ...FONTS.semiBold,
-  },
-  moduleDesc: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-});
-
-// export default HomeScreen;

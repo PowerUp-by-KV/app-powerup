@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { grammarTopics } from "@/constants/grammarData";
 import { ArrowLeft, Clock, BarChart2, ChevronRight, CheckCircle } from "lucide-react-native";
 
@@ -12,56 +11,63 @@ export const LessonsScreen = () => {
   const chapterData = topicData?.chapters.find((ch) => ch.id === chapterId);
   const subtopics = chapterData?.subtopics || [];
 
-  const renderLesson = ({ item }) => (
+  const renderLesson = ({ item }: { item: any }) => (
     <TouchableOpacity
       activeOpacity={0.7}
-      style={styles.lessonItem}
+      className="bg-white rounded-[20px] p-5 mb-[15px] flex-row items-center shadow-sm shadow-black/5 elevation-2"
       onPress={() =>
         router.push({ pathname: "/GrammarContent", params: { subtopic: JSON.stringify(item) } })
       }
     >
-      <View style={styles.lessonContent}>
-        <View style={styles.lessonHeader}>
-          <Text style={styles.lessonTitle}>{item.title}</Text>
-          {item.progress === 100 && <CheckCircle size={20} color={COLORS.success} />}
+      <View className="flex-1 mr-[15px]">
+        <View className="flex-row justify-between items-center mb-2.5">
+          <Text className="text-lg text-black font-semibold">{item.title}</Text>
+          {item.progress === 100 && <CheckCircle size={20} color="#10B981" />}
         </View>
 
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <BarChart2 size={14} color={COLORS.primary} />
-            <Text style={styles.metaText}>{item.difficulty || "General"}</Text>
+        <View className="flex-row items-center">
+          <View className="flex-row items-center mr-[15px]">
+            <BarChart2 size={14} color="#6366F1" />
+            <Text className="text-xs text-[#64748B] ml-[5px] font-medium">
+              {item.difficulty || "General"}
+            </Text>
           </View>
-          <View style={styles.metaItem}>
-            <Clock size={14} color={COLORS.gray} />
-            <Text style={styles.metaText}>{item.time || "10m"}</Text>
+          <View className="flex-row items-center">
+            <Clock size={14} color="#94A3B8" />
+            <Text className="text-xs text-[#64748B] ml-[5px] font-medium">
+              {item.time || "10m"}
+            </Text>
           </View>
         </View>
 
         {item.progress > 0 && item.progress < 100 && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBackground}>
-              <View style={[styles.progressForeground, { width: `${item.progress}%` }]} />
+          <View className="flex-row items-center mt-[15px]">
+            <View className="flex-1 h-1.5 bg-[#E2E8F0] rounded-full mr-2.5">
+              <View
+                className="h-full bg-[#6366F1] rounded-full"
+                style={{ width: `${item.progress}%` }}
+              />
             </View>
-            <Text style={styles.progressText}>{item.progress}%</Text>
+            <Text className="text-[10px] text-[#6366F1] font-bold">{item.progress}%</Text>
           </View>
         )}
       </View>
-      <ChevronRight size={20} color={COLORS.lightGray} />
+      <ChevronRight size={20} color="#CBD5E1" />
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] bg-white rounded-b-[30px] flex-row items-center mb-2.5">
         <TouchableOpacity
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center mr-[15px]"
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>{chapterTitle} Lessons</Text>
-          <Text style={styles.headerSub}>Complete these to master the chapter</Text>
+          <Text className="text-2xl text-black font-bold">{chapterTitle} Lessons</Text>
+          <Text className="text-sm text-[#64748B]">Complete these to master the chapter</Text>
         </View>
       </View>
 
@@ -69,115 +75,9 @@ export const LessonsScreen = () => {
         data={subtopics}
         renderItem={renderLesson}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  listContent: {
-    padding: SIZES.padding,
-    paddingBottom: 100,
-  },
-  lessonItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  lessonContent: {
-    flex: 1,
-    marginRight: 15,
-  },
-  lessonHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  lessonTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.semiBold,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  metaText: {
-    fontSize: 12,
-    color: COLORS.gray,
-    marginLeft: 5,
-    ...FONTS.medium,
-  },
-  progressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 15,
-  },
-  progressBackground: {
-    flex: 1,
-    height: 6,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 3,
-    marginRight: 10,
-  },
-  progressForeground: {
-    height: "100%",
-    backgroundColor: COLORS.primary,
-    borderRadius: 3,
-  },
-  progressText: {
-    fontSize: 10,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-});
-
-// export default LessonsScreen;

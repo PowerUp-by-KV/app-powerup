@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 import Svg, { Circle, Path, Line } from "react-native-svg";
-import { COLORS, FONTS } from "@/constants/theme";
 
 interface ProgressChartProps {
   data: {
@@ -20,28 +19,30 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {
   const chartHeight = CHART_HEIGHT;
   const paddingLeft = 40;
 
-  const points = data.datasets[0].data;
+  const points = data.datasets?.[0]?.data || [];
   const yLabels = [100, 80, 60, 40, 20];
 
   const getLinePath = () => {
-    if (points.length === 0) return "";
+    if (points.length < 2) return "";
     const xStep = chartWidth / (points.length - 1);
-    let path = `M ${paddingLeft} ${chartHeight - (points[0] / 100) * chartHeight}`;
+    const firstPoint = points[0] ?? 0;
+    let path = `M ${paddingLeft} ${chartHeight - (firstPoint / 100) * chartHeight}`;
 
     for (let i = 1; i < points.length; i++) {
       const x = i * xStep + paddingLeft;
-      const y = chartHeight - (points[i] / 100) * chartHeight;
+      const currentPoint = points[i] ?? 0;
+      const y = chartHeight - (currentPoint / 100) * chartHeight;
       path += ` L ${x} ${y}`;
     }
     return path;
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.chartWrapper}>
-        <View style={styles.yAxis}>
+    <View className="my-5 bg-white">
+      <View className="flex-row items-start">
+        <View style={{ height: CHART_HEIGHT }} className="justify-between pr-[5px] pb-0.5">
           {yLabels.map((label) => (
-            <Text key={label} style={styles.yLabel}>
+            <Text key={label} className="text-sm font-bold text-[#B08500] text-right">
               {label}|
             </Text>
           ))}
@@ -53,7 +54,7 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {
             y1={0}
             x2={paddingLeft}
             y2={chartHeight}
-            stroke={COLORS.darkGray}
+            stroke="#64748B"
             strokeWidth="1"
           />
           <Line
@@ -61,28 +62,23 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {
             y1={chartHeight}
             x2={chartWidth + paddingLeft}
             y2={chartHeight}
-            stroke={COLORS.darkGray}
+            stroke="#64748B"
             strokeWidth="1"
           />
 
-          <Path
-            d={getLinePath()}
-            fill="none"
-            stroke={COLORS.darkGray}
-            strokeWidth="1" // Thinner line
-          />
+          <Path d={getLinePath()} fill="none" stroke="#64748B" strokeWidth="1" />
 
           {points.map((p, i) => {
             const xStep = chartWidth / (points.length - 1);
             const x = i * xStep + paddingLeft;
             const y = chartHeight - (p / 100) * chartHeight;
-            return <Circle key={i} cx={x} cy={y} r="1.5" fill={COLORS.darkGray} />;
+            return <Circle key={i} cx={x} cy={y} r="1.5" fill="#64748B" />;
           })}
         </Svg>
       </View>
-      <View style={styles.labelsRow}>
+      <View style={{ width: CHART_WIDTH + 40 }} className="flex-row justify-between pl-10 mt-2.5">
         {data.labels.map((label, index) => (
-          <Text key={index} style={styles.labelText}>
+          <Text key={index} className="text-sm font-bold text-[#B08500]">
             {label}
           </Text>
         ))}
@@ -90,38 +86,3 @@ export const ProgressChart: React.FC<ProgressChartProps> = ({ data }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 20,
-    backgroundColor: COLORS.white,
-  },
-  chartWrapper: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  yAxis: {
-    justifyContent: "space-between",
-    paddingRight: 5,
-    height: CHART_HEIGHT,
-    paddingBottom: 2, // Align with Axis line
-  },
-  yLabel: {
-    fontSize: 14,
-    ...FONTS.bold,
-    color: "#B08500", // Yellowish-brown color from image
-    textAlign: "right",
-  },
-  labelsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingLeft: 40,
-    marginTop: 10,
-    width: CHART_WIDTH + 40,
-  },
-  labelText: {
-    fontSize: 14,
-    ...FONTS.bold,
-    color: "#B08500", // Yellowish-brown color from image
-  },
-});

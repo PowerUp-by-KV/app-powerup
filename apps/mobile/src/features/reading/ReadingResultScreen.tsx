@@ -2,14 +2,12 @@ import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import {
   ArrowLeft,
   Trophy,
@@ -21,10 +19,9 @@ import {
 } from "lucide-react-native";
 import { readingData } from "@/constants/readingData";
 
-const { width } = Dimensions.get("window");
-
 export const ReadingResultScreen = () => {
   const { readingId, title, score, totalQuestions, time } = useLocalSearchParams();
+  const { width } = useWindowDimensions();
 
   const currentIndex = readingData.findIndex((r) => r.id === readingId);
   const nextReading =
@@ -40,7 +37,7 @@ export const ReadingResultScreen = () => {
     }
   };
 
-  const percentage = Math.round((Number(score) / Number(totalQuestions)) * 100);
+  const percentage = Math.round((Number(score || 0) / Number(totalQuestions || 1)) * 100);
 
   const getFeedback = () => {
     if (percentage === 100)
@@ -71,99 +68,120 @@ export const ReadingResultScreen = () => {
 
   const feedback = getFeedback();
 
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+  const formatTime = (seconds: any) => {
+    const s = Number(seconds || 0);
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        {/* Header Back Button */}
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 20, paddingTop: 100 }}
+      >
         <TouchableOpacity
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-white justify-center items-center absolute top-[60px] left-5 z-10 shadow-sm shadow-black/10 elevation-4"
           onPress={() =>
             router.replace({ pathname: "/ReadingPractice", params: { readingId: readingId } })
           }
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
 
-        {/* Success Header */}
-        <View style={styles.header}>
-          <View style={styles.iconContainer}>
-            <Trophy size={60} color={COLORS.white} />
+        <View className="items-center mb-10">
+          <View className="w-[120px] h-[120px] rounded-full bg-[#6366F1] justify-center items-center mb-[25px] shadow-lg shadow-[#6366F1]/30 elevation-8">
+            <Trophy size={60} color="white" />
           </View>
-          <Text style={styles.resultTitle}>{feedback.title}</Text>
-          <Text style={styles.resultSub}>{title} Complete!</Text>
+          <Text className="text-[32px] text-black font-bold mb-1.25 text-center">
+            {feedback.title}
+          </Text>
+          <Text className="text-base text-[#64748B] font-medium text-center">
+            {title} Complete!
+          </Text>
         </View>
 
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBadge, { backgroundColor: COLORS.primary + "20" }]}>
-              <Target size={20} color={COLORS.primary} />
+        <View className="flex-row justify-between mb-[30px]">
+          <View
+            style={{ width: (width - 40 - 30) / 3 }}
+            className="bg-white p-[15px] rounded-[20px] items-center shadow-sm shadow-black/5 elevation-2"
+          >
+            <View className="w-10 h-10 rounded-full justify-center items-center mb-2.5 bg-[#6366F1]/20">
+              <Target size={20} color="#6366F1" />
             </View>
-            <Text style={styles.statValue}>
+            <Text className="text-[18px] text-black font-bold">
               {score}/{totalQuestions}
             </Text>
-            <Text style={styles.statLabel}>Score</Text>
+            <Text className="text-[12px] text-[#64748B] font-medium mt-0.5">Score</Text>
           </View>
 
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBadge, { backgroundColor: COLORS.secondary + "20" }]}>
-              <Clock size={20} color={COLORS.secondary} />
+          <View
+            style={{ width: (width - 40 - 30) / 3 }}
+            className="bg-white p-[15px] rounded-[20px] items-center shadow-sm shadow-black/5 elevation-2"
+          >
+            <View className="w-10 h-10 rounded-full justify-center items-center mb-2.5 bg-[#EC4899]/20">
+              <Clock size={20} color="#EC4899" />
             </View>
-            <Text style={styles.statValue}>{formatTime(time)}</Text>
-            <Text style={styles.statLabel}>Time</Text>
+            <Text className="text-[18px] text-black font-bold">{formatTime(time)}</Text>
+            <Text className="text-[12px] text-[#64748B] font-medium mt-0.5">Time</Text>
           </View>
 
-          <View style={styles.statCard}>
-            <View style={[styles.statIconBadge, { backgroundColor: COLORS.success + "20" }]}>
-              <Target size={20} color={COLORS.success} />
+          <View
+            style={{ width: (width - 40 - 30) / 3 }}
+            className="bg-white p-[15px] rounded-[20px] items-center shadow-sm shadow-black/5 elevation-2"
+          >
+            <View className="w-10 h-10 rounded-full justify-center items-center mb-2.5 bg-[#22C55E]/20">
+              <Target size={20} color="#22C55E" />
             </View>
-            <Text style={styles.statValue}>{percentage}%</Text>
-            <Text style={styles.statLabel}>Accuracy</Text>
+            <Text className="text-[18px] text-black font-bold">{percentage}%</Text>
+            <Text className="text-[12px] text-[#64748B] font-medium mt-0.5">Accuracy</Text>
           </View>
         </View>
 
-        {/* Feedback Card */}
-        <View style={styles.feedbackCard}>
-          <Text style={styles.cardHeader}>PERFORMANCE ANALYSIS</Text>
-          <Text style={styles.feedbackText}>{feedback.text}</Text>
-          <View style={styles.suggestionBox}>
-            <View style={styles.suggestionHeader}>
-              <RefreshCw size={16} color={COLORS.primary} />
-              <Text style={styles.suggestionTitle}>Suggestion</Text>
+        <View className="bg-white p-[25px] rounded-[25px] mb-10 shadow-sm shadow-black/5 elevation-2">
+          <Text className="text-[12px] text-[#6366F1] font-bold tracking-[1.5px] mb-[15px] uppercase">
+            PERFORMANCE ANALYSIS
+          </Text>
+          <Text className="text-base text-[#475569] leading-6 font-medium mb-5">
+            {feedback.text}
+          </Text>
+          <View className="bg-[#F8F9FA] p-[15px] rounded-[15px] border-l-4 border-l-[#6366F1]">
+            <View className="flex-row items-center mb-1.25">
+              <RefreshCw size={16} color="#6366F1" />
+              <Text className="text-sm text-[#6366F1] font-bold ml-2">Suggestion</Text>
             </View>
-            <Text style={styles.suggestionText}>{feedback.suggestion}</Text>
+            <Text className="text-sm text-[#475569] font-normal leading-5">
+              {feedback.suggestion}
+            </Text>
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionContainer}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleNext}>
-            <Text style={styles.primaryButtonText}>
+        <View className="w-full">
+          <TouchableOpacity
+            className="bg-[#6366F1] flex-row justify-center items-center py-[18px] rounded-[30px] mb-[15px]"
+            onPress={handleNext}
+          >
+            <Text className="text-white text-lg font-bold mr-2.5">
               {nextReading ? `Next: ${nextReading.title}` : "Return to Dashboard"}
             </Text>
-            <ChevronRight size={20} color={COLORS.white} />
+            <ChevronRight size={20} color="white" />
           </TouchableOpacity>
 
-          <View style={styles.secondaryButtons}>
+          <View className="flex-row justify-between">
             <TouchableOpacity
-              style={styles.secondaryButton}
+              className="flex-row items-center justify-center bg-white border border-[#6366F1] py-3 rounded-[15px] w-[48%]"
               onPress={() =>
                 router.replace({ pathname: "/ReadingPractice", params: { readingId: readingId } })
               }
             >
-              <RefreshCw size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Try Again</Text>
+              <RefreshCw size={18} color="#6366F1" />
+              <Text className="text-[#6366F1] text-sm font-bold ml-2">Try Again</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Share2 size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Share</Text>
+            <TouchableOpacity className="flex-row items-center justify-center bg-white border border-[#6366F1] py-3 rounded-[15px] w-[48%]">
+              <Share2 size={18} color="#6366F1" />
+              <Text className="text-[#6366F1] text-sm font-bold ml-2">Share</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -171,186 +189,5 @@ export const ReadingResultScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  content: {
-    padding: SIZES.padding,
-    paddingTop: 100, // Increased to accommodate back button
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "absolute",
-    top: 60,
-    left: SIZES.padding,
-    zIndex: 10,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 25,
-    elevation: 8,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-  },
-  resultTitle: {
-    fontSize: 32,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginBottom: 5,
-  },
-  resultSub: {
-    fontSize: 16,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 30,
-  },
-  statCard: {
-    backgroundColor: COLORS.white,
-    width: (width - SIZES.padding * 2 - 30) / 3,
-    padding: 15,
-    borderRadius: 20,
-    alignItems: "center",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  statIconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  statValue: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginTop: 2,
-  },
-  feedbackCard: {
-    backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: 25,
-    marginBottom: 40,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-  },
-  cardHeader: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    letterSpacing: 1.5,
-    marginBottom: 15,
-  },
-  feedbackText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    lineHeight: 24,
-    ...FONTS.medium,
-    marginBottom: 20,
-  },
-  suggestionBox: {
-    backgroundColor: COLORS.background,
-    padding: 15,
-    borderRadius: 15,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  suggestionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  suggestionTitle: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    marginLeft: 8,
-  },
-  suggestionText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.regular,
-    lineHeight: 20,
-  },
-  actionContainer: {
-    width: "100%",
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 18,
-    borderRadius: 30,
-    marginBottom: 15,
-  },
-  primaryButtonText: {
-    color: COLORS.white,
-    fontSize: 18,
-    ...FONTS.bold,
-    marginRight: 10,
-  },
-  secondaryButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 15,
-    width: "48%",
-  },
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    ...FONTS.bold,
-    marginLeft: 8,
-  },
-});
 
 // export default ReadingResultScreen;

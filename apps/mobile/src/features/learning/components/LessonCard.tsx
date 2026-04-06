@@ -1,7 +1,6 @@
 import React from "react";
-import { Text, StyleSheet, TouchableOpacity } from "react-native";
-import Card from "./Card";
-import { COLORS, FONTS } from "@/constants/theme";
+import { Text, TouchableOpacity, View } from "react-native";
+import { Card } from "./Card";
 
 interface LessonCardProps {
   title: string;
@@ -9,30 +8,28 @@ interface LessonCardProps {
   status?: "completed" | "in-progress" | "locked";
 }
 
-const LessonCard = ({ title, onPress, status }: LessonCardProps) => {
+export const LessonCard = ({ title, onPress, status }: LessonCardProps) => {
+  const getStatusColor = () => {
+    switch (status) {
+      case "completed":
+        return "text-[#22C55E]";
+      case "in-progress":
+        return "text-[#6366F1]";
+      case "locked":
+        return "text-[#94A3B8]";
+      default:
+        return "text-[#64748B]";
+    }
+  };
+
   return (
-    <TouchableOpacity onPress={onPress}>
-      <Card style={styles.card}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.status}>{status || "available"}</Text>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.7} className="mb-2.5">
+      <Card className="p-4 rounded-xl border border-[#F1F5F9] bg-white shadow-sm shadow-black/5">
+        <Text className="text-base text-black font-bold mb-1">{title}</Text>
+        <Text className={`text-xs font-medium uppercase tracking-wider ${getStatusColor()}`}>
+          {status || "available"}
+        </Text>
       </Card>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  card: {
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 16,
-    ...FONTS.bold,
-  },
-  status: {
-    fontSize: 12,
-    color: COLORS.gray,
-    marginTop: 5,
-  },
-});
-
-export default LessonCard;

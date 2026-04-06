@@ -1,8 +1,6 @@
 import React from "react";
-import { StyleSheet, TouchableOpacity } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { TouchableOpacity, View } from "react-native";
 import { Bot } from "lucide-react-native";
-import { COLORS, GRADIENTS, FONTS } from "@/constants/theme";
 
 interface AIButtonProps {
   onPress: () => void;
@@ -10,31 +8,14 @@ interface AIButtonProps {
 
 export const AIButton = ({ onPress }: AIButtonProps) => {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} style={styles.container}>
-      <LinearGradient colors={GRADIENTS.quest as any} style={styles.gradient}>
-        <Bot size={30} color={COLORS.white} />
-      </LinearGradient>
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      className="absolute bottom-[20px] left-5 rounded-[30px] shadow-lg shadow-black/30 elevation-8"
+    >
+      <View className="w-[60px] h-[60px] rounded-[30px] items-center justify-center bg-[#6366F1]">
+        <Bot size={30} color="#FFF" />
+      </View>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    bottom: 90,
-    left: 20,
-    borderRadius: 30,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 8,
-  },
-  gradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

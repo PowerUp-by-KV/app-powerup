@@ -2,29 +2,26 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { behaviouralData } from "@/constants/behaviouralData";
 import { ArrowLeft, ChevronRight, Brain, RotateCcw } from "lucide-react-native";
 import { MCQOption } from "@/features/learning/components";
 import { ProgressBar } from "@/features/progress/components";
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 
-const { width } = Dimensions.get("window");
-
 export const BehaviouralScreen = () => {
   useTimeTracker("behavioural");
+  const { width } = useWindowDimensions();
   const { trait: filterTrait } = useLocalSearchParams();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userResponses, setUserResponses] = useState([]);
-  const [selectedOption, setSelectedOption] = useState(null);
+  const [userResponses, setUserResponses] = useState<any[]>([]);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -37,20 +34,23 @@ export const BehaviouralScreen = () => {
     return behaviouralData;
   }, [filterTrait]);
 
-  const handleSelectOption = (option) => {
+  const handleSelectOption = (option: string) => {
     if (selectedOption) return;
     setSelectedOption(option);
 
     // Small delay to show selection
     setTimeout(() => {
+      const scenario = filteredData[currentIndex];
+      if (!scenario) return;
+
       const newResponses = [
         ...userResponses,
         {
-          questionId: filteredData[currentIndex].id,
+          questionId: scenario.id,
           selectedOption: option,
-          isIdeal: option === filteredData[currentIndex].bestOption,
-          trait: filteredData[currentIndex].trait,
-          weight: filteredData[currentIndex].traitWeight,
+          isIdeal: option === scenario.bestOption,
+          trait: scenario.trait,
+          weight: scenario.traitWeight,
         },
       ];
 
@@ -81,53 +81,55 @@ export const BehaviouralScreen = () => {
   const progress = ((currentIndex + 1) / filteredData.length) * 100;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="px-5 pt-[60px] pb-5 bg-white rounded-b-[30px] flex-row items-center justify-between shadow-sm shadow-black/10 elevation-4">
         <TouchableOpacity
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] items-center justify-center"
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Brain size={20} color={COLORS.primary} style={{ marginRight: 8 }} />
-          <Text style={styles.headerTitle}>
+        <View className="flex-row items-center">
+          <Brain size={20} color="#6366F1" className="mr-2" />
+          <Text className="text-lg text-black font-bold">
             {filterTrait ? "Focus Training" : "Behavioural Training"}
           </Text>
         </View>
-        <View style={{ width: 40 }} />
+        <View className="w-10" />
       </View>
 
-      <View style={styles.progressSection}>
+      <View className="px-5 pt-5">
         {filterTrait && (
-          <View className="mb-4 bg-orange-50 p-3 rounded-xl flex-row items-center">
+          <View className="mb-4 bg-[#FFF7ED] p-3 rounded-xl flex-row items-center">
             <RotateCcw size={16} color="#F59E0B" />
-            <Text className="ml-2 text-orange-700 font-bold text-xs uppercase">
+            <Text className="ml-2 text-[#C2410C] font-bold text-xs uppercase">
               Target: {filterTrait}
             </Text>
           </View>
         )}
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressText}>
-            Question {currentIndex + 1} of {filteredData.length}
+        <View className="flex-row justify-between mb-2">
+          <Text className="text-sm text-[#64748B] font-medium">
+            Question {currentIndex + 1} of {filteredData.length || 0}
           </Text>
-          <Text style={styles.percentText}>{Math.round(progress)}%</Text>
+          <Text className="text-sm text-[#6366F1] font-bold">{Math.round(progress || 0)}%</Text>
         </View>
-        <ProgressBar progress={progress} color={COLORS.primary} />
+        <ProgressBar progress={progress || 0} color="#6366F1" />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingTop: 20, flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
         <Animated.View
-          style={[
-            styles.cardContainer,
-            { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
-          ]}
+          style={[{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }]}
+          className="bg-white rounded-[25px] p-[25px] min-h-[400px] shadow-sm shadow-black/10 elevation-8"
         >
-          <Text style={styles.scenarioText}>{currentScenario.scenario}</Text>
+          <Text className="text-xl text-black font-bold leading-[30px] mb-[30px]">
+            {currentScenario?.scenario || "Loading scenario..."}
+          </Text>
 
-          <View style={styles.optionsList}>
-            {currentScenario.options.map((option, index) => (
+          <View className="gap-y-[15px]">
+            {currentScenario?.options?.map((option: string, index: number) => (
               <MCQOption
                 key={index}
                 label={String.fromCharCode(65 + index)}
@@ -141,10 +143,9 @@ export const BehaviouralScreen = () => {
             ))}
           </View>
 
-          {/* Manual Finish button for the last question */}
           {isFinished && (
             <TouchableOpacity
-              style={[styles.resultsButton, { marginTop: 30 }]}
+              className="bg-[#6366F1] flex-row items-center justify-center py-4 px-5 rounded-[30px] w-full mt-[30px] shadow-lg shadow-[#6366F1]/30 elevation-4"
               onPress={() =>
                 router.push({
                   pathname: "/BehaviouralResult",
@@ -152,157 +153,18 @@ export const BehaviouralScreen = () => {
                 })
               }
             >
-              <Text style={styles.resultsButtonText}>View Assessment Results</Text>
-              <ChevronRight size={20} color={COLORS.white} />
+              <Text className="text-white text-base font-bold mr-2.5">View Assessment Results</Text>
+              <ChevronRight size={20} color="white" />
             </TouchableOpacity>
           )}
         </Animated.View>
       </ScrollView>
 
-      <View style={styles.footer}>
-        <Text style={styles.footerNote}>Choose the response that feels most like you.</Text>
+      <View className="p-5 pb-10 items-center">
+        <Text className="text-[12px] text-[#64748B] italic font-normal">
+          Choose the response that feels most like you.
+        </Text>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 4,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  progressSection: {
-    padding: SIZES.padding,
-    paddingBottom: 0,
-  },
-  progressInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  progressText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  percentText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-    paddingTop: 20,
-    flexGrow: 1,
-  },
-  cardContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 25,
-    padding: 25,
-    minHeight: 400,
-    elevation: 8,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  categoryBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: COLORS.primary + "15",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginBottom: 20,
-  },
-  categoryText: {
-    fontSize: 10,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    letterSpacing: 1,
-  },
-  scenarioText: {
-    fontSize: 20,
-    color: COLORS.black,
-    ...FONTS.bold,
-    lineHeight: 30,
-    marginBottom: 30,
-  },
-  optionsList: {
-    gap: 15,
-  },
-  optionButton: {
-    backgroundColor: COLORS.background,
-    padding: 18,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
-  optionText: {
-    fontSize: 15,
-    color: COLORS.black,
-    ...FONTS.medium,
-    lineHeight: 22,
-  },
-  footer: {
-    padding: SIZES.padding,
-    paddingBottom: 40,
-    alignItems: "center",
-  },
-  footerNote: {
-    fontSize: 12,
-    color: COLORS.gray,
-    fontStyle: "italic",
-    ...FONTS.regular,
-  },
-  resultsButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    width: "100%",
-    elevation: 4,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  resultsButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    ...FONTS.bold,
-    marginRight: 10,
-  },
-});
-
-// export default BehaviouralScreen;

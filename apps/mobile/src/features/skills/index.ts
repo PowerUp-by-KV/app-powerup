@@ -1,1 +1,1 @@
-export * from "./VerbalCategoriesScreen";
+export { VerbalCategoriesScreen } from "./VerbalCategoriesScreen";

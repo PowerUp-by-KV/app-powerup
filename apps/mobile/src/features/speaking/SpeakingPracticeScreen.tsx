@@ -2,22 +2,19 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   Animated,
-  Dimensions,
   Easing,
   FlatList,
   useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { speakingPrompts, speakingCategories } from "@/constants/verbalData";
-import { ArrowLeft, Mic, StopCircle, RotateCcw, Play, CheckCircle } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { ArrowLeft, Mic, StopCircle } from "lucide-react-native";
 import { Audio } from "expo-av";
-// import { apiService } from '@/services/api';
+import { useTimeTracker } from "@/hooks/useTimeTracker";
+
 const apiService = {
   uploadVerbalAudio: async (uri: string, id: string) => {
     console.log("Uploading audio...", uri, id);
@@ -25,32 +22,28 @@ const apiService = {
   },
 };
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+interface SpeakingPageProps {
+  item: any;
+  isActive: boolean;
+  category: any;
+  setIsSwipingDisabled: (disabled: boolean) => void;
+  width: number;
+}
 
-const SpeakingPage = ({
-  item,
-  isActive,
-  category,
-  isSwipingDisabled,
-  setIsSwipingDisabled,
-  width,
-}) => {
+const SpeakingPage = ({ item, isActive, setIsSwipingDisabled, width }: SpeakingPageProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [timeLeft, setTimeLeft] = useState(item.timeLimit);
-  const [isFinished, setIsFinished] = useState(false);
-  const [recording, setRecording] = useState(null);
-  const [audioUri, setAudioUri] = useState(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   const bars = Array(15)
     .fill(0)
     .map(() => useRef(new Animated.Value(10)).current);
   const micScale = useRef(new Animated.Value(1)).current;
-  const timerRef = useRef(null);
+  const timerRef = useRef<any>(null);
 
   useEffect(() => {
     if (isRecording) {
       setIsSwipingDisabled(true);
-      // Pulse mic
       Animated.loop(
         Animated.sequence([
           Animated.timing(micScale, {
@@ -68,7 +61,6 @@ const SpeakingPage = ({
         ]),
       ).start();
 
-      // Animate bars
       bars.forEach((bar) => {
         const animateBar = () => {
           Animated.sequence([
@@ -90,7 +82,7 @@ const SpeakingPage = ({
       });
 
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
+        setTimeLeft((prev: number) => {
           if (prev <= 1) {
             handleStopRecording();
             return 0;
@@ -121,7 +113,6 @@ const SpeakingPage = ({
       );
       setRecording(recording);
       setIsRecording(true);
-      setIsFinished(false);
     } catch (err) {
       console.error("Failed to start recording", err);
     }
@@ -129,25 +120,24 @@ const SpeakingPage = ({
 
   const handleStopRecording = async () => {
     setIsRecording(false);
-    setIsFinished(true);
     try {
       if (recording) {
         await recording.stopAndUnloadAsync();
         const uri = recording.getURI();
-        setAudioUri(uri);
-        try {
-          await apiService.uploadVerbalAudio(uri, item.id);
-        } catch (uploadError) {
-          console.log("Backend offline - continuing");
+        if (uri) {
+          try {
+            await apiService.uploadVerbalAudio(uri, item.id);
+          } catch (uploadError) {
+            console.log("Backend offline - continuing");
+          }
+          router.replace({
+            pathname: "/SpeechAnalysis",
+            params: { promptId: item.id, duration: item.timeLimit - timeLeft, audioUri: uri },
+          });
         }
-        router.replace({
-          pathname: "/SpeechAnalysis",
-          params: { promptId: item.id, duration: item.timeLimit - timeLeft, audioUri: uri },
-        });
       }
     } catch (error) {
       console.error("Failed to stop recording", error);
-      setIsFinished(false);
     }
   };
 
@@ -155,72 +145,63 @@ const SpeakingPage = ({
 
   return (
     <View
-      style={[
-        styles.pageContainer,
-        {
-          width: width,
-          paddingHorizontal: windowWidth > 1200 ? 100 : windowWidth > 800 ? 50 : 20,
-        },
-      ]}
+      style={{ width }}
+      className={`flex-1 ${windowWidth > 1200 ? "px-[100px]" : windowWidth > 800 ? "px-[50px]" : "px-5"}`}
     >
-      <View style={styles.pageContent}>
-        <View style={styles.promptCard}>
-          <Text style={styles.promptLabel}>SPEAKING PROMPT</Text>
-          <Text style={styles.promptText}>{item.prompt}</Text>
+      <View className="flex-1 p-[20px] justify-between">
+        <View className="bg-white p-[25px] rounded-[25px] shadow-sm shadow-black/10 elevation-4">
+          <Text className="text-[12px] text-[#6366F1] font-bold tracking-widest mb-2.5 uppercase">
+            SPEAKING PROMPT
+          </Text>
+          <Text className="text-[20px] text-black font-bold leading-[28px]">{item.prompt}</Text>
         </View>
 
-        <View style={styles.visualSection}>
-          <View style={styles.timerCircle}>
-            <Text style={[styles.timerValue, timeLeft < 10 && { color: COLORS.error }]}>
+        <View className="items-center justify-center">
+          <View className="w-[150px] h-[150px] rounded-full border-8 border-white justify-center items-center bg-white shadow-lg shadow-black/10 elevation-10 mb-10">
+            <Text
+              className={`text-[48px] font-bold ${timeLeft < 10 ? "text-[#EF4444]" : "text-[#6366F1]"}`}
+            >
               {timeLeft < 10 ? `0${timeLeft}` : timeLeft}
             </Text>
-            <Text style={styles.timerLabel}>Seconds Remaining</Text>
+            <Text className="text-[12px] text-[#64748B] font-medium">Seconds Remaining</Text>
           </View>
-          <View style={styles.waveformContainer}>
+          <View className="flex-row items-center justify-center h-[60px]">
             {bars.map((bar, i) => (
               <Animated.View
                 key={i}
-                style={[
-                  styles.waveBar,
-                  { height: bar, backgroundColor: isRecording ? COLORS.primary : COLORS.gray },
-                ]}
+                style={[{ height: bar, backgroundColor: isRecording ? "#6366F1" : "#94A3B8" }]}
+                className="w-1.5 rounded-full mx-0.75"
               />
             ))}
           </View>
         </View>
 
-        <View style={styles.controlSection}>
-          {!isFinished ? (
-            <View style={styles.micContainer}>
-              <Animated.View
-                style={[
-                  styles.micPulse,
-                  { transform: [{ scale: micScale }], opacity: isRecording ? 0.3 : 0 },
-                ]}
-              />
-              <TouchableOpacity
-                style={[styles.micButton, isRecording && { backgroundColor: COLORS.error }]}
-                onPress={isRecording ? handleStopRecording : handleStartRecording}
-                activeOpacity={0.8}
-              >
-                {isRecording ? (
-                  <StopCircle size={40} color={COLORS.white} />
-                ) : (
-                  <Mic size={40} color={COLORS.white} />
-                )}
-              </TouchableOpacity>
-              <Text style={styles.instructionText}>
-                {isRecording ? "Tap to stop" : "Tap to start"}
-              </Text>
-            </View>
-          ) : null}
+        <View className="items-center pb-10">
+          <View className="items-center">
+            <Animated.View
+              style={[{ transform: [{ scale: micScale }], opacity: isRecording ? 0.3 : 0 }]}
+              className="absolute w-[80px] h-[80px] rounded-full bg-[#6366F1]"
+            />
+            <TouchableOpacity
+              className={`w-[80px] h-[80px] rounded-full justify-center items-center shadow-lg shadow-[#6366F1]/30 elevation-12 mb-5 ${isRecording ? "bg-[#EF4444]" : "bg-[#6366F1]"}`}
+              onPress={isRecording ? handleStopRecording : handleStartRecording}
+              activeOpacity={0.8}
+            >
+              {isRecording ? (
+                <StopCircle size={40} color="white" />
+              ) : (
+                <Mic size={40} color="white" />
+              )}
+            </TouchableOpacity>
+            <Text className="text-base text-[#64748B] font-medium ">
+              {isRecording ? "Tap to stop" : "Tap to start"}
+            </Text>
+          </View>
         </View>
       </View>
     </View>
   );
 };
-
-import { useTimeTracker } from "@/hooks/useTimeTracker";
 
 export const SpeakingPracticeScreen = () => {
   useTimeTracker("verbal");
@@ -235,19 +216,18 @@ export const SpeakingPracticeScreen = () => {
   let initialIndex = 0;
   if (passedPrompt) {
     initialIndex = filteredPrompts.findIndex((p) => p.id === passedPrompt.id);
-  } else if (!categoryId && passedPrompt) {
-    // handle edge case
   }
 
   const { width: windowWidth } = useWindowDimensions();
   const CONTAINER_WIDTH = windowWidth;
   const [activeIndex, setActiveIndex] = useState(initialIndex !== -1 ? initialIndex : 0);
   const [isSwipingDisabled, setIsSwipingDisabled] = useState(false);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
 
-  const currentPrompt = filteredPrompts[activeIndex];
-  const category =
-    speakingCategories.find((c) => c.id === currentPrompt.categoryId) || speakingCategories[0];
+  const currentPrompt = filteredPrompts[activeIndex] || filteredPrompts[0];
+  const category = currentPrompt
+    ? speakingCategories.find((c) => c.id === currentPrompt.categoryId) || speakingCategories[0]
+    : speakingCategories[0];
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -260,24 +240,26 @@ export const SpeakingPracticeScreen = () => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] flex-row items-center bg-white border-b border-[#F1F5F9]">
         <TouchableOpacity
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center"
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.topicLabel}>Speaking • {category.title}</Text>
-          <Text style={styles.headerTitle}>Practice Mode</Text>
-          <Text style={styles.headerSubtitle}>
+        <View className="flex-1 ml-[15px]">
+          <Text className="text-[10px] text-[#6366F1] font-bold uppercase tracking-widest mb-0.5">
+            Speaking • {category?.title || "Practice"}
+          </Text>
+          <Text className="text-[18px] text-black font-bold">Practice Mode</Text>
+          <Text className="text-[12px] text-[#64748B] font-medium">
             Prompt {activeIndex + 1} of {filteredPrompts.length}
           </Text>
         </View>
       </View>
 
-      <View style={styles.centeredContainer}>
+      <View className="flex-1 w-full self-center">
         <FlatList
           ref={flatListRef}
           data={filteredPrompts}
@@ -286,7 +268,6 @@ export const SpeakingPracticeScreen = () => {
               item={item}
               isActive={index === activeIndex}
               category={category}
-              isSwipingDisabled={isSwipingDisabled}
               setIsSwipingDisabled={setIsSwipingDisabled}
               width={CONTAINER_WIDTH}
             />
@@ -313,191 +294,5 @@ export const SpeakingPracticeScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  pageContainer: {
-    flex: 1,
-  },
-  pageContent: {
-    flex: 1,
-    padding: SIZES.padding,
-    justifyContent: "space-between",
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.background,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitleContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  topicLabel: {
-    fontSize: 10,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  difficultyBadge: {
-    backgroundColor: COLORS.primary + "15",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  difficultyText: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  content: {
-    flex: 1,
-    padding: SIZES.padding,
-    justifyContent: "space-between",
-  },
-  promptCard: {
-    backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: 25,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  promptLabel: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    letterSpacing: 1.2,
-    marginBottom: 10,
-  },
-  promptText: {
-    fontSize: 20,
-    color: COLORS.black,
-    ...FONTS.bold,
-    lineHeight: 28,
-  },
-  visualSection: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  timerCircle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    borderWidth: 8,
-    borderColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    elevation: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    marginBottom: 40,
-  },
-  timerValue: {
-    fontSize: 48,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  timerLabel: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  waveformContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 60,
-  },
-  waveBar: {
-    width: 6,
-    borderRadius: 3,
-    marginHorizontal: 3,
-  },
-  controlSection: {
-    alignItems: "center",
-    paddingBottom: 40,
-  },
-  micContainer: {
-    alignItems: "center",
-  },
-  micPulse: {
-    position: "absolute",
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary,
-  },
-  micButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: COLORS.primary,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 12,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    marginBottom: 20,
-  },
-  instructionText: {
-    fontSize: 16,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  processingSection: {
-    alignItems: "center",
-  },
-  processingText: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginBottom: 5,
-  },
-  processingSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  centeredContainer: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "center",
-  },
-});
 
 // export default SpeakingPracticeScreen;

@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { grammarTopics } from "@/constants/grammarData";
 import { ArrowLeft, ChevronRight, Book } from "lucide-react-native";
 
@@ -12,12 +11,12 @@ export const GrammarScreen = () => {
   const topics = grammarTopics || [];
   const { grammarProgress } = useAppContext();
 
-  const renderChapter = ({ item }) => {
-    const progress = grammarProgress[item.id]?.progress || 25;
+  const renderChapter = ({ item }: { item: any }) => {
+    const progress = grammarProgress[item.id]?.progress ?? 25;
     return (
       <TouchableOpacity
         activeOpacity={0.8}
-        style={styles.chapterCard}
+        className="bg-white rounded-[20px] p-5 mb-[15px] flex-row items-center shadow-sm shadow-black/5 elevation-2"
         onPress={() =>
           router.push({
             pathname: "/topics",
@@ -25,30 +24,35 @@ export const GrammarScreen = () => {
           })
         }
       >
-        <View style={styles.chapterIconContainer}>
-          <Book size={24} color={COLORS.primary} />
+        <View className="w-[50px] h-[50px] rounded-[15px] bg-[#6366F1]/15 justify-center items-center mr-[15px]">
+          <Book size={24} color="#6366F1" />
         </View>
-        <View style={styles.chapterInfo}>
-          <View style={styles.chapterHeader}>
-            <Text style={styles.chapterTitle}>{item.title}</Text>
-            <Text style={styles.lessonCount}>{item.chapters?.length || 0} Chapters</Text>
+        <View className="flex-1 mr-[15px]">
+          <View className="flex-row justify-between items-center mb-2.5">
+            <Text className="text-lg text-black font-semibold">{item.title}</Text>
+            <Text className="text-xs text-[#64748B] font-medium">
+              {item.chapters?.length ?? 0} Chapters
+            </Text>
           </View>
-          <ProgressBar progress={progress} color={COLORS.primary} />
+          <ProgressBar progress={progress} color="#6366F1" />
         </View>
-        <ChevronRight size={20} color={COLORS.lightGray} />
+        <ChevronRight size={20} color="#CBD5E1" />
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] bg-white rounded-b-[30px] flex-row items-center mb-2.5">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center mr-[15px]"
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>Grammar Topics</Text>
-          <Text style={styles.headerSub}>Master English structure step-by-step</Text>
+          <Text className="text-2xl text-black font-bold">Grammar Topics</Text>
+          <Text className="text-sm text-[#64748B]">Master English structure step-by-step</Text>
         </View>
       </View>
 
@@ -56,93 +60,9 @@ export const GrammarScreen = () => {
         data={topics}
         renderItem={renderChapter}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  listContent: {
-    padding: SIZES.padding,
-    paddingBottom: 100,
-  },
-  chapterCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  chapterIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 15,
-    backgroundColor: COLORS.primary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  chapterInfo: {
-    flex: 1,
-    marginRight: 15,
-  },
-  chapterHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  chapterTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.semiBold,
-  },
-  lessonCount: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-});
-
-// export default GrammarScreen;

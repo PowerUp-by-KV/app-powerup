@@ -1,6 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { COLORS, FONTS } from "@/constants/theme";
+import { View, Text, TouchableOpacity } from "react-native";
 
 interface MCQOptionProps {
   label: string;
@@ -16,7 +15,7 @@ interface MCQOptionProps {
  * Standardized MCQ Option component with (A, B, C, D) labels.
  * Provides unified styling for selection, correct, and incorrect states.
  */
-const MCQOption = ({
+export const MCQOption = ({
   label,
   text,
   isSelected,
@@ -25,116 +24,47 @@ const MCQOption = ({
   onPress,
   disabled,
 }: MCQOptionProps) => {
+  let borderColor = "border-[#E2E8F0]"; // slate-200
+  let bgColor = "bg-white";
+  let indexBg = "bg-[#F1F5F9]"; // slate-100
+  let indexTextColor = "text-[#475569]"; // slate-600
+  let textColor = "text-[#1E293B]"; // slate-800
+
+  if (isSelected) {
+    borderColor = "border-[#6366F1]"; // primary
+    bgColor = "bg-[#6366F1]/10";
+    indexBg = "bg-[#6366F1]";
+    indexTextColor = "text-white";
+    textColor = "text-[#6366F1]";
+  }
+
+  if (isCorrect) {
+    borderColor = "border-[#22C55E]"; // success
+    bgColor = "bg-[#22C55E]/10";
+    indexBg = "bg-[#22C55E]";
+    indexTextColor = "text-white";
+    textColor = "text-[#22C55E]";
+  }
+
+  if (isWrong) {
+    borderColor = "border-[#EF4444]"; // error
+    bgColor = "bg-[#EF4444]/10";
+    indexBg = "bg-[#EF4444]";
+    indexTextColor = "text-white";
+    textColor = "text-[#EF4444]";
+  }
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      style={[
-        styles.optionButton,
-        isSelected && styles.selectedOption,
-        isCorrect && styles.correctOption,
-        isWrong && styles.wrongOption,
-      ]}
+      className={`flex-row items-center p-[15px] rounded-[18px] border-2 mb-3 ${borderColor} ${bgColor}`}
       onPress={onPress}
       disabled={disabled}
     >
-      <View
-        style={[
-          styles.optionIndex,
-          isSelected && styles.selectedOptionIndex,
-          isCorrect && styles.correctOptionIndex,
-          isWrong && styles.wrongOptionIndex,
-        ]}
-      >
-        <Text
-          style={[
-            styles.optionIndexText,
-            (isSelected || isCorrect || isWrong) && styles.selectedOptionIndexText,
-          ]}
-        >
-          {label}
-        </Text>
+      <View className={`w-8 h-8 rounded-full justify-center items-center mr-[15px] ${indexBg}`}>
+        <Text className={`text-sm font-bold ${indexTextColor}`}>{label}</Text>
       </View>
-      <Text
-        style={[
-          styles.optionText,
-          isSelected && styles.selectedOptionText,
-          isCorrect && styles.correctOptionText,
-          isWrong && styles.wrongOptionText,
-        ]}
-      >
-        {text}
-      </Text>
+      <Text className={`text-base font-medium flex-1 ${textColor}`}>{text}</Text>
     </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: "#E2E8F0", // slate-200
-    marginBottom: 12,
-    backgroundColor: COLORS.white,
-  },
-  selectedOption: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "10",
-  },
-  correctOption: {
-    borderColor: COLORS.success,
-    backgroundColor: COLORS.success + "10",
-  },
-  wrongOption: {
-    borderColor: COLORS.error,
-    backgroundColor: COLORS.error + "10",
-  },
-  optionIndex: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#F1F5F9", // slate-100
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  selectedOptionIndex: {
-    backgroundColor: COLORS.primary,
-  },
-  correctOptionIndex: {
-    backgroundColor: COLORS.success,
-  },
-  wrongOptionIndex: {
-    backgroundColor: COLORS.error,
-  },
-  optionIndexText: {
-    fontSize: 14,
-    color: "#475569", // slate-600
-    ...FONTS.bold,
-  },
-  selectedOptionIndexText: {
-    color: COLORS.white,
-  },
-  optionText: {
-    fontSize: 16,
-    color: "#1E293B", // slate-800
-    flex: 1,
-    ...FONTS.medium,
-  },
-  selectedOptionText: {
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  correctOptionText: {
-    color: COLORS.success,
-    ...FONTS.bold,
-  },
-  wrongOptionText: {
-    color: COLORS.error,
-    ...FONTS.bold,
-  },
-});
-
-export default MCQOption;

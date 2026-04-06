@@ -1,6 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { COLORS, FONTS } from "@/constants/theme";
+import { View, Text } from "react-native";
+import { COLORS } from "@/constants/theme";
 
 interface CEFRLevelBarProps {
   currentLevel: string;
@@ -12,105 +12,41 @@ export const CEFRLevelBar: React.FC<CEFRLevelBarProps> = ({ currentLevel }) => {
   const currentIndex = levels.indexOf(currentLevel) === -1 ? 2 : levels.indexOf(currentLevel);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>CEFR Level: {currentLevel} (Intermediate)</Text>
-      <View style={styles.barContainer}>
-        <View style={styles.track} />
+    <View className="my-[15px]">
+      <Text className="text-base font-semibold text-black mb-5">
+        CEFR Level: {currentLevel} (Intermediate)
+      </Text>
+      <View className="h-10 justify-center">
+        <View className="absolute h-1 left-0 right-0 bg-[#E2E8F0] rounded-full" />
         <View
-          style={[
-            styles.progressTrack,
-            { width: `${(currentIndex / (levels.length - 1)) * 100}%` },
-          ]}
+          className="absolute h-1 left-0 bg-[#6366F1] rounded-full"
+          style={{ width: `${(currentIndex / (levels.length - 1)) * 100}%` }}
         />
-        <View style={styles.levelsRow}>
-          {levels.map((level, index) => (
-            <View key={level} style={styles.levelItem}>
-              <View
-                style={[
-                  styles.dot,
-                  index <= currentIndex ? styles.dotActive : styles.dotInactive,
-                  index === currentIndex ? styles.dotCurrent : null,
-                ]}
-              />
-              <Text
-                style={[styles.levelText, index === currentIndex ? styles.levelTextActive : null]}
-              >
-                {level}
-              </Text>
-            </View>
-          ))}
+        <View className="flex-row justify-between items-center">
+          {levels.map((level, index) => {
+            const isActive = index <= currentIndex;
+            const isCurrent = index === currentIndex;
+            return (
+              <View key={level} className="items-center">
+                <View
+                  className={`border-2 border-white mb-1 ${
+                    isCurrent
+                      ? "w-4 h-4 rounded-full bg-[#6366F1] -translate-y-0.5 z-10"
+                      : `w-3 h-3 rounded-full ${isActive ? "bg-[#6366F1]" : "bg-[#E2E8F0]"}`
+                  }`}
+                />
+                <Text
+                  className={`text-[12px] ${
+                    isCurrent ? "text-[#6366F1] font-bold" : "text-[#94A3B8] font-medium"
+                  }`}
+                >
+                  {level}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 15,
-  },
-  title: {
-    fontSize: 16,
-    ...FONTS.semiBold,
-    color: COLORS.black,
-    marginBottom: 20,
-  },
-  barContainer: {
-    height: 40,
-    justifyContent: "center",
-  },
-  track: {
-    position: "absolute",
-    height: 4,
-    left: 0,
-    right: 0,
-    backgroundColor: COLORS.lightGray,
-    borderRadius: 2,
-  },
-  progressTrack: {
-    position: "absolute",
-    height: 4,
-    left: 0,
-    backgroundColor: COLORS.primary,
-    borderRadius: 2,
-  },
-  levelsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  levelItem: {
-    alignItems: "center",
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: COLORS.white,
-    marginBottom: 4,
-  },
-  dotActive: {
-    backgroundColor: COLORS.primary,
-  },
-  dotInactive: {
-    backgroundColor: COLORS.lightGray,
-  },
-  dotCurrent: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: COLORS.primary,
-    transform: [{ translateY: -2 }],
-    zIndex: 1,
-  },
-  levelText: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  levelTextActive: {
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-});

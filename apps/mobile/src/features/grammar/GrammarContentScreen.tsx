@@ -2,21 +2,15 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   FlatList,
   useWindowDimensions,
-  Dimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
-import { ArrowLeft, Play, BookOpen, ChevronRight, ChevronLeft } from "lucide-react-native";
+import { ArrowLeft, Play, BookOpen, ChevronRight } from "lucide-react-native";
 import { grammarTopics } from "@/constants/grammarData";
-
 import { useTimeTracker } from "@/hooks/useTimeTracker";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export const GrammarContentScreen = () => {
   useTimeTracker("grammar");
@@ -24,15 +18,14 @@ export const GrammarContentScreen = () => {
   const { subtopic: subtopicRaw } = useLocalSearchParams();
   const initialSubtopic = typeof subtopicRaw === "string" ? JSON.parse(subtopicRaw) : subtopicRaw;
 
-  // 1. Find the current topic, chapter and all its subtopics
-  let chapterSubtopics = [];
+  let chapterSubtopics: any[] = [];
   let initialIndex = 0;
   let topicTitle = "";
   let chapterTitle = "";
 
   grammarTopics.forEach((topic) => {
     topic.chapters.forEach((chapter) => {
-      const foundIndex = chapter.subtopics.findIndex((st) => st.id === initialSubtopic.id);
+      const foundIndex = chapter.subtopics.findIndex((st) => st.id === initialSubtopic?.id);
       if (foundIndex !== -1) {
         chapterSubtopics = chapter.subtopics;
         initialIndex = foundIndex;
@@ -43,7 +36,7 @@ export const GrammarContentScreen = () => {
   });
 
   const [activeIndex, setActiveIndex] = useState(initialIndex);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef<FlatList>(null);
 
   if (chapterSubtopics.length === 0) return null;
 
@@ -54,29 +47,11 @@ export const GrammarContentScreen = () => {
       flatListRef.current?.scrollToIndex({ index: activeIndex + 1, animated: true });
       setActiveIndex(activeIndex + 1);
     } else {
-      // Logic for moving to next chapter or topic
       moveToNextChapter();
     }
   };
 
   const moveToNextChapter = () => {
-    let currentTopicIndex = -1;
-    let currentChapterIndex = -1;
-
-    for (let t = 0; t < grammarTopics.length; t++) {
-      for (let c = 0; c < grammarTopics[t].chapters.length; c++) {
-        if (
-          grammarTopics[t].chapters[c].id ===
-          grammarTopics
-            .find((tp) => tp.chapters.some((ch) => ch.id === grammarTopics[t].chapters[c].id))
-            ?.chapters.find((ch) => ch.subtopics.some((st) => st.id === currentSubtopic.id))?.id
-        ) {
-          // This is complex, let's simplify.
-        }
-      }
-    }
-
-    // Simpler lookup for next navigation
     let topicIdx = -1,
       chapIdx = -1;
     grammarTopics.forEach((t, ti) => {
@@ -92,10 +67,9 @@ export const GrammarContentScreen = () => {
 
     const currentTopic = grammarTopics[topicIdx];
 
-    // Try next chapter in same topic
-    if (chapIdx < currentTopic.chapters.length - 1) {
+    if (currentTopic && chapIdx < currentTopic.chapters.length - 1) {
       const nextChapter = currentTopic.chapters[chapIdx + 1];
-      if (nextChapter.subtopics.length > 0) {
+      if (nextChapter && nextChapter.subtopics?.length > 0) {
         router.replace({
           pathname: "/GrammarContent",
           params: { subtopic: JSON.stringify(nextChapter.subtopics[0]) },
@@ -104,53 +78,49 @@ export const GrammarContentScreen = () => {
       }
     }
 
-    // Try next topic
     if (topicIdx < grammarTopics.length - 1) {
       const nextTopic = grammarTopics[topicIdx + 1];
-      if (nextTopic.chapters.length > 0 && nextTopic.chapters[0].subtopics.length > 0) {
+      const nextLesson = nextTopic?.chapters?.[0]?.subtopics?.[0];
+      if (nextLesson) {
         router.replace({
           pathname: "/GrammarContent",
-          params: { subtopic: JSON.stringify(nextTopic.chapters[0].subtopics[0]) },
+          params: { subtopic: JSON.stringify(nextLesson) },
         });
         return;
       }
     }
 
-    // Back to home
     router.replace("/(tabs)");
   };
 
-  const renderSubtopic = ({ item }) => (
-    <View style={[styles.pageContainer, { width }]}>
+  const renderSubtopic = ({ item }: { item: any }) => (
+    <View style={{ width }} className="flex-1 overflow-hidden">
       <FlatList
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={{ padding: 20 }}
         ListHeaderComponent={() => (
           <>
-            {/* Definition Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <BookOpen size={20} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Definition</Text>
+            <View className="mb-[30px]">
+              <View className="flex-row items-center mb-2.5">
+                <BookOpen size={20} color="#6366F1" />
+                <Text className="text-lg text-black font-bold ml-2.5">Definition</Text>
               </View>
-              <Text style={styles.definitionText}>{item.definition}</Text>
+              <Text className="text-base text-[#475569] leading-6">{item.definition}</Text>
             </View>
 
-            {/* Rule Section */}
-            <View style={[styles.section, styles.ruleSection]}>
-              <Text style={styles.sectionTitleSmall}>Grammar Rule</Text>
-              <View style={styles.ruleCard}>
-                <Text style={styles.ruleText}>{item.rule}</Text>
+            <View className="mb-[30px] bg-[#F8F9FA] p-5 rounded-[20px]">
+              <Text className="text-base text-[#475569] font-semibold mb-3">Grammar Rule</Text>
+              <View className="bg-white p-[15px] rounded-xl border-l-4 border-[#6366F1]">
+                <Text className="text-base text-[#6366F1] font-bold">{item.rule}</Text>
               </View>
             </View>
 
-            {/* Examples Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitleSmall}>Examples</Text>
-              {item.examples.map((example, index) => (
-                <View key={index} style={styles.exampleItem}>
-                  <View style={styles.bullet} />
-                  <Text style={styles.exampleText}>{example}</Text>
+            <View className="mb-[30px]">
+              <Text className="text-base text-[#475569] font-semibold mb-3">Examples</Text>
+              {item.examples.map((example: string, index: number) => (
+                <View key={index} className="flex-row items-center mb-2.5 pl-1.25">
+                  <View className="w-1.5 h-1.5 rounded-full bg-[#6366F1] mr-3" />
+                  <Text className="text-[15px] text-[#475569] font-medium">{example}</Text>
                 </View>
               ))}
             </View>
@@ -158,30 +128,32 @@ export const GrammarContentScreen = () => {
         )}
         data={[]}
         renderItem={null}
-        ListFooterComponent={() => <View style={{ height: 100 }} />}
+        ListFooterComponent={() => <View className="h-25" />}
       />
     </View>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="p-5 pt-[60px] flex-row items-center border-b border-[#F1F5F9]">
+        <TouchableOpacity onPress={() => router.back()} className="mr-[15px]">
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <View style={styles.headerTextContainer}>
-          <Text style={styles.topicLabel}>
+        <View className="flex-1">
+          <Text className="text-xs text-[#6366F1] font-bold uppercase tracking-widest mb-0.5">
             {topicTitle} • {chapterTitle}
           </Text>
-          <Text style={styles.headerTitle}>{currentSubtopic.title}</Text>
-          <Text style={styles.headerSub}>
+          <Text className="text-xl text-black font-bold">{currentSubtopic?.title}</Text>
+          <Text className="text-sm text-[#94A3B8] font-medium">
             Lesson {activeIndex + 1} of {chapterSubtopics.length}
           </Text>
         </View>
-        <View style={styles.progressDots}>
+        <View className="flex-row items-center">
           {chapterSubtopics.map((_, i) => (
-            <View key={i} style={[styles.dot, i === activeIndex && styles.activeDot]} />
+            <View
+              key={i}
+              className={`h-1.5 rounded-full ml-1 ${i === activeIndex ? "w-5 bg-[#6366F1]" : "w-1.5 bg-[#F1F5F9]"}`}
+            />
           ))}
         </View>
       </View>
@@ -208,199 +180,32 @@ export const GrammarContentScreen = () => {
         initialScrollIndex={initialIndex}
       />
 
-      {/* Action Footer */}
-      <View style={styles.footer}>
-        <View style={styles.buttonRow}>
+      <View className="p-5 pb-10 border-t border-[#F1F5F9]">
+        <View className="flex-row justify-between items-center">
           <TouchableOpacity
-            style={styles.practiceButton}
+            className="flex-[1.2] bg-[#6366F1] flex-row justify-center items-center py-[18px] rounded-[20px] mr-2.5"
             onPress={() =>
               router.push({
                 pathname: "/exercise",
-                params: { lessonId: currentSubtopic.id, lessonTitle: currentSubtopic.title },
+                params: { lessonId: currentSubtopic?.id, lessonTitle: currentSubtopic?.title },
               })
             }
           >
-            <Text style={styles.practiceButtonText}>Practice This</Text>
-            <Play size={20} color={COLORS.white} fill={COLORS.white} />
+            <Text className="text-white text-base font-bold mr-2.5">Practice This</Text>
+            <Play size={20} color="white" fill="white" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.nextTopicButton} onPress={handleNextLesson}>
-            <Text style={styles.nextTopicButtonText}>
+          <TouchableOpacity
+            className="flex-1 bg-white flex-row justify-center items-center py-[18px] rounded-[20px] border border-[#6366F1]"
+            onPress={handleNextLesson}
+          >
+            <Text className="text-[#6366F1] text-base font-bold mr-1.25">
               {activeIndex < chapterSubtopics.length - 1 ? "Next Lesson" : "Next Chapter"}
             </Text>
-            <ChevronRight size={20} color={COLORS.primary} />
+            <ChevronRight size={20} color="#6366F1" />
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  pageContainer: {
-    width: SCREEN_WIDTH,
-    flex: 1,
-    overflow: "hidden",
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    flexDirection: "row",
-    alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.background,
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  headerTextContainer: {
-    flex: 1,
-  },
-  topicLabel: {
-    fontSize: 12,
-    color: COLORS.primary,
-    ...FONTS.bold,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 2,
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  progressDots: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.background,
-    marginLeft: 4,
-  },
-  activeDot: {
-    width: 20,
-    backgroundColor: COLORS.primary,
-  },
-  content: {
-    padding: SIZES.padding,
-  },
-  section: {
-    marginBottom: 30,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    marginLeft: 10,
-    ...FONTS.bold,
-  },
-  sectionTitleSmall: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    marginBottom: 12,
-    ...FONTS.semiBold,
-  },
-  definitionText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    lineHeight: 24,
-    ...FONTS.regular,
-  },
-  ruleSection: {
-    backgroundColor: COLORS.background,
-    padding: 20,
-    borderRadius: 20,
-  },
-  ruleCard: {
-    backgroundColor: COLORS.white,
-    padding: 15,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  ruleText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  exampleItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    paddingLeft: 5,
-  },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.primary,
-    marginRight: 12,
-  },
-  exampleText: {
-    fontSize: 15,
-    color: COLORS.darkGray,
-    ...FONTS.medium,
-  },
-  footer: {
-    padding: SIZES.padding,
-    paddingBottom: 40,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.background,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  practiceButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 18,
-    borderRadius: 20,
-    flex: 1.2,
-    marginRight: 10,
-  },
-  practiceButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    marginRight: 10,
-    ...FONTS.bold,
-  },
-  nextTopicButton: {
-    backgroundColor: COLORS.white,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 18,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    flex: 1,
-  },
-  nextTopicButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    marginRight: 5,
-    ...FONTS.bold,
-  },
-});
-
-// export default GrammarContentScreen;

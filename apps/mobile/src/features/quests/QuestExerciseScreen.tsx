@@ -2,18 +2,22 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Animated,
   FlatList,
-  Dimensions,
   Alert,
+  ScrollView,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { DAILY_QUESTS } from "@/constants/questData";
-import { ArrowLeft, Check, X, ChevronRight, ChevronLeft, Zap, Timer } from "lucide-react-native";
+import {
+  ArrowLeft,
+  Check,
+  ChevronRight,
+  ChevronLeft,
+  Zap,
+  Timer as TimerIcon,
+} from "lucide-react-native";
 import { MCQOption, Card } from "@/features/learning/components";
 import { ProgressBar } from "@/features/progress/components";
 import { useWindowDimensions } from "react-native";
@@ -24,6 +28,19 @@ export const QuestExerciseScreen = () => {
 
   const { questId } = useLocalSearchParams();
   const quest = DAILY_QUESTS.find((q) => q.id === questId) || DAILY_QUESTS[0];
+  if (!quest) {
+    return (
+      <SafeAreaView className="flex-1 bg-[#F8F9FA] justify-center items-center">
+        <Text className="text-lg text-black">Quest not found</Text>
+        <TouchableOpacity
+          className="mt-5 bg-[#6366F1] px-5 py-2.5 rounded-xl"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white font-bold">Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
   const questions = quest.questions;
   const totalQuestions = questions.length;
 
@@ -36,13 +53,13 @@ export const QuestExerciseScreen = () => {
   );
 
   const flatListRef = useRef<FlatList>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<any>(null);
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timerRef.current!);
+          if (timerRef.current) clearInterval(timerRef.current);
           finishQuest(true);
           return 0;
         }
@@ -69,27 +86,6 @@ export const QuestExerciseScreen = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const handleCheck = () => {
-    const currentEx = questions[currentIndex];
-    const currentAnswerState = answers[currentIndex];
-
-    if (currentAnswerState.selectedOption === null) return;
-
-    const isCorrect = currentAnswerState.selectedOption === currentEx.correctAnswer;
-
-    const newAnswers = [...answers];
-    newAnswers[currentIndex] = {
-      ...currentAnswerState,
-      hasChecked: true,
-      isCorrect: isCorrect,
-    };
-    setAnswers(newAnswers);
-
-    if (isCorrect) {
-      setScore((prev) => prev + 1);
-    }
-  };
-
   const handleNext = () => {
     if (currentIndex < totalQuestions - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1, animated: true });
@@ -104,88 +100,97 @@ export const QuestExerciseScreen = () => {
 
     return (
       <View
-        style={[
-          styles.pageContainer,
-          {
-            width: CONTAINER_WIDTH,
-            paddingHorizontal: windowWidth > 1200 ? 100 : windowWidth > 800 ? 50 : 20,
-          },
-        ]}
+        style={{ width: CONTAINER_WIDTH }}
+        className={`justify-center py-5 ${windowWidth > 1200 ? "px-[100px]" : windowWidth > 800 ? "px-[50px]" : "px-5"}`}
       >
-        <Card style={styles.card}>
-          <Text style={styles.questionType}>{item.type.toUpperCase()}</Text>
-          <Text style={styles.questionText}>{item.question}</Text>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingVertical: 20 }}
+        >
+          <Card className="p-10 min-h-[500px] rounded-[20px] shadow-sm shadow-black/5 elevation-3">
+            <Text className="text-xs text-[#6366F1] mb-2.5 font-bold tracking-widest uppercase">
+              {item.type.toUpperCase()}
+            </Text>
+            <Text className="text-[22px] text-black mb-[30px] font-bold leading-[30px]">
+              {item.question}
+            </Text>
 
-          <View style={styles.optionsContainer}>
-            {item.options.map((option: string, optIdx: number) => {
-              const isSelected = currentAnswer.selectedOption === optIdx;
-              const isCorrectOption = currentAnswer.hasChecked && optIdx === item.correctAnswer;
-              const isWrongSelection = currentAnswer.hasChecked && isSelected && !isCorrectOption;
+            <View className="w-full">
+              {item.options.map((option: string, optIdx: number) => {
+                const isSelected = (currentAnswer as any).selectedOption === optIdx;
+                const isCorrectOption =
+                  (currentAnswer as any).hasChecked && optIdx === item.correctAnswer;
+                const isWrongSelection =
+                  (currentAnswer as any).hasChecked && isSelected && !isCorrectOption;
 
-              return (
-                <MCQOption
-                  key={optIdx}
-                  label={String.fromCharCode(65 + optIdx)}
-                  text={option}
-                  isSelected={isSelected}
-                  isCorrect={isCorrectOption}
-                  isWrong={isWrongSelection}
-                  disabled={currentAnswer.hasChecked}
-                  onPress={() => {
-                    if (!currentAnswer.hasChecked) {
-                      const newAnswers = [...answers];
-                      newAnswers[index].selectedOption = optIdx;
+                return (
+                  <MCQOption
+                    key={optIdx}
+                    label={String.fromCharCode(65 + optIdx)}
+                    text={option}
+                    isSelected={isSelected}
+                    isCorrect={isCorrectOption}
+                    isWrong={isWrongSelection}
+                    disabled={(currentAnswer as any).hasChecked}
+                    onPress={() => {
+                      if (!(currentAnswer as any).hasChecked) {
+                        const newAnswers = [...answers];
+                        (newAnswers[index] as any).selectedOption = optIdx;
 
-                      // Auto Check
-                      const isCorrect = optIdx === item.correctAnswer;
-                      newAnswers[index].hasChecked = true;
-                      newAnswers[index].isCorrect = isCorrect;
-                      setAnswers(newAnswers);
+                        const isCorrect = optIdx === item.correctAnswer;
+                        (newAnswers[index] as any).hasChecked = true;
+                        (newAnswers[index] as any).isCorrect = isCorrect;
+                        setAnswers(newAnswers);
 
-                      if (isCorrect) setScore((prev) => prev + 1);
+                        if (isCorrect) setScore((prev) => prev + 1);
 
-                      // Auto Next after delay
-                      setTimeout(() => {
-                        if (index < totalQuestions - 1) {
-                          handleNext();
-                        }
-                      }, 1200);
-                    }
-                  }}
-                />
-              );
-            })}
-          </View>
-
-          {currentAnswer.hasChecked && (
-            <View style={styles.feedbackContainer}>
-              <Text style={styles.explanationText}>{item.explanation}</Text>
+                        setTimeout(() => {
+                          if (index < totalQuestions - 1) {
+                            handleNext();
+                          }
+                        }, 1200);
+                      }
+                    }}
+                  />
+                );
+              })}
             </View>
-          )}
-        </Card>
+
+            {(currentAnswer as any).hasChecked && (
+              <View className="mt-5 p-[15px] rounded-xl bg-[#F8F9FA]">
+                <Text className="text-sm text-[#64748B] font-normal leading-5">
+                  {item.explanation}
+                </Text>
+              </View>
+            )}
+          </Card>
+        </ScrollView>
       </View>
     );
   };
 
   if (isFinished) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.finishedContainer}>
-          <View style={styles.successIcon}>
-            <Check size={50} color={COLORS.white} />
+      <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 justify-center items-center p-[30px]">
+          <View className="w-[100px] h-[100px] rounded-full bg-[#22C55E] justify-center items-center mb-[30px]">
+            <Check size={50} color="white" />
           </View>
-          <Text style={styles.finishedTitle}>Quest Complete!</Text>
-          <Text style={styles.finishedSub}>
+          <Text className="text-[32px] text-black font-bold mb-2.5">Quest Complete!</Text>
+          <Text className="text-lg text-[#64748B] font-medium mb-10">
             You scored {score} out of {totalQuestions}
           </Text>
 
-          <Card style={styles.xpCard}>
-            <Zap size={24} color={COLORS.quaternary} fill={COLORS.quaternary} />
-            <Text style={styles.xpText}>+{score * 10} XP Earned</Text>
+          <Card className="flex-row items-center py-[15px] px-[25px] mb-[50px] rounded-[20px] shadow-sm shadow-black/5 elevation-3">
+            <Zap size={24} color="#FACC15" fill="#FACC15" />
+            <Text className="text-lg text-[#FACC15] ml-2.5 font-bold">+{score * 10} XP Earned</Text>
           </Card>
 
-          <TouchableOpacity style={styles.continueBtn} onPress={() => router.replace("/(tabs)")}>
-            <Text style={styles.continueBtnText}>Return Home</Text>
+          <TouchableOpacity
+            className="bg-[#6366F1] w-full py-[18px] rounded-[30px] items-center"
+            onPress={() => router.replace("/(tabs)")}
+          >
+            <Text className="text-white text-lg font-bold">Return Home</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -193,45 +198,48 @@ export const QuestExerciseScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="px-10 pt-[50px] pb-5 bg-white shadow-sm shadow-black/5 elevation-2">
+        <View className="flex-row justify-between items-center mb-2.5">
           <TouchableOpacity
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-            style={styles.backButton}
+            className="p-1.25"
           >
-            <ArrowLeft size={24} color={COLORS.black} />
+            <ArrowLeft size={24} color="#000" />
           </TouchableOpacity>
-          <View style={styles.headerInfo}>
-            <Text style={styles.topicLabel}>Daily Quest • {quest.title}</Text>
+          <View className="flex-1 mx-[15px]">
+            <Text className="text-sm text-[#64748B] font-medium" numberOfLines={1}>
+              Daily Quest • {quest.title}
+            </Text>
           </View>
-          <View style={styles.headerRight}>
-            <View style={styles.timerRow}>
-              <Timer size={16} color={timeLeft < 30 ? COLORS.error : COLORS.primary} />
-              <Text style={[styles.timerText, timeLeft < 30 && { color: COLORS.error }]}>
+          <View className="flex-row items-center">
+            <View className="flex-row items-center mr-[15px]">
+              <TimerIcon size={16} color={timeLeft < 30 ? "#EF4444" : "#6366F1"} />
+              <Text
+                className={`ml-1.25 text-sm font-bold ${timeLeft < 30 ? "text-[#EF4444]" : "text-[#6366F1]"}`}
+              >
                 {formatTime(timeLeft)}
               </Text>
             </View>
-            <Text style={styles.countText}>
+            <Text className="text-sm text-[#64748B] font-bold">
               {currentIndex + 1}/{totalQuestions}
             </Text>
           </View>
         </View>
         <ProgressBar
           progress={(currentIndex / totalQuestions) * 100}
-          color={COLORS.primary}
-          style={styles.headerProgressBar}
+          color="#6366F1"
+          className="my-0 h-3"
         />
       </View>
 
-      <View style={styles.centeredContainer}>
+      <View className="flex-1 w-full self-center bg-[#F8F9FA]">
         <FlatList
           ref={flatListRef}
           data={questions}
           renderItem={renderQuestion}
           horizontal
           pagingEnabled
-          scrollEnabled={true}
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={(e) => {
             const index = Math.round(e.nativeEvent.contentOffset.x / CONTAINER_WIDTH);
@@ -245,22 +253,13 @@ export const QuestExerciseScreen = () => {
             offset: CONTAINER_WIDTH * index,
             index,
           })}
-          snapToInterval={CONTAINER_WIDTH}
-          snapToAlignment="center"
-          decelerationRate="fast"
-          onScrollToIndexFailed={(info) => {
-            const wait = new Promise((resolve) => setTimeout(resolve, 500));
-            wait.then(() => {
-              flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-            });
-          }}
-          style={{ flex: 1 }}
+          className="flex-1"
         />
       </View>
 
-      <View style={styles.footer}>
+      <View className="p-5 pb-10 flex-row justify-between items-center bg-white border-t border-[#F1F5F9]">
         <TouchableOpacity
-          style={[styles.navButton, currentIndex === 0 && styles.disabledButton]}
+          className={`flex-row items-center ${currentIndex === 0 ? "opacity-50" : ""}`}
           onPress={() => {
             if (currentIndex > 0) {
               flatListRef.current?.scrollToIndex({ index: currentIndex - 1, animated: true });
@@ -269,278 +268,24 @@ export const QuestExerciseScreen = () => {
           }}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft size={24} color={currentIndex === 0 ? COLORS.lightGray : COLORS.primary} />
-          <Text style={[styles.navText, currentIndex === 0 && { color: COLORS.lightGray }]}>
+          <ChevronLeft size={24} color={currentIndex === 0 ? "#CBD5E1" : "#6366F1"} />
+          <Text
+            className={`text-base ml-1.25 font-bold ${currentIndex === 0 ? "text-[#CBD5E1]" : "text-[#6366F1]"}`}
+          >
             Previous
           </Text>
         </TouchableOpacity>
 
-        {/* Show Finish button on last question after answering */}
-        {currentIndex === totalQuestions - 1 && answers[currentIndex].hasChecked && (
-          <TouchableOpacity style={styles.checkButton} onPress={() => finishQuest()}>
-            <Text style={styles.checkButtonText}>Finish Quest</Text>
-            <ChevronRight size={24} color={COLORS.white} />
+        {currentIndex === totalQuestions - 1 && (answers[currentIndex] as any).hasChecked && (
+          <TouchableOpacity
+            className="bg-[#6366F1] flex-row items-center py-[15px] px-5 rounded-[30px]"
+            onPress={() => finishQuest()}
+          >
+            <Text className="text-white text-lg mr-2.5 font-bold">Finish Quest</Text>
+            <ChevronRight size={24} color="white" />
           </TouchableOpacity>
         )}
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
-  header: {
-    paddingHorizontal: SIZES.padding * 2,
-    paddingTop: 50,
-    paddingBottom: 20,
-    backgroundColor: COLORS.white,
-  },
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  headerInfo: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  timerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerProgressBar: {
-    marginVertical: 0,
-    height: 12,
-  },
-  backButton: {
-    padding: 5,
-  },
-  topicLabel: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  timerText: {
-    marginLeft: 5,
-    fontSize: 14,
-    ...FONTS.bold,
-    color: COLORS.primary,
-  },
-  countText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.bold,
-  },
-  centeredContainer: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "center",
-    backgroundColor: "#F8F9FA",
-  },
-  pageContainer: {
-    padding: SIZES.padding,
-    justifyContent: "center",
-  },
-  card: {
-    padding: 40,
-    minHeight: 500,
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  questionType: {
-    fontSize: 12,
-    color: COLORS.primary,
-    marginBottom: 10,
-    ...FONTS.bold,
-    letterSpacing: 1,
-  },
-  questionText: {
-    fontSize: 22,
-    color: COLORS.black,
-    marginBottom: 30,
-    ...FONTS.bold,
-    lineHeight: 30,
-  },
-  optionsContainer: {
-    width: "100%",
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: COLORS.lightGray,
-    marginBottom: 12,
-    backgroundColor: COLORS.white,
-  },
-  selectedOption: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "10",
-  },
-  correctOption: {
-    borderColor: COLORS.success,
-    backgroundColor: COLORS.success + "10",
-  },
-  wrongOption: {
-    borderColor: COLORS.error,
-    backgroundColor: COLORS.error + "10",
-  },
-  optionIndex: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: COLORS.lightGray,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  selectedOptionIndex: {
-    backgroundColor: COLORS.primary,
-  },
-  correctOptionIndex: {
-    backgroundColor: COLORS.success,
-  },
-  wrongOptionIndex: {
-    backgroundColor: COLORS.error,
-  },
-  optionIndexText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.bold,
-  },
-  selectedOptionIndexText: {
-    color: COLORS.white,
-  },
-  optionText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    flex: 1,
-    ...FONTS.medium,
-  },
-  selectedOptionText: {
-    color: COLORS.primary,
-  },
-  correctOptionText: {
-    color: COLORS.success,
-  },
-  wrongOptionText: {
-    color: COLORS.error,
-  },
-  feedbackContainer: {
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 12,
-    backgroundColor: COLORS.lightGray + "20",
-  },
-  explanationText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-    lineHeight: 20,
-  },
-  footer: {
-    padding: SIZES.padding,
-    backgroundColor: COLORS.white,
-    paddingBottom: 40,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  navButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  navText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    marginLeft: 5,
-    ...FONTS.bold,
-  },
-  checkButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-    justifyContent: "center",
-  },
-  checkButtonText: {
-    color: COLORS.white,
-    fontSize: 18,
-    marginRight: 10,
-    ...FONTS.bold,
-  },
-  disabledCheckButton: {
-    backgroundColor: COLORS.lightGray,
-  },
-  finishedContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.success,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  finishedTitle: {
-    fontSize: 32,
-    ...FONTS.bold,
-    color: COLORS.black,
-    marginBottom: 10,
-  },
-  finishedSub: {
-    fontSize: 18,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginBottom: 40,
-  },
-  xpCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    marginBottom: 50,
-  },
-  xpText: {
-    fontSize: 18,
-    color: COLORS.quaternary,
-    marginLeft: 10,
-    ...FONTS.bold,
-  },
-  continueBtn: {
-    backgroundColor: COLORS.primary,
-    width: "100%",
-    paddingVertical: 18,
-    borderRadius: 30,
-    alignItems: "center",
-  },
-  continueBtnText: {
-    color: COLORS.white,
-    fontSize: 18,
-    ...FONTS.bold,
-  },
-});

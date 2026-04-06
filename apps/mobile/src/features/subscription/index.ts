@@ -1,1 +1,1 @@
-export * from "./SubscriptionScreen";
+export { SubscriptionScreen } from "./SubscriptionScreen";

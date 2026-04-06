@@ -1,8 +1,7 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 import { Card } from "@/features/learning/components";
 import { ProgressBar } from "@/features/progress/components";
-import { COLORS, FONTS } from "@/constants/theme";
 
 interface ModuleProgressCardProps {
   name: string;
@@ -18,23 +17,30 @@ export const ModuleProgressCard: React.FC<ModuleProgressCardProps> = ({
   const getStatusColor = () => {
     switch (status) {
       case "Mastery":
-        return COLORS.success;
+        return "#10B981"; // success
       case "Done":
-        return COLORS.primary;
+        return "#6366F1"; // primary
       default:
-        return COLORS.warning;
+        return "#F59E0B"; // warning
     }
   };
 
+  const statusColor = getStatusColor();
+
   return (
-    <Card style={styles.container}>
-      <Text style={styles.name}>{name}</Text>
-      <View style={styles.progressContainer}>
-        <ProgressBar progress={percentage} color={COLORS.primary} style={styles.progressBar} />
-        <Text style={styles.percentage}>{percentage}%</Text>
+    <Card className="w-[48.5%] mb-[15px] p-3 shadow-md elevation-3">
+      <Text className="text-base font-bold text-black mb-2">{name}</Text>
+      <View className="flex-row items-center mb-2.5">
+        <View className="flex-1 mr-2">
+          <ProgressBar progress={percentage} color="#6366F1" />
+        </View>
+        <Text className="text-[12px] font-medium text-[#64748B]">{percentage}%</Text>
       </View>
-      <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + "15" }]}>
-        <Text style={[styles.statusText, { color: getStatusColor() }]}>
+      <View
+        style={{ backgroundColor: `${statusColor}15` }}
+        className="self-start px-2 py-1 rounded-lg"
+      >
+        <Text style={{ color: statusColor }} className="text-[12px] font-bold">
           {status === "Mastery" ? "⭐ " : status === "Done" ? "✅ " : ""}
           {status}
         </Text>
@@ -42,42 +48,3 @@ export const ModuleProgressCard: React.FC<ModuleProgressCardProps> = ({
     </Card>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    width: "48%",
-    marginBottom: 15,
-    padding: 12,
-  },
-  name: {
-    fontSize: 16,
-    ...FONTS.bold,
-    color: COLORS.black,
-    marginBottom: 8,
-  },
-  progressContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  progressBar: {
-    flex: 1,
-    height: 6,
-    marginRight: 8,
-  },
-  percentage: {
-    fontSize: 12,
-    ...FONTS.medium,
-    color: COLORS.gray,
-  },
-  statusBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    ...FONTS.bold,
-  },
-});

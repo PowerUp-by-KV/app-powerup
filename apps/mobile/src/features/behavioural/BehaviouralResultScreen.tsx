@@ -1,28 +1,10 @@
-import React, { useMemo } from "react";
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import React, { useMemo, useState } from "react";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS } from "@/constants/theme";
-import {
-  ArrowLeft,
-  Brain,
-  Shield,
-  Users,
-  Zap,
-  Heart,
-  BookOpen,
-  Star,
-  Info,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react-native";
+import { ArrowLeft, Brain, Info, RotateCcw, ChevronDown, ChevronUp } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { RadarChart } from "./components/RadarChart";
 
-/**
- * HEXACO Behavioral Analysis Result Screen.
- * Displays a Radar Chart (Hexagon) and detailed trait breakdown.
- */
 export const BehaviouralResultScreen = () => {
   const { responses: responsesRaw = "[]" } = useLocalSearchParams();
   const responses =
@@ -50,7 +32,9 @@ export const BehaviouralResultScreen = () => {
     const results: Record<string, number> = {};
     Object.keys(traits).forEach((trait) => {
       const { score, weight } = traits[trait as keyof typeof traits];
-      results[trait] = weight > 0 ? (score / weight) * 100 : 75;
+      // If weight is 0 (no responses for this trait), use 0% instead of an arbitrary high default
+      // This prevents showing misleadingly high scores for traits with no data.
+      results[trait] = weight > 0 ? (score / weight) * 100 : 0;
     });
 
     return results;
@@ -63,7 +47,7 @@ export const BehaviouralResultScreen = () => {
     if (highTraits.length > 2) {
       return "Your HEXACO profile indicates high professional maturity and strong ethical alignment. You likely excel in complex collaborative environments.";
     }
-    if (analysis["Extraversion"] > 80 && analysis["Conscientiousness"] < 70) {
+    if ((analysis["Extraversion"] ?? 0) > 80 && (analysis["Conscientiousness"] ?? 0) < 70) {
       return "You are highly communicative and social, but may benefit from focusing more on disciplined planning and deadline management.";
     }
     return "Your profile suggests a balanced approach to challenges with unique strengths in situational awareness and empathy.";
@@ -75,10 +59,10 @@ export const BehaviouralResultScreen = () => {
       .map(([trait]) => trait);
   }, [analysis]);
 
-  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <View style={{ flex: 1 }} className="bg-[#F8F9FA]">
+    <View className="flex-1 bg-[#F8F9FA]">
       <View className="p-6 pt-16 bg-white rounded-b-[40px] flex-row items-center justify-between shadow-sm">
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-[#F8F9FA] items-center justify-center"
@@ -91,12 +75,12 @@ export const BehaviouralResultScreen = () => {
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1"
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: 24,
           paddingTop: 24,
-          paddingBottom: 60,
+          paddingBottom: 20,
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -116,15 +100,15 @@ export const BehaviouralResultScreen = () => {
         {weakTraits.length > 0 && (
           <View className="mt-6 mb-8">
             <TouchableOpacity
-              className="flex-row items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-orange-50"
+              className="flex-row items-center justify-between bg-white p-5 rounded-2xl shadow-sm border border-[#FFF7ED]"
               onPress={() => setIsExpanded(!isExpanded)}
               activeOpacity={0.7}
             >
               <View className="flex-row items-center">
                 <RotateCcw size={20} color="#F59E0B" />
                 <Text className="text-xl font-bold text-black ml-2">Focus Areas</Text>
-                <View className="ml-2 bg-orange-100 px-2 py-0.5 rounded-full">
-                  <Text className="text-orange-700 text-[10px] font-bold">{weakTraits.length}</Text>
+                <View className="ml-2 bg-[#FFEDD5] px-2 py-0.5 rounded-full">
+                  <Text className="text-[#C2410C] text-[10px] font-bold">{weakTraits.length}</Text>
                 </View>
               </View>
               {isExpanded ? (
@@ -136,22 +120,22 @@ export const BehaviouralResultScreen = () => {
 
             {isExpanded && (
               <View className="mt-4">
-                <Text className="text-gray-500 mb-4 font-medium px-1">
+                <Text className="text-[#6B7280] mb-4 font-medium px-1">
                   Recommended training to strengthen these traits:
                 </Text>
                 {weakTraits.map((trait) => (
                   <View
                     key={trait}
-                    className="bg-white p-5 rounded-2xl mb-3 shadow-sm border border-orange-100 flex-row items-center justify-between"
+                    className="bg-white p-5 rounded-2xl mb-3 shadow-sm border border-[#FFEDD5] flex-row items-center justify-between"
                   >
                     <View className="flex-1">
                       <Text className="text-black font-bold text-base">{trait}</Text>
-                      <Text className="text-gray-500 text-xs mt-1">
-                        Current Score: {Math.round(analysis[trait])}%
+                      <Text className="text-[#6B7280] text-xs mt-1">
+                        Current Score: {Math.round(analysis[trait] ?? 0)}%
                       </Text>
                     </View>
                     <TouchableOpacity
-                      className="bg-orange-500 px-5 py-2.5 rounded-xl shadow-sm"
+                      className="bg-[#F59E0B] px-5 py-2.5 rounded-xl shadow-sm"
                       onPress={() => router.push({ pathname: "/behavioural", params: { trait } })}
                     >
                       <Text className="text-white font-extrabold text-sm">Strengthen</Text>
@@ -163,16 +147,16 @@ export const BehaviouralResultScreen = () => {
           </View>
         )}
 
-        <View className="bg-blue-50 p-6 rounded-3xl mt-2 border border-blue-100">
+        <View className="bg-[#EFF6FF] p-6 rounded-3xl mt-2 border border-[#DBEAFE]">
           <View className="flex-row items-center mb-3">
             <Info size={20} color="#3B82F6" />
-            <Text className="text-blue-600 font-bold ml-2">AI Insights</Text>
+            <Text className="text-[#3B82F6] font-bold ml-2">AI Insights</Text>
           </View>
-          <Text className="text-gray-700 font-medium leading-5">{getAISummary()}</Text>
+          <Text className="text-[#374151] font-medium leading-5">{getAISummary()}</Text>
         </View>
 
         <TouchableOpacity
-          className="bg-indigo-600 py-5 rounded-[24px] items-center mt-10 shadow-lg"
+          className="bg-[#4F46E5] py-5 rounded-[24px] items-center mt-10 shadow-lg"
           onPress={() => router.replace("/(tabs)")}
         >
           <Text className="text-white text-lg font-extrabold">Complete Session</Text>

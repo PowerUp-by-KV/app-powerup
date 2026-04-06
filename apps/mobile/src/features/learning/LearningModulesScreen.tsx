@@ -1,18 +1,14 @@
 import React from "react";
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { COLORS } from "@/constants/theme";
 import { LEARNING_MODULES } from "@/constants/mockData";
 import { ArrowLeft, Clock } from "lucide-react-native";
-import { useSelector } from "react-redux";
+import { useAppSelector } from "@/store/hooks";
 import { selectTotalTime } from "@/store/slices/timeTrackingSlice";
 import { ModuleCard } from "./components/ModuleCard";
 
-/**
- * Learning Modules Screen with a modern 2-column grid layout.
- */
 export const LearningModulesScreen = () => {
-  const totalSeconds = useSelector(selectTotalTime);
+  const totalSeconds = useAppSelector(selectTotalTime);
   const totalMinutes = Math.floor(totalSeconds / 60);
 
   const handlePress = (item: any) => {
@@ -32,13 +28,13 @@ export const LearningModulesScreen = () => {
   };
 
   return (
-    <View style={{ flex: 1 }} className="bg-[#F8F9FA]">
+    <View className="flex-1 bg-[#F8F9FA]">
       <View className="p-6 pt-16 bg-white rounded-b-[40px] shadow-sm">
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-[#F8F9FA] items-center justify-center mb-4"
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="#000" />
         </TouchableOpacity>
         <Text className="text-3xl font-extrabold text-black tracking-tight">Learning Modules</Text>
         <View className="flex-row items-center mt-1">
@@ -48,7 +44,7 @@ export const LearningModulesScreen = () => {
       </View>
 
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1"
         contentContainerStyle={{
           flexGrow: 1,
           paddingHorizontal: 24,
@@ -59,9 +55,8 @@ export const LearningModulesScreen = () => {
       >
         <View className="flex-row flex-wrap justify-between">
           {LEARNING_MODULES.map((module, index) => {
-            // Mock progress values for visual demonstration
             const mockProgress = [65, 30, 90, 45, 75];
-            const progress = mockProgress[index % mockProgress.length];
+            const progress = mockProgress[index % mockProgress.length] ?? 0;
 
             return (
               <ModuleCard
@@ -81,5 +76,3 @@ export const LearningModulesScreen = () => {
     </View>
   );
 };
-
-// export default LearningModulesScreen;

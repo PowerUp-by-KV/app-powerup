@@ -1,37 +1,22 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Check, Star, Book, Lock } from "lucide-react-native";
-import { COLORS, FONTS } from "@/constants/theme";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
 
-const PathNode = ({ item, onPress, isCurrent }) => {
+interface PathNodeProps {
+  item: {
+    id: number | string;
+    title: string;
+    status: "completed" | "current" | "locked";
+    type?: "start" | "node";
+  };
+  onPress: () => void;
+  isCurrent: boolean;
+}
+
+export const PathNode = ({ item, onPress, isCurrent }: PathNodeProps) => {
   const { title, status, type } = item;
   const isCompleted = status === "completed";
   const isLocked = status === "locked";
-
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (isCurrent) {
-      scale.value = withRepeat(
-        withSequence(withTiming(1.1, { duration: 600 }), withTiming(1, { duration: 600 })),
-        -1,
-        true,
-      );
-    } else {
-      scale.value = withTiming(1);
-    }
-  }, [isCurrent]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
 
   const handlePress = () => {
     if (isCurrent) {
@@ -39,147 +24,71 @@ const PathNode = ({ item, onPress, isCurrent }) => {
     } else if (isLocked) {
       Alert.alert("Locked", "Complete previous step");
     }
-    // Completed nodes are not clickable per user request "Only current node should be clickable"
   };
 
   const renderIcon = () => {
-    if (isLocked) return <Lock size={20} color={COLORS.gray} />;
-    if (isCompleted) return <Check size={24} color={COLORS.white} strokeWidth={3} />;
+    if (isLocked) return <Lock size={20} color="#94A3B8" />;
+    if (isCompleted) return <Check size={24} color="#FFF" strokeWidth={3} />;
     if (type === "start")
       return (
         <Star
           size={24}
-          color={isCurrent ? COLORS.white : COLORS.secondary}
-          fill={isCurrent ? COLORS.white : COLORS.secondary}
+          color={isCurrent ? "#FFF" : "#F59E0B"}
+          fill={isCurrent ? "#FFF" : "#F59E0B"}
         />
       );
-    return <Book size={24} color={COLORS.white} />;
+    return <Book size={24} color="#FFF" />;
   };
 
   const getBackgroundColor = () => {
-    if (isCompleted) return COLORS.success;
-    if (isCurrent) return COLORS.primary;
-    return COLORS.lightGray;
+    if (isCompleted) return "bg-[#10B981]";
+    if (isCurrent) return "bg-[#6366F1]";
+    return "bg-[#E2E8F0]";
   };
 
   return (
-    <View style={styles.container}>
+    <View className="items-center my-5 w-[120px] relative">
       {isCurrent && status !== "locked" && (
-        <View style={styles.startButtonContainer}>
-          <View style={styles.startButton}>
-            <Text style={styles.startButtonText}>START</Text>
+        <View className="absolute top-[-55px] items-center z-10">
+          <View className="bg-white px-4 py-2 rounded-[20px] shadow-lg shadow-black/15 elevation-8 border border-[#E2E8F0]">
+            <Text className="color-black text-[12px] font-bold">START</Text>
           </View>
-          <View style={styles.triangle} />
+          <View
+            className="w-0 h-0 bg-transparent mt-[-2px]"
+            style={{
+              borderStyle: "solid",
+              borderLeftWidth: 8,
+              borderRightWidth: 8,
+              borderTopWidth: 10,
+              borderLeftColor: "transparent",
+              borderRightColor: "transparent",
+              borderTopColor: "white",
+            }}
+          />
         </View>
       )}
 
-      <Animated.View style={[animatedStyle]}>
+      <View>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={handlePress}
-          style={[
-            styles.nodeCircle,
-            { backgroundColor: getBackgroundColor() },
-            isCurrent && styles.currentGlow,
-            isLocked && styles.lockedNode,
-          ]}
+          className={`w-[70px] h-[70px] rounded-[35px] justify-center items-center border-b-[5px] border-black/10 ${getBackgroundColor()} ${
+            isCurrent
+              ? "shadow-2xl shadow-[#6366F1]/80 elevation-10 border-4 border-[#4A90E2]/30"
+              : ""
+          } ${isLocked ? "border-b-0" : ""}`}
         >
           {renderIcon()}
         </TouchableOpacity>
-      </Animated.View>
+      </View>
 
       <Text
-        style={[
-          styles.label,
-          isCurrent ? styles.activeLabel : isLocked ? styles.lockedLabel : styles.completedLabel,
-        ]}
+        className={`mt-2.5 text-sm text-center font-bold ${
+          isCurrent ? "text-[#6366F1]" : isLocked ? "text-[#94A3B8]" : "text-[#10B981]"
+        }`}
       >
         {title}
       </Text>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    marginVertical: 20,
-    width: 120,
-    position: "relative",
-  },
-  nodeCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    justifyContent: "center",
-    alignItems: "center",
-    borderBottomWidth: 5,
-    borderBottomColor: "rgba(0,0,0,0.1)",
-  },
-  currentGlow: {
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-    elevation: 10,
-    borderWidth: 4,
-    borderColor: "rgba(74, 144, 226, 0.3)",
-  },
-  lockedNode: {
-    borderBottomWidth: 0,
-  },
-  label: {
-    marginTop: 10,
-    fontSize: 14,
-    textAlign: "center",
-    ...FONTS.bold,
-  },
-  activeLabel: {
-    color: COLORS.primary,
-  },
-  completedLabel: {
-    color: COLORS.success,
-  },
-  lockedLabel: {
-    color: COLORS.gray,
-  },
-  startButtonContainer: {
-    position: "absolute",
-    top: -55,
-    alignItems: "center",
-    zIndex: 10,
-  },
-  startButton: {
-    backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 5,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-  },
-  startButtonText: {
-    color: COLORS.black,
-    fontSize: 12,
-    ...FONTS.bold,
-  },
-  triangle: {
-    width: 0,
-    height: 0,
-    backgroundColor: "transparent",
-    borderStyle: "solid",
-    borderLeftWidth: 8,
-    borderRightWidth: 8,
-    borderTopWidth: 10,
-    borderLeftColor: "transparent",
-    borderRightColor: "transparent",
-    borderTopColor: COLORS.white,
-    marginTop: -2,
-  },
-});
-
-export default PathNode;

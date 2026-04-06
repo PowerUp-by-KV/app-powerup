@@ -1,57 +1,80 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
-import {
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle,
-  TrendingUp,
-  Info,
-  ChevronRight,
-  Share2,
-  Home,
-  Zap,
-} from "lucide-react-native";
+import { ArrowLeft, CheckCircle2, AlertCircle, TrendingUp, Share2, Zap } from "lucide-react-native";
 import { speakingPrompts } from "@/constants/verbalData";
 
-const { width } = Dimensions.get("window");
+interface MetricCircleProps {
+  label: string;
+  score: number;
+  color: string;
+  delay: number;
+}
 
-const MetricCircle = ({ label, score, color, delay }) => {
-  const animatedValue = new Animated.Value(0);
+const MetricCircle = ({ label, score, color, delay }: MetricCircleProps) => {
+  // Persist animated value across renders
+  const animatedValue = useRef(new Animated.Value(0)).current;
+  // displayScore is updated by the animatedValue listener for a smooth count
+  const [displayScore, setDisplayScore] = useState<number>(0);
 
   useEffect(() => {
+    // listener updates local state as the animated value changes
+    const listenerId = animatedValue.addListener(({ value }) => {
+      setDisplayScore(Math.round(value));
+    });
+
+    // animate to the target score
     Animated.timing(animatedValue, {
       toValue: score,
       duration: 1000,
       delay: delay,
       useNativeDriver: false,
     }).start();
+
+    return () => {
+      // clean up listener to avoid memory leaks
+      animatedValue.removeListener(listenerId);
+    };
   }, [score]);
 
   return (
-    <View style={styles.metricItem}>
-      <View style={[styles.circleContainer, { borderColor: color + "20" }]}>
-        <Animated.Text style={[styles.metricScore, { color: color }]}>
-          {Math.round(score)}%
+    <View className="items-center mb-6 w-1/3">
+      <View
+        style={{ borderColor: `${color}33` }}
+        className="w-20 h-20 rounded-full border-[6px] justify-center items-center bg-white shadow-sm shadow-black/10 elevation-2"
+      >
+        {/*
+          Note: Animated.Text is used here but the child is a plain number. The
+          React Native Animated API does not animate text content automatically.
+          To create a counting animation you can either:
+            - attach a listener to `animatedValue` (animatedValue.addListener) and
+              update a local state variable with the interpolated value, or
+            - use a library like `react-native-reanimated` which supports
+              declarative animated values in text components.
+          This comment explains the current behavior (the score will jump to its
+          final value) and suggests approaches if you want a smooth numeric
+          animation.
+        */}
+        <Animated.Text style={[{ color: color }]} className="text-xl font-bold">
+          {displayScore}%
         </Animated.Text>
       </View>
-      <Text style={styles.metricLabel}>{label}</Text>
+      <Text className="text-[12px] text-[#475569] mt-2.5 font-bold">{label}</Text>
     </View>
   );
 };
 
 export const SpeechAnalysisResultScreen = () => {
-  const { promptId, duration } = useLocalSearchParams();
+  const { promptId } = useLocalSearchParams();
+  const { width } = useWindowDimensions();
 
   const currentIndex = speakingPrompts.findIndex((p) => p.id === promptId);
   const nextPrompt =
@@ -60,19 +83,16 @@ export const SpeechAnalysisResultScreen = () => {
       : null;
 
   const handleNext = () => {
-    console.log("handleNext called. nextPrompt:", nextPrompt?.id);
     if (nextPrompt) {
       router.replace({
         pathname: "/SpeakingPractice",
         params: { promptData: JSON.stringify(nextPrompt) },
       });
     } else {
-      console.log("No more prompts, navigating to MainTabs/HomeTab");
       router.replace("/(tabs)");
     }
   };
 
-  // Mock analysis data
   const metrics = [
     { label: "Pronunciation", score: 85, color: "#6366F1" },
     { label: "Fluency", score: 72, color: "#EC4899" },
@@ -88,325 +108,109 @@ export const SpeechAnalysisResultScreen = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.statusBadge}>
-            <CheckCircle2 size={18} color={COLORS.white} />
-            <Text style={styles.statusText}>Analysis Complete</Text>
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 24, paddingTop: 60, paddingBottom: 20, flexGrow: 1 }}
+        className="flex-1"
+      >
+        <View className="items-center mb-9">
+          <View className="flex-row items-center bg-[#22C55E] px-4 py-2 rounded-full mb-5">
+            <CheckCircle2 size={18} color="white" />
+            <Text className="text-white text-[12px] ml-2 font-bold uppercase tracking-wider">
+              Analysis Complete
+            </Text>
           </View>
-          <Text style={styles.mainTitle}>Speech Performance</Text>
-          <Text style={styles.subTitle}>Great job! Your speaking is improving.</Text>
+          <Text className="text-[32px] text-black font-bold text-center">Speech Performance</Text>
+          <Text className="text-base text-[#64748B] font-medium mt-1.25 text-center">
+            Great job! Your speaking is improving.
+          </Text>
         </View>
 
-        {/* Circular Metrics Grid */}
-        <View style={styles.metricsGrid}>
+        <View className="flex-row flex-wrap justify-center mb-5">
           {metrics.map((m, i) => (
             <MetricCircle key={i} label={m.label} score={m.score} color={m.color} delay={i * 200} />
           ))}
         </View>
 
-        {/* Filler Words Detection */}
-        <View style={styles.analysisCard}>
-          <View style={styles.cardHeader}>
-            <AlertCircle size={20} color={COLORS.error} />
-            <Text style={styles.cardTitle}>Filler Word Detection</Text>
+        <View className="bg-white p-6 rounded-[25px] mb-5 shadow-sm shadow-black/10 elevation-3">
+          <View className="flex-row items-center mb-5">
+            <AlertCircle size={20} color="#EF4444" />
+            <Text className="text-base text-black font-bold ml-2.5">Filler Word Detection</Text>
           </View>
-          <View style={styles.fillerContainer}>
+          <View className="flex-row flex-wrap mb-4">
             {fillerWords.map((fw, i) => (
-              <View key={i} style={styles.fillerBadge}>
-                <Text style={styles.fillerWord}>"{fw.word}"</Text>
-                <View style={styles.fillerCount}>
-                  <Text style={styles.fillerCountText}>{fw.count}</Text>
+              <View
+                key={i}
+                className="flex-row items-center bg-[#F8F9FA] px-3 py-1.5 rounded-full mr-2.5 mb-2.5 border border-[#E2E8F0]"
+              >
+                <Text className="text-sm text-[#475569] font-bold mr-2">"{fw.word}"</Text>
+                <View className="bg-[#EF4444]/10 px-1.5 py-0.25 rounded">
+                  <Text className="text-[12px] text-[#EF4444] font-bold">{fw.count}</Text>
                 </View>
               </View>
             ))}
           </View>
-          <Text style={styles.fillerSuggestion}>
-            Try to pause for a second instead of using "{fillerWords[2].word}" to make your speech
-            sound more professional.
+          <Text className="text-sm text-[#64748B] leading-5 italic font-medium">
+            Try to pause for a second instead of using "{fillerWords[2]?.word || "filler words"}" to
+            make your speech sound more professional.
           </Text>
         </View>
 
-        {/* AI Feedback */}
-        <View style={styles.analysisCard}>
-          <View style={styles.cardHeader}>
-            <TrendingUp size={20} color={COLORS.primary} />
-            <Text style={styles.cardTitle}>AI Feedback & Suggestions</Text>
+        <View className="bg-white p-6 rounded-[25px] mb-5 shadow-sm shadow-black/10 elevation-3">
+          <View className="flex-row items-center mb-5">
+            <TrendingUp size={20} color="#6366F1" />
+            <Text className="text-base text-black font-bold ml-2.5">AI Feedback & Suggestions</Text>
           </View>
 
-          <View style={styles.feedbackItem}>
-            <View style={styles.feedbackBullet} />
-            <Text style={styles.feedbackText}>
-              Your **Pronunciation** is very clear, especially with technical terms.
-            </Text>
-          </View>
-
-          <View style={styles.feedbackItem}>
-            <View style={styles.feedbackBullet} />
-            <Text style={styles.feedbackText}>
-              To improve **Fluency**, try to connect your sentences with transition words like
-              'Furthermore' or 'In addition'.
-            </Text>
-          </View>
-
-          <View style={styles.feedbackItem}>
-            <View style={styles.feedbackBullet} />
-            <Text style={styles.feedbackText}>
-              Your **Vocabulary** usage was appropriate, but using more descriptive adjectives could
-              boost your score.
-            </Text>
-          </View>
+          {[
+            "Your **Pronunciation** is very clear, especially with technical terms.",
+            "To improve **Fluency**, try to connect your sentences with transition words like 'Furthermore' or 'In addition'.",
+            "Your **Vocabulary** usage was appropriate, but using more descriptive adjectives could boost your score.",
+          ].map((text, i) => (
+            <View key={i} className="flex-row items-start mb-4">
+              <View className="w-2 h-2 rounded-full bg-[#6366F1] mt-2 mr-3" />
+              <Text className="flex-1 text-[15px] text-[#475569] leading-[22px] font-medium">
+                {text}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionSection}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleNext}>
-            <Zap size={20} color={COLORS.white} />
-            <Text style={styles.primaryButtonText}>
+        <View className="mt-5 pb-10">
+          <TouchableOpacity
+            className="bg-[#6366F1] flex-row justify-center items-center py-[18px] rounded-[20px] mb-4 shadow-md shadow-[#6366F1]/30 elevation-5"
+            onPress={handleNext}
+          >
+            <Zap size={20} color="white" />
+            <Text className="text-white text-lg font-bold ml-2.5">
               {nextPrompt ? "Next Speaking Prompt" : "Return to Dashboard"}
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.secondaryRow}>
+          <View className="flex-row justify-between">
             <TouchableOpacity
-              style={styles.secondaryButton}
+              className="flex-row items-center justify-center bg-white border border-[#6366F1] py-3 rounded-[15px] w-[48%]"
               onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
             >
-              <ArrowLeft size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Try Again</Text>
+              <ArrowLeft size={18} color="#6366F1" />
+              <Text className="text-[#6366F1] text-sm font-bold ml-2">Try Again</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.secondaryButton}>
-              <Share2 size={18} color={COLORS.primary} />
-              <Text style={styles.secondaryButtonText}>Share Result</Text>
+            <TouchableOpacity className="flex-row items-center justify-center bg-white border border-[#6366F1] py-3 rounded-[15px] w-[48%]">
+              <Share2 size={18} color="#6366F1" />
+              <Text className="text-[#6366F1] text-sm font-bold ml-2">Share Result</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      {/* Background Ornament */}
-      <View style={styles.bgCircle} />
-    </SafeAreaView>
+      <View
+        style={{ top: -100, right: -100, width: 300, height: 300, borderRadius: 150 }}
+        className="absolute bg-[#6366F1]/5 z-10"
+      />
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    zIndex: 2,
-  },
-  bgCircle: {
-    position: "absolute",
-    top: -100,
-    right: -100,
-    width: 300,
-    height: 300,
-    borderRadius: 150,
-    backgroundColor: COLORS.primary + "10",
-    zIndex: 1,
-  },
-  header: {
-    alignItems: "center",
-    marginBottom: 35,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.success,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  statusText: {
-    color: COLORS.white,
-    fontSize: 12,
-    marginLeft: 8,
-    ...FONTS.bold,
-  },
-  mainTitle: {
-    fontSize: 32,
-    color: COLORS.black,
-    ...FONTS.bold,
-    textAlign: "center",
-  },
-  subTitle: {
-    fontSize: 16,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginTop: 5,
-    textAlign: "center",
-  },
-  metricsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    marginBottom: 20,
-  },
-  metricItem: {
-    width: (width - 60) / 3,
-    alignItems: "center",
-    marginBottom: 25,
-  },
-  circleContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  metricScore: {
-    fontSize: 20,
-    ...FONTS.bold,
-  },
-  metricLabel: {
-    fontSize: 12,
-    color: COLORS.darkGray,
-    marginTop: 10,
-    ...FONTS.bold,
-  },
-  analysisCard: {
-    backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: 25,
-    marginBottom: 20,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  cardTitle: {
-    fontSize: 16,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginLeft: 10,
-  },
-  fillerContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginBottom: 15,
-  },
-  fillerBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.background,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-    marginRight: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-  },
-  fillerWord: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.bold,
-    marginRight: 8,
-  },
-  fillerCount: {
-    backgroundColor: COLORS.error + "20",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 5,
-  },
-  fillerCountText: {
-    fontSize: 12,
-    color: COLORS.error,
-    ...FONTS.bold,
-  },
-  fillerSuggestion: {
-    fontSize: 14,
-    color: COLORS.gray,
-    lineHeight: 20,
-    fontStyle: "italic",
-    ...FONTS.medium,
-  },
-  feedbackItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 15,
-  },
-  feedbackBullet: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
-    marginTop: 8,
-    marginRight: 12,
-  },
-  feedbackText: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.darkGray,
-    lineHeight: 22,
-    ...FONTS.medium,
-  },
-  actionSection: {
-    marginTop: 20,
-    paddingBottom: 40,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 18,
-    borderRadius: 20,
-    marginBottom: 15,
-    elevation: 5,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  primaryButtonText: {
-    color: COLORS.white,
-    fontSize: 18,
-    ...FONTS.bold,
-    marginLeft: 10,
-  },
-  secondaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  secondaryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: 12,
-    borderRadius: 15,
-    width: "48%",
-  },
-  secondaryButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    ...FONTS.bold,
-    marginLeft: 8,
-  },
-});
 
 // export default SpeechAnalysisResultScreen;

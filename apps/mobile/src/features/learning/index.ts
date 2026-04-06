@@ -1,3 +1,3 @@
-export * from "./LearningModulesScreen";
-export * from "./TopicsScreen";
-export * from "./LessonsScreen";
+export { LearningModulesScreen } from "./LearningModulesScreen";
+export { TopicsScreen } from "./TopicsScreen";
+export { LessonsScreen } from "./LessonsScreen";

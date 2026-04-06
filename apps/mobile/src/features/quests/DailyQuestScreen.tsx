@@ -1,191 +1,77 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { Zap, Play, ArrowLeft, Check, ChevronRight } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
+import { Zap, Play, ArrowLeft } from "lucide-react-native";
 import { Card } from "@/features/learning/components";
-
 import { useGetQuestsQuery } from "@/services/QuestApi";
 
 export const DailyQuestScreen = () => {
-  const { data: quests, isLoading } = useGetQuestsQuery();
+  const { data: quests } = useGetQuestsQuery();
 
-  // Handlers for dynamic data
-  const mainQuest =
-    quests && quests.length > 0
-      ? quests[0]
-      : {
-          title: "Loading Quest...",
-          description: "Fetching your challenge...",
-          id: "quest-1",
-        };
+  const mainQuest = quests?.[0] || {
+    title: "Grammar Sprint",
+    description: "Correct 10 sentences in 2 minutes",
+    id: "quest-1",
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] bg-white rounded-b-[30px] mb-2.5">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center mb-2.5"
+          onPress={() => router.back()}
+        >
+          <ArrowLeft size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daily Quest</Text>
-        <Text style={styles.headerSub}>Complete today's challenge to earn XP</Text>
+        <Text className="text-[28px] text-black font-bold">Daily Quest</Text>
+        <Text className="text-base text-[#64748B] font-normal">
+          Complete today's challenge to earn XP
+        </Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Card style={styles.questCard}>
-          <View style={styles.iconContainer}>
-            <Zap size={60} color={COLORS.quaternary} fill={COLORS.quaternary} />
+      <ScrollView
+        style={{ flex: 1 }}
+        className="flex-1"
+        contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
+      >
+        <Card className="items-center p-[30px] mb-[30px] shadow-lg elevation-5">
+          <View className="w-[100px] h-[100px] rounded-full bg-[#F59E0B]/15 justify-center items-center mb-5">
+            <Zap size={60} color="#F59E0B" fill="#F59E0B" />
           </View>
-          <Text style={styles.questTitle}>{mainQuest.title}</Text>
-          <Text style={styles.questDesc}>{mainQuest.description}</Text>
+          <Text className="text-2xl text-black font-bold">{mainQuest.title}</Text>
+          <Text className="text-base text-[#64748B] mt-2 text-center font-medium">
+            {mainQuest.description}
+          </Text>
 
-          <View style={styles.rewardContainer}>
-            <Text style={styles.rewardLabel}>Reward:</Text>
-            <View style={styles.xpBadge}>
-              <Text style={styles.xpText}>+50 XP</Text>
+          <View className="flex-row items-center mt-5 mb-[30px]">
+            <Text className="text-base text-[#475569] mr-2.5 font-medium">Reward:</Text>
+            <View className="bg-[#F59E0B] px-3 py-1.5 rounded-[15px]">
+              <Text className="color-white text-sm font-bold">+50 XP</Text>
             </View>
           </View>
 
           <TouchableOpacity
-            style={styles.startButton}
+            className="bg-[#6366F1] flex-row items-center py-[15px] px-10 rounded-[30px] w-full justify-center"
             onPress={() =>
               router.push({ pathname: "/QuestExercise", params: { questId: mainQuest.id } })
             }
           >
-            <Text style={styles.startButtonText}>Start Quest</Text>
-            <Play size={18} color={COLORS.white} fill={COLORS.white} />
+            <Text className="color-white text-lg mr-2.5 font-bold">Start Quest</Text>
+            <Play size={18} color="#FFF" fill="#FFF" />
           </TouchableOpacity>
         </Card>
 
-        <View style={styles.infoSection}>
-          <Text style={styles.infoTitle}>How it works</Text>
-          <Text style={styles.infoText}>
+        <View className="px-2.5">
+          <Text className="text-lg text-black mb-2.5 font-semibold">How it works</Text>
+          <Text className="text-sm text-[#64748B] leading-[22px] font-normal">
             Daily quests are special timed exercises designed to boost your skills and reward you
             with extra XP. Complete them every day to maintain your streak and climb the
             leaderboard!
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-    paddingBottom: 100,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    marginBottom: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 28,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 16,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  questCard: {
-    alignItems: "center",
-    padding: 30,
-    marginBottom: 30,
-  },
-  iconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.quaternary + "15",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  questTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  questDesc: {
-    fontSize: 16,
-    color: COLORS.gray,
-    marginTop: 8,
-    textAlign: "center",
-    ...FONTS.medium,
-  },
-  rewardContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 30,
-  },
-  rewardLabel: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    marginRight: 10,
-    ...FONTS.medium,
-  },
-  xpBadge: {
-    backgroundColor: COLORS.quaternary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 15,
-  },
-  xpText: {
-    color: COLORS.white,
-    fontSize: 14,
-    ...FONTS.bold,
-  },
-  startButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 30,
-    width: "100%",
-    justifyContent: "center",
-  },
-  startButtonText: {
-    color: COLORS.white,
-    fontSize: 18,
-    marginRight: 10,
-    ...FONTS.bold,
-  },
-  infoSection: {
-    paddingHorizontal: 10,
-  },
-  infoTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    marginBottom: 10,
-    ...FONTS.semiBold,
-  },
-  infoText: {
-    fontSize: 14,
-    color: COLORS.gray,
-    lineHeight: 22,
-    ...FONTS.regular,
-  },
-});
 
 // export default DailyQuestScreen;

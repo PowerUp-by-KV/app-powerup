@@ -1,15 +1,6 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
-  FlatList,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { speakingCategories } from "@/constants/verbalData";
 import { LinearGradient } from "expo-linear-gradient";
 import {
@@ -24,12 +15,11 @@ import {
 
 import { useTimeTracker } from "@/hooks/useTimeTracker";
 
-const { width } = Dimensions.get("window");
-
 export const VerbalCategoriesScreen = () => {
   useTimeTracker("verbal");
-  const getIcon = (iconName) => {
-    const props = { size: 32, color: COLORS.white };
+
+  const getIcon = (iconName: string) => {
+    const props = { size: 32, color: "white" };
     switch (iconName) {
       case "message-circle":
         return <MessageCircle {...props} />;
@@ -46,134 +36,56 @@ export const VerbalCategoriesScreen = () => {
     }
   };
 
-  const renderCategory = ({ item }) => (
+  const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={styles.categoryCard}
+      className="mb-5 h-[180px] rounded-[25px] overflow-hidden shadow-lg shadow-black/15 elevation-8"
       onPress={() =>
         router.push({ pathname: "/SpeakingPractice", params: { categoryId: item.id } })
       }
     >
-      <LinearGradient colors={item.gradient} style={styles.gradient}>
-        <View style={styles.cardHeader}>
-          <View style={styles.iconBadge}>{getIcon(item.icon)}</View>
-          <ChevronRight size={20} color={COLORS.white} />
+      <LinearGradient colors={item.gradient} className="flex-1 p-5 justify-between">
+        <View className="flex-row justify-between items-start">
+          <View className="w-[60px] h-[60px] rounded-[20px] bg-white/20 justify-center items-center">
+            {getIcon(item.icon)}
+          </View>
+          <ChevronRight size={20} color="white" />
         </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.categoryTitle}>{item.title}</Text>
-          <Text style={styles.categoryDesc}>{item.description}</Text>
+        <View className="mt-2.5">
+          <Text className="text-[22px] text-white font-bold">{item.title}</Text>
+          <Text className="text-sm text-white opacity-90 mt-1.25 font-medium">
+            {item.description}
+          </Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
+      <View className="px-6 py-12 bg-white rounded-b-3xl shadow-sm shadow-black/5 elevation-4">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-xl bg-slate-50 justify-center items-center mb-4 border border-slate-100"
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
+        >
+          <ArrowLeft size={20} color="#1E293B" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Verbal Mastery</Text>
-        <Text style={styles.headerSub}>Choose a category to practice speaking</Text>
+        <Text className="text-[28px] text-slate-900 font-bold">Verbal Mastery</Text>
+        <Text className="text-base text-slate-500 font-medium mt-1">
+          Choose a category to practice speaking
+        </Text>
       </View>
 
       <FlatList
         data={speakingCategories}
         renderItem={renderCategory}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 24, paddingBottom: 20, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        className="flex-1"
       />
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  headerTitle: {
-    fontSize: 28,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 16,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginTop: 4,
-  },
-  listContent: {
-    padding: SIZES.padding,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  categoryCard: {
-    marginBottom: 20,
-    height: 180,
-    borderRadius: 25,
-    overflow: "hidden",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-  },
-  gradient: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "space-between",
-  },
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  iconBadge: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardBody: {
-    marginTop: 10,
-  },
-  categoryTitle: {
-    fontSize: 22,
-    color: COLORS.white,
-    ...FONTS.bold,
-  },
-  categoryDesc: {
-    fontSize: 14,
-    color: COLORS.white,
-    opacity: 0.9,
-    marginTop: 5,
-    ...FONTS.medium,
-  },
-});
 
 // export default VerbalCategoriesScreen;

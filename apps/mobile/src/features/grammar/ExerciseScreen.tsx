@@ -2,42 +2,32 @@ import React, { useState, useRef } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   SafeAreaView,
   TouchableOpacity,
-  Animated,
   FlatList,
-  ActivityIndicator,
   ScrollView,
   useWindowDimensions,
-  Dimensions,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { grammarTopics } from "@/constants/grammarData";
+import { findNextSubtopic } from "./hooks/useGrammarNavigation";
 import { EXERCISES as MOCK_EXERCISES } from "@/constants/mockData";
-import { ArrowLeft, Check, X, ChevronRight, ChevronLeft, Zap } from "lucide-react-native";
+import { ArrowLeft, Check, ChevronRight, ChevronLeft, Zap } from "lucide-react-native";
 
 import { useAppContext } from "@/features/learning/hooks/AppContext";
 import { Card, MCQOption } from "@/features/learning/components";
 import { ProgressBar } from "@/features/progress/components";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 import { useTimeTracker } from "@/hooks/useTimeTracker";
-// MCQOption moved to learning components above
 
 export const ExerciseScreen = () => {
   useTimeTracker("grammar");
   const { width: windowWidth } = useWindowDimensions();
-  const CONTAINER_WIDTH = windowWidth; // Fill the screen
-  const { lessonId, lessonTitle } = useLocalSearchParams();
+  const CONTAINER_WIDTH = windowWidth;
+  const { lessonId } = useLocalSearchParams();
   const { updateLessonCompletion } = useAppContext();
 
-  // Find exercises in hierarchical grammarData
-  let lessonExercises = [];
-  let topicTitle = "";
-  let chapterTitle = "";
+  let lessonExercises: any[] = [];
 
   const safeTopics = grammarTopics || [];
   safeTopics.forEach((topic) => {
@@ -47,22 +37,17 @@ export const ExerciseScreen = () => {
           const subtopic = chapter.subtopics.find((st) => st.id === lessonId);
           if (subtopic) {
             lessonExercises = subtopic.exercises || [];
-            topicTitle = topic.title || "";
-            chapterTitle = chapter.title || "";
           }
         }
       });
     }
   });
 
-  // Fallback to old exercises if not found in new grammarData (for non-grammar lessons)
   if (lessonExercises.length === 0) {
     const fallbackList =
-      MOCK_EXERCISES && MOCK_EXERCISES.length > 0 ? MOCK_EXERCISES[0].questions : [];
-    lessonExercises =
-      MOCK_EXERCISES && MOCK_EXERCISES.find
-        ? MOCK_EXERCISES.find((e) => e.lessonId === lessonId)?.questions || fallbackList
-        : fallbackList;
+      MOCK_EXERCISES && MOCK_EXERCISES.length > 0 ? (MOCK_EXERCISES[0]?.questions ?? []) : [];
+    const foundExercises = MOCK_EXERCISES?.find((e: any) => e.lessonId === lessonId);
+    lessonExercises = foundExercises?.questions ?? fallbackList;
   }
 
   const totalQuestions = lessonExercises.length;
@@ -70,8 +55,13 @@ export const ExerciseScreen = () => {
   const [isFinished, setIsFinished] = useState(false);
   const [score, setScore] = useState(0);
 
-  // Track state for EACH question
-  const [answers, setAnswers] = useState(() =>
+  const [answers, setAnswers] = useState<
+    {
+      selectedOption: number | null;
+      hasChecked: boolean;
+      isCorrect: boolean | null;
+    }[]
+  >(() =>
     (lessonExercises || []).map(() => ({
       selectedOption: null,
       hasChecked: false,
@@ -80,7 +70,6 @@ export const ExerciseScreen = () => {
   );
   const [prevLessonId, setPrevLessonId] = useState(lessonId);
 
-  // Synchronously update state if the lesson route param changes OR if the arrays got out of sync
   if (lessonId !== prevLessonId || (answers && answers.length !== lessonExercises.length)) {
     setPrevLessonId(lessonId);
     setAnswers(
@@ -97,35 +86,8 @@ export const ExerciseScreen = () => {
     }
   }
 
-  const flatListRef = useRef(null);
-  const progress = totalQuestions > 0 ? ((currentIndex + 1) / totalQuestions) * 100 : 0;
-
-  const handleCheck = () => {
-    const currentEx = lessonExercises[currentIndex];
-    const currentAnswerState = answers[currentIndex];
-
-    if (currentAnswerState.selectedOption === null) return;
-
-    const correctValue =
-      typeof currentEx.answer === "string"
-        ? currentEx.answer
-        : currentEx.options[currentEx.correctAnswer];
-
-    const selectedValue = currentEx.options[currentAnswerState.selectedOption];
-    const correct = selectedValue === correctValue;
-
-    const newAnswers = [...answers];
-    newAnswers[currentIndex] = {
-      ...currentAnswerState,
-      hasChecked: true,
-      isCorrect: correct,
-    };
-    setAnswers(newAnswers);
-
-    if (correct) {
-      setScore((prev) => prev + 1);
-    }
-  };
+  const flatListRef = useRef<FlatList>(null);
+  const progressValue = totalQuestions > 0 ? ((currentIndex + 1) / totalQuestions) * 100 : 0;
 
   const handleNext = () => {
     if (currentIndex < totalQuestions - 1) {
@@ -137,7 +99,6 @@ export const ExerciseScreen = () => {
   };
 
   const finishLesson = () => {
-    // Find topicId for this lesson
     let topicId = null;
     let chapterId = null;
     grammarTopics.forEach((t) => {
@@ -156,21 +117,26 @@ export const ExerciseScreen = () => {
   };
 
   const handleContinue = () => {
-    let topicIdx = -1,
-      chapIdx = -1,
-      subIdx = -1;
-    grammarTopics.forEach((t, ti) => {
-      t.chapters.forEach((c, ci) => {
-        const found = c.subtopics.findIndex((st) => st.id === lessonId);
-        if (found !== -1) {
-          topicIdx = ti;
-          chapIdx = ci;
-          subIdx = found;
-        }
+    // Build a flat ordered list of all subtopics with their parent ids and indexes
+    const flat: Array<{
+      topicId: string;
+      chapterId: string;
+      subtopic: any;
+    }> = [];
+
+    (grammarTopics || []).forEach((t) => {
+      (t.chapters || []).forEach((c) => {
+        (c.subtopics || []).forEach((st) => {
+          if (st && st.id) {
+            flat.push({ topicId: t.id, chapterId: c.id, subtopic: st });
+          }
+        });
       });
     });
 
-    if (topicIdx === -1) {
+    const currentIndex = flat.findIndex((f) => f.subtopic.id === lessonId);
+    if (currentIndex === -1) {
+      // Not found - go back if possible or return to home
       if (router.canGoBack()) {
         router.back();
       } else {
@@ -179,67 +145,42 @@ export const ExerciseScreen = () => {
       return;
     }
 
-    const currentTopic = grammarTopics[topicIdx];
-    const currentChapter = currentTopic.chapters[chapIdx];
-
-    if (subIdx < currentChapter.subtopics.length - 1) {
-      router.replace({
-        pathname: "/GrammarContent",
-        params: { subtopic: JSON.stringify(currentChapter.subtopics[subIdx + 1]) },
-      });
+    // Prefer a direct helper which can be reused elsewhere
+    const next = findNextSubtopic(grammarTopics, lessonId as string);
+    if (next) {
+      router.replace({ pathname: "/GrammarContent", params: { subtopic: JSON.stringify(next) } });
       return;
     }
 
-    if (chapIdx < currentTopic.chapters.length - 1) {
-      const nextChapter = currentTopic.chapters[chapIdx + 1];
-      if (nextChapter.subtopics.length > 0) {
-        router.replace({
-          pathname: "/GrammarContent",
-          params: { subtopic: JSON.stringify(nextChapter.subtopics[0]) },
-        });
-        return;
-      }
-    }
-
-    if (topicIdx < grammarTopics.length - 1) {
-      const nextTopic = grammarTopics[topicIdx + 1];
-      if (nextTopic.chapters.length > 0 && nextTopic.chapters[0].subtopics.length > 0) {
-        router.replace({
-          pathname: "/GrammarContent",
-          params: { subtopic: JSON.stringify(nextTopic.chapters[0].subtopics[0]) },
-        });
-        return;
-      }
-    }
-
+    // No next lesson - return to main tabs
     router.replace("/(tabs)");
   };
 
-  const renderQuestion = ({ item, index }) => {
+  const renderQuestion = ({ item, index }: { item: any; index: number }) => {
     const currentAnswer = answers && answers[index];
 
     if (!currentAnswer || !item)
-      return <View style={[styles.pageContainer, { width: CONTAINER_WIDTH }]} />;
+      return <View style={{ width: CONTAINER_WIDTH }} className="flex-1" />;
 
     return (
       <View
-        style={[
-          styles.pageContainer,
-          {
-            width: CONTAINER_WIDTH,
-            paddingHorizontal: windowWidth > 1200 ? 100 : windowWidth > 800 ? 50 : 20,
-          },
-        ]}
+        style={{ width: CONTAINER_WIDTH }}
+        className={`flex-1 ${windowWidth > 1200 ? "px-[100px]" : windowWidth > 800 ? "px-[50px]" : "px-5"}`}
       >
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.cardScroll}>
-          <Card style={styles.card}>
-            <Text style={styles.questionType}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 20, justifyContent: "center", flexGrow: 1 }}
+        >
+          <Card className="min-h-[500px] w-full p-10 rounded-[20px]">
+            <Text className="text-xs text-[#6366F1] mb-2.5 font-bold">
               {(item.type || "question").replace(/[-_]/g, " ").toUpperCase()}
             </Text>
-            <Text style={styles.questionText}>{item.question}</Text>
+            <Text className="text-[22px] text-black mb-[30px] font-bold leading-[30px]">
+              {item.question}
+            </Text>
 
-            <View style={styles.optionsContainer}>
-              {item.options.map((option, optIdx) => {
+            <View className="w-full">
+              {item.options.map((option: string, optIdx: number) => {
                 const isSelected = currentAnswer.selectedOption === optIdx;
                 const isCorrectOption =
                   currentAnswer.hasChecked &&
@@ -260,28 +201,29 @@ export const ExerciseScreen = () => {
                     onPress={() => {
                       if (!currentAnswer.hasChecked) {
                         const newAnswers = [...answers];
-                        newAnswers[index].selectedOption = optIdx;
+                        const targetAnswer = newAnswers[index];
+                        if (targetAnswer) {
+                          targetAnswer.selectedOption = optIdx;
 
-                        // Calculate correctness immediately
-                        const correctValue =
-                          typeof item.answer === "string"
-                            ? item.answer
-                            : item.options[item.correctAnswer];
-                        const selectedValue = item.options[optIdx];
-                        const isCorrect = selectedValue === correctValue;
+                          const correctValue =
+                            typeof item.answer === "string"
+                              ? item.answer
+                              : item.options?.[item.correctAnswer];
+                          const selectedValue = item.options[optIdx];
+                          const isCorrect = selectedValue === correctValue;
 
-                        newAnswers[index].hasChecked = true;
-                        newAnswers[index].isCorrect = isCorrect;
-                        setAnswers(newAnswers);
+                          targetAnswer.hasChecked = true;
+                          targetAnswer.isCorrect = isCorrect;
+                          setAnswers(newAnswers);
 
-                        if (isCorrect) setScore((prev) => prev + 1);
+                          if (isCorrect) setScore((prev) => prev + 1);
 
-                        // Auto-advance after delay
-                        setTimeout(() => {
-                          if (index < totalQuestions - 1) {
-                            handleNext();
-                          }
-                        }, 1200);
+                          setTimeout(() => {
+                            if (index < totalQuestions - 1) {
+                              handleNext();
+                            }
+                          }, 1200);
+                        }
                       }
                     }}
                   />
@@ -290,27 +232,23 @@ export const ExerciseScreen = () => {
             </View>
 
             {currentAnswer.hasChecked && (
-              <View style={styles.feedbackContainer}>
+              <View className="mt-5 p-[15px] rounded-[15px] bg-[#F8F9FA] border-l-4 border-[#6366F1]">
                 <View
-                  style={[
-                    styles.feedbackLabel,
-                    {
-                      backgroundColor: currentAnswer.isCorrect
-                        ? COLORS.success + "20"
-                        : COLORS.error + "20",
-                    },
-                  ]}
+                  className={`self-start px-2.5 py-1 rounded-lg mb-2 ${
+                    currentAnswer.isCorrect ? "bg-[#22C55E]/20" : "bg-[#EF4444]/20"
+                  }`}
                 >
                   <Text
-                    style={[
-                      styles.feedbackLabelText,
-                      { color: currentAnswer.isCorrect ? COLORS.success : COLORS.error },
-                    ]}
+                    className={`text-xs font-bold ${
+                      currentAnswer.isCorrect ? "text-[#22C55E]" : "text-[#EF4444]"
+                    }`}
                   >
                     {currentAnswer.isCorrect ? "Correct!" : "Incorrect"}
                   </Text>
                 </View>
-                <Text style={styles.explanationText}>{item.explanation}</Text>
+                <Text className="text-sm text-[#475569] font-normal leading-5">
+                  {item.explanation}
+                </Text>
               </View>
             )}
           </Card>
@@ -321,23 +259,26 @@ export const ExerciseScreen = () => {
 
   if (isFinished) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.finishedContainer}>
-          <View style={styles.successIcon}>
-            <Check size={50} color={COLORS.white} />
+      <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+        <View className="flex-1 justify-center items-center p-[30px] bg-white">
+          <View className="w-[100px] h-[100px] rounded-full bg-[#22C55E] justify-center items-center mb-[30px]">
+            <Check size={50} color="#FFF" />
           </View>
-          <Text style={styles.finishedTitle}>Lesson Complete!</Text>
-          <Text style={styles.finishedSub}>
+          <Text className="text-[32px] text-black font-bold mb-2.5">Lesson Complete!</Text>
+          <Text className="text-lg text-[#64748B] font-medium mb-10">
             You scored {score} out of {totalQuestions}
           </Text>
 
-          <Card style={styles.xpCard}>
-            <Zap size={24} color={COLORS.quaternary} fill={COLORS.quaternary} />
-            <Text style={styles.xpText}>+50 XP Earned</Text>
+          <Card className="flex-row items-center py-[15px] px-[25px] mb-[50px]">
+            <Zap size={24} color="#FACC15" fill="#FACC15" />
+            <Text className="text-lg text-[#FACC15] ml-2.5 font-bold">+50 XP Earned</Text>
           </Card>
 
-          <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
-            <Text style={styles.continueBtnText}>Continue</Text>
+          <TouchableOpacity
+            className="bg-[#6366F1] w-full py-[18px] rounded-[30px] items-center"
+            onPress={handleContinue}
+          >
+            <Text className="text-white text-lg font-bold">Continue</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -345,38 +286,39 @@ export const ExerciseScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTop}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="px-10 pt-[50px] bg-white pb-5">
+        <View className="flex-row items-center justify-between mb-2.5">
           <TouchableOpacity
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
-            style={styles.backButton}
+            className="mr-[15px]"
           >
-            <ArrowLeft size={24} color={COLORS.black} />
+            <ArrowLeft size={24} color="#000" />
           </TouchableOpacity>
-          <View style={styles.titleContainer}>
-            <Text style={styles.topicLabel}>Grammar Practice</Text>
+          <View className="flex-1 ml-[15px]">
+            <Text className="text-sm text-[#64748B] font-medium">Grammar Practice</Text>
           </View>
-          <Text style={styles.countText}>
+          <Text className="text-sm text-[#6366F1] font-bold">
             {currentIndex + 1}/{totalQuestions}
           </Text>
         </View>
-        <ProgressBar progress={progress} color={COLORS.primary} style={styles.headerProgressBar} />
+        <ProgressBar progress={progressValue} color="#6366F1" className="my-0 h-3" />
       </View>
 
       {lessonExercises.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No questions found for this lesson.</Text>
+        <View className="flex-1 justify-center items-center p-[30px]">
+          <Text className="text-lg text-[#64748B] font-medium mb-5 text-center">
+            No questions found for this lesson.
+          </Text>
           <TouchableOpacity
-            style={styles.backButtonLarge}
+            className="bg-[#6366F1] py-3 px-[30px] rounded-[25px]"
             onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
           >
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <Text className="text-white font-bold text-base">Go Back</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <View style={styles.centeredContainer}>
+        <View className="flex-1 w-full self-center">
           <FlatList
             ref={flatListRef}
             data={lessonExercises}
@@ -396,15 +338,14 @@ export const ExerciseScreen = () => {
               offset: CONTAINER_WIDTH * index,
               index,
             })}
-            style={{ flex: 1 }}
+            className="flex-1"
           />
         </View>
       )}
 
-      {/* Footer Navigation */}
-      <View style={styles.footer}>
+      <View className="p-5 flex-row justify-between items-center bg-white pb-10">
         <TouchableOpacity
-          style={[styles.navButton, currentIndex === 0 && styles.disabledButton]}
+          className={`flex-row items-center ${currentIndex === 0 ? "opacity-50" : ""}`}
           onPress={() => {
             if (currentIndex > 0) {
               flatListRef.current?.scrollToIndex({ index: currentIndex - 1, animated: true });
@@ -413,319 +354,24 @@ export const ExerciseScreen = () => {
           }}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft size={24} color={currentIndex === 0 ? COLORS.lightGray : COLORS.primary} />
-          <Text style={[styles.navText, currentIndex === 0 && { color: COLORS.lightGray }]}>
+          <ChevronLeft size={24} color={currentIndex === 0 ? "#CBD5E1" : "#6366F1"} />
+          <Text
+            className={`text-base ml-1 font-bold ${currentIndex === 0 ? "text-[#CBD5E1]" : "text-[#6366F1]"}`}
+          >
             Previous
           </Text>
         </TouchableOpacity>
 
-        {/* Manual Finish button for the last question if needed, but we'll stick to auto for now */}
         {currentIndex === totalQuestions - 1 && answers[currentIndex]?.hasChecked && (
-          <TouchableOpacity style={styles.checkButton} onPress={finishLesson}>
-            <Text style={styles.checkButtonText}>Finish</Text>
-            <ChevronRight size={24} color={COLORS.white} />
+          <TouchableOpacity
+            className="bg-[#6366F1] flex-row items-center py-3 px-5 rounded-[30px]"
+            onPress={finishLesson}
+          >
+            <Text className="text-white text-base mr-2.5 font-bold">Finish</Text>
+            <ChevronRight size={24} color="white" />
           </TouchableOpacity>
         )}
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8F9FA", // Matching the reference image background
-  },
-  header: {
-    paddingHorizontal: SIZES.padding * 2,
-    paddingTop: 50,
-    backgroundColor: COLORS.white,
-    paddingBottom: 20,
-  },
-  headerTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  titleContainer: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  headerProgressBar: {
-    marginVertical: 0,
-    height: 12,
-  },
-  backButton: {
-    marginRight: 15,
-  },
-  progressHeader: {
-    flex: 1,
-    marginRight: 15,
-  },
-  lessonTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginBottom: 5,
-  },
-  topicLabel: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-  countText: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.bold,
-  },
-  finishedContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-    backgroundColor: COLORS.white,
-  },
-  successIcon: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.success,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 30,
-  },
-  finishedTitle: {
-    fontSize: 32,
-    color: COLORS.black,
-    ...FONTS.bold,
-    marginBottom: 10,
-  },
-  finishedSub: {
-    fontSize: 18,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginBottom: 40,
-  },
-  xpCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    marginBottom: 50,
-  },
-  xpText: {
-    fontSize: 18,
-    color: COLORS.quaternary,
-    marginLeft: 10,
-    ...FONTS.bold,
-  },
-  continueBtn: {
-    backgroundColor: COLORS.primary,
-    width: "100%",
-    paddingVertical: 18,
-    borderRadius: 30,
-    alignItems: "center",
-  },
-  continueBtnText: {
-    color: COLORS.white,
-    fontSize: 18,
-    ...FONTS.bold,
-  },
-  disabledCheckButton: {
-    backgroundColor: COLORS.lightGray,
-  },
-  pageContainer: {
-    flex: 1,
-    overflow: "hidden",
-  },
-  cardScroll: {
-    padding: SIZES.padding,
-    justifyContent: "center",
-    flexGrow: 1,
-  },
-  cardContainer: {
-    flex: 1,
-  },
-  card: {
-    minHeight: 500,
-    width: "100%",
-    padding: 40, // More spacious padding
-    borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  questionType: {
-    fontSize: 12,
-    color: COLORS.primary,
-    marginBottom: 10,
-    ...FONTS.bold,
-  },
-  questionText: {
-    fontSize: 22,
-    color: COLORS.black,
-    marginBottom: 30,
-    ...FONTS.bold,
-    lineHeight: 30,
-  },
-  optionsContainer: {
-    width: "100%",
-  },
-  optionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderRadius: 15,
-    borderWidth: 2,
-    borderColor: COLORS.lightGray,
-    marginBottom: 12,
-    backgroundColor: COLORS.white,
-  },
-  selectedOption: {
-    borderColor: COLORS.primary,
-    backgroundColor: COLORS.primary + "10",
-  },
-  correctOption: {
-    borderColor: COLORS.success,
-    backgroundColor: COLORS.success + "10",
-  },
-  wrongOption: {
-    borderColor: COLORS.error,
-    backgroundColor: COLORS.error + "10",
-  },
-  optionIndex: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: COLORS.lightGray,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  selectedOptionIndex: {
-    backgroundColor: COLORS.primary,
-  },
-  correctOptionIndex: {
-    backgroundColor: COLORS.success,
-  },
-  wrongOptionIndex: {
-    backgroundColor: COLORS.error,
-  },
-  optionIndexText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.bold,
-  },
-  selectedOptionIndexText: {
-    color: COLORS.white,
-  },
-  optionText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    flex: 1,
-    ...FONTS.medium,
-  },
-  selectedOptionText: {
-    color: COLORS.primary,
-  },
-  correctOptionText: {
-    color: COLORS.success,
-  },
-  wrongOptionText: {
-    color: COLORS.error,
-  },
-  feedbackContainer: {
-    marginTop: 20,
-    padding: 15,
-    borderRadius: 15,
-    backgroundColor: COLORS.background,
-    borderLeftWidth: 4,
-    borderLeftColor: COLORS.primary,
-  },
-  feedbackLabel: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  feedbackLabelText: {
-    fontSize: 12,
-    ...FONTS.bold,
-  },
-  explanationText: {
-    fontSize: 14,
-    color: COLORS.darkGray,
-    ...FONTS.regular,
-    lineHeight: 20,
-  },
-  footer: {
-    padding: SIZES.padding,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    paddingBottom: 40,
-  },
-  navButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  navText: {
-    fontSize: 16,
-    color: COLORS.primary,
-    marginLeft: 5,
-    ...FONTS.bold,
-  },
-  checkButton: {
-    backgroundColor: COLORS.primary,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-  },
-  checkButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    marginRight: 10,
-    ...FONTS.bold,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 30,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: COLORS.gray,
-    ...FONTS.medium,
-    marginBottom: 20,
-    textAlign: "center",
-  },
-  backButtonLarge: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-  },
-  backButtonText: {
-    color: COLORS.white,
-    ...FONTS.bold,
-    fontSize: 16,
-  },
-  centeredContainer: {
-    flex: 1,
-    width: "100%",
-    alignSelf: "center",
-  },
-});
-
-// export default ExerciseScreen;

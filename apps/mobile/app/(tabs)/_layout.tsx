@@ -1,21 +1,20 @@
 import React from "react";
 import { Tabs } from "expo-router";
 import { Home, Zap, Trophy, Gift, User, Star, LineChart } from "lucide-react-native";
-import { COLORS } from "../../src/constants/theme";
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: COLORS.gray,
+        tabBarActiveTintColor: "#6366F1",
+        tabBarInactiveTintColor: "#94A3B8",
         tabBarStyle: {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           height: 60,
           paddingBottom: 10,
           paddingTop: 10,
-          backgroundColor: COLORS.white,
+          backgroundColor: "#FFF",
           elevation: 20,
           borderTopWidth: 0,
         },

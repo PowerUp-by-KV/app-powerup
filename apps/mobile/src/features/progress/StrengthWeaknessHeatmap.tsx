@@ -1,24 +1,24 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, CheckCircle, AlertTriangle } from "lucide-react-native";
 import { useProgress } from "./hooks/ProgressContext";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { ProgressBar } from "@/features/progress/components";
 
 const HeatmapSection = ({ title, items, color, icon }: any) => (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>
-      {title} {icon}
-    </Text>
-    <View style={styles.card}>
+  <View className="mb-[25px]">
+    <View className="flex-row items-center mb-3">
+      <Text className="text-lg text-black font-bold mr-2">{title}</Text>
+      {icon}
+    </View>
+    <View className="bg-white rounded-[20px] p-5 shadow-sm shadow-black/10 elevation-5">
       {items.map((item: any, index: number) => (
-        <View key={index} style={styles.itemRow}>
-          <View style={styles.itemInfo}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            <Text style={styles.itemPercentage}>{item.percentage}%</Text>
+        <View key={index} className="mb-[15px]">
+          <View className="flex-row justify-between mb-2">
+            <Text className="text-base text-black font-medium">{item.name}</Text>
+            <Text className="text-sm text-[#64748B] font-bold">{item.percentage}%</Text>
           </View>
-          <ProgressBar progress={item.percentage} color={color} style={styles.itemBar} />
+          <ProgressBar progress={item.percentage} color={color} className="h-2 rounded-full" />
         </View>
       ))}
     </View>
@@ -43,114 +43,42 @@ export const StrengthWeaknessHeatmap = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={28} color={COLORS.black} />
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="flex-row items-center justify-between px-5 py-[15px] pt-[60px] bg-white rounded-b-[30px] shadow-sm shadow-black/5 elevation-2 mb-2.5">
+        <TouchableOpacity
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center"
+          onPress={() => router.back()}
+        >
+          <ChevronLeft size={28} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Strengths & Weaknesses</Text>
-        <View style={{ width: 28 }} />
+        <Text className="text-xl font-bold text-black text-center">Strengths & Weaknesses</Text>
+        <View className="w-10" />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
         <HeatmapSection
           title="Strong Areas"
           items={displayHeatmap.strongAreas}
-          color={COLORS.success}
-          icon="✅"
+          color="#22C55E"
+          icon={<CheckCircle size={18} color="#22C55E" />}
         />
 
         <HeatmapSection
           title="Needs Improvement"
           items={displayHeatmap.needsImprovement}
-          color={COLORS.warning}
-          icon="⚠️"
+          color="#F59E0B"
+          icon={<AlertTriangle size={18} color="#F59E0B" />}
         />
 
         <TouchableOpacity
-          style={styles.practiceButton}
+          className="bg-[#6366F1] py-4 rounded-[15px] items-center mt-2.5 shadow-lg shadow-[#6366F1]/30"
           onPress={() => router.push("/LearningModules")}
         >
-          <Text style={styles.practiceButtonText}>Practice Weak Areas</Text>
+          <Text className="text-white text-base font-bold">Practice Weak Areas</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 50 }} />
+        <View className="h-[50px]" />
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: 15,
-  },
-  headerTitle: {
-    fontSize: 20,
-    ...FONTS.bold,
-    color: COLORS.black,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-  },
-  section: {
-    marginBottom: 25,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    ...FONTS.bold,
-    color: COLORS.black,
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  itemRow: {
-    marginBottom: 15,
-  },
-  itemInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  itemName: {
-    fontSize: 16,
-    ...FONTS.medium,
-    color: COLORS.black,
-  },
-  itemPercentage: {
-    fontSize: 14,
-    ...FONTS.bold,
-    color: COLORS.gray,
-  },
-  itemBar: {
-    height: 8,
-    borderRadius: 4,
-  },
-  practiceButton: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 16,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  practiceButtonText: {
-    color: COLORS.white,
-    fontSize: 16,
-    ...FONTS.bold,
-  },
-});

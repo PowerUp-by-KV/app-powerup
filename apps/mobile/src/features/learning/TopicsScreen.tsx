@@ -1,11 +1,10 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, FlatList, TouchableOpacity } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { grammarTopics } from "@/constants/grammarData";
 import { ChevronRight, ArrowLeft } from "lucide-react-native";
 
-import { useAppContext } from "./hooks/AppContext";
+import { useAppContext } from "@/features/learning/hooks/AppContext";
 import { ProgressBar } from "@/features/progress/components";
 
 export const TopicsScreen = () => {
@@ -15,12 +14,12 @@ export const TopicsScreen = () => {
   const topicData = grammarTopics.find((t) => t.id === moduleId);
   const chaptersForTopic = topicData?.chapters || [];
 
-  const renderTopic = ({ item }) => {
-    const progress = grammarProgress[moduleId as string]?.chapters[item.id]?.progress || 25;
+  const renderTopic = ({ item }: { item: any }) => {
+    const progress = grammarProgress[moduleId as string]?.chapters[item.id]?.progress ?? 25;
     return (
       <TouchableOpacity
         activeOpacity={0.7}
-        style={styles.topicItem}
+        className="bg-white rounded-[20px] p-5 mb-[15px] flex-row items-center shadow-sm shadow-black/5 elevation-2"
         onPress={() =>
           router.push({
             pathname: "/lessons",
@@ -28,30 +27,32 @@ export const TopicsScreen = () => {
           })
         }
       >
-        <View style={styles.topicInfo}>
-          <View style={styles.topicHeader}>
-            <Text style={styles.topicTitle}>{item.title}</Text>
-            <Text style={styles.lessonCount}>{item.subtopics?.length || 0} Lessons</Text>
+        <View className="flex-1 mr-[15px]">
+          <View className="flex-row justify-between items-center mb-2.5">
+            <Text className="text-lg text-black font-semibold">{item.title}</Text>
+            <Text className="text-xs text-[#64748B] font-medium">
+              {item.subtopics?.length ?? 0} Lessons
+            </Text>
           </View>
-          <ProgressBar progress={progress} color={COLORS.primary} />
+          <ProgressBar progress={progress} color="#6366F1" />
         </View>
-        <ChevronRight size={20} color={COLORS.lightGray} />
+        <ChevronRight size={20} color="#CBD5E1" />
       </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="p-5 pt-[60px] bg-white rounded-b-[30px] flex-row items-center mb-2.5">
         <TouchableOpacity
-          style={styles.backButton}
+          className="w-10 h-10 rounded-full bg-[#F8F9FA] justify-center items-center mr-[15px]"
           onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)"))}
         >
-          <ArrowLeft size={24} color={COLORS.black} />
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
         <View>
-          <Text style={styles.headerTitle}>{moduleTitle} Chapters</Text>
-          <Text style={styles.headerSub}>Master each chapter sequentially</Text>
+          <Text className="text-2xl text-black font-bold">{moduleTitle} Chapters</Text>
+          <Text className="text-sm text-[#64748B]">Master each chapter sequentially</Text>
         </View>
       </View>
 
@@ -59,84 +60,9 @@ export const TopicsScreen = () => {
         data={chaptersForTopic}
         renderItem={renderTopic}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    padding: SIZES.padding,
-    paddingTop: 60,
-    backgroundColor: COLORS.white,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  headerTitle: {
-    fontSize: 24,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  headerSub: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.regular,
-  },
-  listContent: {
-    padding: SIZES.padding,
-    paddingBottom: 100,
-  },
-  topicItem: {
-    backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 15,
-    flexDirection: "row",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  topicInfo: {
-    flex: 1,
-    marginRight: 15,
-  },
-  topicHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  topicTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.semiBold,
-  },
-  lessonCount: {
-    fontSize: 12,
-    color: COLORS.gray,
-    ...FONTS.medium,
-  },
-});
-
-// export default TopicsScreen;

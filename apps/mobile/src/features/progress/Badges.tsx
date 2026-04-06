@@ -1,24 +1,14 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, Text, ScrollView, SafeAreaView, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useProgress } from "./hooks/ProgressContext";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { BadgeGrid } from "./components";
 import { Badge } from "@/services/types";
 
 export const BadgesScreen = () => {
   const { badges } = useProgress();
 
-  // Mock badges to match mockup counts (8 earned, 5 locked)
   const allBadges: Badge[] =
     badges.length > 0
       ? badges
@@ -122,43 +112,21 @@ export const BadgesScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-[#F8F9FA]">
+      <View className="flex-row items-center justify-between px-5 py-[15px] bg-white shadow-sm shadow-black/5 elevation-2">
         <TouchableOpacity onPress={() => router.back()}>
-          <ChevronLeft size={28} color={COLORS.black} />
+          <ChevronLeft size={28} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Badges & Achievements</Text>
-        <View style={{ width: 28 }} />
+        <Text className="text-xl font-bold text-black">Badges & Achievements</Text>
+        <View className="w-7" />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
         <BadgeGrid title="Earned" badges={earned} onBadgePress={handleBadgePress} />
         <BadgeGrid title="Locked" badges={locked} onBadgePress={handleBadgePress} />
 
-        <View style={{ height: 50 }} />
+        <View className="h-[50px]" />
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SIZES.padding,
-    paddingVertical: 15,
-  },
-  headerTitle: {
-    fontSize: 20,
-    ...FONTS.bold,
-    color: COLORS.black,
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-  },
-});

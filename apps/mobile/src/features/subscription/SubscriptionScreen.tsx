@@ -1,212 +1,105 @@
-import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Check, Star, Zap, Shield, Headphones, Brain, ArrowLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { COLORS, FONTS, SIZES, GRADIENTS } from "@/constants/theme";
-import { Card } from "@/features/learning/components";
 import { GradientButton } from "./components/GradientButton";
 
 export const SubscriptionScreen = () => {
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("annual");
   const features = [
-    { text: "Unlimited lessons & practices", icon: <Zap size={20} color={COLORS.quaternary} /> },
-    { text: "Personalized AI coaching", icon: <Star size={20} color={COLORS.primary} /> },
-    { text: "Advanced behaviour insights", icon: <Brain size={20} color={COLORS.tertiary} /> },
-    { text: "Full listening library", icon: <Headphones size={20} color={COLORS.secondary} /> },
-    { text: "Ad-free experience", icon: <Shield size={20} color={COLORS.success} /> },
+    { text: "Unlimited lessons & practices", icon: <Zap size={20} color="#F59E0B" /> },
+    { text: "Personalized AI coaching", icon: <Star size={20} color="#6366F1" /> },
+    { text: "Advanced behaviour insights", icon: <Brain size={20} color="#10B981" /> },
+    { text: "Full listening library", icon: <Headphones size={20} color="#3B82F6" /> },
+    { text: "Ad-free experience", icon: <Shield size={20} color="#22C55E" /> },
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <LinearGradient colors={GRADIENTS.premium} style={styles.premiumHeader}>
-          <TouchableOpacity style={styles.closeButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color={COLORS.white} />
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
+      <ScrollView
+        style={{ flex: 1 }}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 0, paddingBottom: 20, flexGrow: 1 }}
+      >
+        <LinearGradient
+          colors={["#FFAD60", "#FF8C42", "#F59E0B"]}
+          className="h-[300px] justify-center items-center rounded-b-[30px] pt-10"
+        >
+          <TouchableOpacity
+            className="absolute top-[50px] left-5 w-10 h-10 rounded-full bg-white/20 justify-center items-center"
+            onPress={() => router.back()}
+          >
+            <ArrowLeft size={24} color="#FFF" />
           </TouchableOpacity>
-          <Star size={60} color={COLORS.white} fill={COLORS.white} />
-          <Text style={styles.premiumTitle}>Unlock Linguist Pro</Text>
-          <Text style={styles.premiumSubtitle}>Master English with AI-powered tools</Text>
+          <Star size={60} color="#FFF" fill="#FFF" />
+          <Text className="text-[28px] text-white font-bold mt-[15px]">Unlock Linguist Pro</Text>
+          <Text className="text-base text-white opacity-90 font-medium">
+            Master English with AI-powered tools
+          </Text>
         </LinearGradient>
 
-        <View style={styles.featuresContainer}>
-          <Text style={styles.sectionTitle}>What's included</Text>
+        <View className="p-5">
+          <Text className="text-xl text-black mb-5 font-bold">What's included</Text>
           {features.map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <View style={styles.featureIcon}>{feature.icon}</View>
-              <Text style={styles.featureText}>{feature.text}</Text>
+            <View key={index} className="flex-row items-center mb-[15px]">
+              <View className="w-10 h-10 rounded-lg bg-white justify-center items-center mr-[15px] shadow-sm shadow-black/5 elevation-2">
+                {feature.icon}
+              </View>
+              <Text className="text-base text-[#475569] font-medium">{feature.text}</Text>
             </View>
           ))}
         </View>
 
-        <View style={styles.pricingContainer}>
-          <TouchableOpacity style={styles.planCard}>
+        <View className="px-5 mb-5">
+          <TouchableOpacity
+            onPress={() => setSelectedPlan("monthly")}
+            className={`flex-row justify-between items-center bg-white p-5 rounded-[20px] mb-[15px] border-2 ${selectedPlan === "monthly" ? "border-[#FF8C42] bg-[#FF8C42]/5" : "border-[#E2E8F0]"}`}
+          >
             <View>
-              <Text style={styles.planTitle}>Monthly Plan</Text>
-              <Text style={styles.planPrice}>$9.99/month</Text>
+              <Text className="text-lg text-black font-bold">Monthly Plan</Text>
+              <Text className="text-sm text-[#64748B] font-semibold">$9.99/month</Text>
             </View>
+            {selectedPlan === "monthly" && (
+              <View className="w-6 h-6 rounded-full bg-[#FF8C42] justify-center items-center">
+                <Check size={16} color="#FFF" />
+              </View>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.planCard, styles.selectedPlan]}>
+          <TouchableOpacity
+            onPress={() => setSelectedPlan("annual")}
+            className={`flex-row justify-between items-center p-5 rounded-[20px] mb-[15px] border-2 ${selectedPlan === "annual" ? "border-[#F59E0B] bg-[#F59E0B]/5" : "border-[#E2E8F0] bg-white"}`}
+          >
             <View>
-              <View style={styles.bestValueBadge}>
-                <Text style={styles.bestValueText}>BEST VALUE</Text>
+              <View className="bg-[#F59E0B] px-2.5 py-1 rounded-lg self-start mb-1.25">
+                <Text className="text-white text-[10px] font-bold">BEST VALUE</Text>
               </View>
-              <Text style={styles.planTitle}>Annual Plan</Text>
-              <Text style={styles.planPrice}>$79.99/year</Text>
+              <Text className="text-lg text-black font-bold">Annual Plan</Text>
+              <Text className="text-sm text-[#64748B] font-semibold">$79.99/year</Text>
             </View>
-            <View style={styles.checkCircle}>
-              <Check size={16} color={COLORS.white} />
-            </View>
+            {selectedPlan === "annual" && (
+              <View className="w-6 h-6 rounded-full bg-[#F59E0B] justify-center items-center">
+                <Check size={16} color="#FFF" />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
         <GradientButton
           title="Subscribe Now"
-          colors={GRADIENTS.premium as any}
-          style={styles.subscribeBtn}
+          colors={["#FFAD60", "#FF8C42"]}
+          className="mx-5 mt-2.5"
           onPress={() => console.log("Subscribe")}
         />
 
-        <Text style={styles.footerText}>Cancel anytime. Terms & Privacy apply.</Text>
-        <View style={{ height: 100 }} />
+        <Text className="text-center text-[#64748B] text-[12px] mt-[15px] font-normal">
+          Cancel anytime. Terms & Privacy apply.
+        </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: 0,
-  },
-  premiumHeader: {
-    height: 300,
-    justifyContent: "center",
-    alignItems: "center",
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    paddingTop: 40,
-  },
-  closeButton: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  premiumTitle: {
-    fontSize: 28,
-    color: COLORS.white,
-    marginTop: 15,
-    ...FONTS.bold,
-  },
-  premiumSubtitle: {
-    fontSize: 16,
-    color: COLORS.white,
-    opacity: 0.9,
-    ...FONTS.medium,
-  },
-  featuresContainer: {
-    padding: SIZES.padding,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    color: COLORS.black,
-    marginBottom: 20,
-    ...FONTS.bold,
-  },
-  featureItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  featureIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  featureText: {
-    fontSize: 16,
-    color: COLORS.darkGray,
-    ...FONTS.medium,
-  },
-  pricingContainer: {
-    paddingHorizontal: SIZES.padding,
-    marginBottom: 20,
-  },
-  planCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: COLORS.white,
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 15,
-    borderWidth: 2,
-    borderColor: COLORS.lightGray,
-  },
-  selectedPlan: {
-    borderColor: COLORS.quaternary,
-    backgroundColor: COLORS.quaternary + "05",
-  },
-  planTitle: {
-    fontSize: 18,
-    color: COLORS.black,
-    ...FONTS.bold,
-  },
-  planPrice: {
-    fontSize: 14,
-    color: COLORS.gray,
-    ...FONTS.semiBold,
-  },
-  bestValueBadge: {
-    backgroundColor: COLORS.quaternary,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    alignSelf: "flex-start",
-    marginBottom: 5,
-  },
-  bestValueText: {
-    color: COLORS.white,
-    fontSize: 10,
-    ...FONTS.bold,
-  },
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.quaternary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  subscribeBtn: {
-    marginHorizontal: SIZES.padding,
-    marginTop: 10,
-  },
-  footerText: {
-    textAlign: "center",
-    color: COLORS.gray,
-    fontSize: 12,
-    marginTop: 15,
-    ...FONTS.regular,
-  },
-});
 
 // export default SubscriptionScreen;

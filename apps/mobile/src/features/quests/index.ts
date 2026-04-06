@@ -1,2 +1,2 @@
-export * from "./DailyQuestScreen";
-export * from "./QuestExerciseScreen";
+export { DailyQuestScreen } from "./DailyQuestScreen";
+export { QuestExerciseScreen } from "./QuestExerciseScreen";

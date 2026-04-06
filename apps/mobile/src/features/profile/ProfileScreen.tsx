@@ -1,18 +1,7 @@
 import React from "react";
-import { StyleSheet, SafeAreaView, ScrollView, View, Alert, StatusBar } from "react-native";
+import { SafeAreaView, ScrollView, View, Alert, StatusBar } from "react-native";
 import { router } from "expo-router";
-import { COLORS, SIZES, FONTS } from "@/constants/theme";
-import {
-  User,
-  Settings,
-  Edit3,
-  Award,
-  LogOut,
-  TrendingUp,
-  Shield,
-  BookOpen,
-  Star,
-} from "lucide-react-native";
+import { User, Award, LogOut, TrendingUp, Shield } from "lucide-react-native";
 
 import { ProfileHeader } from "./components/ProfileHeader";
 import { ProfileStats } from "./components/ProfileStats";
@@ -67,12 +56,12 @@ export const ProfileScreen = () => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-[#F8FAFC]">
       <StatusBar barStyle="dark-content" />
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView className="flex-1">
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
           <ProfileHeader
             user={user}
@@ -90,21 +79,11 @@ export const ProfileScreen = () => {
 
           <ProfileMenu menuItems={menuItems} />
 
-          <View style={{ height: 40 }} />
+          <View className="h-10" />
         </ScrollView>
       </SafeAreaView>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  scrollContent: {
-    paddingBottom: 40,
-  },
-});
 
 // export default ProfileScreen;

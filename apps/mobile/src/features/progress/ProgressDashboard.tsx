@@ -2,7 +2,6 @@ import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
@@ -11,10 +10,9 @@ import {
 import { router } from "expo-router";
 import { StreakIndicators, CEFRLevelBar, ModuleProgressCard } from "./components";
 import { useProgress } from "./hooks/ProgressContext";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 
 export const ProgressDashboard = () => {
-  const { summary, isLoading, error, refetchAll } = useProgress();
+  const { summary, isLoading, refetchAll } = useProgress();
 
   // Use mock data if API fails or is empty
   const displaySummary = summary || {
@@ -30,34 +28,39 @@ export const ProgressDashboard = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={{ flex: 1, height: "100%" }} className="flex-1 bg-[#F8F9FA]">
       <ScrollView
+        style={{ flex: 1 }}
+        className="flex-1"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ padding: 20, paddingBottom: 20, flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetchAll} />}
       >
-        <Text style={styles.headerTitle}>Your Progress</Text>
+        <Text className="text-2xl font-bold text-black mb-5">Your Progress</Text>
 
-        <View style={styles.streakSection}>
+        <View className="bg-white p-5 rounded-[20px] mb-5 shadow-sm shadow-black/10 elevation-5">
           <StreakIndicators days={displaySummary.streak} />
-          <View style={styles.overallProgressContainer}>
+          <View className="h-10 bg-[#CBD5E1]/50 rounded-xl overflow-hidden justify-center mt-2.5 relative">
             <View
-              style={[styles.progressFill, { width: `${displaySummary.overallPercentage}%` }]}
+              className="absolute inset-0 bg-[#6366F1]/30 border-r-4 border-[#6366F1]"
+              style={{ width: `${displaySummary.overallPercentage}%` }}
             />
-            <Text style={styles.progressText}>{displaySummary.overallPercentage}% Complete</Text>
+            <Text className="text-base font-bold text-[#475569] text-center z-10">
+              {displaySummary.overallPercentage}% Complete
+            </Text>
           </View>
         </View>
 
         <CEFRLevelBar currentLevel={displaySummary.cefrLevel} />
 
-        <View style={styles.moduleHeader}>
-          <Text style={styles.sectionTitle}>Module Progress</Text>
+        <View className="flex-row justify-between items-center mt-2.5 mb-[15px]">
+          <Text className="text-xl font-bold text-black">Module Progress</Text>
           <TouchableOpacity onPress={() => router.push("/progress/trends")}>
-            <Text style={styles.viewTrends}>View Trends</Text>
+            <Text className="text-sm color-[#6366F1] font-medium">View Trends</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.moduleGrid}>
+        <View className="flex-row flex-wrap justify-between">
           {displaySummary.modules.map((module, index) => (
             <ModuleProgressCard
               key={index}
@@ -69,102 +72,12 @@ export const ProgressDashboard = () => {
         </View>
 
         <TouchableOpacity
-          style={styles.detailsButton}
+          className="bg-white border border-[#6366F1] py-[15px] rounded-[15px] items-center mt-2.5"
           onPress={() => router.push("/progress/heatmap")}
         >
-          <Text style={styles.detailsButtonText}>View Detailed Analysis</Text>
+          <Text className="text-[#6366F1] text-base font-bold">View Detailed Analysis</Text>
         </TouchableOpacity>
-
-        <View style={{ height: 100 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  scrollContent: {
-    padding: SIZES.padding,
-  },
-  headerTitle: {
-    fontSize: 24,
-    ...FONTS.bold,
-    color: COLORS.black,
-    marginBottom: 20,
-  },
-  streakSection: {
-    backgroundColor: COLORS.white,
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 20,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  overallProgressContainer: {
-    height: 40,
-    backgroundColor: COLORS.lightGray + "50",
-    borderRadius: 10,
-    overflow: "hidden",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-  progressFill: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.primary + "30",
-    borderRightWidth: 4,
-    borderRightColor: COLORS.primary,
-  },
-  progressText: {
-    fontSize: 16,
-    ...FONTS.bold,
-    color: COLORS.darkGray,
-    textAlign: "center",
-  },
-  moduleHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 15,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    ...FONTS.bold,
-    color: COLORS.black,
-  },
-  viewTrends: {
-    fontSize: 14,
-    color: COLORS.primary,
-    ...FONTS.medium,
-  },
-  moduleGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  detailsButton: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.primary,
-    paddingVertical: 15,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  detailsButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    ...FONTS.bold,
-  },
-});

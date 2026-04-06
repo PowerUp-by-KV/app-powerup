@@ -1,30 +1,22 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { ArrowLeft } from "lucide-react-native";
 
 export const ReadingScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color={COLORS.black} />
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="px-5 pt-[60px] flex-row items-center">
+        <TouchableOpacity onPress={() => router.back()} className="mr-[15px]">
+          <ArrowLeft size={24} color="black" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reading Practice</Text>
+        <Text className="text-2xl font-bold text-black">Reading Practice</Text>
       </View>
-      <View style={styles.content}>
-        <Text style={styles.text}>Welcome to Reading Practice. Select a story to begin.</Text>
+      <View className="flex-1 justify-center items-center px-5">
+        <Text className="text-base text-[#64748B] text-center">
+          Welcome to Reading Practice. Select a story to begin.
+        </Text>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.white },
-  header: { padding: SIZES.padding, paddingTop: 60, flexDirection: "row", alignItems: "center" },
-  backButton: { marginRight: 15 },
-  headerTitle: { fontSize: 24, ...FONTS.bold },
-  content: { flex: 1, justifyContent: "center", alignItems: "center", padding: SIZES.padding },
-  text: { fontSize: 16, color: COLORS.gray, textAlign: "center" },
-});

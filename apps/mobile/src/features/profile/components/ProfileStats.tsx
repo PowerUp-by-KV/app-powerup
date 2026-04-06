@@ -1,83 +1,49 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import { BookOpen, Zap, Award, Target, Flame, Trophy } from "lucide-react-native";
-import { COLORS, FONTS } from "@/constants/theme";
+import { View, Text } from "react-native";
+import { BookOpen, Trophy, Flame } from "lucide-react-native";
 
-export const ProfileStats = ({ user }) => {
+interface ProfileStatsProps {
+  user: any;
+}
+
+export const ProfileStats = ({ user }: ProfileStatsProps) => {
   const stats = [
     {
       label: "Lessons",
-      value: user.completedLessons,
+      value: user.completedLessons || 0,
       icon: <BookOpen size={20} color="#6366F1" />,
       bg: "#EEF2FF",
     },
     {
       label: "Streak",
-      value: user.streak,
+      value: user.streak || 0,
       icon: <Flame size={20} color="#FF8C42" />,
       bg: "#FFF7ED",
     },
     {
       label: "Rank",
-      value: `#${user.rank}`,
+      value: `#${user.rank || "---"}`,
       icon: <Trophy size={20} color="#F59E0B" />,
       bg: "#FFFBEB",
     },
   ];
 
   return (
-    <View style={styles.container}>
-      <View style={styles.statsRow}>
+    <View className="px-5 mb-[30px]">
+      <View className="flex-row justify-between bg-white rounded-[30px] p-5 shadow-sm shadow-black/5 elevation-3">
         {stats.map((stat, index) => (
-          <View key={index} style={styles.statCard}>
-            <View style={[styles.iconBox, { backgroundColor: stat.bg }]}>{stat.icon}</View>
-            <Text style={styles.statValue}>{stat.value}</Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
+          <View key={index} className="items-center flex-1">
+            <View
+              style={{ backgroundColor: stat.bg }}
+              className="w-11 h-11 rounded-[14px] justify-center items-center mb-2"
+            >
+              {stat.icon}
+            </View>
+            <Text className="text-lg text-[#1E293B] font-bold">{stat.value}</Text>
+            <Text className="text-[11px] text-[#64748B] font-medium mt-0.5">{stat.label}</Text>
           </View>
         ))}
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 20,
-    marginBottom: 30,
-  },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#FFF",
-    borderRadius: 30,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 15,
-    elevation: 3,
-  },
-  statCard: {
-    alignItems: "center",
-    flex: 1,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 18,
-    color: "#1E293B",
-    ...FONTS.bold,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: "#64748B",
-    ...FONTS.medium,
-    marginTop: 2,
-  },
-});

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   SafeAreaView,
   TouchableOpacity,
@@ -12,7 +11,6 @@ import {
 import { router } from "expo-router";
 import { ChevronLeft, ChevronDown, Check } from "lucide-react-native";
 import { useProgress } from "./hooks/ProgressContext";
-import { COLORS, FONTS, SIZES } from "@/constants/theme";
 import { ProgressChart } from "./components";
 
 const DropdownSelector = ({
@@ -29,38 +27,38 @@ const DropdownSelector = ({
   return (
     <>
       <TouchableOpacity
-        style={styles.dropdown}
+        className="flex-row items-center border-[1.5px] border-[#CBD5E1] rounded-lg px-3 py-2 mr-2.5"
         onPress={() => setVisible(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.dropdownText}>{label}</Text>
-        <ChevronDown size={18} color={COLORS.quaternary} />
+        <Text className="text-base font-bold text-[#475569] mr-1.25">{label}</Text>
+        <ChevronDown size={18} color="#475569" />
       </TouchableOpacity>
 
       <Modal visible={visible} transparent animationType="fade">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          className="flex-1 bg-black/10 justify-start pt-[120px] px-5"
           activeOpacity={1}
           onPress={() => setVisible(false)}
         >
-          <View style={styles.modalContent}>
+          <View className="w-[60%] bg-white rounded-xl p-1.25 max-h-[50%] elevation-5 shadow-lg shadow-black/20 border border-[#EDF2F7]">
             <FlatList
               data={options}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
-                  style={styles.optionItem}
+                  className="flex-row items-center justify-between py-3 px-[15px] border-b border-[#F1F5F9]/30"
                   onPress={() => {
                     onSelect(item);
                     setVisible(false);
                   }}
                 >
                   <Text
-                    style={[styles.optionText, item === label ? styles.optionTextActive : null]}
+                    className={`text-base ${item === label ? "text-[#6366F1] font-bold" : "text-black font-medium"}`}
                   >
                     {item}
                   </Text>
-                  {item === label && <Check size={18} color={COLORS.quaternary} />}
+                  {item === label && <Check size={18} color="#6366F1" />}
                 </TouchableOpacity>
               )}
             />
@@ -72,7 +70,6 @@ const DropdownSelector = ({
 };
 
 export const ProgressTrends = () => {
-  const { trends } = useProgress();
   const [module, setModule] = useState("grammar");
   const [period, setPeriod] = useState("30 Days");
 
@@ -100,154 +97,47 @@ export const ProgressTrends = () => {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.push("/(tabs)/progress");
+      router.push("/progress");
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ChevronLeft size={28} color={COLORS.black} />
-          <Text style={styles.headerTitle}>
-            Progress Over <Text style={styles.timeHighlight}>Time</Text>
+    <SafeAreaView className="flex-1 bg-white">
+      <View className="px-5 py-5">
+        <TouchableOpacity onPress={handleBack} className="flex-row items-center">
+          <ChevronLeft size={28} color="#000" />
+          <Text className="text-[22px] font-bold text-black ml-2.5">
+            Progress Over <Text className="text-[#FF5A5F]">Time</Text>
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.selectorsRow}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20 }}
+      >
+        <View className="flex-row mb-[30px] mt-2.5 z-10">
           <DropdownSelector label={module} options={modules} onSelect={setModule} />
           <DropdownSelector label={period} options={periods} onSelect={setPeriod} />
         </View>
 
         <ProgressChart data={chartData} />
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statRow}>
-            <Text style={styles.statIcon}>📈</Text>
-            <Text style={styles.statText}>+15% improvement this month</Text>
+        <View className="mt-10 px-2.5">
+          <View className="flex-row items-center mb-[15px]">
+            <Text className="text-2xl mr-[15px]">📈</Text>
+            <Text className="text-lg font-medium text-[#475569]">+15% improvement this month</Text>
           </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statIcon}>🎯</Text>
-            <Text style={styles.statText}>
-              Next goal: Reach <Text style={styles.goalHighlight}>80%</Text> in {module}
+          <View className="flex-row items-center mb-[15px]">
+            <Text className="text-2xl mr-[15px]">🎯</Text>
+            <Text className="text-lg font-medium text-[#475569]">
+              Next goal: Reach <Text className="text-[#6366F1] font-bold">80%</Text> in {module}
             </Text>
           </View>
         </View>
 
-        <View style={{ height: 50 }} />
+        <View className="h-[50px]" />
       </ScrollView>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 22,
-    ...FONTS.bold,
-    color: COLORS.black,
-    marginLeft: 10,
-  },
-  timeHighlight: {
-    color: "#FF5A5F",
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-  },
-  selectorsRow: {
-    flexDirection: "row",
-    marginBottom: 30,
-    marginTop: 10,
-    zIndex: 10,
-  },
-  dropdown: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: COLORS.quaternary,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginRight: 10,
-  },
-  dropdownText: {
-    fontSize: 16,
-    ...FONTS.bold,
-    color: COLORS.quaternary,
-    marginRight: 5,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.1)",
-    justifyContent: "flex-start",
-    paddingTop: 120, // Approximate position below selectors
-    paddingHorizontal: 20,
-  },
-  modalContent: {
-    width: "60%", // Smaller width
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    padding: 5,
-    maxHeight: "50%",
-    elevation: 5,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: COLORS.lightGray,
-  },
-  optionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.lightGray + "30",
-  },
-  optionText: {
-    fontSize: 16,
-    ...FONTS.medium,
-    color: COLORS.black,
-  },
-  optionTextActive: {
-    color: COLORS.quaternary,
-    ...FONTS.bold,
-  },
-  statsContainer: {
-    marginTop: 40,
-    paddingHorizontal: 10,
-  },
-  statRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 15,
-  },
-  statIcon: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  statText: {
-    fontSize: 18,
-    ...FONTS.medium,
-    color: COLORS.darkGray,
-  },
-  goalHighlight: {
-    color: COLORS.quaternary,
-    ...FONTS.bold,
-  },
-});
