@@ -1,16 +1,15 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000/api";
-
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
-    baseUrl: BASE_URL,
+    baseUrl: "http://localhost:5000",
     prepareHeaders: (headers) => {
-      // TODO: Attach auth token from secure storage
+      headers.set("Content-Type", "application/json");
+      headers.set("Accept", "application/json");
       return headers;
     },
   }),
-  tagTypes: [],
+  tagTypes: ["grammar", "reading", "listening", "Behavior", "Streak", "skills"],
   endpoints: () => ({}),
 });
