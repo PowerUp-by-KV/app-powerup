@@ -1,6 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { getAuthSession } from "./auth-storage";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const BASE_URL =
+  process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? "http://localhost:8000/api" : undefined);
 
 if (!BASE_URL) {
   throw new Error(
@@ -13,11 +15,18 @@ export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({
     baseUrl: BASE_URL,
-    prepareHeaders: (headers) => {
-      // TODO: Attach auth token from secure storage
+    prepareHeaders: async (headers) => {
+      try {
+        const session = await getAuthSession();
+        if (session?.access_token) {
+          headers.set("Authorization", `Bearer ${session.access_token}`);
+        }
+      } catch (error) {
+        console.warn("Failed to get auth token for API request:", error);
+      }
       return headers;
     },
   }),
-  tagTypes: [],
+  tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding"],
   endpoints: () => ({}),
 });
