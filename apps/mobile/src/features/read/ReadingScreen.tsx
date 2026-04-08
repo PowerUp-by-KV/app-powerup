@@ -26,7 +26,6 @@ export function ReadingScreen() {
     data: assessments,
     isLoading: isAssessmentsLoading,
     isError: isAssessmentsError,
-    error: assessmentsError,
     refetch: refetchAssessments,
   } = useGetReadingAssessmentsQuery(undefined);
 
@@ -57,7 +56,7 @@ export function ReadingScreen() {
           setAttemptId(attempt.id);
           setAttemptNumber((prev) => prev + 1);
         })
-        .catch((err: any) => {
+        .catch((err) => {
           console.warn("Reading attempt init failed", err);
         });
     }
@@ -88,15 +87,18 @@ export function ReadingScreen() {
     };
   };
 
-  const getErrorMessage = (err: any): string => {
-    if (err?.status === 401 || err?.response?.status === 401) {
+  const getErrorMessage = (err: unknown): string => {
+    if (
+      (err as { status?: number })?.status === 401 ||
+      (err as { response?: { status?: number } })?.response?.status === 401
+    ) {
       return "Session expired or unauthorized. Please login again.";
     }
 
     const errorMsg =
-      (err?.data as any)?.message ||
-      err?.response?.data?.message ||
-      err?.message ||
+      (err as { data?: { message?: string } })?.data?.message ||
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      (err as { message?: string })?.message ||
       "Failed to load data";
 
     if (
@@ -104,10 +106,10 @@ export function ReadingScreen() {
       (errorMsg.toLowerCase().includes("timeout") ||
         errorMsg.toLowerCase().includes("network") ||
         errorMsg.toLowerCase().includes("connection") ||
-        err?.code === "ECONNABORTED" ||
-        err?.code === "ENOTFOUND" ||
-        err?.code === "ECONNREFUSED" ||
-        err?.code === "ETIMEDOUT")
+        (err as { code?: string })?.code === "ECONNABORTED" ||
+        (err as { code?: string })?.code === "ENOTFOUND" ||
+        (err as { code?: string })?.code === "ECONNREFUSED" ||
+        (err as { code?: string })?.code === "ETIMEDOUT")
     ) {
       return "Network timeout. Please check your connection and try again.";
     }
@@ -139,7 +141,7 @@ export function ReadingScreen() {
         currentAttemptId = attempt.id;
         setAttemptId(attempt.id);
         setAttemptNumber((prev) => prev + 1);
-      } catch (createErr: any) {
+      } catch (createErr) {
         const score = calculateScore();
         setAssessmentResult({
           id: `${selectedAssessment.id}-${Date.now()}`,
@@ -149,8 +151,8 @@ export function ReadingScreen() {
           ...score,
         });
         setError(
-          (createErr?.data as any)?.message ||
-            createErr.message ||
+          (createErr as { data?: { message?: string } })?.data?.message ||
+            (createErr as { message?: string })?.message ||
             "Could not create attempt; results saved locally.",
         );
         router.push("/listen");
@@ -181,22 +183,24 @@ export function ReadingScreen() {
         totalMarks,
         obtainedMarks,
         percentage,
-        isPassed: percentage >= 60,
+        isPassed,
         score: obtainedMarks,
       });
       router.push("/listen");
-    } catch (submitErr: any) {
+    } catch (submitErr) {
       const submitMsg =
-        (submitErr?.data as any)?.message || submitErr.message || "Failed to submit answers.";
+        (submitErr as { data?: { message?: string } })?.data?.message ||
+        (submitErr as { message?: string })?.message ||
+        "Failed to submit answers.";
       if (
         typeof submitMsg === "string" &&
         (submitMsg.toLowerCase().includes("timeout") ||
           submitMsg.toLowerCase().includes("network") ||
           submitMsg.toLowerCase().includes("connection") ||
-          submitErr?.code === "ECONNABORTED" ||
-          submitErr?.code === "ENOTFOUND" ||
-          submitErr?.code === "ECONNREFUSED" ||
-          submitErr?.code === "ETIMEDOUT")
+          (submitErr as { code?: string })?.code === "ECONNABORTED" ||
+          (submitErr as { code?: string })?.code === "ENOTFOUND" ||
+          (submitErr as { code?: string })?.code === "ECONNREFUSED" ||
+          (submitErr as { code?: string })?.code === "ETIMEDOUT")
       ) {
         const score = calculateScore();
         setAssessmentResult({
@@ -207,7 +211,10 @@ export function ReadingScreen() {
           ...score,
         });
         router.push("/listen");
-      } else if (submitErr?.status === 401 || submitErr?.response?.status === 401) {
+      } else if (
+        (submitErr as { status?: number })?.status === 401 ||
+        (submitErr as { response?: { status?: number } })?.response?.status === 401
+      ) {
         setError(getErrorMessage(submitErr));
         redirectToLogin();
       } else {

@@ -1,7 +1,7 @@
 import { useGoogleAuth } from "@/hooks/use-google-auth";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
-import { useLoginMutation } from "@/utils/api";
+import { useLoginMutation } from "@/services/auth-api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -19,7 +19,7 @@ export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
@@ -208,7 +208,7 @@ export function LoginScreen() {
             </TouchableOpacity>
 
             <View className="flex-row justify-center items-center">
-              <Text className="text-slate-600 text-sm">Don't have an account? </Text>
+              <Text className="text-slate-600 text-sm">Don&apos;t have an account? </Text>
               <TouchableOpacity onPress={() => router.push("/register")} disabled={isLoading}>
                 <Text className="text-indigo-600 text-sm font-bold">Sign Up</Text>
               </TouchableOpacity>

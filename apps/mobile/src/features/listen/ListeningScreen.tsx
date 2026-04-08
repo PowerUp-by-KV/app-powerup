@@ -26,16 +26,13 @@ export function ListeningScreen() {
 
   const {
     data: assessments,
-    isLoading: isAssessmentsLoading,
     isError: isAssessmentsError,
     refetch: refetchAssessments,
   } = useGetListeningAssessmentsQuery(undefined);
 
-  const {
-    data: selectedAssessment,
-    isLoading: isAssessmentLoading,
-    isError: isAssessmentError,
-  } = useGetListeningAssessmentQuery(selectedAssessmentId ?? skipToken);
+  const { data: selectedAssessment, isError: isAssessmentError } = useGetListeningAssessmentQuery(
+    selectedAssessmentId ?? skipToken,
+  );
 
   const [createListeningAttempt] = useCreateListeningAttemptMutation();
   const [submitListeningAttempt] = useSubmitListeningAttemptMutation();
@@ -56,7 +53,7 @@ export function ListeningScreen() {
         .then((attempt) => {
           setAttemptId(attempt.id);
         })
-        .catch((err: any) => {
+        .catch((err) => {
           console.warn("Listening attempt init failed", err);
         });
     }
@@ -99,7 +96,7 @@ export function ListeningScreen() {
         setSound(newSound);
         setIsPlaying(true);
 
-        newSound.setOnPlaybackStatusUpdate((status: any) => {
+        newSound.setOnPlaybackStatusUpdate((status) => {
           if (status.isLoaded) {
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
@@ -108,7 +105,7 @@ export function ListeningScreen() {
           }
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Audio playback error:", err);
       setError("Failed to load audio. Please check your connection and try again.");
       setIsPlaying(false);
@@ -154,7 +151,7 @@ export function ListeningScreen() {
         const attempt = await createListeningAttempt(selectedAssessment.id).unwrap();
         currentAttemptId = attempt.id;
         setAttemptId(attempt.id);
-      } catch (createErr: any) {
+      } catch (createErr) {
         console.warn("createListeningAttempt failed", createErr);
         const score = calculateScore();
         setAssessmentResult({
@@ -165,8 +162,8 @@ export function ListeningScreen() {
           ...score,
         });
         setError(
-          (createErr?.data as any)?.message ||
-            createErr.message ||
+          (createErr as { data?: { message?: string } })?.data?.message ||
+            (createErr as { message?: string })?.message ||
             "Could not create attempt; results saved locally.",
         );
         router.push("/write");
@@ -196,22 +193,24 @@ export function ListeningScreen() {
         totalMarks,
         obtainedMarks,
         percentage,
-        isPassed: percentage >= 60,
+        isPassed,
         score: obtainedMarks,
       });
       router.push("/write");
-    } catch (submitErr: any) {
+    } catch (submitErr) {
       const submitMsg =
-        (submitErr?.data as any)?.message || submitErr.message || "Failed to submit answers.";
+        (submitErr as { data?: { message?: string } })?.data?.message ||
+        (submitErr as { message?: string })?.message ||
+        "Failed to submit answers.";
       if (
         typeof submitMsg === "string" &&
         (submitMsg.toLowerCase().includes("timeout") ||
           submitMsg.toLowerCase().includes("network") ||
           submitMsg.toLowerCase().includes("connection") ||
-          submitErr?.code === "ECONNABORTED" ||
-          submitErr?.code === "ENOTFOUND" ||
-          submitErr?.code === "ECONNREFUSED" ||
-          submitErr?.code === "ETIMEDOUT")
+          (submitErr as { code?: string })?.code === "ECONNABORTED" ||
+          (submitErr as { code?: string })?.code === "ENOTFOUND" ||
+          (submitErr as { code?: string })?.code === "ECONNREFUSED" ||
+          (submitErr as { code?: string })?.code === "ETIMEDOUT")
       ) {
         const score = calculateScore();
         setAssessmentResult({

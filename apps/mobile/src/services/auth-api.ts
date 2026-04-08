@@ -2,7 +2,7 @@ import { api } from "./api";
 
 export interface LoginRequest {
   email: string;
-  password: string;
+  password?: string;
   remember_me?: boolean;
   oauth_id_token?: string;
 }
@@ -18,6 +18,7 @@ export interface AuthResponse {
   access_token: string;
   profile_completed: boolean;
   email: string;
+  [key: string]: unknown;
 }
 
 export const authApi = api.injectEndpoints({

@@ -1,8 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { getAuthSession } from "./auth-storage";
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? "http://localhost:8000/api" : undefined);
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!BASE_URL) {
   throw new Error(

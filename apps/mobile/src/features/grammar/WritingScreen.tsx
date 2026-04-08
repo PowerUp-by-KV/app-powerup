@@ -18,7 +18,6 @@ export function WritingScreen() {
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
-  const [screen, setScreen] = useState<"loading" | "assessments" | "attempt">("loading");
 
   const {
     data: assessments,
@@ -42,7 +41,6 @@ export function WritingScreen() {
     }
 
     if (assessments && assessments.length === 0) {
-      setScreen("assessments");
     }
   }, [assessments, selectedAssessmentId]);
 
@@ -50,7 +48,6 @@ export function WritingScreen() {
     if (selectedAssessment) {
       setAnswers({});
       setAttemptId(null);
-      setScreen("attempt");
       setError(null);
 
       createGrammarAttempt(selectedAssessment.id)
@@ -58,7 +55,7 @@ export function WritingScreen() {
         .then((attempt) => {
           setAttemptId(attempt.id);
         })
-        .catch((err: any) => {
+        .catch((err) => {
           console.warn("Grammar attempt init failed", err);
         });
     }
@@ -67,7 +64,6 @@ export function WritingScreen() {
   const handleSelectAssessment = (assessmentId: string) => {
     setSelectedAssessmentId(assessmentId);
     setError(null);
-    setScreen("loading");
   };
 
   const handleAnswer = (id: string, text: string) => {
@@ -103,7 +99,7 @@ export function WritingScreen() {
         const attempt = await createGrammarAttempt(selectedAssessment.id).unwrap();
         currentAttemptId = attempt.id;
         setAttemptId(attempt.id);
-      } catch (createErr: any) {
+      } catch (createErr) {
         const score = calculateScore();
         setAssessmentResult({
           id: `${selectedAssessment.id}-${Date.now()}`,
@@ -113,8 +109,8 @@ export function WritingScreen() {
           ...score,
         });
         setError(
-          (createErr?.data as any)?.message ||
-            createErr.message ||
+          (createErr as { data?: { message?: string } })?.data?.message ||
+            (createErr as { message?: string })?.message ||
             "Could not create attempt; results saved locally.",
         );
         router.push("/results");
@@ -128,28 +124,34 @@ export function WritingScreen() {
     }));
 
     try {
-      await submitGrammarAttempt({
+      const response = await submitGrammarAttempt({
         attempt_id: currentAttemptId,
         answers: submissionAnswers,
       }).unwrap();
-      const score = calculateScore();
+      const totalMarks = selectedAssessment.questions.reduce((sum, q) => sum + (q.points || 1), 0);
       setAssessmentResult({
         id: `${selectedAssessment.id}-${Date.now()}`,
         type: "writing",
         title: selectedAssessment.title,
-        score: score.obtainedMarks,
-        ...score,
+        score: response.score,
+        totalMarks,
+        obtainedMarks: response.score,
+        percentage: response.percentage,
+        isPassed: response.is_passed,
       });
       router.push("/results");
-    } catch (submitErr: any) {
+    } catch (submitErr) {
       const submitMsg =
-        (submitErr?.data as any)?.message || submitErr.message || "Failed to submit answers.";
+        (submitErr as { data?: { message?: string } })?.data?.message ||
+        (submitErr as { message?: string })?.message ||
+        "Failed to submit answers.";
 
       if (
         submitMsg.toLowerCase().includes("timeout") ||
         submitMsg.toLowerCase().includes("network") ||
         submitMsg.toLowerCase().includes("connection") ||
-        (submitErr?.status && [408, 502, 503, 504].includes(submitErr.status))
+        ((submitErr as { status?: number })?.status &&
+          [408, 502, 503, 504].includes((submitErr as { status: number }).status))
       ) {
         const score = calculateScore();
         setAssessmentResult({
