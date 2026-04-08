@@ -1,6 +1,6 @@
 import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
 import { setProfileCompletedInSession } from "@/services/auth-storage";
-import { submitOnboarding } from "@/services/onboarding-service";
+import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
@@ -11,7 +11,7 @@ export function ProfileScreen() {
   const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
   const [college, setCollege] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [submitOnboarding, { isLoading }] = useSubmitOnboardingMutation();
 
   const handleSubmit = async () => {
     if (!name || !mobile || !dob || !college) {
@@ -30,19 +30,18 @@ export function ProfileScreen() {
     }
 
     try {
-      setIsLoading(true);
       await submitOnboarding({
         name: name.trim(),
         mobile: mobile.trim(),
         dob: dob.trim(),
         college: college.trim(),
-      });
+      }).unwrap();
 
       await setProfileCompletedInSession(true);
       alert("Profile created successfully");
       router.replace("/read");
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
+      if ((error as { status?: number })?.status === 401) {
         await clearAuthState();
         router.replace("/login");
         return;
@@ -51,8 +50,6 @@ export function ProfileScreen() {
       alert(
         getApiErrorMessage(error, "Unable to save onboarding details right now. Please try again."),
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
