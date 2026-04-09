@@ -46,4 +46,8 @@ export default function HomeScreen() {
       </View>
     </ScrollView>
   );
+import { Redirect } from "expo-router";
+
+export default function HomeScreen() {
+  return <Redirect href="/splash" />;
 }

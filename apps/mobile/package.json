@@ -21,10 +21,13 @@
     "clean": "rm -rf node_modules .expo dist"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
     "@powerup/shared": "workspace:*",
     "@react-navigation/native": "^7.1.33",
     "@reduxjs/toolkit": "^2",
     "expo": "~55.0.7",
+    "expo-auth-session": "^55.0.12",
+    "expo-av": "^16.0.8",
     "expo-constants": "~55.0.8",
     "expo-font": "~55.0.4",
     "expo-linear-gradient": "^55.0.9",
