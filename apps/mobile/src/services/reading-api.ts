@@ -1,93 +1,46 @@
 import { api } from "./api";
+import {
+  ApiResponse,
+  ReadingPassage,
+  ReadingQuestion,
+  ReadingSubmitRequest,
+  SubmitResponse,
+} from "./types";
+import { readingData as MOCK_READING_DATA } from "@/constants/readingData";
 
-export interface QuestionOption {
-  id: string;
-  option_text: string;
-  sort_order: number;
-  is_correct: boolean;
-}
-
-export interface ReadingQuestion {
-  id: string;
-  question_text: string;
-  sort_order: number;
-  points: number;
-  options: QuestionOption[];
-}
-
-export interface Assessment {
-  id: string;
-  title: string;
-  description: string;
-  passage_text: string;
-  total_questions: number;
-  time_limit_seconds: number;
-  is_active: boolean;
-  questions: ReadingQuestion[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ReadingAttempt {
-  id: string;
-  assessment_id: string;
-  user_id: string;
-  user_email: string;
-  started_at: string;
-}
-
-export interface ReadingSubmissionRequest {
-  attempt_id: string;
-  answers: {
-    question_id: string;
-    selected_option_id: string;
-  }[];
-}
-
-export interface ReadingResult {
-  score: number;
-  percentage: number;
-  is_passed: boolean;
-}
-
-export const readingApi = api.injectEndpoints({
+const readingApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getReadingAssessments: builder.query<Assessment[], { active?: boolean } | void>({
-      query: (params) => ({
-        url: "/reading/assessments",
-        params: params || {},
-      }),
-      providesTags: ["Reading"],
+    getReadingPassages: builder.query<ReadingPassage[], void>({
+      query: () => "/api/reading/passages",
+      transformResponse: (response: ApiResponse<ReadingPassage[]>) => {
+        return response?.success ? response.data : (MOCK_READING_DATA as any);
+      },
+      providesTags: ["reading"],
     }),
 
-    getReadingAssessment: builder.query<Assessment, string>({
-      query: (id) => `/reading/assessments/${id}`,
-      providesTags: ["Reading"],
+    getReadingQuestions: builder.query<ReadingQuestion[], string>({
+      query: (passageId) => `/api/reading/questions?passageId=${passageId}`,
+      transformResponse: (response: ApiResponse<ReadingQuestion[]>) => {
+        if (!response.success) throw new Error(response.message);
+        return response.data;
+      },
+      providesTags: (result, error, passageId) => [{ type: "reading", id: `QS-${passageId}` }],
     }),
 
-    createReadingAttempt: builder.mutation<ReadingAttempt, string>({
-      query: (assessmentId) => ({
-        url: "/reading/attempts",
+    submitReading: builder.mutation<SubmitResponse, ReadingSubmitRequest>({
+      query: (body) => ({
+        url: "/api/reading/submit",
         method: "POST",
-        body: { assessment_id: assessmentId },
+        body,
       }),
-      invalidatesTags: ["Reading"],
-    }),
-
-    submitReadingAttempt: builder.mutation<ReadingResult, ReadingSubmissionRequest>({
-      query: ({ attempt_id, answers }) => ({
-        url: `/reading/attempts/${attempt_id}/submit`,
-        method: "POST",
-        body: { answers },
-      }),
-      invalidatesTags: ["Reading", "Results"],
+      transformResponse: (response: ApiResponse<SubmitResponse>) => {
+        if (!response.success) throw new Error(response.message);
+        return response.data;
+      },
+      invalidatesTags: ["reading"],
     }),
   }),
 });
 
-export const {
-  useGetReadingAssessmentsQuery,
-  useGetReadingAssessmentQuery,
-  useCreateReadingAttemptMutation,
-  useSubmitReadingAttemptMutation,
-} = readingApi;
+export const { useGetReadingPassagesQuery, useGetReadingQuestionsQuery, useSubmitReadingMutation } =
+  readingApi;

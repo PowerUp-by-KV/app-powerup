@@ -1,60 +1,74 @@
 import React from "react";
-import { SymbolView } from "expo-symbols";
 import { Tabs } from "expo-router";
-
 import Colors from "@/constants/Colors";
-import { useColorScheme } from "@/components/useColorScheme";
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { Home, Zap, Trophy, Gift, User, Star, LineChart } from "lucide-react-native";
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
+        tabBarActiveTintColor: Colors.light.primary,
+        tabBarInactiveTintColor: Colors.light.textMuted,
+        tabBarStyle: {
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          height: 60,
+          paddingBottom: 10,
+          paddingTop: 10,
+          backgroundColor: Colors.light.background,
+          elevation: 20,
+          borderTopWidth: 0,
+        },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "house.fill",
-                android: "home",
-                web: "home",
-              }}
-              tintColor={color}
-              size={24}
-            />
-          ),
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="quiz"
+        name="DailyQuest"
         options={{
-          title: "Quiz Center",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "book.fill",
-                android: "book",
-                web: "book",
-              }}
-              tintColor={color}
-              size={24}
-            />
-          ),
+          title: "Daily Quest",
+          tabBarIcon: ({ color, size }) => <Zap size={size} color={color} />,
         }}
       />
-      {/* Hide the old 'two' tab if it still exists in the file structure */}
       <Tabs.Screen
-        name="two"
+        name="progress"
         options={{
-          href: null,
+          title: "Progress",
+          tabBarIcon: ({ color, size }) => <LineChart size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: "Leaderboard",
+          tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="rewards"
+        options={{
+          title: "Rewards",
+          tabBarIcon: ({ color, size }) => <Gift size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="premium"
+        options={{
+          title: "Premium",
+          tabBarIcon: ({ color, size }) => <Star size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} />,
         }}
       />
     </Tabs>

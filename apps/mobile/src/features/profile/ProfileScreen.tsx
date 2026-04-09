@@ -1,130 +1,89 @@
-import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
-import { setProfileCompletedInSession } from "@/services/auth-storage";
-import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import React from "react";
+import { SafeAreaView, ScrollView, View, Alert, StatusBar } from "react-native";
+import { router } from "expo-router";
+import { User, Award, LogOut, TrendingUp, Shield } from "lucide-react-native";
 
-export function ProfileScreen() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [dob, setDob] = useState("");
-  const [college, setCollege] = useState("");
-  const [submitOnboarding, { isLoading }] = useSubmitOnboardingMutation();
+import { ProfileHeader } from "./components/ProfileHeader";
+import { ProfileStats } from "./components/ProfileStats";
+import { ProfileMenu } from "./components/ProfileMenu";
+import { useProfileLogic } from "./hooks/useProfileLogic";
 
-  const handleSubmit = async () => {
-    if (!name || !mobile || !dob || !college) {
-      alert("Please fill all fields");
-      return;
-    }
+export const ProfileScreen = () => {
+  const {
+    user,
+    isEditing,
+    editedName,
+    setEditedName,
+    handleSave,
+    handleCancel,
+    handleStartEditing,
+    pickImage,
+    toggleAvatar,
+    logout,
+  } = useProfileLogic();
 
-    if (mobile.trim().length < 10 || mobile.trim().length > 20) {
-      alert("Mobile number must be 10 to 20 characters");
-      return;
-    }
-
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob.trim())) {
-      alert("Date of birth must be DD/MM/YYYY");
-      return;
-    }
-
-    try {
-      await submitOnboarding({
-        name: name.trim(),
-        mobile: mobile.trim(),
-        dob: dob.trim(),
-        college: college.trim(),
-      }).unwrap();
-
-      await setProfileCompletedInSession(true);
-      alert("Profile created successfully");
-      router.replace("/read");
-    } catch (error) {
-      if ((error as { status?: number })?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
-        return;
-      }
-
-      alert(
-        getApiErrorMessage(error, "Unable to save onboarding details right now. Please try again."),
-      );
-    }
-  };
+  const menuItems = [
+    {
+      icon: <User size={20} color="#6366F1" />,
+      label: "Edit Profile",
+      onPress: handleStartEditing,
+    },
+    {
+      icon: <Award size={20} color="#8B5CF6" />,
+      label: "Badges & Achievements",
+      onPress: () => router.push("/progress/badges"),
+    },
+    {
+      icon: <TrendingUp size={20} color="#10B981" />,
+      label: "Learning Progress",
+      onPress: () => router.push("/(tabs)/progress"),
+    },
+    {
+      icon: <Shield size={20} color="#F59E0B" />,
+      label: "Privacy & Security",
+      onPress: () =>
+        Alert.alert(
+          "Settings",
+          "Privacy & Security settings will be available in the next update.",
+        ),
+    },
+    {
+      icon: <LogOut size={20} color="#EF4444" />,
+      label: "Logout",
+      isDestructive: true,
+      onPress: logout,
+    },
+  ];
 
   return (
-    <ImageBackground
-      source={{
-        uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
-      }}
-      className="flex-1"
-      resizeMode="cover"
-    >
-      <ScrollView className="flex-1" contentContainerClassName="flex-1 justify-center py-10">
-        <View className="flex-1 justify-center items-center px-6">
-          <View className="w-full max-w-[420px] bg-white/95 rounded-[32px] p-8 border border-slate-300/25 shadow-2xl backdrop-blur-xl">
-            <View className="items-center mb-4">
-              <View className="w-16 h-1 bg-indigo-600 rounded mb-4" />
-              <Text className="text-4xl font-black text-center tracking-tight text-slate-900">
-                Complete Profile
-              </Text>
-            </View>
-            <Text className="text-base text-center mb-16 text-slate-600 font-bold leading-relaxed">
-              Help us personalize your learning experience
-            </Text>
+    <View className="flex-1 bg-[#F8FAFC]">
+      <StatusBar barStyle="dark-content" />
+      <SafeAreaView className="flex-1">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+          <ProfileHeader
+            user={user}
+            isEditing={isEditing}
+            editedName={editedName}
+            setEditedName={setEditedName}
+            handleCancel={handleCancel}
+            handleSave={handleSave}
+            handleStartEditing={handleStartEditing}
+            toggleAvatar={toggleAvatar}
+            pickImage={pickImage}
+          />
 
-            <View className="space-y-3.5 mb-6">
-              <TextInput
-                placeholder="Full Name"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={name}
-                onChangeText={setName}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
+          <ProfileStats user={user} />
 
-              <TextInput
-                placeholder="Mobile Number"
-                keyboardType="number-pad"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={mobile}
-                onChangeText={setMobile}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
+          <ProfileMenu menuItems={menuItems} />
 
-              <TextInput
-                placeholder="Date of Birth (DD/MM/YYYY)"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={dob}
-                onChangeText={setDob}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-
-              <TextInput
-                placeholder="College/University"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={college}
-                onChangeText={setCollege}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`rounded-2xl py-4 items-center mb-5.5 bg-indigo-600 ${isLoading ? "opacity-75" : ""}`}
-              disabled={isLoading}
-              onPress={handleSubmit}
-            >
-              <Text className="text-white text-base font-bold">
-                {isLoading ? "Processing..." : "Continue"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </ImageBackground>
+          <View className="h-10" />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
-}
+};
+
+// export default ProfileScreen;

@@ -1,30 +1,19 @@
-import "../global.css";
+import React from "react";
 import { Stack } from "expo-router";
-import { Provider } from "react-redux";
-import { store } from "@/store";
+import { AppProviders } from "@/components/AppProviders";
+import { StyleSheet } from "react-native";
+import "../global.css";
 
-export default function AuthLayout() {
+// @ts-ignore - nativewind v4 / css-interop internal flag
+StyleSheet.setFlag?.("darkMode", "class");
+
+export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-        }}
-        initialRouteName="splash"
-      >
-        {/* Splash -> Login -> Register -> Google-Success -> Profile -> Read -> Listen -> Write */}
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="google-success" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="read" />
-        <Stack.Screen name="listen" />
-        <Stack.Screen name="write" />
-        <Stack.Screen name="results" />
-        <Stack.Screen name="dashboard" />
+    <AppProviders>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
       </Stack>
-    </Provider>
+    </AppProviders>
   );
 }
