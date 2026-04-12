@@ -181,7 +181,7 @@ export function ResumeScreen({}: Props) {
 
       // Populate parsed preview — try both { resume: { personal, skills, ... } }
       // and flat { personal, skills, ... } shapes.
-      const response = rawResponse as UploadResumeResponse;
+      const response = rawResponse as unknown as UploadResumeResponse;
       if (response?.resume) {
         setParsedResume(response.resume);
       } else {
