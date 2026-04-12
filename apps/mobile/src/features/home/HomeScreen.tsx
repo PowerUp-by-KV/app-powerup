@@ -1,77 +1,28 @@
-import { logger } from "@/utils/logger";
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAppDispatch } from "@/store/hooks";
-import {
-  setCandidateId as setStoreCandidateId,
-  setResumeId as setStoreResumeId,
-  setResumeUploaded as setStoreResumeUploaded,
-} from "@/store/profileSlice";
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { router } from "expo-router";
+import { useAppSelector } from "@/store/hooks";
 import { useNavigationBridge } from "@/utils/navigationBridge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Props = {
-  // Navigation is now internal — keeping empty Props for route-wrapper consistency.
-};
+type Props = Record<string, never>;
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function HomeScreen({}: Props) {
+export function HomeScreen(_props: Props) {
   const navigation = useNavigationBridge();
-  const dispatch = useAppDispatch();
-  const [loading, setLoading] = useState<boolean>(true);
-  const [resumeUploaded, setResumeUploaded] = useState<boolean>(false);
-
-  useEffect(() => {
-    fetchProfileStatus();
-
-    const unsubscribe = navigation.addListener("focus", () => {
-      fetchProfileStatus();
-    });
-
-    return unsubscribe;
-  }, [navigation]);
-
-  const fetchProfileStatus = async (): Promise<void> => {
-    try {
-      // AsyncStorage.getItem returns `string | null`; both values are nullable.
-      const storedCandidateId: string | null = await AsyncStorage.getItem("candidateId");
-      const storedResumeId: string | null = await AsyncStorage.getItem("resumeId");
-
-      const hasResume: boolean = Boolean(
-        storedCandidateId && storedCandidateId.trim() && storedResumeId && storedResumeId.trim(),
-      );
-
-      setResumeUploaded(hasResume);
-
-      // Sync loaded values into the Redux store so other screens can read
-      // state.profile without hitting AsyncStorage themselves.
-      dispatch(setStoreCandidateId(storedCandidateId || ""));
-      dispatch(setStoreResumeId(storedResumeId || ""));
-      dispatch(setStoreResumeUploaded(hasResume));
-    } catch (error) {
-      logger.log("Failed to fetch profile status:", error);
-      setResumeUploaded(false);
-      // Reset store state on error too
-      dispatch(setStoreCandidateId(""));
-      dispatch(setStoreResumeId(""));
-      dispatch(setStoreResumeUploaded(false));
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Read resume status directly from Redux store
+  const resumeUploaded = useAppSelector((state) => state.profile.resumeUploaded);
 
   const handleInterviewCoach = (): void => {
     if (!resumeUploaded) return;
-
-    navigation.navigate("SessionPicker");
+    console.log("🔥 HOME → Navigating to /interview/coach");
+    router.push("/interview/coach" as never);
   };
 
   const handleMockInterview = (): void => {
     if (!resumeUploaded) return;
-
     navigation.navigate("MockInterviewList");
   };
 
@@ -80,35 +31,29 @@ export function HomeScreen({}: Props) {
       <Text style={styles.title}>Interview App</Text>
       <Text style={styles.subtitle}>Upload your resume to unlock interview features</Text>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#2563EB" />
-      ) : (
-        <>
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Resume")}>
-            <Text style={styles.buttonText}>Resume</Text>
-          </TouchableOpacity>
+      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("Resume")}>
+        <Text style={styles.buttonText}>Resume</Text>
+      </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, !resumeUploaded && styles.disabledButton]}
-            onPress={handleInterviewCoach}
-            disabled={!resumeUploaded}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonText}>Interview Coach</Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.button, !resumeUploaded && styles.disabledButton]}
+        onPress={handleInterviewCoach}
+        disabled={!resumeUploaded}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.buttonText}>Interview Coach</Text>
+      </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[styles.button, !resumeUploaded && styles.disabledButton]}
-            onPress={handleMockInterview}
-            disabled={!resumeUploaded}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.buttonText}>Mock Interview</Text>
-          </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.button, !resumeUploaded && styles.disabledButton]}
+        onPress={handleMockInterview}
+        disabled={!resumeUploaded}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.buttonText}>Mock Interview</Text>
+      </TouchableOpacity>
 
-          {!resumeUploaded && <Text style={styles.note}>Please upload your resume first.</Text>}
-        </>
-      )}
+      {!resumeUploaded && <Text style={styles.note}>Please upload your resume first.</Text>}
     </View>
   );
 }

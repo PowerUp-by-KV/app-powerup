@@ -1,1 +1,1 @@
-/// <reference types="nativewind/types" />
+/* NativeWind configuration removed - using React Native StyleSheet instead */

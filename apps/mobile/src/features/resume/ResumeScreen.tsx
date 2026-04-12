@@ -1,28 +1,24 @@
-import { logger } from "@/utils/logger";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Pressable,
-  ActivityIndicator,
   ScrollView,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useUploadResumeMutation } from "@/services/resumeApiSlice";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAppDispatch } from "@/store/hooks";
 import { setCandidateId, setResumeId, setResumeUploaded } from "@/store/profileSlice";
 import { useNavigationBridge } from "@/utils/navigationBridge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Props = {
-  // Navigation is now internal to the feature.
-};
+type Props = Record<string, never>;
 
 /**
  * File descriptor stored in component state and passed to the upload mutation.
@@ -87,19 +83,6 @@ export function ResumeScreen({}: Props) {
   // RTK Query mutation hook — replaces direct uploadResume() import
   const [triggerUploadResume] = useUploadResumeMutation();
 
-  useEffect(() => {
-    const resetStoredResumeState = async (): Promise<void> => {
-      try {
-        await AsyncStorage.removeItem("candidateId");
-        await AsyncStorage.removeItem("resumeId");
-      } catch (error) {
-        logger.log("Failed to clear stored resume state:", error);
-      }
-    };
-
-    resetStoredResumeState();
-  }, []);
-
   const handleFileSelect = async (file: SelectedFile): Promise<void> => {
     if (!file) return;
 
@@ -134,10 +117,6 @@ export function ResumeScreen({}: Props) {
       setUploading(true);
       setUploadProgress(0);
 
-      // Clear previous stored IDs before new upload
-      await AsyncStorage.removeItem("candidateId");
-      await AsyncStorage.removeItem("resumeId");
-
       progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 300);
@@ -161,29 +140,53 @@ export function ResumeScreen({}: Props) {
         );
       }
 
-      // result.data is `unknown` at the slice level; cast to the known response shape.
-      const response = result.data as UploadResumeResponse;
+      // result.data is `unknown` at the slice level.
+      // Log the raw shape first so we can see what the real backend returns.
+      const rawResponse = result.data as Record<string, unknown>;
+      console.log("[ResumeScreen] Upload response keys:", Object.keys(rawResponse ?? {}));
+      console.log("[ResumeScreen] Full response:", JSON.stringify(rawResponse, null, 2));
 
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response?.user_id || !response?.resume?.id) {
-        throw new Error("Invalid response from resume upload API");
+      // ── Flexible field extraction ──────────────────────────────────────────
+      // The mock returns { user_id, resume: { id, ... } }.
+      // Real backends vary — try common field names before throwing.
+      const userId =
+        (rawResponse?.user_id as string) ||
+        (rawResponse?.candidate_id as string) ||
+        (rawResponse?.userId as string) ||
+        "";
+
+      const resumeObj = (rawResponse?.resume as Record<string, unknown>) ?? {};
+      const resumeId =
+        (resumeObj?.id as string) ||
+        (rawResponse?.resume_id as string) ||
+        (rawResponse?.resumeId as string) ||
+        "";
+
+      console.log("[ResumeScreen] Extracted userId:", userId, "| resumeId:", resumeId);
+
+      if (!userId && !resumeId) {
+        // Neither field found — log the full response and surface a helpful message.
+        throw new Error(
+          `Unexpected response structure from server. Keys received: ${Object.keys(rawResponse ?? {}).join(", ")}`,
+        );
       }
 
-      // Store fresh values only after confirmed success
-      await AsyncStorage.setItem("candidateId", response.user_id);
-      await AsyncStorage.setItem("resumeId", response.resume.id);
-
-      // Immediately sync Redux so any screen that reads the store
-      // gets the updated values without waiting for HomeScreen's
-      // AsyncStorage focus-listener bridge.
-      dispatch(setCandidateId(response.user_id));
-      dispatch(setResumeId(response.resume.id));
+      // Sync Redux — use whatever ID we managed to extract
+      if (userId) dispatch(setCandidateId(userId));
+      if (resumeId) dispatch(setResumeId(resumeId));
       dispatch(setResumeUploaded(true));
 
+      // Populate parsed preview — try both { resume: { personal, skills, ... } }
+      // and flat { personal, skills, ... } shapes.
+      const response = rawResponse as UploadResumeResponse;
       if (response?.resume) {
         setParsedResume(response.resume);
+      } else {
+        // Flat response shape — treat top-level object as the resume data
+        setParsedResume({ id: resumeId, ...(rawResponse as Omit<ParsedResumeData, "id">) });
       }
 
       setUploadSuccess(true);
@@ -235,7 +238,8 @@ export function ResumeScreen({}: Props) {
           uri: file.uri,
         });
       }
-    } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       Alert.alert("Error", "Failed to pick document. Please try again.", [{ text: "OK" }]);
     }
   };
@@ -417,18 +421,12 @@ export function ResumeScreen({}: Props) {
                 styles.uploadAnotherButton,
                 pressed && styles.uploadAnotherPressed,
               ]}
-              onPress={async () => {
-                try {
-                  await AsyncStorage.removeItem("candidateId");
-                  await AsyncStorage.removeItem("resumeId");
-                } catch (error) {
-                  logger.log("Failed to clear stored resume state:", error);
-                }
-
+              onPress={() => {
                 setSelectedFile(null);
                 setUploadProgress(0);
                 setUploadSuccess(false);
                 setParsedResume(null);
+                dispatch(setResumeUploaded(false));
               }}
             >
               <MaterialIcons name="refresh" size={20} color="#2563EB" />

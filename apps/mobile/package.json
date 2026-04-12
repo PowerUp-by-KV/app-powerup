@@ -5,8 +5,8 @@
   "private": true,
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -23,15 +23,20 @@
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
     "@powerup/shared": "workspace:*",
-    "@react-native-async-storage/async-storage": "^3.0.2",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-native-community/netinfo": "11.5.2",
     "@react-navigation/native": "^7.1.33",
     "@reduxjs/toolkit": "^2",
     "expo": "~55.0.7",
+    "expo-av": "^16.0.8",
     "expo-constants": "~55.0.8",
+    "expo-dev-client": "~55.0.22",
     "expo-document-picker": "^55.0.11",
+    "expo-file-system": "^55.0.14",
     "expo-font": "~55.0.4",
     "expo-linking": "~55.0.7",
     "expo-router": "~55.0.6",
+    "expo-sharing": "~55.0.16",
     "expo-speech": "^55.0.11",
     "expo-splash-screen": "~55.0.11",
     "expo-status-bar": "~55.0.4",
@@ -40,12 +45,14 @@
     "nativewind": "^4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-native": "0.83.2",
+    "react-native": "0.83.4",
     "react-native-audio-api": "^0.11.7",
+    "react-native-chart-kit": "^6.12.0",
     "react-native-css-interop": "^0.2.3",
     "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
+    "react-native-svg": "15.15.3",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.7.2",
     "react-redux": "^9"
@@ -53,7 +60,7 @@
   "devDependencies": {
     "@powerup/eslint-config": "workspace:*",
     "@testing-library/react-native": "^13",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.2.2",
     "eslint": "^9",
     "jest": "^29",
@@ -61,6 +68,7 @@
     "tailwindcss": "^3.4",
     "typescript": "~5.9.2"
   },
+  "react-native-svg": "^15.2.0",
   "jest": {
     "preset": "jest-expo"
   }

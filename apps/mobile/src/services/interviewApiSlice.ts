@@ -10,13 +10,55 @@
 
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Platform } from "react-native";
-import { FULL_API_BASE_URL } from "../constants/apiConfig";
+import { API_V1_URL, USE_MOCK_API, AUTH_HEADERS } from "../constants/apiConfig";
 import type {
   NormalizedInterviewQuestion,
   NormalizedInterviewSession,
-  NormalizedInterviewResponse,
   NormalizedInterviewResult,
 } from "../types/mockInterview";
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+const MOCK_QUESTIONS = [
+  { id: "q1", text: "Tell me about yourself.", difficulty: "easy", skill_id: "intro" },
+  { id: "q2", text: "What is your greatest strength?", difficulty: "easy", skill_id: "strength" },
+  {
+    id: "q3",
+    text: "Describe a time you solved a difficult problem.",
+    difficulty: "medium",
+    skill_id: "problem-solving",
+  },
+];
+
+const MOCK_RESULT = {
+  session_id: "mock-session-1",
+  status: "completed",
+  gap_analysis:
+    "You answered confidently, but give more concrete examples for technical questions.",
+  responses: [
+    {
+      question_text: "Tell me about yourself.",
+      confidence_score: 0.85,
+      feedback: "Good introduction; add one strong accomplishment.",
+      user_answer: "I have spent the last 5 years building mobile apps.",
+      is_correct: true,
+    },
+    {
+      question_text: "What is your greatest strength?",
+      confidence_score: 0.78,
+      feedback: "Solid answer; be more specific about outcomes.",
+      user_answer: "My greatest strength is my attention to detail.",
+      is_correct: true,
+    },
+    {
+      question_text: "Describe a time you solved a difficult problem.",
+      confidence_score: 0.72,
+      feedback: "Nice storytelling; include the result and impact.",
+      user_answer: "I refactored a legacy feature to reduce crashes.",
+      is_correct: true,
+    },
+  ],
+};
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,6 +77,7 @@ interface StartInterviewSessionArg {
 interface SubmitMockInterviewAudioArg {
   audioUri: string;
   sessionId: string;
+  questionId?: string; // optional — included in FormData when provided
 }
 
 // ── Normalizers ──────────────────────────────────────────────────────────────
@@ -111,51 +154,144 @@ const getAudioFileForUpload = async (audioUri: string) => {
 
 export const interviewApi = createApi({
   reducerPath: "interviewApi",
-  baseQuery: fetchBaseQuery({ baseUrl: FULL_API_BASE_URL }),
+  baseQuery: fetchBaseQuery({
+    baseUrl: API_V1_URL,
+    prepareHeaders: (h) => {
+      Object.entries(AUTH_HEADERS).forEach(([k, v]) => h.set(k, v));
+      return h;
+    },
+  }),
   endpoints: (builder) => ({
     startInterviewSession: builder.mutation<NormalizedInterviewSession, StartInterviewSessionArg>({
-      query: ({ candidateId }) => ({
-        url: "/interviews/sessions",
-        method: "POST",
-        headers: { Accept: "application/json", "Content-Type": "application/json" },
-        body: { user_id: String(candidateId) },
-      }),
-      transformResponse: (data: unknown) =>
-        normalizeStartSessionResponse(data as Record<string, unknown>),
+      queryFn: async ({ candidateId }, _api, _extraOptions, baseQuery) => {
+        if (USE_MOCK_API) {
+          await wait(350);
+          return {
+            data: normalizeStartSessionResponse({
+              session_id: "mock-session-1",
+              questions: MOCK_QUESTIONS,
+            }),
+          };
+        }
+
+        console.log("[Interview] POST /interviews/sessions  user_id:", candidateId);
+        const result = await baseQuery({
+          url: "/interviews/sessions",
+          method: "POST",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+          body: { user_id: String(candidateId) },
+        });
+        if (result.error) {
+          console.log("[Interview] Start session error:", result.error);
+          return { error: result.error };
+        }
+        console.log("[Interview] Start session response:", result.data);
+        return {
+          data: normalizeStartSessionResponse(result.data as Record<string, unknown>),
+        };
+      },
     }),
 
     submitMockInterviewAudio: builder.mutation<unknown, SubmitMockInterviewAudioArg>({
-      queryFn: async ({ audioUri, sessionId }, _api, _extraOptions, baseQuery) => {
+      queryFn: async ({ audioUri, sessionId, questionId }) => {
+        if (USE_MOCK_API) {
+          await wait(600);
+          return { data: { session_id: sessionId, uploaded: true } };
+        }
+
         try {
           const formData = new FormData();
+          if (questionId) formData.append("question_id", String(questionId));
           const audioFile = await getAudioFileForUpload(audioUri);
           if (audioFile.isBlob) {
             formData.append("file", audioFile.file as Blob, audioFile.fileName);
           } else {
             formData.append("file", audioFile.file as unknown as Blob);
           }
-          const result = await baseQuery({
-            url: `/interviews/sessions/${sessionId}/answer`,
+
+          // ⚠️  Use native fetch — do NOT set Content-Type so the runtime
+          // sets the correct multipart/form-data boundary automatically.
+          // RTK Query baseQuery can corrupt the boundary when headers + FormData
+          // are combined.
+          const url = `${API_V1_URL}/interviews/sessions/${sessionId}/answer`;
+          console.log("[Interview] POST audio answer to:", url);
+
+          const response = await fetch(url, {
             method: "POST",
             body: formData,
-            headers: { Accept: "application/json" },
+            headers: { Accept: "application/json", ...AUTH_HEADERS },
           });
-          if (result.error) return { error: result.error };
-          return { data: result.data };
+
+          const responseText = await response.text();
+          console.log("[Interview] Answer status:", response.status, responseText.slice(0, 300));
+
+          if (!response.ok) {
+            return { error: { status: response.status, data: responseText } };
+          }
+
+          const data = JSON.parse(responseText) as unknown;
+          return { data };
         } catch (err) {
+          console.log("[Interview] Answer error:", err);
           return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
         }
       },
     }),
 
+    // ── POST /interviews/sessions/{id}/generate-report ──────────────────────
+    // Call after all answers are submitted to generate the PDF report.
+    // Response: { report_id, status }
+    generateInterviewReport: builder.mutation<{ reportId: string; status: string }, string>({
+      queryFn: async (sessionId, _api, _extraOptions, baseQuery) => {
+        if (USE_MOCK_API) {
+          await wait(500);
+          return { data: { reportId: `mock-report-${Date.now()}`, status: "generated" } };
+        }
+
+        console.log("[Interview] POST generate-report for session:", sessionId);
+        const result = await baseQuery({
+          url: `/interviews/sessions/${sessionId}/generate-report`,
+          method: "POST",
+          headers: { Accept: "application/json" },
+        });
+        if (result.error) {
+          console.log("[Interview] Generate report error:", result.error);
+          return { error: result.error };
+        }
+        const raw = result.data as Record<string, unknown>;
+        console.log("[Interview] Generate report response:", raw);
+        return {
+          data: {
+            reportId: String(raw?.report_id ?? raw?.id ?? ""),
+            status: String(raw?.status ?? "generated"),
+          },
+        };
+      },
+    }),
+
     getMockInterviewResult: builder.query<NormalizedInterviewResult, string>({
-      query: (sessionId) => ({
-        url: `/interviews/sessions/${sessionId}/result`,
-        method: "GET",
-        headers: { Accept: "application/json" },
-      }),
-      transformResponse: (data: unknown) =>
-        normalizeMockInterviewResult(data as Record<string, unknown>),
+      queryFn: async (sessionId, _api, _extraOptions, baseQuery) => {
+        if (USE_MOCK_API) {
+          await wait(250);
+          return { data: normalizeMockInterviewResult(MOCK_RESULT) };
+        }
+
+        // ✅ Real endpoint: GET /api/v1/interviews/sessions/{id}/result
+        console.log("[Interview] GET result for session:", sessionId);
+        const result = await baseQuery({
+          url: `/interviews/sessions/${sessionId}/result`,
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+        if (result.error) {
+          console.log("[Interview] Get result error:", result.error);
+          return { error: result.error };
+        }
+        console.log("[Interview] Result response:", result.data);
+        return {
+          data: normalizeMockInterviewResult(result.data as Record<string, unknown>),
+        };
+      },
     }),
   }),
 });
@@ -163,6 +299,7 @@ export const interviewApi = createApi({
 export const {
   useStartInterviewSessionMutation,
   useSubmitMockInterviewAudioMutation,
+  useGenerateInterviewReportMutation,
   useGetMockInterviewResultQuery,
   useLazyGetMockInterviewResultQuery,
 } = interviewApi;

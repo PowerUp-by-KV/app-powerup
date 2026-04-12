@@ -1,16 +1,16 @@
 // src/utils/logger.ts
 export const logger = {
-  log: (...args: any[]) => {
+  log: (...args: unknown[]) => {
     if (__DEV__) {
       console.log(...args);
     }
   },
-  error: (...args: any[]) => {
+  error: (...args: unknown[]) => {
     if (__DEV__) {
       console.error(...args);
     }
   },
-  warn: (...args: any[]) => {
+  warn: (...args: unknown[]) => {
     if (__DEV__) {
       console.warn(...args);
     }

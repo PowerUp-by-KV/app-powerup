@@ -2,9 +2,8 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { useAppSelector } from "@/store/hooks";
-import { useNavigationBridge } from "@/utils/navigationBridge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,15 +19,7 @@ interface SessionItem {
 /**
  * Route params this screen MAY receive.
  */
-type SessionPickerRouteParams = {
-  candidateId?: string;
-  type?: string;
-  sessionTitle?: string;
-};
-
-type Props = {
-  // Navigation and route are now internal.
-};
+type Props = Record<string, never>;
 
 // ── Static data ───────────────────────────────────────────────────────────────
 
@@ -53,20 +44,20 @@ const sessions: SessionItem[] = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SessionPickerScreen({}: Props) {
-  const navigation = useNavigationBridge();
   const routeParams = useLocalSearchParams<Record<string, string>>();
 
   const storeCandiateId = useAppSelector((s) => s.profile.candidateId);
   const candidateId = storeCandiateId || routeParams?.candidateId || "";
 
   const handleSelectSession = (item: SessionItem): void => {
-    if (!candidateId) {
-      return;
-    }
-
-    navigation.navigate("Interview", {
-      type: item.title,
-      sessionTitle: `${item.title} Session`,
+    // Navigate directly to the interview question screen — skip the start screen.
+    router.push({
+      pathname: "/interview/question" as never,
+      params: {
+        mode: "standalone",
+        questionIndex: "0",
+        sessionType: item.title,
+      },
     });
   };
 
