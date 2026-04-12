@@ -1,11 +1,7 @@
 import { useGoogleAuth } from "@/hooks/use-google-auth";
-import {
-  clearAuthState,
-  getApiErrorMessage,
-  signupWithEmail,
-  signupWithGoogleCode,
-  signupWithGoogleIdToken,
-} from "@/services/auth-service";
+import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
+import { saveAuthSession } from "@/services/auth-storage";
+import { useRegisterMutation } from "@/services/auth-api";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
@@ -26,10 +22,11 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
+  const [register] = useRegisterMutation();
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/(tabs)");
+      router.replace("/dashboard");
       return;
     }
 
@@ -64,25 +61,21 @@ export function RegisterScreen() {
     try {
       setIsLoading(true);
 
-      const auth = await signupWithEmail({
+      const auth = await register({
         email: email_value,
         password: password_value,
         confirm_password: confirmPassword_value,
         remember_me: true,
-      });
+      }).unwrap();
 
+      await saveAuthSession(auth);
+      setAuthToken(auth.access_token);
       Alert.alert("Success", "Registration successful.");
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
-        return;
-      }
-
       Alert.alert(
         "Registration Failed",
-        getApiErrorMessage(error, "Unable to register right now. Please try again."),
+        `Error: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
       );
     } finally {
       setIsLoading(false);
@@ -116,38 +109,36 @@ export function RegisterScreen() {
       let auth;
 
       if (result.oauth.oauth_id_token) {
-        auth = await signupWithGoogleIdToken({
+        auth = await register({
           email: oauthEmail,
           oauth_id_token: result.oauth.oauth_id_token,
-        });
+          remember_me: true,
+        }).unwrap();
       } else if (
         result.oauth.oauth_code &&
         result.oauth.oauth_redirect_uri &&
         result.oauth.oauth_code_verifier
       ) {
-        auth = await signupWithGoogleCode({
+        auth = await register({
           email: oauthEmail,
           oauth_code: result.oauth.oauth_code,
           oauth_redirect_uri: result.oauth.oauth_redirect_uri,
           oauth_code_verifier: result.oauth.oauth_code_verifier,
-        });
+          remember_me: true,
+        }).unwrap();
       } else {
         Alert.alert("Google Sign-up Failed", "Google did not return complete OAuth credentials.");
         return;
       }
 
       Alert.alert("Success", "Google registration successful.");
+      await saveAuthSession(auth);
+      setAuthToken(auth.access_token);
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
-        return;
-      }
-
       Alert.alert(
         "Google Sign-up Failed",
-        getApiErrorMessage(error, "Unable to complete Google sign-up right now. Please try again."),
+        `Error: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
       );
     } finally {
       setIsLoading(false);

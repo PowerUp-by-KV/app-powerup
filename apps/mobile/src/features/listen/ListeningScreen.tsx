@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { skipToken } from "@reduxjs/toolkit/query/react";
 import { useRouter } from "expo-router";
-import { Audio } from "expo-av";
 import {
   ListeningAssessment,
   ListeningQuestion,
@@ -13,6 +12,14 @@ import {
 } from "@/services/listening-api";
 import { setAssessmentResult } from "@/services/results-service";
 
+// Conditionally import expo-av to avoid errors if module is not available
+let Audio: any = null;
+try {
+  Audio = require("expo-av").Audio;
+} catch (e) {
+  console.warn("expo-av not available, audio features will be disabled");
+}
+
 export function ListeningScreen() {
   const router = useRouter();
   const [selectedAssessmentId, setSelectedAssessmentId] = useState<string | null>(null);
@@ -22,7 +29,7 @@ export function ListeningScreen() {
   const [audioLoading, setAudioLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [sound, setSound] = useState<any>(null);
 
   const {
     data: assessments,
@@ -73,6 +80,11 @@ export function ListeningScreen() {
   };
 
   const playAudio = async () => {
+    if (!Audio) {
+      setError("Audio playback is not available on this device");
+      return;
+    }
+
     if (!selectedAssessment?.audio_url) {
       setError("No audio available for this assessment");
       return;

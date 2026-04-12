@@ -27,10 +27,9 @@ export function LoginScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/(tabs)");
+      router.replace("/dashboard");
       return;
     }
-
     router.replace("/google-success");
   };
 
@@ -55,6 +54,7 @@ export function LoginScreen() {
         remember_me: rememberMe,
       }).unwrap();
 
+      Alert.alert("Success", "Login successful");
       await persistAuthAndNavigate(response);
     } catch (error) {
       if ((error as { response?: { status?: number } })?.response?.status === 401) {
@@ -96,17 +96,33 @@ export function LoginScreen() {
         return;
       }
 
-      if (!result.oauth.oauth_id_token) {
-        Alert.alert("Google Login Failed", "Google did not return an ID token for backend login.");
+      let response;
+
+      if (result.oauth.oauth_id_token) {
+        response = await login({
+          email: oauthEmail,
+          oauth_id_token: result.oauth.oauth_id_token,
+        }).unwrap();
+      } else if (
+        result.oauth.oauth_code &&
+        result.oauth.oauth_redirect_uri &&
+        result.oauth.oauth_code_verifier
+      ) {
+        response = await login({
+          email: oauthEmail,
+          oauth_code: result.oauth.oauth_code,
+          oauth_redirect_uri: result.oauth.oauth_redirect_uri,
+          oauth_code_verifier: result.oauth.oauth_code_verifier,
+        }).unwrap();
+      } else {
+        Alert.alert("Google Login Failed", "Google did not return the required OAuth credentials.");
         return;
       }
 
-      const response = await login({
-        email: oauthEmail,
-        oauth_id_token: result.oauth.oauth_id_token,
-      }).unwrap();
-
-      await persistAuthAndNavigate(response);
+      await saveAuthSession(response);
+      setAuthToken(response.access_token);
+      Alert.alert("Success", "Login successful");
+      router.push("/google-success");
     } catch (error) {
       if ((error as { response?: { status?: number } })?.response?.status === 401) {
         await clearAuthState();

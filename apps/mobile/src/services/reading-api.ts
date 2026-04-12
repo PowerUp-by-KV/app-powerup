@@ -51,6 +51,7 @@ export interface ReadingResult {
 }
 
 export const readingApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getReadingAssessments: builder.query<Assessment[], { active?: boolean } | void>({
       query: (params) => ({

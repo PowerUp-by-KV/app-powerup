@@ -1,25 +1,39 @@
 export interface AuthResponse {
   access_token: string;
   profile_completed: boolean;
+  email?: string;
   [key: string]: unknown;
 }
 
-export async function saveAuthSession(_auth: AuthResponse): Promise<void> {
-  return;
+let authSession: AuthResponse | null = null;
+
+export async function saveAuthSession(auth: AuthResponse): Promise<void> {
+  authSession = {
+    ...auth,
+    access_token:
+      auth.access_token ??
+      (auth as { token?: string }).token ??
+      (auth as { accessToken?: string }).accessToken ??
+      "",
+    profile_completed:
+      auth.profile_completed ?? (auth as { profileCompleted?: boolean }).profileCompleted ?? false,
+  };
 }
 
 export async function getAuthSession(): Promise<AuthResponse | null> {
-  return null;
+  return authSession;
 }
 
 export async function clearAuthState(): Promise<void> {
-  return;
+  authSession = null;
 }
 
 export async function clearAuthSession(): Promise<void> {
-  return;
+  authSession = null;
 }
 
-export async function setProfileCompletedInSession(_completed: boolean): Promise<void> {
-  return;
+export async function setProfileCompletedInSession(completed: boolean): Promise<void> {
+  if (authSession) {
+    authSession.profile_completed = completed;
+  }
 }

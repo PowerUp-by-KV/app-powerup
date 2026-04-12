@@ -53,10 +53,11 @@ export interface ListeningResult {
 }
 
 export const listeningApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getListeningAssessments: builder.query<ListeningAssessment[], { active?: boolean } | void>({
       query: (params) => ({
-        url: "/listening/assessments",
+        url: "api/v1/listening/assessments",
         params: params || {},
       }),
       providesTags: ["Listening"],

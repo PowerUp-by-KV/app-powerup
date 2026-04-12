@@ -52,10 +52,11 @@ export interface GrammarResult {
 }
 
 export const grammarApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getGrammarAssessments: builder.query<GrammarAssessment[], { active?: boolean } | void>({
       query: (params) => ({
-        url: "/grammar/assessments",
+        url: "api/v1/grammar/assessments",
         params: params || {},
       }),
       providesTags: ["Grammar"],
