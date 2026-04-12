@@ -5,8 +5,6 @@
  * Phase 3: Wrapped with Redux <Provider store={store}> — all screens now
  *          have store access via useAppDispatch / useAppSelector.
  */
-import "../global.css"; // NativeWind CSS entrypoint — imported once at the root
-
 import React from "react";
 import { Stack } from "expo-router";
 import { Provider } from "react-redux";
@@ -23,7 +21,13 @@ export default function RootLayout() {
         <Stack.Screen name="mock-interview/index" options={{ title: "Mock Interviews" }} />
         <Stack.Screen name="mock-interview/[sessionId]" options={{ title: "Mock Interview" }} />
         <Stack.Screen name="mock-interview/result/[sessionId]" options={{ title: "Results" }} />
-        <Stack.Screen name="interview/[sessionId]" options={{ title: "Interview Coach" }} />
+        {/* Interview routes are now managed by interview/_layout.tsx */}
+        <Stack.Screen
+          name="interview"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
     </Provider>
   );

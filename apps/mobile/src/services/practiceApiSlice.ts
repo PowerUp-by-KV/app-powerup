@@ -7,7 +7,7 @@
 
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Platform } from "react-native";
-import { USE_MOCK_API, FULL_API_BASE_URL } from "../constants/apiConfig";
+import { USE_MOCK_API, FULL_API_BASE_URL, AUTH_HEADERS } from "../constants/apiConfig";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -115,7 +115,7 @@ const getAudioFileForUpload = async (audioUri: string) => {
 
 export const practiceApi = createApi({
   reducerPath: "practiceApi",
-  baseQuery: fetchBaseQuery({ baseUrl: FULL_API_BASE_URL }),
+  baseQuery: fetchBaseQuery({ baseUrl: FULL_API_BASE_URL, prepareHeaders: (h) => { Object.entries(AUTH_HEADERS).forEach(([k, v]) => h.set(k, v)); return h; } }),
   endpoints: (builder) => ({
     startPracticeQuestion: builder.query<NormalizedQuestion | null, StartPracticeArg>({
       queryFn: async ({ userId, difficulty = "" }, _api, _extraOptions, baseQuery) => {
@@ -187,15 +187,29 @@ export const practiceApi = createApi({
             }
           }
 
-          const result = await baseQuery({
-            url: "/practice/answer",
+          // Use native fetch — do NOT set Content-Type so the runtime adds the
+          // multipart/form-data boundary automatically (RTK Query baseQuery can
+          // corrupt it when a headers object is provided alongside FormData).
+          const url = `${FULL_API_BASE_URL}/practice/answer`;
+          console.log("[Practice Answer] POST", url);
+
+          const response = await fetch(url, {
             method: "POST",
             body: formData,
-            headers: { Accept: "application/json" },
+            headers: { Accept: "application/json", ...AUTH_HEADERS },
           });
-          if (result.error) return { error: result.error };
-          return { data: normalizePracticeAnswerResponse(result.data as Record<string, unknown>) };
+
+          const responseText = await response.text();
+          console.log("[Practice Answer] Status:", response.status, responseText.slice(0, 300));
+
+          if (!response.ok) {
+            return { error: { status: response.status, data: responseText } };
+          }
+
+          const data = JSON.parse(responseText) as Record<string, unknown>;
+          return { data: normalizePracticeAnswerResponse(data) };
         } catch (err) {
+          console.log("[Practice Answer] Error:", err);
           return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
         }
       },

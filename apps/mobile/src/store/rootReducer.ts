@@ -11,6 +11,7 @@ import { resumeApi } from "@/services/resumeApiSlice";
 import { practiceApi } from "@/services/practiceApiSlice";
 import { interviewApi } from "@/services/interviewApiSlice";
 import { mockInterviewApi } from "@/services/mockInterviewApiSlice";
+import { interviewFeedbackApi } from "@/features/interview/services/interviewFeedbackApi";
 
 const rootReducer = combineReducers({
   // ── Feature reducers ────────────────────────────────────────────────────
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   [practiceApi.reducerPath]: practiceApi.reducer,
   [interviewApi.reducerPath]: interviewApi.reducer,
   [mockInterviewApi.reducerPath]: mockInterviewApi.reducer,
+  [interviewFeedbackApi.reducerPath]: interviewFeedbackApi.reducer,
 });
 
 /** Shape of the entire Redux state tree — consumed by TypedUseSelectorHook. */

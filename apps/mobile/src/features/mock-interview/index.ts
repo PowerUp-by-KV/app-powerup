@@ -1,3 +1,1 @@
-export * from "./MockInterviewScreen";
-export * from "./MockInterviewResultScreen";
-export * from "./MockInterviewListScreen";
+export * from "./screens";

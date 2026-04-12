@@ -39,8 +39,11 @@ const ROUTE_MAP: Record<string, string> = {
   MockInterviewList: "/mock-interview",
   MockInterviewSession: "/mock-interview/[sessionId]",
   MockInterview: "/mock-interview/[sessionId]", // alias
-  MockInterviewResult: "/mock-interview/result/[sessionId]",
-  Interview: "/interview/[sessionId]",
+  MockInterviewResult:  "/mock-interview/result/[sessionId]",
+  Interview:            "/interview/[sessionId]",
+  LiveInterview:        "/interview/live-interview",
+  InterviewSummary:     "/interview/summary",
+  FullReport:           "/interview/full-report",
 };
 
 // ---------------------------------------------------------------------------
@@ -144,6 +147,7 @@ export type NavigationBridge = ReturnType<typeof createNavigationBridge>;
  *   const navigation = useNavigationBridge();
  */
 export function useNavigationBridge(): NavigationBridge {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { useMemo } = require("react");
   return useMemo(() => createNavigationBridge(), []);
 }

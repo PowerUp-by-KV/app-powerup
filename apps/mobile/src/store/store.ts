@@ -10,6 +10,7 @@ import { resumeApi } from "@/services/resumeApiSlice";
 import { practiceApi } from "@/services/practiceApiSlice";
 import { interviewApi } from "@/services/interviewApiSlice";
 import { mockInterviewApi } from "@/services/mockInterviewApiSlice";
+import { interviewFeedbackApi } from "@/features/interview/services/interviewFeedbackApi";
 
 const store = configureStore({
   reducer: rootReducer,
@@ -18,7 +19,8 @@ const store = configureStore({
       .concat(resumeApi.middleware)
       .concat(practiceApi.middleware)
       .concat(interviewApi.middleware)
-      .concat(mockInterviewApi.middleware),
+      .concat(mockInterviewApi.middleware)
+      .concat(interviewFeedbackApi.middleware),
 });
 
 /** Inferred dispatch type — includes RTK Query thunks. */
