@@ -1,8 +1,3 @@
-import { ProfileScreen } from "./ProfileScreen";
-
-export { ProfileScreen };
-
-export * from "./components/ProfileHeader";
-export * from "./components/ProfileStats";
-export * from "./components/ProfileMenu";
-export * from "./hooks/useProfileLogic";
+export { ProfileScreen } from "./ProfileScreen";
+export { ProfileCard } from "./components/ProfileCard";
+export { useProfile } from "./hooks/useProfile";

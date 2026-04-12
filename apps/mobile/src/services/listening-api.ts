@@ -1,49 +1,95 @@
 import { api } from "./api";
-import {
-  ApiResponse,
-  ListeningAudio,
-  ListeningQuestion,
-  ListeningSubmitRequest,
-  SubmitResponse,
-} from "./types";
-import { listeningData as MOCK_LISTENING_AUDIO } from "@/constants/listeningData";
 
-const listeningApi = api.injectEndpoints({
+export interface ListeningQuestionOption {
+  id: string;
+  option_text: string;
+  sort_order: number;
+  is_correct: boolean;
+}
+
+export interface ListeningQuestion {
+  id: string;
+  question_text: string;
+  sort_order: number;
+  points: number;
+  options: ListeningQuestionOption[];
+}
+
+export interface ListeningAssessment {
+  id: string;
+  title: string;
+  description: string;
+  instructions: string;
+  audio_url: string;
+  audio_duration_seconds: number;
+  total_questions: number;
+  time_limit_seconds: number;
+  is_active: boolean;
+  questions: ListeningQuestion[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ListeningAttempt {
+  id: string;
+  assessment_id: string;
+  user_id: string;
+  user_email: string;
+  started_at: string;
+}
+
+export interface ListeningSubmissionRequest {
+  attempt_id: string;
+  answers: {
+    question_id: string;
+    selected_option_id: string;
+  }[];
+}
+
+export interface ListeningResult {
+  score: number;
+  percentage: number;
+  is_passed: boolean;
+}
+
+export const listeningApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    getListeningAudio: builder.query<ListeningAudio[], void>({
-      query: () => "/api/listening/audio",
-      transformResponse: (response: ApiResponse<ListeningAudio[]>) => {
-        return response?.success ? response.data : (MOCK_LISTENING_AUDIO as any);
-      },
-      providesTags: ["listening"],
-    }),
-
-    getListeningQuestions: builder.query<ListeningQuestion[], string>({
-      query: (audioId) => `/api/listening/questions?audioId=${audioId}`,
-      transformResponse: (response: ApiResponse<ListeningQuestion[]>) => {
-        if (!response.success) throw new Error(response.message);
-        return response.data;
-      },
-      providesTags: (result, error, audioId) => [{ type: "listening", id: `QS-${audioId}` }],
-    }),
-
-    submitListening: builder.mutation<SubmitResponse, ListeningSubmitRequest>({
-      query: (body) => ({
-        url: "/api/listening/submit",
-        method: "POST",
-        body,
+    getListeningAssessments: builder.query<ListeningAssessment[], { active?: boolean } | void>({
+      query: (params) => ({
+        url: "/listening/assessments",
+        params: params || {},
       }),
-      transformResponse: (response: ApiResponse<SubmitResponse>) => {
-        if (!response.success) throw new Error(response.message);
-        return response.data;
-      },
-      invalidatesTags: ["listening"],
+      providesTags: ["Listening"],
+    }),
+
+    getListeningAssessment: builder.query<ListeningAssessment, string>({
+      query: (id) => `/listening/assessments/${id}`,
+      providesTags: ["Listening"],
+    }),
+
+    createListeningAttempt: builder.mutation<ListeningAttempt, string>({
+      query: (assessmentId) => ({
+        url: "/listening/attempts",
+        method: "POST",
+        body: { assessment_id: assessmentId },
+      }),
+      invalidatesTags: ["Listening"],
+    }),
+
+    submitListeningAttempt: builder.mutation<ListeningResult, ListeningSubmissionRequest>({
+      query: ({ attempt_id, answers }) => ({
+        url: `/listening/attempts/${attempt_id}/submit`,
+        method: "POST",
+        body: { answers },
+      }),
+      invalidatesTags: ["Listening", "Results"],
     }),
   }),
 });
 
 export const {
-  useGetListeningAudioQuery,
-  useGetListeningQuestionsQuery,
-  useSubmitListeningMutation,
+  useGetListeningAssessmentsQuery,
+  useGetListeningAssessmentQuery,
+  useCreateListeningAttemptMutation,
+  useSubmitListeningAttemptMutation,
 } = listeningApi;
