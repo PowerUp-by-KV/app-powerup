@@ -2,24 +2,21 @@
 export {
   InterviewScreen,
   LiveInterviewScreen,
-  QuestionFeedbackScreen,
-  InterviewSummaryScreen,
   FullReportScreen,
   // New screens (API-backed)
-  CoachInterviewScreen,
   QuestionFeedbackScreenNew,
-  InterviewSummaryScreenNew,
   // Standalone Interview Coach flow (static questions + mock scoring)
   InterviewStartScreen,
-  QuestionScreen,
   SummaryScreen,
+  ModelAnswerScreen,
 } from "./screens";
 
 // Components (re-exported from domain barrels via components/index.ts)
 export {
   LiveIndicator,
   STARMethodIndicator,
-  ScoreCard,
+  SharedScoreCard,
+  FeedbackScoreCard,
   ScoreBreakdown,
   FeedbackItem,
   QuestionReviewItem,

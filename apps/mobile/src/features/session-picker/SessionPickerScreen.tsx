@@ -47,7 +47,7 @@ export function SessionPickerScreen({}: Props) {
   const routeParams = useLocalSearchParams<Record<string, string>>();
 
   const storeCandiateId = useAppSelector((s) => s.profile.candidateId);
-  const candidateId = storeCandiateId || routeParams?.candidateId || "";
+  const _candidateId = storeCandiateId || routeParams?.candidateId || "";
 
   const handleSelectSession = (item: SessionItem): void => {
     // Navigate directly to the interview question screen — skip the start screen.

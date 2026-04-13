@@ -98,6 +98,7 @@ export function ModelAnswerModal({ visible, onClose }: ModelAnswerModalProps) {
           {/* Body */}
           <ScrollView
             className="px-5"
+            // @ts-ignore: NativeWind v4 feature
             contentContainerClassName="pt-4 pb-4"
             showsVerticalScrollIndicator={false}
           >

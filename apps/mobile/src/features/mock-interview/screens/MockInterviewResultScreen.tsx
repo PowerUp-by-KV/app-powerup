@@ -188,7 +188,7 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
       duration: 700,
       useNativeDriver: false,
     }).start();
-  }, [score]);
+  }, [score, anim]);
 
   const width = anim.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
 
@@ -307,6 +307,7 @@ export function MockInterviewResultScreen({ route, navigation }: Props) {
 
   useEffect(() => {
     fetchResult();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
   // ── Data fetch (unchanged logic) ───────────────────────────────────────────
@@ -512,7 +513,7 @@ export function MockInterviewResultScreen({ route, navigation }: Props) {
       >
         {/* ── OVERALL SCORE RING ── */}
         <View style={styles.scoreCard}>
-          <View style={styles.scoreRingOuter} borderColor={(color + "30") as never}>
+          <View style={[styles.scoreRingOuter, { borderColor: color + "30" }]}>
             <View style={[styles.scoreRingInner, { borderColor: color }]}>
               <Text style={[styles.scoreNumber, { color }]}>{overallScore}</Text>
               <Text style={styles.scoreSubLabel}>{label}</Text>

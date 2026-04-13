@@ -265,7 +265,7 @@ export function InterviewScreen() {
   const [seconds, setSeconds] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isLoadingNext, setIsLoadingNext] = useState(false);
-  const [statusText, setStatusText] = useState("Loading first question...");
+  const [_statusText, setStatusText] = useState("Loading first question...");
   const [sessionId, setSessionId] = useState("");
   const [indicators, setIndicators] = useState<LiveIndicators>(INITIAL_INDICATORS);
 
@@ -287,6 +287,7 @@ export function InterviewScreen() {
         pollIntervalRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Timer
@@ -652,7 +653,7 @@ export function InterviewScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => router.replace("/interview-sessions")}
+            onPress={() => router.replace("/session-picker")}
             style={[styles.button, { backgroundColor: "#e5e7eb" }]}
           >
             <Text style={[styles.buttonText, { color: "#374151" }]}>Exit</Text>

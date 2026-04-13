@@ -248,7 +248,7 @@ export function LiveInterviewScreen() {
   /** Current question index in the mock queue (mock mode only). */
   const [mockQuestionIndex, setMockQuestionIndex] = useState<number>(0);
   /** Full-session audio URI captured when the last mock question is stopped. */
-  const [fullSessionAudioUri, setFullSessionAudioUri] = useState<string | null>(null);
+  const [_fullSessionAudioUri, setFullSessionAudioUri] = useState<string | null>(null);
   /**
    * True after the user taps mic for the first time in mock mode.
    * Prevents restarting the recording if isRecordingEnabled flips back to true
@@ -265,13 +265,13 @@ export function LiveInterviewScreen() {
     if (mode !== "standalone" && !isInitializing && (!activeSessionId || !activeQuestionId)) {
       Alert.alert("Invalid Session", "Session or question ID is missing. Please try again.");
     }
-  }, [activeSessionId, activeQuestionId, isInitializing]);
+  }, [activeSessionId, activeQuestionId, isInitializing, mode]);
 
   // ── Waveform ─────────────────────────────────────────────────────────────────
   const { isRecording, bars, start, stop } = useRealtimeWaveform();
 
   // ── Live indicators ──────────────────────────────────────────────────────────
-  const { indicators, isConnected, connectionType, isLoading, error } = useLiveIndicators({
+  const { indicators, isConnected, isLoading, error } = useLiveIndicators({
     sessionId: activeSessionId,
     questionId: activeQuestionId,
     enableWebSocket: Boolean(activeSessionId && activeQuestionId),
@@ -642,6 +642,7 @@ export function LiveInterviewScreen() {
         console.log("Stop Recording Clicked");
 
         const currentQ = standaloneQuestions[standaloneIndex];
+        if (!currentQ) return;
         // Deterministic mock score: 6–10, varies by question + answer length
         const mockScore = Math.min(10, 6 + ((standaloneIndex * 3 + (audioUri?.length ?? 0)) % 5));
         const newAnswers = [...standalonePrevAnswers, "Voice answer recorded"];
@@ -735,6 +736,7 @@ export function LiveInterviewScreen() {
     } finally {
       if (mountedRef.current) setIsSubmitting(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isSubmitting,
     stop,
@@ -751,17 +753,6 @@ export function LiveInterviewScreen() {
   ]);
 
   // ── Render ────────────────────────────────────────────────────────────────────
-
-  if (isInitializing) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563EB" />
-          <Text style={styles.initText}>Loading interview question...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   // ── Indicator rows data ────────────────────────────────────────────────────
   const indicatorRows: { label: string; value: number; status: IndicatorStatus }[] = [
@@ -813,6 +804,17 @@ export function LiveInterviewScreen() {
     }
   }, [isRecording, stop]);
 
+  if (isInitializing) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.initText}>Loading interview question...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <>
       {/* Inject dynamic header back button so it works on both Android and iOS */}
@@ -834,7 +836,7 @@ export function LiveInterviewScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.exitButton}
-            onPress={() => router.replace("/interview-sessions")}
+            onPress={() => router.replace("/session-picker")}
             disabled={isSubmitting || isQuestionPlaying}
           >
             <MaterialCommunityIcons name="arrow-left" size={20} color="#475569" />

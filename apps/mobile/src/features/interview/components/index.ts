@@ -2,7 +2,7 @@
 export * from "./shared/SectionContainer";
 export * from "./shared/LiveIndicatorsCard";
 export * from "./shared/QuestionCard";
-export * from "./shared/ScoreCard";
+export { ScoreCard as SharedScoreCard } from "./shared/ScoreCard";
 
 // Live domain components
 export * from "./live/LiveIndicator";
@@ -10,7 +10,7 @@ export * from "./live/LiveIndicator";
 // Feedback domain components
 export * from "./feedback/FeedbackItem";
 export * from "./feedback/ScoreBreakdown";
-export * from "./feedback/ScoreCard";
+export { ScoreCard as FeedbackScoreCard } from "./feedback/ScoreCard";
 export * from "./feedback/STARMethodIndicator";
 
 // Report domain components
