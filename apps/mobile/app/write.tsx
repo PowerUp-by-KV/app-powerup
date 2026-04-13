@@ -1,4 +1,4 @@
-import { WritingScreen } from "@/features/grammar";
+import { WritingScreen } from "@/features/pre-grammar";
 
 export default function WriteRoute() {
   return <WritingScreen />;

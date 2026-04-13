@@ -1,8 +1,3 @@
-import { useGoogleAuth } from "@/hooks/use-google-auth";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
-import { useLoginMutation } from "@/services/auth-api";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -13,6 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { useRouter } from "expo-router";
+
+import { useGoogleAuth } from "@/hooks/use-google-auth";
+import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
+import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
+import { useLoginMutation } from "@/services/auth-api";
 import { GoogleLogo } from "@/components/svg";
 
 export function LoginScreen() {
@@ -57,7 +59,8 @@ export function LoginScreen() {
       Alert.alert("Success", "Login successful");
       await persistAuthAndNavigate(response);
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
+      const apiError = error as { response?: { status?: number } };
+      if (apiError?.response?.status === 401) {
         await clearAuthState();
         router.replace("/login");
         return;
@@ -124,7 +127,8 @@ export function LoginScreen() {
       Alert.alert("Success", "Login successful");
       router.push("/google-success");
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
+      const apiError = error as { response?: { status?: number } };
+      if (apiError?.response?.status === 401) {
         await clearAuthState();
         router.replace("/login");
         return;

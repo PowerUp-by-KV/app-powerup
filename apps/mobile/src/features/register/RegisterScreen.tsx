@@ -1,8 +1,3 @@
-import { useGoogleAuth } from "@/hooks/use-google-auth";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { saveAuthSession } from "@/services/auth-storage";
-import { useRegisterMutation } from "@/services/auth-api";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
@@ -13,6 +8,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { useRouter } from "expo-router";
+
+import { useGoogleAuth } from "@/hooks/use-google-auth";
+import { setAuthToken } from "@/services/auth-service";
+import { saveAuthSession } from "@/services/auth-storage";
+import { useRegisterMutation } from "@/services/auth-api";
 import { GoogleLogo } from "@/components/svg";
 
 export function RegisterScreen() {
@@ -73,10 +75,8 @@ export function RegisterScreen() {
       Alert.alert("Success", "Registration successful.");
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      Alert.alert(
-        "Registration Failed",
-        `Error: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Registration Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -136,10 +136,8 @@ export function RegisterScreen() {
       setAuthToken(auth.access_token);
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      Alert.alert(
-        "Google Sign-up Failed",
-        `Error: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      Alert.alert("Google Sign-up Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }

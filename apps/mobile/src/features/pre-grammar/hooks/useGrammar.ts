@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function useGrammar() {
+export function useGrammars() {
   const [answer, setAnswer] = useState("");
 
   return {

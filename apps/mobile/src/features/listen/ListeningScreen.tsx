@@ -13,10 +13,11 @@ import {
 import { setAssessmentResult } from "@/services/results-service";
 
 // Conditionally import expo-av to avoid errors if module is not available
-let Audio: any = null;
+let Audio: typeof import("expo-av").Audio | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   Audio = require("expo-av").Audio;
-} catch (e) {
+} catch {
   console.warn("expo-av not available, audio features will be disabled");
 }
 
@@ -29,7 +30,7 @@ export function ListeningScreen() {
   const [audioLoading, setAudioLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sound, setSound] = useState<any>(null);
+  const [sound, setSound] = useState<any>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
 
   const {
     data: assessments,
@@ -108,7 +109,8 @@ export function ListeningScreen() {
         setSound(newSound);
         setIsPlaying(true);
 
-        newSound.setOnPlaybackStatusUpdate((status) => {
+        newSound.setOnPlaybackStatusUpdate((status: any) => {
+          // eslint-disable-line @typescript-eslint/no-explicit-any
           if (status.isLoaded) {
             setIsPlaying(status.isPlaying);
             if (status.didJustFinish) {
