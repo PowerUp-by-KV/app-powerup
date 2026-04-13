@@ -9,7 +9,7 @@ import {
   useGetListeningAssessmentQuery,
   useGetListeningAssessmentsQuery,
   useSubmitListeningAttemptMutation,
-} from "@/services/listening-api";
+} from "@/services/pre-listening-api";
 import { setAssessmentResult } from "@/services/results-service";
 
 // Conditionally import expo-av to avoid errors if module is not available

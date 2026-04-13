@@ -10,7 +10,7 @@ import {
   useGetReadingAssessmentQuery,
   useGetReadingAssessmentsQuery,
   useSubmitReadingAttemptMutation,
-} from "@/services/reading-api";
+} from "@/services/pre-reading-api";
 import { setAssessmentResult } from "@/services/results-service";
 
 export function ReadingScreen() {
