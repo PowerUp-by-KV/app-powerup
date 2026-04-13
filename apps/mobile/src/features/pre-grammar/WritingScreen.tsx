@@ -9,7 +9,7 @@ import {
   useGetGrammarAssessmentQuery,
   useGetGrammarAssessmentsQuery,
   useSubmitGrammarAttemptMutation,
-} from "@/services/grammar-api";
+} from "@/services/pre-grammar-api";
 import { setAssessmentResult } from "@/services/results-service";
 
 export function WritingScreen() {

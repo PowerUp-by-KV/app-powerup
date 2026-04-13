@@ -1,7 +1,3 @@
-import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
-import { setProfileCompletedInSession } from "@/services/auth-storage";
-import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ImageBackground,
@@ -13,6 +9,12 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
+import { useRouter } from "expo-router";
+
+import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
+import { setProfileCompletedInSession } from "@/services/auth-storage";
+import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
 
 export function ProfileScreen() {
   const router = useRouter();
