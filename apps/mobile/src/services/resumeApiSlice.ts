@@ -92,8 +92,7 @@ export const resumeApi = createApi({
           }
 
           // ✅ Correct endpoint: POST /api/v1/upload
-          const qs = userId ? `?user_id=${encodeURIComponent(String(userId))}` : "";
-          const url = `${API_V1_URL}/upload${qs}`;
+          const url = `${API_V1_URL}/upload`;
 
           console.log("[Resume Upload] POST", url);
           console.log("[Resume Upload] file:", file.name, "userId:", userId);

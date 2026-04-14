@@ -46,8 +46,9 @@ const sessions: SessionItem[] = [
 export function SessionPickerScreen({}: Props) {
   const routeParams = useLocalSearchParams<Record<string, string>>();
 
-  const storeCandiateId = useAppSelector((s) => s.profile.candidateId);
-  const _candidateId = storeCandiateId || routeParams?.candidateId || "";
+  const storeCandidateId = useAppSelector((s) => s.profile.candidateId);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const candidateId = storeCandidateId || routeParams?.candidateId || "";
 
   const handleSelectSession = (item: SessionItem): void => {
     // Navigate directly to the interview question screen — skip the start screen.

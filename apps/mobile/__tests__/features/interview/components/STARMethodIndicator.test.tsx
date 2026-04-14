@@ -5,91 +5,71 @@
  */
 
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import { render } from "@testing-library/react-native";
 import { STARMethodIndicator } from "../../../../src/features/interview/components/feedback/STARMethodIndicator";
-import type { STARMethodAnalysis } from "../../../../src/features/interview/types/interview.types";
 
 describe("STARMethodIndicator Component", () => {
-  const mockAnalysis: STARMethodAnalysis = {
-    situation: { present: true, quality: "excellent" },
-    task: { present: true, quality: "good" },
-    action: { present: true, quality: "excellent" },
-    result: { present: false, quality: "weak" },
-    overallScore: 75,
+  const mockStar = {
+    situation: true,
+    task: true,
+    action: true,
+    result: false,
   };
 
   it("renders all STAR components", () => {
-    const { getByText } = render(<STARMethodIndicator analysis={mockAnalysis} />);
+    const { getByText } = render(<STARMethodIndicator star={mockStar} />);
 
-    expect(getByText("SITUATION")).toBeTruthy();
-    expect(getByText("TASK")).toBeTruthy();
-    expect(getByText("ACTION")).toBeTruthy();
-    expect(getByText("RESULT")).toBeTruthy();
+    expect(getByText("S")).toBeTruthy();
+    expect(getByText("T")).toBeTruthy();
+    expect(getByText("A")).toBeTruthy();
+    expect(getByText("R")).toBeTruthy();
   });
 
-  it("displays quality levels correctly", () => {
-    const { getAllByText, getByText } = render(<STARMethodIndicator analysis={mockAnalysis} />);
+  it("displays present/missing emojis correctly", () => {
+    const { getAllByText } = render(<STARMethodIndicator star={mockStar} />);
 
-    // "Excellent" should appear twice (situation and action)
-    const excellent = getAllByText("Excellent");
-    expect(excellent.length).toBeGreaterThanOrEqual(2);
-
-    // "Good" for task
-    const good = getByText("Good");
-    expect(good).toBeTruthy();
+    // 3 present (✅), 1 missing (⚠️)
+    expect(getAllByText("✅").length).toBe(3);
+    expect(getAllByText("⚠️").length).toBe(1);
   });
 
   it("shows missing indicator for absent components", () => {
-    const analysisWithMissing: STARMethodAnalysis = {
-      situation: { present: true, quality: "good" },
-      task: { present: false, quality: "weak" },
-      action: { present: true, quality: "good" },
-      result: { present: false, quality: "weak" },
-      overallScore: 50,
+    const starWithMissing = {
+      situation: true,
+      task: false,
+      action: true,
+      result: false,
     };
 
-    const { getAllByText } = render(<STARMethodIndicator analysis={analysisWithMissing} />);
+    const { getAllByText } = render(<STARMethodIndicator star={starWithMissing} />);
 
-    // Should have at least 2 "Missing" indicators (for task and result)
-    const missing = getAllByText("Missing");
-    expect(missing.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it("animates on mount", async () => {
-    const { getByText } = render(<STARMethodIndicator analysis={mockAnalysis} />);
-
-    await waitFor(() => {
-      expect(getByText("SITUATION")).toBeTruthy();
-    });
+    const missing = getAllByText("⚠️");
+    expect(missing.length).toBe(2);
   });
 
   it("handles all excellent quality", () => {
-    const perfectAnalysis: STARMethodAnalysis = {
-      situation: { present: true, quality: "excellent" },
-      task: { present: true, quality: "excellent" },
-      action: { present: true, quality: "excellent" },
-      result: { present: true, quality: "excellent" },
-      overallScore: 100,
+    const perfectStar = {
+      situation: true,
+      task: true,
+      action: true,
+      result: true,
     };
 
-    const { getByText } = render(<STARMethodIndicator analysis={perfectAnalysis} />);
+    const { getAllByText } = render(<STARMethodIndicator star={perfectStar} />);
 
-    expect(getByText("SITUATION")).toBeTruthy();
-    expect(getByText("TASK")).toBeTruthy();
+    expect(getAllByText("✅").length).toBe(4);
   });
 
   it("handles all weak quality", () => {
-    const poorAnalysis: STARMethodAnalysis = {
-      situation: { present: false, quality: "weak" },
-      task: { present: false, quality: "weak" },
-      action: { present: false, quality: "weak" },
-      result: { present: false, quality: "weak" },
-      overallScore: 0,
+    const poorStar = {
+      situation: false,
+      task: false,
+      action: false,
+      result: false,
     };
 
-    const { getAllByText } = render(<STARMethodIndicator analysis={poorAnalysis} />);
+    const { getAllByText } = render(<STARMethodIndicator star={poorStar} />);
 
-    const missing = getAllByText("Missing");
-    expect(missing.length).toBeGreaterThanOrEqual(4);
+    expect(getAllByText("⚠️").length).toBe(4);
   });
 });

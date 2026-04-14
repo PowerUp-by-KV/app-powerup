@@ -1,1 +1,1 @@
-﻿export * from "./ResumeScreen";
+export * from "./ResumeScreen";

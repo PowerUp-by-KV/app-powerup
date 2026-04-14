@@ -2,9 +2,8 @@
  * app/interview/coach/_layout.tsx
  *
  * Route group layout for the standalone Interview Coach flow:
- *   /interview/coach        → InterviewStartScreen
- *   /interview/coach/question → QuestionScreen
- *   /interview/coach/results  → SummaryScreen
+ *   /interview/coach        → SessionPickerScreen
+ *   /interview/coach/start  → InterviewStartScreen
  *
  * Wraps all three screens with <InterviewProvider> so the
  * useInterview state is shared across the full flow.

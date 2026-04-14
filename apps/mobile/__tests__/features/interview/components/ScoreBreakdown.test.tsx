@@ -7,18 +7,18 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
 import { ScoreBreakdown } from "../../../../src/features/interview/components/feedback/ScoreBreakdown";
-import type { ScoreBreakdownItem } from "../../../../src/features/interview/types/interview.types";
+import type { BreakdownData } from "../../../../src/features/interview/components/feedback/ScoreBreakdown";
 
 describe("ScoreBreakdown Component", () => {
-  const mockItems: ScoreBreakdownItem[] = [
-    { label: "Relevance", score: 85, weight: 0.25 },
-    { label: "Structure", score: 70, weight: 0.25 },
-    { label: "Clarity", score: 80, weight: 0.25 },
-    { label: "Depth", score: 75, weight: 0.25 },
-  ];
+  const mockBreakdown: BreakdownData = {
+    relevance: 85,
+    structure: 70,
+    clarity: 80,
+    depth: 75,
+  };
 
-  it("renders all score items", () => {
-    const { getByText } = render(<ScoreBreakdown items={mockItems} />);
+  it("renders all score labels", () => {
+    const { getByText } = render(<ScoreBreakdown breakdown={mockBreakdown} />);
 
     expect(getByText("Relevance")).toBeTruthy();
     expect(getByText("Structure")).toBeTruthy();
@@ -26,8 +26,8 @@ describe("ScoreBreakdown Component", () => {
     expect(getByText("Depth")).toBeTruthy();
   });
 
-  it("displays correct scores", () => {
-    const { getByText } = render(<ScoreBreakdown items={mockItems} />);
+  it("displays correct scores as percentages", () => {
+    const { getByText } = render(<ScoreBreakdown breakdown={mockBreakdown} />);
 
     expect(getByText("85%")).toBeTruthy();
     expect(getByText("70%")).toBeTruthy();
@@ -35,42 +35,16 @@ describe("ScoreBreakdown Component", () => {
     expect(getByText("75%")).toBeTruthy();
   });
 
-  it("renders custom title", () => {
-    const { getByText } = render(<ScoreBreakdown items={mockItems} title="Custom Title" />);
+  it("renders with zeroes", () => {
+    const zeroBreakdown = {
+      relevance: 0,
+      structure: 0,
+      clarity: 0,
+      depth: 0,
+    };
+    const { getAllByText } = render(<ScoreBreakdown breakdown={zeroBreakdown} />);
 
-    expect(getByText("Custom Title")).toBeTruthy();
-  });
-
-  it("renders default title when not provided", () => {
-    const { getByText } = render(<ScoreBreakdown items={mockItems} />);
-
-    expect(getByText("Score Breakdown")).toBeTruthy();
-  });
-
-  it("handles empty items array", () => {
-    const { getByText } = render(<ScoreBreakdown items={[]} />);
-
-    expect(getByText("Score Breakdown")).toBeTruthy();
-  });
-
-  it("handles single item", () => {
-    const singleItem: ScoreBreakdownItem[] = [{ label: "Overall", score: 85, weight: 1 }];
-
-    const { getByText } = render(<ScoreBreakdown items={singleItem} />);
-
-    expect(getByText("Overall")).toBeTruthy();
-    expect(getByText("85%")).toBeTruthy();
-  });
-
-  it("handles high and low scores", () => {
-    const extremeItems: ScoreBreakdownItem[] = [
-      { label: "Best", score: 100, weight: 0.5 },
-      { label: "Worst", score: 0, weight: 0.5 },
-    ];
-
-    const { getByText } = render(<ScoreBreakdown items={extremeItems} />);
-
-    expect(getByText("100%")).toBeTruthy();
-    expect(getByText("0%")).toBeTruthy();
+    // 4 categories with 0%
+    expect(getAllByText("0%").length).toBe(4);
   });
 });
