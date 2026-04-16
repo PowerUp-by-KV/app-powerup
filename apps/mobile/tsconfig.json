@@ -4,9 +4,6 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "jsx": "react-jsx",
-    "module": "esnext",
     "paths": {
       "@/*": ["./src/*"],
       "@app/*": ["./app/*"]
