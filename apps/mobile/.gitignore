@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# TypeScript output logs
+tsc_output.txt
+tsc_output_utf8.txt
