@@ -12,9 +12,10 @@ import type {
   Experience,
   Education,
   Skill,
-} from "@app-powerup/shared/types";
+} from "@app-powerup/shared";
+import type { TemplateStyle } from "@/services/templates";
 
-const initialState: ResumeState = {
+const initialState: ResumeState & { template: TemplateStyle } = {
   currentStep: 1,
   formData: {
     contact: {
@@ -36,6 +37,7 @@ const initialState: ResumeState = {
   hasExistingResume: false,
   lastSaved: null,
   error: null,
+  template: "modern",
 };
 
 export const resumeSlice = createSlice({
@@ -132,6 +134,11 @@ export const resumeSlice = createSlice({
 
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
+    },
+
+    // Template Selection
+    setTemplate: (state, action: PayloadAction<TemplateStyle>) => {
+      state.template = action.payload;
     },
 
     // Load Resume Data

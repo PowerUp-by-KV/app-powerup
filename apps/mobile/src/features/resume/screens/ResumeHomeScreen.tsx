@@ -7,10 +7,12 @@ import { View, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCurrentStep, resetResume } from "@/store/slices/resume.slice";
+import { setCurrentStep, resetResume, loadResumeData, setError } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
 import { Button, Section } from "../components";
 import { useState } from "react";
+import * as DocumentPicker from "expo-document-picker";
+import { useUploadResumeMutation } from "@/services/api";
 
 export function ResumeHomeScreen() {
   const router = useRouter();
@@ -18,6 +20,7 @@ export function ResumeHomeScreen() {
   const hasExistingResume = useAppSelector(selectHasExistingResume);
   const lastSaved = useAppSelector(selectLastSaved);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadResume] = useUploadResumeMutation();
 
   const handleBuildFromScratch = () => {
     dispatch(resetResume());
@@ -30,11 +33,50 @@ export function ResumeHomeScreen() {
     router.push("two/builder");
   };
 
-  const handleUploadResume = () => {
-    setIsUploading(true);
-    // TODO: Implement PDF picker and upload logic
-    Alert.alert("Coming Soon", "PDF upload feature will be available soon!");
-    setIsUploading(false);
+  const handleUploadResume = async () => {
+    try {
+      setIsUploading(true);
+
+      // Pick PDF file
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        setIsUploading(false);
+        return;
+      }
+
+      const file = result.assets[0];
+      if (!file) {
+        throw new Error("No file selected");
+      }
+
+      // Create FormData and append file
+      const formData = new FormData();
+      formData.append("resume", {
+        uri: file.uri,
+        type: "application/pdf",
+        name: file.name,
+      } as any);
+
+      // Upload to server
+      const response = await uploadResume(formData).unwrap();
+
+      // Load parsed data into Redux
+      dispatch(loadResumeData(response));
+      dispatch(setCurrentStep(1));
+
+      Alert.alert("Success", "Resume uploaded and parsed successfully!");
+      router.push("two/builder");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload resume";
+      dispatch(setError(errorMessage));
+      Alert.alert("Error", errorMessage);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handlePreviewResume = () => {

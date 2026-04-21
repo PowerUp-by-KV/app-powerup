@@ -5,7 +5,7 @@
 
 import { ScrollView, View } from "react-native";
 import { Text } from "@/components/Themed";
-import type { ResumeParsedData } from "@app-powerup/shared/types";
+import type { ResumeParsedData } from "@app-powerup/shared";
 
 interface ResumePreviewProps {
   data: ResumeParsedData;

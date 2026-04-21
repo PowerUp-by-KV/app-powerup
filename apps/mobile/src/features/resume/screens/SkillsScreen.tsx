@@ -19,7 +19,7 @@ import {
 import { Button, Section, StepWizard, TagInput, ResumePreview } from "../components";
 import { useUpdateResumeMutation } from "@/services/api";
 import { useState } from "react";
-import type { Skill } from "@app-powerup/shared/types";
+import type { Skill } from "@app-powerup/shared";
 
 export function SkillsScreen() {
   const router = useRouter();

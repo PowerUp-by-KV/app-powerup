@@ -16,7 +16,7 @@ import {
 } from "@/store/slices/resume.slice";
 import { Button, TextInput, Section, StepWizard, DynamicFieldList } from "../components";
 import { useState } from "react";
-import type { Experience } from "@app-powerup/shared/types";
+import type { Experience } from "@app-powerup/shared";
 
 export function ExperienceScreen() {
   const dispatch = useAppDispatch();

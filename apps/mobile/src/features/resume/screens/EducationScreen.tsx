@@ -16,7 +16,7 @@ import {
 } from "@/store/slices/resume.slice";
 import { Button, TextInput, Section, StepWizard, DynamicFieldList } from "../components";
 import { useState } from "react";
-import type { Education } from "@app-powerup/shared/types";
+import type { Education } from "@app-powerup/shared";
 
 export function EducationScreen() {
   const dispatch = useAppDispatch();

@@ -6,7 +6,7 @@
 import { View, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { Button } from "./Button";
-import { STEP_LABELS, RESUME_STEPS } from "@app-powerup/shared/types";
+import { STEP_LABELS, RESUME_STEPS } from "@app-powerup/shared";
 
 interface StepWizardProps {
   currentStep: number;
