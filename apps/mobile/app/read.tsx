@@ -1,5 +1,6 @@
-import { ReadingScreen } from "@/features/read";
+import { ReadingScreen } from "@/features/pre-reading";
+import { mockReadingAssessment } from "@/utils/mock-assessments";
 
 export default function ReadRoute() {
-  return <ReadingScreen />;
+  return <ReadingScreen assessment={mockReadingAssessment} />;
 }

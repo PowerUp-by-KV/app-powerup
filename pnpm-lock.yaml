@@ -47,6 +47,9 @@ importers:
       expo-constants:
         specifier: ~55.0.8
         version: 55.0.8(expo@55.0.7)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(typescript@5.9.3)
+      expo-document-picker:
+        specifier: ^55.0.13
+        version: 55.0.13(expo@55.0.7)
       expo-font:
         specifier: ~55.0.4
         version: 55.0.4(expo@55.0.7)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -2444,6 +2447,11 @@ packages:
 
   expo-crypto@55.0.12:
     resolution: {integrity: sha512-P6GHuypnOV2rUw8mCoVFlpBQtvXbIQSOjA3UECE72dTNAYUfa5nHZtB8HNEVAycNn+fW6f58vNlnl5oIYdMPkA==}
+    peerDependencies:
+      expo: '*'
+
+  expo-document-picker@55.0.13:
+    resolution: {integrity: sha512-IhswJElhdzs3fKDEKW8KXYRoFkWGEsXRMYAZT46Yo56zqqy8yQXrczo33RSwD2hFzNQBdLT97SJL9N311UyS3g==}
     peerDependencies:
       expo: '*'
 
@@ -8129,6 +8137,10 @@ snapshots:
       - typescript
 
   expo-crypto@55.0.12(expo@55.0.7):
+    dependencies:
+      expo: 55.0.7(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.6)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+
+  expo-document-picker@55.0.13(expo@55.0.7):
     dependencies:
       expo: 55.0.7(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.6)(react-dom@19.2.0(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
