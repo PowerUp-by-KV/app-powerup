@@ -1,174 +1,785 @@
 /**
  * Resume Home Screen
- * Main entry point - Upload PDF, Build from scratch, or Edit existing resume
+ * Professional PDF upload with validation, parsing, and Redux integration
  */
 
-import { View, ScrollView, Pressable, Alert } from "react-native";
-import { useRouter } from "expo-router";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  ScrollView,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { Text } from "@/components/Themed";
+import { useRouter } from "expo-router";
+import { MaterialIcons } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import { useUploadResumeMutation } from "@/services/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCurrentStep, resetResume, loadResumeData, setError } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
-import { Button, Section } from "../components";
-import { useState } from "react";
-import * as DocumentPicker from "expo-document-picker";
-import { useUploadResumeMutation } from "@/services/api";
+import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
 
 export function ResumeHomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const hasExistingResume = useAppSelector(selectHasExistingResume);
   const lastSaved = useAppSelector(selectLastSaved);
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadResume] = useUploadResumeMutation();
 
-  const handleBuildFromScratch = () => {
-    dispatch(resetResume());
-    dispatch(setCurrentStep(1));
-    router.push("two/builder");
+  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [parsedResume, setParsedResume] = useState<any>(null);
+  const fileInputRef = useRef<any>(null);
+
+  useEffect(() => {
+    const initializeResume = async () => {
+      try {
+        // Reset state on mount if needed
+      } catch (error) {
+        console.log("Failed to initialize:", error);
+      }
+    };
+
+    initializeResume();
+  }, []);
+
+  const handleFileSelect = async (file: any) => {
+    if (!file) return;
+
+    // Use validation service for comprehensive checks
+    const fileInfo = {
+      name: file.name,
+      size: file.size || 0,
+      type: file.mimeType || file.type || "application/pdf",
+      uri: file.uri || file,
+    };
+
+    const validation = validatePDFFile(fileInfo);
+    if (!validation.isValid) {
+      Alert.alert("Invalid File", validation.error || "File validation failed.");
+      return;
+    }
+
+    setSelectedFile({
+      name: file.name,
+      size: file.size,
+      uri: file.uri || file,
+    });
+    setUploadSuccess(false);
   };
 
-  const handleEditResume = () => {
-    dispatch(setCurrentStep(1));
-    router.push("two/builder");
-  };
-
-  const handleUploadResume = async () => {
+  const handleBrowseFiles = async () => {
     try {
-      setIsUploading(true);
+      if (Platform.OS === "web") {
+        fileInputRef.current?.click();
+      } else {
+        const result = await DocumentPicker.getDocumentAsync({
+          type: "application/pdf",
+          copyToCacheDirectory: true,
+          multiple: false,
+        });
 
-      // Pick PDF file
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf",
-        copyToCacheDirectory: true,
-      });
+        if (result.canceled) return;
 
-      if (result.canceled) {
-        setIsUploading(false);
-        return;
+        const file = result.assets?.[0];
+        if (!file) return;
+
+        handleFileSelect({
+          name: file.name,
+          size: file.size,
+          mimeType: file.mimeType,
+          uri: file.uri,
+        });
       }
+    } catch (err) {
+      Alert.alert("Error", "Failed to pick document. Please try again.");
+    }
+  };
 
-      const file = result.assets[0];
-      if (!file) {
-        throw new Error("No file selected");
-      }
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      Alert.alert("No File Selected", "Please select a PDF resume first.");
+      return;
+    }
 
-      // Create FormData and append file
+    let progressInterval;
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+
+      progressInterval = setInterval(() => {
+        setUploadProgress((prev) => Math.min(prev + 10, 90));
+      }, 300);
+
+      // Create FormData
       const formData = new FormData();
       formData.append("resume", {
-        uri: file.uri,
+        uri: selectedFile.uri,
         type: "application/pdf",
-        name: file.name,
+        name: selectedFile.name,
       } as any);
 
       // Upload to server
       const response = await uploadResume(formData).unwrap();
 
-      // Load parsed data into Redux
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
+      if (!response) {
+        throw new Error("Invalid response from upload API");
+      }
+
+      // Load into Redux store
       dispatch(loadResumeData(response));
+      setParsedResume(response);
       dispatch(setCurrentStep(1));
 
-      Alert.alert("Success", "Resume uploaded and parsed successfully!");
-      router.push("two/builder");
+      setUploadSuccess(true);
+
+      Alert.alert("Success", "Resume uploaded and parsed successfully!", [
+        {
+          text: "Continue to Builder",
+          onPress: () => {
+            router.push("/(tabs)/two/builder");
+          },
+        },
+      ]);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to upload resume";
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
+
+      setUploadProgress(0);
+
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to upload resume. Please try again.";
       dispatch(setError(errorMessage));
-      Alert.alert("Error", errorMessage);
+      Alert.alert("Upload Failed", errorMessage);
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
   };
 
+  const handleUploadAnother = () => {
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadSuccess(false);
+    setParsedResume(null);
+  };
+
+  const handleBuildFromScratch = () => {
+    dispatch(resetResume());
+    dispatch(setCurrentStep(1));
+    router.push("/(tabs)/two/builder");
+  };
+
+  const handleEditResume = () => {
+    dispatch(setCurrentStep(1));
+    router.push("/(tabs)/two/builder");
+  };
+
   const handlePreviewResume = () => {
-    router.push("two/preview");
+    router.push("/(tabs)/two/preview");
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-gradient-to-b from-blue-600 to-blue-700 px-6 py-8">
-        <Text className="mb-2 text-3xl font-bold text-white">My Resume</Text>
-        <Text className="text-blue-100">Create, edit, and manage your professional resume</Text>
-      </View>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.container}>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.mainTitle}>Upload Your Resume</Text>
+          <Text style={styles.subtitle}>Help us understand your professional background</Text>
+        </View>
 
-      {/* Content */}
-      <View className="px-6 py-6">
-        {/* Existing Resume Section */}
-        {hasExistingResume && (
-          <Section
-            title="Your Resume"
-            subtitle={lastSaved ? `Last saved: ${lastSaved}` : undefined}
-            className="border-l-4 border-green-500 bg-green-50"
-          >
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Button onPress={handleEditResume} size="md">
-                  Edit Resume
-                </Button>
+        {/* Upload Box */}
+        <View style={styles.uploadBoxWrapper}>
+          {uploadSuccess && parsedResume ? (
+            <View style={[styles.uploadBox, styles.successBox]}>
+              <MaterialIcons name="check-circle" size={56} color="#10b981" style={styles.icon} />
+              <Text style={styles.successText}>Resume Uploaded!</Text>
+              <Text style={styles.successSubtext}>Your resume has been successfully parsed.</Text>
+            </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.uploadBox, pressed && styles.uploadBoxPressed]}
+              onPress={handleBrowseFiles}
+            >
+              <View style={styles.uploadIconContainer}>
+                <MaterialIcons name="cloud-upload" size={52} color="#2563EB" />
               </View>
-              <View className="flex-1">
-                <Button variant="secondary" size="md" onPress={handlePreviewResume}>
-                  Preview
-                </Button>
+              <Text style={styles.uploadText}>
+                {selectedFile ? "Change File" : "Upload Resume"}
+              </Text>
+              <Text style={styles.uploadSubtext}>Drag and drop or click to browse</Text>
+              <View style={styles.formatBadge}>
+                <Text style={styles.formatText}>PDF only • Max 5MB</Text>
+              </View>
+            </Pressable>
+          )}
+
+          {Platform.OS === "web" && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && file.name && file.size !== undefined) {
+                  handleFileSelect({
+                    name: file.name,
+                    size: file.size,
+                    uri: file,
+                  });
+                }
+              }}
+            />
+          )}
+        </View>
+
+        {/* File Info Box */}
+        {selectedFile && !uploadSuccess && (
+          <View style={styles.fileInfoBox}>
+            <View style={styles.fileInfoContent}>
+              <MaterialIcons name="description" size={28} color="#3b82f6" style={styles.fileIcon} />
+              <View style={styles.fileDetails}>
+                <Text style={styles.fileName} numberOfLines={1}>
+                  {selectedFile.name}
+                </Text>
+                <Text style={styles.fileSize}>{formatFileSize(selectedFile.size)}</Text>
               </View>
             </View>
-          </Section>
+            {!uploading && (
+              <Pressable onPress={() => setSelectedFile(null)}>
+                <MaterialIcons name="close" size={24} color="#6b7280" />
+              </Pressable>
+            )}
+          </View>
         )}
 
-        {/* Action Cards */}
-        <View className="space-y-4">
-          {/* Upload Resume Card */}
-          <Pressable
-            onPress={handleUploadResume}
-            disabled={isUploading}
-            className={`rounded-xl border-2 border-dashed border-blue-200 bg-blue-50 px-6 py-8 ${
-              isUploading ? "opacity-50" : ""
-            }`}
-          >
-            <View className="items-center">
-              <Text className="mb-2 text-4xl">📄</Text>
-              <Text className="mb-1 text-center text-lg font-semibold text-gray-900">
-                Upload Resume
-              </Text>
-              <Text className="text-center text-sm text-gray-600">
-                Import PDF and auto-fill your resume
-              </Text>
+        {/* Progress Bar */}
+        {uploading && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
             </View>
-          </Pressable>
+            <Text style={styles.progressText}>{uploadProgress}%</Text>
+          </View>
+        )}
 
-          {/* Build from Scratch Card */}
-          <Pressable onPress={handleBuildFromScratch} className="rounded-xl bg-white shadow-sm">
-            <View className="border-l-4 border-green-500 px-6 py-6">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="mb-1 text-lg font-semibold text-gray-900">
-                    Build from Scratch
-                  </Text>
-                  <Text className="text-sm text-gray-600">Create a new resume step by step</Text>
+        {/* Upload Buttons */}
+        {selectedFile && !uploadSuccess && (
+          <View style={styles.buttonGroup}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.uploadButton,
+                pressed && styles.uploadButtonPressed,
+                uploading && styles.uploadButtonDisabled,
+              ]}
+              onPress={handleUpload}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <>
+                  <MaterialIcons name="send" size={20} color="white" style={styles.buttonIcon} />
+                  <Text style={styles.uploadButtonText}>Upload Resume</Text>
+                </>
+              )}
+            </Pressable>
+
+            {!uploading && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.cancelButton,
+                  pressed && styles.cancelButtonPressed,
+                ]}
+                onPress={() => setSelectedFile(null)}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+
+        {/* Parsed Data Display */}
+        {uploadSuccess && parsedResume && (
+          <View style={styles.parsedDataContainer}>
+            {/* Personal Information Card */}
+            {parsedResume.contact && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="person" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Personal Information</Text>
                 </View>
-                <Text className="text-3xl">✨</Text>
+                <View style={styles.cardContent}>
+                  <Text style={styles.personalName}>{parsedResume.contact?.fullName}</Text>
+                  {parsedResume.contact?.email && (
+                    <Text style={styles.personalDetail}>{parsedResume.contact?.email}</Text>
+                  )}
+                  {parsedResume.contact?.phone && (
+                    <Text style={styles.personalDetail}>{parsedResume.contact?.phone}</Text>
+                  )}
+                  {parsedResume.contact?.location && (
+                    <Text style={styles.personalDetail}>{parsedResume.contact?.location}</Text>
+                  )}
+                </View>
               </View>
-            </View>
-          </Pressable>
+            )}
 
-          {/* Features Section */}
-          <Section title="Why Use Our Resume Builder?" className="mt-4">
-            <View className="space-y-3">
-              {[
-                { icon: "✓", label: "Professional templates" },
-                { icon: "✓", label: "Step-by-step guidance" },
-                { icon: "✓", label: "Auto-formatted layout" },
-                { icon: "✓", label: "PDF export & download" },
-              ].map((feature, idx) => (
-                <View key={idx} className="flex-row items-center gap-3">
-                  <Text className="text-lg text-green-600">{feature.icon}</Text>
-                  <Text className="text-gray-700">{feature.label}</Text>
+            {/* Skills Card */}
+            {parsedResume.skills && parsedResume.skills.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="code" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Skills</Text>
                 </View>
-              ))}
+                <View style={styles.skillsContainer}>
+                  {parsedResume.skills?.map((skill: any, index: number) => (
+                    <View key={index} style={styles.skillBadge}>
+                      <Text style={styles.skillText}>
+                        {typeof skill === "string" ? skill : skill.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Experience Card */}
+            {parsedResume.experience && parsedResume.experience.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="work" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Experience</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.experience?.map((exp: any, index: number) => (
+                    <View key={index} style={styles.experienceItem}>
+                      <Text style={styles.expTitle}>{exp.position}</Text>
+                      <Text style={styles.expCompany}>
+                        {exp.company} • {exp.startDate}
+                        {exp.endDate ? ` - ${exp.endDate}` : " - Present"}
+                      </Text>
+                      {exp.description && (
+                        <Text style={styles.expDescription}>{exp.description}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Upload Another Button */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.uploadAnotherButton,
+                pressed && styles.uploadAnotherPressed,
+              ]}
+              onPress={handleUploadAnother}
+            >
+              <MaterialIcons name="refresh" size={20} color="#2563EB" />
+              <Text style={styles.uploadAnotherText}>Upload Another Resume</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* Info Cards */}
+        {!selectedFile && !uploadSuccess && (
+          <View style={styles.infoCardsContainer}>
+            <View style={styles.infoCard}>
+              <MaterialIcons name="check" size={24} color="#10b981" style={styles.infoIcon} />
+              <Text style={styles.infoTitle}>Easy Upload</Text>
+              <Text style={styles.infoDescription}>Upload your resume in a single click</Text>
             </View>
-          </Section>
-        </View>
+
+            <View style={styles.infoCard}>
+              <MaterialIcons name="security" size={24} color="#3b82f6" style={styles.infoIcon} />
+              <Text style={styles.infoTitle}>Secure</Text>
+              <Text style={styles.infoDescription}>Your data is encrypted and secure</Text>
+            </View>
+
+            <View style={styles.infoCard}>
+              <MaterialIcons name="speed" size={24} color="#f59e0b" style={styles.infoIcon} />
+              <Text style={styles.infoTitle}>Fast Processing</Text>
+              <Text style={styles.infoDescription}>Instant resume analysis and parsing</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Build from Scratch Button */}
+        {!selectedFile && !uploadSuccess && (
+          <View style={styles.altActionContainer}>
+            <Pressable
+              onPress={handleBuildFromScratch}
+              style={({ pressed }) => [
+                styles.altActionButton,
+                pressed && styles.altActionButtonPressed,
+              ]}
+            >
+              <MaterialIcons name="edit" size={20} color="#059669" />
+              <Text style={styles.altActionText}>Build from Scratch</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
+  contentContainer: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
+    padding: 24,
+    maxWidth: 600,
+    alignSelf: "center",
+    width: "100%",
+  },
+  headerSection: {
+    marginBottom: 32,
+    marginTop: 12,
+  },
+  mainTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#6b7280",
+    lineHeight: 24,
+  },
+  uploadBoxWrapper: {
+    marginBottom: 24,
+  },
+  uploadBox: {
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    borderStyle: "dashed",
+    borderRadius: 20,
+    padding: 48,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  uploadBoxPressed: {
+    borderColor: "#2563EB",
+    backgroundColor: "#F8FAFC",
+    borderStyle: "solid",
+  },
+  successBox: {
+    borderWidth: 2,
+    borderColor: "#10b981",
+    backgroundColor: "#f0fdf4",
+    borderStyle: "solid",
+  },
+  uploadIconContainer: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  icon: {
+    marginBottom: 12,
+  },
+  uploadText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+  },
+  uploadSubtext: {
+    fontSize: 15,
+    color: "#6B7280",
+    marginBottom: 16,
+  },
+  formatBadge: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  formatText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  successText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#10b981",
+    marginBottom: 4,
+  },
+  successSubtext: {
+    fontSize: 14,
+    color: "#047857",
+  },
+  fileInfoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f3f4f6",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  fileInfoContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  fileIcon: {
+    marginRight: 12,
+  },
+  fileDetails: {
+    flex: 1,
+  },
+  fileName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  fileSize: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  progressContainer: {
+    marginBottom: 20,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#3b82f6",
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 12,
+    color: "#6b7280",
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  buttonGroup: {
+    gap: 12,
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#3b82f6",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+  },
+  uploadButtonPressed: {
+    backgroundColor: "#2563eb",
+  },
+  uploadButtonDisabled: {
+    backgroundColor: "#93c5fd",
+    opacity: 0.7,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  uploadButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "white",
+  },
+  cancelButton: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    padding: 14,
+    alignItems: "center",
+    backgroundColor: "white",
+  },
+  cancelButtonPressed: {
+    backgroundColor: "#f3f4f6",
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#6b7280",
+  },
+  parsedDataContainer: {
+    marginTop: 8,
+    gap: 16,
+  },
+  dataCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    shadowColor: "#0F172A",
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginLeft: 10,
+  },
+  cardContent: {
+    gap: 8,
+  },
+  personalName: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#0F172A",
+    marginBottom: 4,
+  },
+  personalDetail: {
+    fontSize: 14,
+    color: "#64748B",
+    lineHeight: 22,
+  },
+  skillsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  skillBadge: {
+    backgroundColor: "#EFF6FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  skillText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+  experienceItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  expTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#0F172A",
+  },
+  expCompany: {
+    fontSize: 13,
+    color: "#64748B",
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  expDescription: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
+  },
+  uploadAnotherButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EFF6FF",
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 8,
+  },
+  uploadAnotherPressed: {
+    backgroundColor: "#DBEAFE",
+  },
+  uploadAnotherText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2563EB",
+    marginLeft: 8,
+  },
+  infoCardsContainer: {
+    marginTop: 24,
+    gap: 16,
+    marginBottom: 20,
+  },
+  infoCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  infoIcon: {
+    marginBottom: 8,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  infoDescription: {
+    fontSize: 12,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  altActionContainer: {
+    marginTop: 8,
+  },
+  altActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#D1FAE5",
+    borderRadius: 12,
+    padding: 14,
+  },
+  altActionButtonPressed: {
+    backgroundColor: "#A7F3D0",
+  },
+  altActionText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#059669",
+    marginLeft: 8,
+  },
+});

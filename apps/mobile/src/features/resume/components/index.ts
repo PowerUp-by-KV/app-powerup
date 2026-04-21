@@ -10,3 +10,4 @@ export { StepWizard } from "./StepWizard";
 export { DynamicFieldList } from "./DynamicFieldList";
 export { TagInput } from "./TagInput";
 export { ResumePreview } from "./ResumePreview";
+export { PDFPicker } from "./PDFPicker";
