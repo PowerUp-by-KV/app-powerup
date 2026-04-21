@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { ResumeParsedData } from "@app-powerup/shared";
+import type { ResumeParsedData, ResumeUploadResponse } from "@app-powerup/shared";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3000/api";
 
@@ -14,36 +14,36 @@ export const api = createApi({
   }),
   tagTypes: ["Resume"],
   endpoints: (builder) => ({
-    // Upload PDF and parse resume
-    uploadResume: builder.mutation<ResumeParsedData, FormData>({
+    // POST /api/resume/upload - Upload PDF and parse resume
+    uploadResume: builder.mutation<ResumeUploadResponse, FormData>({
       query: (formData) => ({
-        url: "/v1/resume/upload",
+        url: "/resume/upload",
         method: "POST",
         body: formData,
       }),
       invalidatesTags: ["Resume"],
     }),
 
-    // Get user's resume
+    // GET /api/resume/{user_id} - Get user's resume
     getResume: builder.query<ResumeParsedData, string>({
-      query: (userId) => `/v1/resume/${userId}`,
+      query: (userId) => `/resume/${userId}`,
       providesTags: ["Resume"],
     }),
 
-    // Update resume
+    // PUT /api/resume/{user_id} - Update resume
     updateResume: builder.mutation<ResumeParsedData, { userId: string; data: ResumeParsedData }>({
       query: ({ userId, data }) => ({
-        url: `/v1/resume/${userId}`,
+        url: `/resume/${userId}`,
         method: "PUT",
         body: data,
       }),
       invalidatesTags: ["Resume"],
     }),
 
-    // Delete resume
+    // DELETE /api/resume/{user_id} - Delete resume
     deleteResume: builder.mutation<void, string>({
       query: (userId) => ({
-        url: `/v1/resume/${userId}`,
+        url: `/resume/${userId}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Resume"],

@@ -13,9 +13,8 @@ import type {
   Education,
   Skill,
 } from "@app-powerup/shared";
-import type { TemplateStyle } from "@/services/templates";
 
-const initialState: ResumeState & { template: TemplateStyle } = {
+const initialState: ResumeState = {
   currentStep: 1,
   formData: {
     contact: {
@@ -36,8 +35,6 @@ const initialState: ResumeState & { template: TemplateStyle } = {
   isSaving: false,
   hasExistingResume: false,
   lastSaved: null,
-  error: null,
-  template: "modern",
 };
 
 export const resumeSlice = createSlice({
@@ -47,20 +44,17 @@ export const resumeSlice = createSlice({
     // Step Navigation
     setCurrentStep: (state, action: PayloadAction<number>) => {
       state.currentStep = action.payload;
-      state.error = null;
     },
 
     nextStep: (state) => {
       if (state.currentStep < 4) {
         state.currentStep += 1;
-        state.error = null;
       }
     },
 
     previousStep: (state) => {
       if (state.currentStep > 1) {
         state.currentStep -= 1;
-        state.error = null;
       }
     },
 
@@ -132,15 +126,6 @@ export const resumeSlice = createSlice({
       state.lastSaved = action.payload;
     },
 
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-
-    // Template Selection
-    setTemplate: (state, action: PayloadAction<TemplateStyle>) => {
-      state.template = action.payload;
-    },
-
     // Load Resume Data
     loadResumeData: (state, action: PayloadAction<ResumeParsedData>) => {
       state.formData = action.payload;
@@ -173,7 +158,6 @@ export const {
   setIsSaving,
   setHasExistingResume,
   setLastSaved,
-  setError,
   loadResumeData,
   resetResume,
 } = resumeSlice.actions;
@@ -194,4 +178,3 @@ export const selectIsSaving = (state: { resume: ResumeState }) => state.resume.i
 export const selectHasExistingResume = (state: { resume: ResumeState }) =>
   state.resume.hasExistingResume;
 export const selectLastSaved = (state: { resume: ResumeState }) => state.resume.lastSaved;
-export const selectError = (state: { resume: ResumeState }) => state.resume.error;

@@ -9,8 +9,8 @@ import { selectCurrentStep } from "@/store/slices/resume.slice";
 import {
   ContactSummaryScreen,
   ExperienceScreen,
-  EducationScreen,
   SkillsScreen,
+  PreviewScreen,
 } from "@/features/resume/screens";
 
 export default function ResumeBuilder() {
@@ -23,13 +23,13 @@ export default function ResumeBuilder() {
       case 2:
         return <ExperienceScreen />;
       case 3:
-        return <EducationScreen />;
-      case 4:
         return <SkillsScreen />;
+      case 4:
+        return <PreviewScreen />;
       default:
         return <ContactSummaryScreen />;
     }
   };
 
-  return <View className="flex-1">{renderScreen()}</View>;
+  return <View style={{ flex: 1 }}>{renderScreen()}</View>;
 }

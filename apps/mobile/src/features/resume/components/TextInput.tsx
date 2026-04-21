@@ -11,7 +11,7 @@ interface TextInputProps extends RNTextInputProps {
   error?: string;
   required?: boolean;
   multiline?: boolean;
-  rows?: number;
+  numberOfLines?: number;
 }
 
 export function TextInput({
@@ -19,30 +19,43 @@ export function TextInput({
   error,
   required,
   multiline = false,
-  rows = 1,
-  className,
+  numberOfLines = 1,
+  style,
   ...props
 }: TextInputProps) {
   return (
-    <View className="mb-4">
+    <View style={{ marginBottom: 16 }}>
       {label && (
-        <Text className="mb-2 text-sm font-semibold text-gray-900">
-          {label}
-          {required && <Text className="text-red-600"> *</Text>}
-        </Text>
+        <View style={{ marginBottom: 8, flexDirection: "row", alignItems: "center" }}>
+          <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>{label}</Text>
+          {required && (
+            <Text style={{ fontSize: 14, fontWeight: "600", color: "#dc2626", marginLeft: 4 }}>
+              *
+            </Text>
+          )}
+        </View>
       )}
       <RNTextInput
         {...props}
         multiline={multiline}
-        numberOfLines={multiline ? rows : 1}
-        className={`${
-          multiline ? "h-24" : "h-12"
-        } rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 ${
-          error ? "border-red-500" : ""
-        } ${className || ""}`}
+        numberOfLines={multiline ? numberOfLines : 1}
+        style={[
+          {
+            height: multiline ? numberOfLines * 40 : 48,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: error ? "#ef4444" : "#d1d5db",
+            backgroundColor: "#ffffff",
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            fontSize: 14,
+            color: "#111827",
+          },
+          style,
+        ]}
         placeholderTextColor="#9CA3AF"
       />
-      {error && <Text className="mt-1 text-xs text-red-600">{error}</Text>}
+      {error && <Text style={{ marginTop: 6, fontSize: 12, color: "#dc2626" }}>{error}</Text>}
     </View>
   );
 }

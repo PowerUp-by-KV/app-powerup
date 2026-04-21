@@ -6,5 +6,7 @@
 export { ResumeHomeScreen } from "./ResumeHomeScreen";
 export { ContactSummaryScreen } from "./ContactSummaryScreen";
 export { ExperienceScreen } from "./ExperienceScreen";
-export { EducationScreen } from "./EducationScreen";
 export { SkillsScreen } from "./SkillsScreen";
+export { PreviewScreen } from "./PreviewScreen";
+// Deprecated: EducationScreen - merged into ExperienceScreen
+export { EducationScreen } from "./EducationScreen";

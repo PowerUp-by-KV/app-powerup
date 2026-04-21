@@ -1,30 +1,37 @@
 /**
- * Experience Screen - Step 2 of 4
- * Manage work experience entries with dynamic list
+ * Experience & Education Screen - Step 2 of 4
+ * Collect work experience and educational background
  */
 
-import { View, ScrollView, Modal, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Switch } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addExperience,
   updateExperience,
   removeExperience,
+  addEducation,
+  updateEducation,
+  removeEducation,
   selectExperience,
+  selectEducation,
   nextStep,
   previousStep,
 } from "@/store/slices/resume.slice";
-import { Button, TextInput, Section, StepWizard, DynamicFieldList } from "../components";
+import { TextInput } from "../components";
 import { useState } from "react";
-import type { Experience } from "@app-powerup/shared";
+import { MaterialIcons } from "@expo/vector-icons";
+import type { Experience, Education } from "@app-powerup/shared";
 
 export function ExperienceScreen() {
   const dispatch = useAppDispatch();
   const experience = useAppSelector(selectExperience);
-  const [showModal, setShowModal] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Experience>({
-    id: "",
+  const education = useAppSelector(selectEducation);
+
+  // Experience form state
+  const [showExperienceForm, setShowExperienceForm] = useState(false);
+  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
+  const [experienceForm, setExperienceForm] = useState<Partial<Experience>>({
     company: "",
     position: "",
     startDate: "",
@@ -32,11 +39,68 @@ export function ExperienceScreen() {
     currentlyWorking: false,
     description: "",
   });
+  const [experienceErrors, setExperienceErrors] = useState<Record<string, string>>({});
 
-  const handleAddNew = () => {
-    setEditingId(null);
-    setFormData({
-      id: Date.now().toString(),
+  // Education form state
+  const [showEducationForm, setShowEducationForm] = useState(false);
+  const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
+  const [educationForm, setEducationForm] = useState<Partial<Education>>({
+    school: "",
+    degree: "",
+    field: "",
+    graduationDate: "",
+  });
+  const [educationErrors, setEducationErrors] = useState<Record<string, string>>({});
+
+  // Experience handlers
+  const validateExperienceForm = () => {
+    const errors: Record<string, string> = {};
+    if (!experienceForm.company?.trim()) errors.company = "Company is required";
+    if (!experienceForm.position?.trim()) errors.position = "Position is required";
+    if (!experienceForm.startDate?.trim()) errors.startDate = "Start date is required";
+    if (!experienceForm.currentlyWorking && !experienceForm.endDate?.trim()) {
+      errors.endDate = "End date is required or mark as currently working";
+    }
+    setExperienceErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleAddExperience = () => {
+    if (validateExperienceForm()) {
+      if (editingExperienceId) {
+        dispatch(updateExperience({ ...experienceForm, id: editingExperienceId } as Experience));
+        setEditingExperienceId(null);
+      } else {
+        dispatch(
+          addExperience({
+            ...experienceForm,
+            id: Date.now().toString(),
+          } as Experience),
+        );
+      }
+      setExperienceForm({
+        company: "",
+        position: "",
+        startDate: "",
+        endDate: "",
+        currentlyWorking: false,
+        description: "",
+      });
+      setShowExperienceForm(false);
+      setExperienceErrors({});
+    }
+  };
+
+  const handleEditExperience = (exp: Experience) => {
+    setExperienceForm(exp);
+    setEditingExperienceId(exp.id);
+    setShowExperienceForm(true);
+  };
+
+  const handleCancelExperienceForm = () => {
+    setShowExperienceForm(false);
+    setEditingExperienceId(null);
+    setExperienceForm({
       company: "",
       position: "",
       startDate: "",
@@ -44,167 +108,583 @@ export function ExperienceScreen() {
       currentlyWorking: false,
       description: "",
     });
-    setShowModal(true);
+    setExperienceErrors({});
   };
 
-  const handleEdit = (item: Experience) => {
-    setEditingId(item.id);
-    setFormData(item);
-    setShowModal(true);
+  // Education handlers
+  const validateEducationForm = () => {
+    const errors: Record<string, string> = {};
+    if (!educationForm.school?.trim()) errors.school = "School/University is required";
+    if (!educationForm.degree?.trim()) errors.degree = "Degree is required";
+    if (!educationForm.field?.trim()) errors.field = "Field of study is required";
+    if (!educationForm.graduationDate?.trim())
+      errors.graduationDate = "Graduation date is required";
+    setEducationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-  const handleSave = () => {
-    if (!formData.company.trim() || !formData.position.trim()) {
-      alert("Please fill in company and position");
-      return;
+  const handleAddEducation = () => {
+    if (validateEducationForm()) {
+      if (editingEducationId) {
+        dispatch(updateEducation({ ...educationForm, id: editingEducationId } as Education));
+        setEditingEducationId(null);
+      } else {
+        dispatch(
+          addEducation({
+            ...educationForm,
+            id: Date.now().toString(),
+          } as Education),
+        );
+      }
+      setEducationForm({
+        school: "",
+        degree: "",
+        field: "",
+        graduationDate: "",
+      });
+      setShowEducationForm(false);
+      setEducationErrors({});
     }
-
-    if (editingId) {
-      dispatch(updateExperience(formData));
-    } else {
-      dispatch(addExperience(formData));
-    }
-    setShowModal(false);
   };
 
-  const handleRemove = (id: string) => {
-    dispatch(removeExperience(id));
+  const handleEditEducation = (edu: Education) => {
+    setEducationForm(edu);
+    setEditingEducationId(edu.id);
+    setShowEducationForm(true);
+  };
+
+  const handleCancelEducationForm = () => {
+    setShowEducationForm(false);
+    setEditingEducationId(null);
+    setEducationForm({
+      school: "",
+      degree: "",
+      field: "",
+      graduationDate: "",
+    });
+    setEducationErrors({});
   };
 
   return (
-    <ScrollView className="flex-1 bg-gray-50">
-      {/* Header */}
-      <View className="bg-white px-6 py-4 shadow-sm">
-        <Text className="text-2xl font-bold text-gray-900">Work Experience</Text>
-        <Text className="mt-1 text-gray-600">Step 2 of 4 - Your professional history</Text>
-      </View>
+    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.container}>
+        {/* Header with Progress */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.stepNumber}>Step 2 of 4</Text>
+            <Text style={styles.headerTitle}>Experience & Education</Text>
+            <Text style={styles.headerSubtitle}>Tell us about your background</Text>
+          </View>
 
-      {/* Content */}
-      <View className="px-6 py-6">
-        <Section title="Your Work Experience">
-          <DynamicFieldList
-            items={experience}
-            onAdd={handleAddNew}
-            onRemove={handleRemove}
-            onEdit={handleEdit}
-            addButtonLabel="Add Experience"
-            emptyMessage="No work experience added yet. Click 'Add' to add your first job."
-            renderItem={(item) => (
-              <View>
-                <Text className="font-bold text-gray-900">{item.position}</Text>
-                <Text className="text-sm text-gray-600">{item.company}</Text>
-                <Text className="text-xs text-gray-500">
-                  {item.startDate}
-                  {item.endDate ? ` - ${item.endDate}` : " - Present"}
-                </Text>
-              </View>
-            )}
-          />
-        </Section>
-
-        {/* StepWizard Navigation */}
-        <StepWizard
-          currentStep={2}
-          totalSteps={4}
-          onNextStep={() => dispatch(nextStep())}
-          onPreviousStep={() => dispatch(previousStep())}
-        />
-      </View>
-
-      {/* Experience Modal */}
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowModal(false)}
-      >
-        <View className="flex-1 bg-black/50">
-          <View className="absolute bottom-0 w-full rounded-t-3xl bg-white">
-            <ScrollView className="px-6 py-6">
-              {/* Header */}
-              <View className="mb-4 flex-row items-center justify-between">
-                <Text className="text-xl font-bold text-gray-900">
-                  {editingId ? "Edit Experience" : "Add Experience"}
-                </Text>
-                <Pressable onPress={() => setShowModal(false)}>
-                  <Text className="text-2xl text-gray-600">✕</Text>
-                </Pressable>
-              </View>
-
-              {/* Form */}
-              <TextInput
-                label="Company Name"
-                required
-                placeholder="Acme Corporation"
-                value={formData.company}
-                onChangeText={(text) => setFormData({ ...formData, company: text })}
-              />
-
-              <TextInput
-                label="Position/Job Title"
-                required
-                placeholder="Senior Software Engineer"
-                value={formData.position}
-                onChangeText={(text) => setFormData({ ...formData, position: text })}
-              />
-
-              <TextInput
-                label="Start Date"
-                placeholder="Jan 2020"
-                value={formData.startDate}
-                onChangeText={(text) => setFormData({ ...formData, startDate: text })}
-              />
-
-              <View className="mb-4 flex-row items-center gap-3">
-                <Pressable
-                  onPress={() =>
-                    setFormData({
-                      ...formData,
-                      currentlyWorking: !formData.currentlyWorking,
-                    })
-                  }
-                  className={`h-6 w-6 rounded border-2 items-center justify-center ${
-                    formData.currentlyWorking ? "border-blue-600 bg-blue-600" : "border-gray-300"
-                  }`}
-                >
-                  {formData.currentlyWorking && <Text className="text-white">✓</Text>}
-                </Pressable>
-                <Text className="text-gray-900">Currently working here</Text>
-              </View>
-
-              {!formData.currentlyWorking && (
-                <TextInput
-                  label="End Date"
-                  placeholder="Dec 2021"
-                  value={formData.endDate}
-                  onChangeText={(text) => setFormData({ ...formData, endDate: text })}
-                />
-              )}
-
-              <TextInput
-                label="Description"
-                multiline
-                rows={4}
-                placeholder="Describe your key responsibilities and achievements..."
-                value={formData.description}
-                onChangeText={(text) => setFormData({ ...formData, description: text })}
-              />
-
-              {/* Actions */}
-              <View className="mt-4 flex-row gap-3 pb-6">
-                <View className="flex-1">
-                  <Button variant="secondary" onPress={() => setShowModal(false)}>
-                    Cancel
-                  </Button>
-                </View>
-                <View className="flex-1">
-                  <Button onPress={handleSave}>Save</Button>
-                </View>
-              </View>
-            </ScrollView>
+          {/* Progress Bar */}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: "50%" }]} />
           </View>
         </View>
-      </Modal>
+
+        {/* Form Sections */}
+        <View style={styles.formContainer}>
+          {/* Experience Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="work" size={24} color="#2563EB" style={{ marginRight: 10 }} />
+              <Text style={styles.sectionTitle}>Experience</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Add your work experience</Text>
+
+            {/* Experience List */}
+            {experience.length > 0 && (
+              <View style={styles.itemsList}>
+                {experience.map((exp) => (
+                  <View key={exp.id} style={styles.listItem}>
+                    <View style={styles.listItemContent}>
+                      <Text style={styles.listItemTitle}>{exp.position}</Text>
+                      <Text style={styles.listItemSubtitle}>{exp.company}</Text>
+                      <Text style={styles.listItemDate}>
+                        {exp.startDate} - {exp.currentlyWorking ? "Present" : exp.endDate}
+                      </Text>
+                    </View>
+                    <View style={styles.listItemActions}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={() => handleEditExperience(exp)}
+                      >
+                        <MaterialIcons name="edit" size={18} color="#2563EB" />
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={() => dispatch(removeExperience(exp.id))}
+                      >
+                        <MaterialIcons name="delete" size={18} color="#dc2626" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Add Experience Form */}
+            {showExperienceForm ? (
+              <View style={styles.form}>
+                <TextInput
+                  label="Company"
+                  required
+                  placeholder="e.g. Acme Corp"
+                  value={experienceForm.company || ""}
+                  onChangeText={(text) => {
+                    setExperienceForm({ ...experienceForm, company: text });
+                    if (experienceErrors.company)
+                      setExperienceErrors({ ...experienceErrors, company: "" });
+                  }}
+                  error={experienceErrors.company}
+                />
+                <TextInput
+                  label="Position"
+                  required
+                  placeholder="e.g. Senior Developer"
+                  value={experienceForm.position || ""}
+                  onChangeText={(text) => {
+                    setExperienceForm({ ...experienceForm, position: text });
+                    if (experienceErrors.position)
+                      setExperienceErrors({ ...experienceErrors, position: "" });
+                  }}
+                  error={experienceErrors.position}
+                />
+                <TextInput
+                  label="Start Date"
+                  required
+                  placeholder="MM/YYYY"
+                  value={experienceForm.startDate || ""}
+                  onChangeText={(text) => {
+                    setExperienceForm({ ...experienceForm, startDate: text });
+                    if (experienceErrors.startDate)
+                      setExperienceErrors({ ...experienceErrors, startDate: "" });
+                  }}
+                  error={experienceErrors.startDate}
+                />
+
+                {/* Currently Working Switch */}
+                <View style={styles.switchContainer}>
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: "#111827" }}>
+                    Currently Working Here
+                  </Text>
+                  <Switch
+                    value={experienceForm.currentlyWorking || false}
+                    onValueChange={(value) =>
+                      setExperienceForm({ ...experienceForm, currentlyWorking: value })
+                    }
+                  />
+                </View>
+
+                {!experienceForm.currentlyWorking && (
+                  <TextInput
+                    label="End Date"
+                    required={!experienceForm.currentlyWorking}
+                    placeholder="MM/YYYY"
+                    value={experienceForm.endDate || ""}
+                    onChangeText={(text) => {
+                      setExperienceForm({ ...experienceForm, endDate: text });
+                      if (experienceErrors.endDate)
+                        setExperienceErrors({ ...experienceErrors, endDate: "" });
+                    }}
+                    error={experienceErrors.endDate}
+                  />
+                )}
+
+                <TextInput
+                  label="Description"
+                  multiline
+                  numberOfLines={3}
+                  placeholder="Describe your responsibilities and achievements"
+                  value={experienceForm.description || ""}
+                  onChangeText={(text) =>
+                    setExperienceForm({ ...experienceForm, description: text })
+                  }
+                />
+
+                <View style={styles.formButtonContainer}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.button,
+                      styles.secondaryButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    onPress={handleCancelExperienceForm}
+                  >
+                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.button,
+                      styles.primaryButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    onPress={handleAddExperience}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {editingExperienceId ? "Update" : "Add"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]}
+                onPress={() => setShowExperienceForm(true)}
+              >
+                <MaterialIcons name="add" size={20} color="#2563EB" />
+                <Text style={styles.addButtonText}>Add Experience</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Education Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="school" size={24} color="#2563EB" style={{ marginRight: 10 }} />
+              <Text style={styles.sectionTitle}>Education</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Add your educational qualifications</Text>
+
+            {/* Education List */}
+            {education.length > 0 && (
+              <View style={styles.itemsList}>
+                {education.map((edu) => (
+                  <View key={edu.id} style={styles.listItem}>
+                    <View style={styles.listItemContent}>
+                      <Text style={styles.listItemTitle}>{edu.degree}</Text>
+                      <Text style={styles.listItemSubtitle}>{edu.school}</Text>
+                      <Text style={styles.listItemDate}>{edu.field}</Text>
+                    </View>
+                    <View style={styles.listItemActions}>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={() => handleEditEducation(edu)}
+                      >
+                        <MaterialIcons name="edit" size={18} color="#2563EB" />
+                      </Pressable>
+                      <Pressable
+                        style={({ pressed }) => [
+                          styles.iconButton,
+                          pressed && styles.buttonPressed,
+                        ]}
+                        onPress={() => dispatch(removeEducation(edu.id))}
+                      >
+                        <MaterialIcons name="delete" size={18} color="#dc2626" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Add Education Form */}
+            {showEducationForm ? (
+              <View style={styles.form}>
+                <TextInput
+                  label="School/University"
+                  required
+                  placeholder="e.g. MIT"
+                  value={educationForm.school || ""}
+                  onChangeText={(text) => {
+                    setEducationForm({ ...educationForm, school: text });
+                    if (educationErrors.school)
+                      setEducationErrors({ ...educationErrors, school: "" });
+                  }}
+                  error={educationErrors.school}
+                />
+                <TextInput
+                  label="Degree"
+                  required
+                  placeholder="e.g. Bachelor of Science"
+                  value={educationForm.degree || ""}
+                  onChangeText={(text) => {
+                    setEducationForm({ ...educationForm, degree: text });
+                    if (educationErrors.degree)
+                      setEducationErrors({ ...educationErrors, degree: "" });
+                  }}
+                  error={educationErrors.degree}
+                />
+                <TextInput
+                  label="Field of Study"
+                  required
+                  placeholder="e.g. Computer Science"
+                  value={educationForm.field || ""}
+                  onChangeText={(text) => {
+                    setEducationForm({ ...educationForm, field: text });
+                    if (educationErrors.field)
+                      setEducationErrors({ ...educationErrors, field: "" });
+                  }}
+                  error={educationErrors.field}
+                />
+                <TextInput
+                  label="Graduation Date"
+                  required
+                  placeholder="MM/YYYY"
+                  value={educationForm.graduationDate || ""}
+                  onChangeText={(text) => {
+                    setEducationForm({ ...educationForm, graduationDate: text });
+                    if (educationErrors.graduationDate)
+                      setEducationErrors({ ...educationErrors, graduationDate: "" });
+                  }}
+                  error={educationErrors.graduationDate}
+                />
+
+                <View style={styles.formButtonContainer}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.button,
+                      styles.secondaryButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    onPress={handleCancelEducationForm}
+                  >
+                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.button,
+                      styles.primaryButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    onPress={handleAddEducation}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {editingEducationId ? "Update" : "Add"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]}
+                onPress={() => setShowEducationForm(true)}
+              >
+                <MaterialIcons name="add" size={20} color="#2563EB" />
+                <Text style={styles.addButtonText}>Add Education</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Navigation Buttons */}
+          <View style={styles.buttonContainer}>
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                styles.secondaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => dispatch(previousStep())}
+            >
+              <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
+              <Text style={styles.secondaryButtonText}>Back</Text>
+            </Pressable>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                styles.primaryButton,
+                pressed && styles.buttonPressed,
+              ]}
+              onPress={() => dispatch(nextStep())}
+            >
+              <Text style={styles.primaryButtonText}>Next</Text>
+              <MaterialIcons name="arrow-forward" size={20} color="white" />
+            </Pressable>
+          </View>
+        </View>
+      </View>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: "#f9fafb",
+  },
+  contentContainer: {
+    flexGrow: 1,
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
+    paddingBottom: 0,
+  },
+  headerContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  stepNumber: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#2563EB",
+    marginBottom: 4,
+    textTransform: "uppercase",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    marginBottom: 12,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: "#e5e7eb",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#2563EB",
+  },
+  formContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  section: {
+    marginBottom: 28,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 16,
+    marginLeft: 34,
+  },
+  itemsList: {
+    marginBottom: 16,
+  },
+  listItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "white",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    padding: 12,
+    marginBottom: 8,
+  },
+  listItemContent: {
+    flex: 1,
+  },
+  listItemTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  listItemSubtitle: {
+    fontSize: 13,
+    color: "#6b7280",
+    marginBottom: 2,
+  },
+  listItemDate: {
+    fontSize: 12,
+    color: "#9ca3af",
+  },
+  listItemActions: {
+    flexDirection: "row",
+    gap: 8,
+    marginLeft: 12,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  form: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  switchContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginVertical: 12,
+    paddingHorizontal: 4,
+  },
+  formButtonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f3f4f6",
+    borderWidth: 2,
+    borderColor: "#2563EB",
+    borderRadius: 8,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  addButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  button: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  primaryButton: {
+    backgroundColor: "#2563EB",
+  },
+  secondaryButton: {
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  buttonPressed: {
+    opacity: 0.8,
+  },
+  primaryButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "white",
+  },
+  secondaryButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+});

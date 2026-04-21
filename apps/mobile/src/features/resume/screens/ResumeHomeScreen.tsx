@@ -22,6 +22,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setCurrentStep, resetResume, loadResumeData, setError } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
+import type { ResumeParsedData } from "@app-powerup/shared";
 
 export function ResumeHomeScreen() {
   const router = useRouter();
@@ -132,13 +133,22 @@ export function ResumeHomeScreen() {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response) {
+      if (!response?.resume) {
         throw new Error("Invalid response from upload API");
       }
 
+      // Transform API response (ResumeUploadResponse) to form data structure (ResumeParsedData)
+      const resumeData = {
+        contact: response.resume.personal,
+        summary: { text: "" }, // Summary not in API response, use empty
+        experience: response.resume.experience || [],
+        education: response.resume.education || [],
+        skills: response.resume.skills || [],
+      };
+
       // Load into Redux store
-      dispatch(loadResumeData(response));
-      setParsedResume(response);
+      dispatch(loadResumeData(resumeData));
+      setParsedResume(response.resume);
       dispatch(setCurrentStep(1));
 
       setUploadSuccess(true);
