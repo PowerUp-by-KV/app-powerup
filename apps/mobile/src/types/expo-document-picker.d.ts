@@ -3,10 +3,12 @@ declare module "expo-document-picker" {
     | { type: "cancel" }
     | { type: "success"; uri?: string; name?: string; size?: number };
 
-  export function getDocumentAsync(options?: any): Promise<DocumentPickerResult>;
+  export function getDocumentAsync(
+    options?: Record<string, unknown>,
+  ): Promise<DocumentPickerResult>;
 
   const DocumentPicker: {
-    getDocumentAsync: (options?: any) => Promise<DocumentPickerResult>;
+    getDocumentAsync: (options?: Record<string, unknown>) => Promise<DocumentPickerResult>;
   };
 
   export default DocumentPicker;

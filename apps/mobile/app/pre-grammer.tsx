@@ -1,6 +1,6 @@
-import { GrammerScreen } from "@/features/pre-grammar";
+import { GrammarScreen } from "@/features/pre-grammar";
 import { mockGrammarAssessment } from "@/utils/mock-assessments";
 
 export default function WriteRoute() {
-  return <GrammerScreen assessment={mockGrammarAssessment} />;
+  return <GrammarScreen assessment={mockGrammarAssessment} />;
 }

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { View, ScrollView, SafeAreaView, TouchableOpacity, Text } from "react-native";
 import { useRouter } from "expo-router";
 import { useGrammarState } from "./hooks/useGrammarState";
@@ -7,14 +7,14 @@ import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
 import type { GrammarQuestion as IGrammarQuestion } from "./types";
 
-interface GrammerScreenProps {
+interface GrammarScreenProps {
   assessment: {
     questions: IGrammarQuestion[];
     title: string;
   };
 }
 
-export function GrammerScreen({ assessment }: GrammerScreenProps) {
+export function GrammarScreen({ assessment }: GrammarScreenProps) {
   const router = useRouter();
   const { currentQuestion, currentQuestionIndex, answers, selectAnswer } = useGrammarState({
     questions: assessment.questions,
@@ -80,3 +80,5 @@ export function GrammerScreen({ assessment }: GrammerScreenProps) {
     </SafeAreaView>
   );
 }
+
+export default GrammarScreen;

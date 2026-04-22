@@ -7,6 +7,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getApiErrorMessage } from "@/services/auth-service";
@@ -58,15 +60,15 @@ export default function ProfileScreen() {
 
   const handleSubmit = async () => {
     if (!name || !mobile || !dob) {
-      alert("Please fill required fields (name, mobile, dob)");
+      Alert.alert("Validation", "Please fill required fields (name, mobile, dob)");
       return;
     }
     if (mobile.trim().length < 10 || mobile.trim().length > 20) {
-      alert("Mobile number must be 10 to 20 characters");
+      Alert.alert("Validation", "Mobile number must be 10 to 20 characters");
       return;
     }
     if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob.trim())) {
-      alert("Date of birth must be DD/MM/YYYY");
+      Alert.alert("Validation", "Date of birth must be DD/MM/YYYY");
       return;
     }
 
@@ -104,27 +106,31 @@ export default function ProfileScreen() {
       await setProfileCompletedInSession(true);
       router.replace("/dashboard");
     } catch (err) {
-      alert(getApiErrorMessage(err, "Something went wrong"));
+      Alert.alert("Error", getApiErrorMessage(err, "Something went wrong"));
     }
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#ffffff" }}>
+    <SafeAreaView className="flex-1 bg-white" style={{ flex: 1 }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <View style={{ flex: 1, justifyContent: "center", padding: 24 }}>
-            <View
-              style={{ backgroundColor: "rgba(255,255,255,0.95)", padding: 20, borderRadius: 24 }}
-            >
-              <Text
-                style={{ fontSize: 26, textAlign: "center", marginBottom: 8, fontWeight: "700" }}
-              >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
+          showsVerticalScrollIndicator={true}
+          scrollEnabled={true}
+          contentInsetAdjustmentBehavior="automatic"
+        >
+          <View className="justify-center p-6">
+            <View className="bg-white p-5 rounded-2xl">
+              <Text className="text-2xl text-center font-extrabold mb-2">
                 Complete Your Profile
               </Text>
-              <Text style={{ textAlign: "center", color: "#6B7280", marginBottom: 16 }}>
+              <Text className="text-center text-slate-500 mb-4">
                 Help us personalize your experience.
               </Text>
 
@@ -132,67 +138,40 @@ export default function ProfileScreen() {
                 placeholder="Full Name"
                 value={name}
                 onChangeText={setName}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
               <TextInput
                 placeholder="Mobile Number"
                 value={mobile}
                 onChangeText={setMobile}
                 keyboardType="phone-pad"
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
               <TextInput
                 placeholder="Date of Birth (DD/MM/YYYY)"
                 value={dob}
                 onChangeText={setDob}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
               <TextInput
                 placeholder="College Name"
                 value={college}
                 onChangeText={setCollege}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Education / Profession</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Education / Profession</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Engineering Student", "Working Professional", "Job Seeker", "Others"].map(
                   (opt) => (
                     <TouchableOpacity
                       key={opt}
                       onPress={() => setEducation(opt)}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        borderWidth: 1,
-                        borderColor: "#E5E7EB",
-                        marginRight: 8,
-                        marginBottom: 8,
-                        backgroundColor: education === opt ? "#111827" : "#fff",
-                      }}
+                      className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${education === opt ? "bg-slate-900" : "bg-white"}`}
                     >
-                      <Text style={{ color: education === opt ? "#fff" : "#111827" }}>{opt}</Text>
+                      <Text className={`${education === opt ? "text-white" : "text-slate-900"}`}>
+                        {opt}
+                      </Text>
                     </TouchableOpacity>
                   ),
                 )}
@@ -200,83 +179,57 @@ export default function ProfileScreen() {
 
               {education === "Engineering Student" ? (
                 <>
-                  <Text style={{ fontWeight: "600", marginTop: 8 }}>Year of Study</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+                  <Text className="font-semibold mt-2">Year of Study</Text>
+                  <View className="flex-row flex-wrap my-2">
                     {["1st", "2nd", "3rd", "4th"].map((y) => (
                       <TouchableOpacity
                         key={y}
                         onPress={() => setYearOfStudy(y)}
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 20,
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                          marginRight: 8,
-                          marginBottom: 8,
-                          backgroundColor: yearOfStudy === y ? "#111827" : "#fff",
-                        }}
+                        className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${yearOfStudy === y ? "bg-slate-900" : "bg-white"}`}
                       >
-                        <Text style={{ color: yearOfStudy === y ? "#fff" : "#111827" }}>{y}</Text>
+                        <Text className={`${yearOfStudy === y ? "text-white" : "text-slate-900"}`}>
+                          {y}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
 
-                  <Text style={{ fontWeight: "600", marginTop: 8 }}>Engineering Branch</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+                  <Text className="font-semibold mt-2">Engineering Branch</Text>
+                  <View className="flex-row flex-wrap my-2">
                     {["CSE", "IT", "ECE", "EEE", "Mechanical", "Civil", "Others"].map((b) => (
                       <TouchableOpacity
                         key={b}
                         onPress={() => setBranch(b)}
-                        style={{
-                          paddingHorizontal: 12,
-                          paddingVertical: 8,
-                          borderRadius: 20,
-                          borderWidth: 1,
-                          borderColor: "#E5E7EB",
-                          marginRight: 8,
-                          marginBottom: 8,
-                          backgroundColor: branch === b ? "#111827" : "#fff",
-                        }}
+                        className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${branch === b ? "bg-slate-900" : "bg-white"}`}
                       >
-                        <Text style={{ color: branch === b ? "#fff" : "#111827" }}>{b}</Text>
+                        <Text className={`${branch === b ? "text-white" : "text-slate-900"}`}>
+                          {b}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 </>
               ) : null}
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Country</Text>
+              <Text className="font-semibold mt-3">Country</Text>
               <TextInput
                 placeholder="Country (auto-detect optional)"
                 value={country}
                 onChangeText={setCountry}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Native Language</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Native Language</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Hindi", "English", "Bengali", "Tamil", "Telugu", "Other"].map((lang) => (
                   <TouchableOpacity
                     key={lang}
                     onPress={() => setNativeLanguage(lang)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: nativeLanguage === lang ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${nativeLanguage === lang ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: nativeLanguage === lang ? "#fff" : "#111827" }}>
+                    <Text
+                      className={`${nativeLanguage === lang ? "text-white" : "text-slate-900"}`}
+                    >
                       {lang}
                     </Text>
                   </TouchableOpacity>
@@ -289,48 +242,60 @@ export default function ProfileScreen() {
                     const res = await DocumentPicker.getDocumentAsync({
                       copyToCacheDirectory: false,
                     });
-                    if (res.type === "success") {
-                      setResumeUploaded(true);
-                      setResumeUri(res.uri || null);
-                      setResumeName(res.name || null);
+                    type DocResult = {
+                      type?: string;
+                      assets?: Array<{ uri?: string; name?: string; fileName?: string }>;
+                      output?: unknown;
+                      uri?: string;
+                      name?: string;
+                      canceled?: boolean;
+                    };
+                    const result = res as DocResult;
+                    const success = result.type === "success" || result.canceled === false;
+                    const assets =
+                      result.assets ||
+                      (result.output as Array<Record<string, unknown>> | null) ||
+                      null;
+                    if (success) {
+                      if (assets && Array.isArray(assets) && assets.length > 0) {
+                        const first = assets[0] as Record<string, unknown>;
+                        setResumeUploaded(true);
+                        setResumeUri((first.uri as string) || null);
+                        setResumeName((first.name as string) || (first.fileName as string) || null);
+                      } else {
+                        setResumeUploaded(true);
+                        setResumeUri(result.uri || null);
+                        setResumeName(result.name || null);
+                      }
                     }
-                  } catch (e) {
-                    console.warn(e);
+                  } catch (err) {
+                    console.warn(err);
                   }
                 }}
-                style={{ alignItems: "center", marginVertical: 8 }}
+                className="items-center my-2"
               >
-                <Text style={{ color: "#4F46E5" }}>
+                <Text className="text-indigo-600">
                   {resumeUploaded ? `Resume: ${resumeName}` : "Upload Resume (Optional)"}
                 </Text>
               </TouchableOpacity>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Current English Level</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Current English Level</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Beginner", "Intermediate", "Upper Intermediate", "Advanced"].map((l) => (
                   <TouchableOpacity
                     key={l}
                     onPress={() => setEnglishLevel(l)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: englishLevel === l ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${englishLevel === l ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: englishLevel === l ? "#fff" : "#111827" }}>{l}</Text>
+                    <Text className={`${englishLevel === l ? "text-white" : "text-slate-900"}`}>
+                      {l}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>
-                Which skills do you find most challenging?
-              </Text>
-              <View style={{ marginVertical: 8, backgroundColor: "#fff" }}>
+              <Text className="font-semibold mt-3">Which skills do you find most challenging?</Text>
+              <View className="my-2">
                 {[
                   "Speaking",
                   "Listening",
@@ -342,40 +307,27 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     key={opt}
                     onPress={() => handleToggle(opt, challengingSkills, setChallengingSkills)}
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8 }}
+                    className="flex-row items-center py-2"
                   >
                     <View
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        marginRight: 10,
-                        backgroundColor: challengingSkills.includes(opt) ? "#111827" : "#E5E7EB",
-                      }}
+                      className={`w-4 h-4 rounded-full mr-2 ${challengingSkills.includes(opt) ? "bg-slate-900" : "bg-slate-200"}`}
                     />
                     <Text>{opt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Learning Goals</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Learning Goals</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Placement prep", "Fluency", "Communication skills", "Confidence"].map((g) => (
                   <TouchableOpacity
                     key={g}
                     onPress={() => setPrimaryGoal(g)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: primaryGoal === g ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${primaryGoal === g ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: primaryGoal === g ? "#fff" : "#111827" }}>{g}</Text>
+                    <Text className={`${primaryGoal === g ? "text-white" : "text-slate-900"}`}>
+                      {g}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -384,148 +336,100 @@ export default function ProfileScreen() {
                 placeholder="Short-term goal"
                 value={thirtyDayGoal}
                 onChangeText={setThirtyDayGoal}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>
+              <Text className="font-semibold mt-3">
                 Which areas do you want personalized guidance for?
               </Text>
-              <View style={{ marginVertical: 8 }}>
+              <View className="my-2">
                 {["Grammar", "Pronunciation", "Conversational English", "GD/PI"].map((opt) => (
                   <TouchableOpacity
                     key={opt}
                     onPress={() => handleToggle(opt, personalizedAreas, setPersonalizedAreas)}
-                    style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8 }}
+                    className="flex-row items-center py-2"
                   >
                     <View
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 9,
-                        marginRight: 10,
-                        backgroundColor: personalizedAreas.includes(opt) ? "#111827" : "#E5E7EB",
-                      }}
+                      className={`w-4 h-4 rounded-full mr-2 ${personalizedAreas.includes(opt) ? "bg-slate-900" : "bg-slate-200"}`}
                     />
                     <Text>{opt}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Usage & Preferences</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Usage & Preferences</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["10 min", "20 min", "30 min", "1 hour"].map((t) => (
                   <TouchableOpacity
                     key={t}
                     onPress={() => setDailyTime(t)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: dailyTime === t ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${dailyTime === t ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: dailyTime === t ? "#fff" : "#111827" }}>{t}</Text>
+                    <Text className={`${dailyTime === t ? "text-white" : "text-slate-900"}`}>
+                      {t}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>
-                When do you prefer to practice daily?
-              </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">When do you prefer to practice daily?</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Morning", "Afternoon", "Evening", "Late night"].map((t) => (
                   <TouchableOpacity
                     key={t}
                     onPress={() => setPreferredTime(t)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: preferredTime === t ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${preferredTime === t ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: preferredTime === t ? "#fff" : "#111827" }}>{t}</Text>
+                    <Text className={`${preferredTime === t ? "text-white" : "text-slate-900"}`}>
+                      {t}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Choose your Streak Challenge</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Choose your Streak Challenge</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["7-Day", "14-Day", "30-Day"].map((s) => (
                   <TouchableOpacity
                     key={s}
                     onPress={() => setStreakChallenge(s)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: streakChallenge === s ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${streakChallenge === s ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: streakChallenge === s ? "#fff" : "#111827" }}>{s}</Text>
+                    <Text className={`${streakChallenge === s ? "text-white" : "text-slate-900"}`}>
+                      {s}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Speaking & Confidence</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Speaking & Confidence</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["Not comfortable", "Somewhat comfortable", "Comfortable"].map((s) => (
                   <TouchableOpacity
                     key={s}
                     onPress={() => setSpeakingComfort(s)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: speakingComfort === s ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${speakingComfort === s ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: speakingComfort === s ? "#fff" : "#111827" }}>{s}</Text>
+                    <Text className={`${speakingComfort === s ? "text-white" : "text-slate-900"}`}>
+                      {s}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>
+              <Text className="font-semibold mt-3">
                 How would you like the AI tutor to correct you?
               </Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <View className="flex-row flex-wrap my-2">
                 {["Soft corrections", "Detailed feedback"].map((c) => (
                   <TouchableOpacity
                     key={c}
                     onPress={() => setCorrectionPreference(c)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: correctionPreference === c ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${correctionPreference === c ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: correctionPreference === c ? "#fff" : "#111827" }}>
+                    <Text
+                      className={`${correctionPreference === c ? "text-white" : "text-slate-900"}`}
+                    >
                       {c}
                     </Text>
                   </TouchableOpacity>
@@ -536,33 +440,20 @@ export default function ProfileScreen() {
                 placeholder="What motivates you to learn English?"
                 value={motivation}
                 onChangeText={setMotivation}
-                style={{
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  padding: 12,
-                  marginBottom: 10,
-                }}
+                className="bg-slate-50 rounded-2xl p-3 mb-2"
               />
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>
-                What stops you from practicing regularly?
-              </Text>
-              <View style={{ marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">What stops you from practicing regularly?</Text>
+              <View className="my-2">
                 {["Fear", "Vocabulary", "No practice partner", "Not sure where to start"].map(
                   (opt) => (
                     <TouchableOpacity
                       key={opt}
                       onPress={() => handleToggle(opt, practiceBarriers, setPracticeBarriers)}
-                      style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8 }}
+                      className="flex-row items-center py-2"
                     >
                       <View
-                        style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: 9,
-                          marginRight: 10,
-                          backgroundColor: practiceBarriers.includes(opt) ? "#111827" : "#E5E7EB",
-                        }}
+                        className={`w-4 h-4 rounded-full mr-2 ${practiceBarriers.includes(opt) ? "bg-slate-900" : "bg-slate-200"}`}
                       />
                       <Text>{opt}</Text>
                     </TouchableOpacity>
@@ -570,8 +461,8 @@ export default function ProfileScreen() {
                 )}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Learning Path Setup</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Learning Path Setup</Text>
+              <View className="flex-row flex-wrap my-2">
                 {[
                   "Daily English",
                   "Spoken English",
@@ -582,40 +473,28 @@ export default function ProfileScreen() {
                   <TouchableOpacity
                     key={f}
                     onPress={() => setFocusTrack(f)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: focusTrack === f ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${focusTrack === f ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: focusTrack === f ? "#fff" : "#111827" }}>{f}</Text>
+                    <Text className={`${focusTrack === f ? "text-white" : "text-slate-900"}`}>
+                      {f}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={{ fontWeight: "600", marginTop: 12 }}>Set your daily learning goal</Text>
-              <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
+              <Text className="font-semibold mt-3">Set your daily learning goal</Text>
+              <View className="flex-row flex-wrap my-2">
                 {["1 lesson/day", "2 lessons/day", "3 lessons/day"].map((g) => (
                   <TouchableOpacity
                     key={g}
                     onPress={() => setDailyLearningGoal(g)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 20,
-                      borderWidth: 1,
-                      borderColor: "#E5E7EB",
-                      marginRight: 8,
-                      marginBottom: 8,
-                      backgroundColor: dailyLearningGoal === g ? "#111827" : "#fff",
-                    }}
+                    className={`px-3 py-2 rounded-xl border border-slate-200 mr-2 mb-2 ${dailyLearningGoal === g ? "bg-slate-900" : "bg-white"}`}
                   >
-                    <Text style={{ color: dailyLearningGoal === g ? "#fff" : "#111827" }}>{g}</Text>
+                    <Text
+                      className={`${dailyLearningGoal === g ? "text-white" : "text-slate-900"}`}
+                    >
+                      {g}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -623,15 +502,9 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 onPress={handleSubmit}
                 disabled={isLoading}
-                style={{
-                  backgroundColor: "#4F46E5",
-                  paddingVertical: 12,
-                  borderRadius: 24,
-                  marginTop: 12,
-                  alignItems: "center",
-                }}
+                className="bg-indigo-600 py-3 rounded-2xl mt-3 items-center"
               >
-                <Text style={{ color: "#fff", fontWeight: "700" }}>
+                <Text className="text-white font-bold">
                   {isLoading ? "Submitting..." : "Continue"}
                 </Text>
               </TouchableOpacity>
@@ -639,6 +512,6 @@ export default function ProfileScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
 }

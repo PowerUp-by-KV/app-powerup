@@ -1,5 +1,5 @@
 // Screens
-export { GrammerScreen } from "./GrammerScreen";
+export { GrammarScreen } from "./GrammarScreen";
 
 // Components
 export { MCQOption } from "./components/MCQOption";

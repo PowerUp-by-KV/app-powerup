@@ -1,4 +1,4 @@
-import { GrammerScreen, type GrammarAssessment } from "./index";
+import { GrammarScreen, type GrammarAssessment } from "./index";
 
 const exampleAssessment: GrammarAssessment = {
   id: "grammar-001",
@@ -22,17 +22,6 @@ const exampleAssessment: GrammarAssessment = {
         option4: "ran",
       },
       correctAnswer: "runs",
-    },
-    {
-      section: "Section C",
-      subSection: "Grammar",
-      topic: "Tense",
-      questionType: "Fill in the Blanks",
-      blanks: 1,
-      question: "By the time you arrive, I _____ the dinner.",
-      complexity: "Medium",
-      answerType: "Fill in the Blanks",
-      correctAnswer: "will have prepared",
     },
     {
       section: "Section C",
@@ -64,7 +53,18 @@ const exampleAssessment: GrammarAssessment = {
     {
       section: "Section C",
       subSection: "Grammar",
-      topic: "Active into Passive voice",
+      topic: "Tenses",
+      questionType: "Fill in the Blanks",
+      blanks: 1,
+      question: "By the time you arrive, I _____ the dinner.",
+      complexity: "Medium",
+      answerType: "Fill in the Blanks",
+      correctAnswer: "will have prepared",
+    },
+    {
+      section: "Section C",
+      subSection: "Grammar",
+      topic: "Active to Passive voice",
       questionType: "MCQ",
       question: 'Convert to passive: "They completed the project yesterday."',
       complexity: "Medium",
@@ -100,5 +100,5 @@ const exampleAssessment: GrammarAssessment = {
 };
 
 export function PreGrammarExampleUsage() {
-  return <GrammerScreen assessment={exampleAssessment} />;
+  return <GrammarScreen assessment={exampleAssessment} />;
 }

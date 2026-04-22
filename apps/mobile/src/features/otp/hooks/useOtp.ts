@@ -4,7 +4,7 @@ export function useOtp() {
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const sendOtp = async (phone: string) => {
+  const sendOtp = async (_phone: string) => {
     setIsSending(true);
     try {
       // placeholder for API call
@@ -15,7 +15,7 @@ export function useOtp() {
     }
   };
 
-  const verifyOtp = async (code: string) => {
+  const verifyOtp = async (_code: string) => {
     setIsVerifying(true);
     try {
       // placeholder for API call

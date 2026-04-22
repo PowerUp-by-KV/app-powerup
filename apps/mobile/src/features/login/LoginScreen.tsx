@@ -126,7 +126,11 @@ export function LoginScreen() {
                 </TouchableOpacity>
                 <Text className="text-slate-600">Remember me</Text>
               </View>
-              <TouchableOpacity onPress={() => router.push("/register")}>
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert("Forgot Password", "Password reset is not implemented yet.")
+                }
+              >
                 <Text className="text-indigo-600">Forgot password?</Text>
               </TouchableOpacity>
             </View>
@@ -143,12 +147,12 @@ export function LoginScreen() {
 
             <View className="items-center mt-2">
               <Text className="text-sm text-slate-500">
-                Don't have an account?{" "}
+                Don’t have an account?{" "}
                 <Text
                   className="text-indigo-600 font-bold"
                   onPress={() => router.push("/register")}
                 >
-                  log in
+                  Sign Up
                 </Text>
               </Text>
             </View>

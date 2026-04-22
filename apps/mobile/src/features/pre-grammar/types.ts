@@ -1,10 +1,10 @@
 export type GrammarTopic =
   | "Verbs"
-  | "Tense"
+  | "Tenses"
   | "Articles"
   | "Prepositions"
-  | "Active into Passive voice"
-  | "Articles into Passive voice";
+  | "Active to Passive voice"
+  | "Passive voice";
 export type GrammarQuestionType =
   | "MCQ"
   | "Fill in the Blanks"

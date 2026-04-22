@@ -165,7 +165,7 @@ export function RegisterScreen() {
               onPress={handleRegister}
             >
               <Text className="text-white text-base font-bold">
-                {isLoading ? "Creating Account..." : "Log in"}
+                {isLoading ? "Creating Account..." : "Register"}
               </Text>
             </TouchableOpacity>
 
