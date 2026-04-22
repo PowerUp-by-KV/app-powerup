@@ -1,7 +1,19 @@
 import React, { useState } from "react";
-import { Alert, SafeAreaView, Text, TextInput, TouchableOpacity, View } from "react-native";
-
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+
 import { setAuthToken } from "@/services/auth-service";
 import { saveAuthSession } from "@/services/auth-storage";
 import { useRegisterMutation } from "@/services/auth-api";
@@ -13,6 +25,8 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [register] = useRegisterMutation();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
@@ -72,36 +86,39 @@ export function RegisterScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 justify-center items-center px-6">
-        <View className="w-full max-w-[360px]">
-          <View className="items-center mb-6">
-            <View className="w-16 h-16 rounded-2xl bg-gray-400 mb-6 shadow" />
-            <Text className="text-xl font-extrabold text-center text-slate-900">
-              Welcome to Powerup
-            </Text>
-            <Text className="text-sm text-center text-slate-500 mt-2">
-              Join powerup to start your learning journey
-            </Text>
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+          className="px-6"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="w-full max-w-sm py-8">
+            <View className="items-center mb-8">
+              <View className="w-20 h-20 rounded-2xl bg-gray-200 mb-6 shadow-md" />
+              <Text className="text-3xl font-extrabold text-slate-900">Create Account</Text>
+              <Text className="text-base text-slate-500 mt-2">
+                Join us to start your learning journey
+              </Text>
+            </View>
 
-          <View>
-            <View className="mb-3">
-              <Text className="text-xs text-slate-600 mb-2">Mobile Number</Text>
-              <View className="border border-slate-200 rounded-full flex-row items-center px-4 py-3">
-                <Text className="text-slate-400 mr-3">📞</Text>
+            <View className="space-y-6">
+              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+                <Feather name="phone" size={20} color="#94A3B8" className="mr-3" />
                 <TextInput
                   placeholder="Enter your mobile number"
                   keyboardType="phone-pad"
                   className="flex-1 text-base text-slate-900"
                   editable={!isLoading}
+                  placeholderTextColor="#94A3B8"
                 />
               </View>
-            </View>
 
-            <View className="mb-3">
-              <Text className="text-xs text-slate-600 mb-2">Email</Text>
-              <View className="border border-slate-200 rounded-full flex-row items-center px-4 py-3">
-                <Text className="text-slate-400 mr-3">📧</Text>
+              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+                <Feather name="mail" size={20} color="#94A3B8" className="mr-3" />
                 <TextInput
                   placeholder="your@email.com"
                   keyboardType="email-address"
@@ -113,63 +130,67 @@ export function RegisterScreen() {
                   editable={!isLoading}
                 />
               </View>
-            </View>
 
-            <View className="mb-3">
-              <Text className="text-xs text-slate-600 mb-2">Password</Text>
-              <View className="border border-slate-200 rounded-full flex-row items-center px-4 py-3">
-                <Text className="text-slate-400 mr-3">🔒</Text>
+              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
                 <TextInput
-                  placeholder="create a strong password"
-                  secureTextEntry
+                  placeholder="Create a strong password"
+                  secureTextEntry={!showPassword}
                   className="flex-1 text-base text-slate-900"
                   value={password}
                   onChangeText={setPassword}
                   placeholderTextColor="#94A3B8"
                   editable={!isLoading}
                 />
+                <TouchableOpacity
+                  onPress={() => setShowPassword((p) => !p)}
+                  disabled={isLoading}
+                  className="ml-2"
+                >
+                  <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#94A3B8" />
+                </TouchableOpacity>
               </View>
-            </View>
 
-            <View className="mb-4">
-              <Text className="text-xs text-slate-600 mb-2">Confirm Password</Text>
-              <View className="border border-slate-200 rounded-full flex-row items-center px-4 py-3">
-                <Text className="text-slate-400 mr-3">🔒</Text>
+              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
                 <TextInput
-                  placeholder="Enter password"
-                  secureTextEntry
+                  placeholder="Confirm password"
+                  secureTextEntry={!showConfirmPassword}
                   className="flex-1 text-base text-slate-900"
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholderTextColor="#94A3B8"
                   editable={!isLoading}
                 />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword((p) => !p)}
+                  disabled={isLoading}
+                  className="ml-2"
+                >
+                  <Feather
+                    name={showConfirmPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
               </View>
             </View>
 
-            <View className="flex-row items-center mb-6">
-              <TouchableOpacity
-                onPress={() => {}}
-                className="w-4 h-4 border border-slate-300 rounded-sm items-center justify-center mr-3"
-              >
-                <View />
-              </TouchableOpacity>
-              <Text className="text-slate-600 text-sm">
-                I agree to the Terms of Service and Privacy Policy
-              </Text>
-            </View>
-
             <TouchableOpacity
-              className={`rounded-full py-4 items-center mb-4 bg-gray-700 ${isLoading ? "opacity-75" : ""}`}
+              className={`rounded-full py-4 items-center justify-center mb-4 bg-gray-800 ${
+                isLoading ? "opacity-75" : ""
+              }`}
               disabled={isLoading}
               onPress={handleRegister}
             >
-              <Text className="text-white text-base font-bold">
-                {isLoading ? "Creating Account..." : "Register"}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="text-white text-base font-bold">Sign Up</Text>
+              )}
             </TouchableOpacity>
 
-            <View className="items-center mt-2">
+            <View className="items-center mt-4">
               <Text className="text-sm text-slate-500">
                 Already have an account?{" "}
                 <Text className="text-indigo-600 font-bold" onPress={() => router.push("/login")}>
@@ -178,8 +199,8 @@ export function RegisterScreen() {
               </Text>
             </View>
           </View>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

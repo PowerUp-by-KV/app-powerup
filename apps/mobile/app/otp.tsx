@@ -1,5 +1,5 @@
-import { OtpVerifyScreen } from "@/features/otp/OtpVerifyScreen";
+import { EmailOtpScreen } from "@/features/otp/EmailOtpScreen";
 
 export default function OtpRoute() {
-  return <OtpVerifyScreen />;
+  return <EmailOtpScreen />;
 }

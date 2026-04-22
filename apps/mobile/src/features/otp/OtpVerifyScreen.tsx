@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity } from "react-native";
+import {
+  SafeAreaView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 export function OtpVerifyScreen() {
@@ -13,40 +22,76 @@ export function OtpVerifyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="flex-1 justify-center items-center px-6">
-        <View className="w-full max-w-[360px]">
-          <View className="items-center mb-6">
-            <View className="w-16 h-16 rounded-2xl bg-gray-400 mb-6" />
-            <Text className="text-xl font-extrabold text-center text-slate-900">
-              Verify Your Phone
-            </Text>
-            <Text className="text-sm text-center text-slate-500 mt-2">
-              Enter your phone number to receive a one time password
-            </Text>
-          </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+          className="px-6"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="w-full max-w-sm py-8">
+            <View className="items-center mb-10">
+              <View className="w-20 h-20 rounded-2xl bg-slate-500 mb-8 shadow-sm" />
+              <Text className="text-3xl font-extrabold text-slate-900 mb-2">Login with OTP</Text>
+              <Text className="text-base text-slate-500">Enter your phone number</Text>
+            </View>
 
-          <View>
-            <Text className="text-xs text-slate-600 mb-2">Phone Number</Text>
-            <View className="border border-slate-200 rounded-full flex-row items-center px-4 py-3 mb-6">
-              <Text className="text-slate-400 mr-3">+91</Text>
-              <TextInput
-                placeholder="000 000-0000"
-                keyboardType="phone-pad"
-                className="flex-1 text-base text-slate-900"
-                value={phone}
-                onChangeText={setPhone}
-              />
+            <View className="mb-8">
+              <Text className="text-sm font-medium text-slate-500 mb-2 ml-1">Phone Number</Text>
+              <View className="flex-row gap-3">
+                <View className="bg-slate-100 rounded-xl px-4 py-4 justify-center">
+                  <Text className="text-slate-600 font-medium">+91</Text>
+                </View>
+                <View className="flex-1 bg-slate-100 rounded-xl px-4 py-4">
+                  <TextInput
+                    placeholder="000 000-0000"
+                    keyboardType="phone-pad"
+                    className="text-base text-slate-900"
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+              </View>
             </View>
 
             <TouchableOpacity
-              className="rounded-full py-4 items-center mb-4 bg-gray-700"
+              className="bg-slate-600 rounded-xl py-4 items-center mb-6 shadow-sm active:opacity-90"
               onPress={handleSendOtp}
             >
-              <Text className="text-white text-base font-bold">Continue</Text>
+              <Text className="text-white text-base font-bold">Send OTP</Text>
             </TouchableOpacity>
+
+            <View className="flex-row items-center mb-6">
+              <View className="flex-1 h-[1px] bg-slate-200" />
+              <Text className="mx-4 text-xs font-bold text-slate-400 uppercase">OR</Text>
+              <View className="flex-1 h-[1px] bg-slate-200" />
+            </View>
+
+            <TouchableOpacity
+              className="border border-slate-300 rounded-xl py-4 items-center mb-8 active:bg-slate-50"
+              onPress={() => router.replace("/login")}
+            >
+              <Text className="text-slate-600 text-base font-bold">Back to Email Login</Text>
+            </TouchableOpacity>
+
+            <View className="items-center">
+              <Text className="text-sm text-slate-500">
+                Don't have an account?{" "}
+                <Text
+                  className="text-slate-900 font-bold underline"
+                  onPress={() => router.push("/register")}
+                >
+                  Sign up
+                </Text>
+              </Text>
+            </View>
           </View>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
