@@ -18,6 +18,7 @@ import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Skill } from "@app-powerup/shared";
+import { getSkillSuggestions, skillExists } from "@/utils/skillsAutocomplete";
 
 export function SkillsScreen() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export function SkillsScreen() {
   // Skills state
   const [skillInput, setSkillInput] = useState("");
   const [skillErrors, setSkillErrors] = useState("");
+  const [skillSuggestions, setSkillSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleAddSkill = () => {
     if (!skillInput.trim()) {
@@ -49,6 +52,30 @@ export function SkillsScreen() {
     );
     setSkillInput("");
     setSkillErrors("");
+    setSkillSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  const handleAddSuggestionSkill = (suggestion: any) => {
+    const skillName = suggestion.name;
+
+    // Check if skill already exists
+    if (skills.some((s) => s.name.toLowerCase() === skillName.toLowerCase())) {
+      setSkillErrors("This skill already exists");
+      return;
+    }
+
+    dispatch(
+      addSkill({
+        id: Date.now().toString(),
+        name: skillName,
+        category: suggestion.category,
+      }),
+    );
+    setSkillInput("");
+    setSkillErrors("");
+    setSkillSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const handleRemoveSkill = (id: string) => {
@@ -70,7 +97,7 @@ export function SkillsScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.stepNumber}>Step 3 of 4</Text>
-            <Text style={styles.headerTitle}>Skills & Expertise</Text>
+            <Text style={styles.headerTitle}>Skills </Text>
             <Text style={styles.headerSubtitle}>Showcase your professional skills</Text>
           </View>
 
@@ -111,23 +138,62 @@ export function SkillsScreen() {
             )}
 
             {/* Skill Input */}
-            <View style={styles.skillInputContainer}>
-              <RNTextInput
-                style={styles.skillInput}
-                placeholder="e.g., React, Python, Project Management..."
-                placeholderTextColor="#9CA3AF"
-                value={skillInput}
-                onChangeText={(text) => {
-                  setSkillInput(text);
-                  if (skillErrors) setSkillErrors("");
-                }}
-              />
-              <Pressable
-                style={({ pressed }) => [styles.skillAddButton, pressed && styles.buttonPressed]}
-                onPress={handleAddSkill}
-              >
-                <MaterialIcons name="add" size={20} color="white" />
-              </Pressable>
+            <View>
+              <View style={styles.skillInputContainer}>
+                <RNTextInput
+                  style={styles.skillInput}
+                  placeholder="e.g., React, Python, Project Management..."
+                  placeholderTextColor="#9CA3AF"
+                  value={skillInput}
+                  onChangeText={(text) => {
+                    setSkillInput(text);
+                    if (skillErrors) setSkillErrors("");
+
+                    // Get suggestions
+                    if (text.trim().length > 0) {
+                      const suggestions = getSkillSuggestions(text);
+                      setSkillSuggestions(suggestions);
+                      setShowSuggestions(suggestions.length > 0);
+                    } else {
+                      setSkillSuggestions([]);
+                      setShowSuggestions(false);
+                    }
+                  }}
+                />
+                <Pressable
+                  style={({ pressed }) => [styles.skillAddButton, pressed && styles.buttonPressed]}
+                  onPress={handleAddSkill}
+                >
+                  <MaterialIcons name="add" size={20} color="white" />
+                </Pressable>
+              </View>
+
+              {/* Skill Suggestions Dropdown */}
+              {showSuggestions && skillSuggestions.length > 0 && (
+                <View style={styles.suggestionsContainer}>
+                  {skillSuggestions.map((suggestion, index) => (
+                    <Pressable
+                      key={`${suggestion.id}-${index}`}
+                      style={styles.suggestionItem}
+                      onPress={() => handleAddSuggestionSkill(suggestion)}
+                    >
+                      <View style={styles.suggestionContent}>
+                        <MaterialIcons
+                          name="check-circle-outline"
+                          size={16}
+                          color="#2563EB"
+                          style={{ marginRight: 8 }}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.suggestionText}>{suggestion.name}</Text>
+                          <Text style={styles.suggestionCategory}>{suggestion.category}</Text>
+                        </View>
+                        <MaterialIcons name="arrow-forward" size={16} color="#9ca3af" />
+                      </View>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
             </View>
             {skillErrors && <Text style={styles.errorText}>{skillErrors}</Text>}
           </View>
@@ -358,5 +424,36 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#2563EB",
+  },
+  // Skill suggestions styles
+  suggestionsContainer: {
+    backgroundColor: "white",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    marginTop: 4,
+    overflow: "hidden",
+    maxHeight: 280,
+  },
+  suggestionItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f3f4f6",
+  },
+  suggestionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  suggestionText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  suggestionCategory: {
+    fontSize: 12,
+    color: "#6b7280",
+    marginTop: 2,
   },
 });

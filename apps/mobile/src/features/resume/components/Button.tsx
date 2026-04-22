@@ -3,8 +3,9 @@
  * Enterprise-grade styling with Tailwind CSS
  */
 
-import { Pressable, PressableProps, View } from "react-native";
+import { Pressable, PressableProps, StyleSheet } from "react-native";
 import { Text } from "@/components/Themed";
+import { ActivityIndicator } from "react-native";
 
 interface ButtonProps extends PressableProps {
   variant?: "primary" | "secondary" | "danger";
@@ -22,27 +23,15 @@ export function Button({
   ...props
 }: ButtonProps) {
   const variantStyles = {
-    primary: "bg-blue-600 active:bg-blue-700",
-    secondary: "bg-gray-200 active:bg-gray-300",
-    danger: "bg-red-600 active:bg-red-700",
-  };
-
-  const sizeStyles = {
-    sm: "px-4 py-2 rounded-lg",
-    md: "px-6 py-3 rounded-xl",
-    lg: "px-8 py-4 rounded-xl",
-  };
-
-  const textSizeStyles = {
-    sm: "text-sm",
-    md: "text-base",
-    lg: "text-lg",
+    primary: { backgroundColor: "#2563EB" },
+    secondary: { backgroundColor: "#e5e7eb" },
+    danger: { backgroundColor: "#dc2626" },
   };
 
   const textColorStyles = {
-    primary: "text-white",
-    secondary: "text-gray-900",
-    danger: "text-white",
+    primary: "#ffffff",
+    secondary: "#111827",
+    danger: "#ffffff",
   };
 
   const isDisabled = disabled || isLoading;
@@ -51,14 +40,31 @@ export function Button({
     <Pressable
       {...props}
       disabled={isDisabled}
-      className={`${variantStyles[variant]} ${sizeStyles[size]} ${
-        isDisabled ? "opacity-50" : ""
-      } flex-row items-center justify-center`}
+      style={[styles.button, variantStyles[variant], isDisabled && styles.disabled]}
     >
-      {isLoading && <Text className="mr-2">...</Text>}
-      <Text className={`font-semibold ${textColorStyles[variant]} ${textSizeStyles[size]}`}>
-        {children}
-      </Text>
+      {isLoading ? (
+        <ActivityIndicator color={textColorStyles[variant]} size="small" />
+      ) : (
+        <Text style={[styles.buttonText, { color: textColorStyles[variant] }]}>{children}</Text>
+      )}
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  button: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+});

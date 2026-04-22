@@ -21,7 +21,7 @@
     "clean": "rm -rf node_modules .expo dist"
   },
   "dependencies": {
-    "@app-powerup/shared": "workspace:*",
+    "@powerup/shared": "workspace:*",
     "@react-navigation/native": "^7.1.33",
     "@reduxjs/toolkit": "^2",
     "expo": "~55.0.7",

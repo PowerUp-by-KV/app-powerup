@@ -19,7 +19,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useUploadResumeMutation } from "@/services/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCurrentStep, resetResume, loadResumeData, setError } from "@/store/slices/resume.slice";
+import { setCurrentStep, resetResume, loadResumeData } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
 import type { ResumeParsedData } from "@app-powerup/shared";
@@ -170,7 +170,6 @@ export function ResumeHomeScreen() {
 
       const errorMessage =
         error instanceof Error ? error.message : "Failed to upload resume. Please try again.";
-      dispatch(setError(errorMessage));
       Alert.alert("Upload Failed", errorMessage);
     } finally {
       setUploading(false);
