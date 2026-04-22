@@ -8,7 +8,7 @@ export function setAuthToken(_token: string): void {
   return;
 }
 
-export function getApiErrorMessage(error: unknown, fallback: string): string {
+export function getApiErrorMessage(error: any, fallback: string): string {
   if (!error) {
     return fallback;
   }
@@ -17,12 +17,12 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     return error;
   }
 
-  if ((error as { response?: { data?: { message?: string } } })?.response?.data?.message) {
-    return (error as { response: { data: { message: string } } }).response.data.message;
+  if (error?.response?.data?.message) {
+    return error.response.data.message;
   }
 
-  if ((error as { message?: string })?.message) {
-    return (error as { message: string }).message;
+  if (error?.message) {
+    return error.message;
   }
 
   return fallback;

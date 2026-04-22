@@ -2,6 +2,7 @@ import * as AuthSession from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import { useCallback, useMemo, useState } from "react";
+import { Platform } from "react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -26,6 +27,8 @@ const ANDROID_CLIENT_ID =
   resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID) ?? WEB_CLIENT_ID;
 const IOS_CLIENT_ID =
   resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS) ?? WEB_CLIENT_ID;
+const EXPO_CLIENT_ID =
+  resolveClientId(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_EXPO) ?? WEB_CLIENT_ID;
 
 type GoogleAuthOutcome =
   | {
