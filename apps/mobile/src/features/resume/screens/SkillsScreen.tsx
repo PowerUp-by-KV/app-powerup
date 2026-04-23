@@ -11,25 +11,49 @@ import {
   addSkill,
   removeSkill,
   selectSkills,
+  addProject,
+  updateProject,
+  removeProject,
+  selectProjects,
+  addCertification,
+  updateCertification,
+  removeCertification,
+  selectCertifications,
   nextStep,
   previousStep,
 } from "@/store/slices/resume.slice";
 import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { Skill } from "@app-powerup/shared";
+import type { Skill, Project, Certification } from "@app-powerup/shared";
 import { getSkillSuggestions, skillExists } from "@/utils/skillsAutocomplete";
 
 export function SkillsScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const skills = useAppSelector(selectSkills);
+  const projects = useAppSelector(selectProjects) || [];
+  const certifications = useAppSelector(selectCertifications) || [];
 
   // Skills state
   const [skillInput, setSkillInput] = useState("");
   const [skillErrors, setSkillErrors] = useState("");
   const [skillSuggestions, setSkillSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Projects state
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [projectForm, setProjectForm] = useState<Partial<Project>>({
+    name: "",
+    description: "",
+    link: "",
+  });
+  const [projectTechInput, setProjectTechInput] = useState("");
+  const [projectTechs, setProjectTechs] = useState<string[]>([]);
+
+  // Certifications state
+  const [certInput, setCertInput] = useState("");
 
   const handleAddSkill = () => {
     if (!skillInput.trim()) {
@@ -82,6 +106,40 @@ export function SkillsScreen() {
     dispatch(removeSkill(id));
   };
 
+  // --- Project Handlers ---
+  const handleSaveProject = () => {
+    if (!projectForm.name || !projectForm.name.trim()) return;
+    const projData: Project = {
+      name: projectForm.name,
+      description: projectForm.description,
+      link: projectForm.link,
+      technologies: projectTechs,
+      id: editingProjectId || Date.now().toString(),
+    };
+    if (editingProjectId) dispatch(updateProject(projData));
+    else dispatch(addProject(projData));
+
+    setShowProjectForm(false);
+    setEditingProjectId(null);
+    setProjectForm({ name: "", description: "", link: "" });
+    setProjectTechs([]);
+    setProjectTechInput("");
+  };
+
+  const handleEditProject = (proj: Project) => {
+    setProjectForm(proj);
+    setProjectTechs(proj.technologies || []);
+    setEditingProjectId(proj.id || proj.name);
+    setShowProjectForm(true);
+  };
+
+  // --- Certification Handlers ---
+  const handleAddCert = () => {
+    if (!certInput.trim()) return;
+    dispatch(addCertification({ name: certInput.trim(), issuer: "", id: Date.now().toString() }));
+    setCertInput("");
+  };
+
   const handleNext = () => {
     if (skills.length === 0) {
       setSkillErrors("Please add at least one skill");
@@ -97,8 +155,8 @@ export function SkillsScreen() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.stepNumber}>Step 3 of 4</Text>
-            <Text style={styles.headerTitle}>Skills </Text>
-            <Text style={styles.headerSubtitle}>Showcase your professional skills</Text>
+            <Text style={styles.headerTitle}>Skills, Projects & Certifications</Text>
+            <Text style={styles.headerSubtitle}>Showcase your core competencies and portfolio</Text>
           </View>
 
           {/* Progress Bar */}
@@ -195,19 +253,229 @@ export function SkillsScreen() {
                 </View>
               )}
             </View>
-            {skillErrors && <Text style={styles.errorText}>{skillErrors}</Text>}
+            {skillErrors ? <Text style={styles.errorText}>{skillErrors}</Text> : null}
           </View>
 
-          {/* Skills Summary */}
-          {skills.length > 0 && (
+          {/* Projects Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons name="folder" size={24} color="#2563EB" style={{ marginRight: 10 }} />
+              <Text style={styles.sectionTitle}>Projects</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Highlight key projects and tools used.</Text>
+
+            {projects.length > 0 && (
+              <View style={styles.skillsList}>
+                {projects.map((proj) => (
+                  <View
+                    key={proj.id || proj.name}
+                    style={[styles.skillTag, { backgroundColor: "#1e40af", paddingVertical: 12 }]}
+                  >
+                    <View>
+                      <Text style={[styles.skillTagText, { fontSize: 15 }]}>{proj.name}</Text>
+                      {proj.technologies && proj.technologies.length > 0 && (
+                        <Text style={{ color: "#dbeafe", fontSize: 12, marginTop: 2 }}>
+                          [{proj.technologies.join(", ")}]
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 8, marginLeft: 12 }}>
+                      <Pressable onPress={() => handleEditProject(proj)}>
+                        <MaterialIcons name="edit" size={16} color="white" />
+                      </Pressable>
+                      <Pressable onPress={() => dispatch(removeProject(proj.id || proj.name))}>
+                        <MaterialIcons name="close" size={16} color="#fca5a5" />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {showProjectForm ? (
+              <View
+                style={{
+                  backgroundColor: "#f3f4f6",
+                  borderRadius: 8,
+                  padding: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <TextInput
+                  label="Project Name"
+                  required
+                  placeholder="e.g. Resume Builder"
+                  value={projectForm.name || ""}
+                  onChangeText={(text) => setProjectForm({ ...projectForm, name: text })}
+                />
+                <TextInput
+                  label="Description"
+                  multiline
+                  numberOfLines={2}
+                  placeholder="What did you build?"
+                  value={projectForm.description || ""}
+                  onChangeText={(text) => setProjectForm({ ...projectForm, description: text })}
+                />
+
+                <View style={{ marginBottom: 12 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", marginBottom: 6, color: "#111827" }}
+                  >
+                    Technologies Used
+                  </Text>
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                    {projectTechs.map((tech, idx) => (
+                      <View
+                        key={idx}
+                        style={[
+                          styles.skillTag,
+                          { backgroundColor: "#64748b", paddingVertical: 4 },
+                        ]}
+                      >
+                        <Text style={styles.skillTagText}>{tech}</Text>
+                        <Pressable
+                          onPress={() => setProjectTechs(projectTechs.filter((t) => t !== tech))}
+                        >
+                          <MaterialIcons
+                            name="close"
+                            size={14}
+                            color="white"
+                            style={{ marginLeft: 4 }}
+                          />
+                        </Pressable>
+                      </View>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <RNTextInput
+                      style={styles.skillInput}
+                      placeholder="e.g. React, Python"
+                      value={projectTechInput}
+                      onChangeText={setProjectTechInput}
+                      onSubmitEditing={() => {
+                        if (
+                          projectTechInput.trim() &&
+                          !projectTechs.includes(projectTechInput.trim())
+                        ) {
+                          setProjectTechs([...projectTechs, projectTechInput.trim()]);
+                          setProjectTechInput("");
+                        }
+                      }}
+                    />
+                  </View>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                  <Pressable
+                    style={[styles.button, styles.secondaryButton]}
+                    onPress={() => setShowProjectForm(false)}
+                  >
+                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.button, styles.primaryButton]}
+                    onPress={handleSaveProject}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {editingProjectId ? "Update" : "Save"}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#f3f4f6",
+                  borderWidth: 2,
+                  borderColor: "#2563EB",
+                  borderRadius: 8,
+                  paddingVertical: 12,
+                  gap: 8,
+                }}
+                onPress={() => {
+                  setEditingProjectId(null);
+                  setProjectForm({ name: "", description: "" });
+                  setProjectTechs([]);
+                  setShowProjectForm(true);
+                }}
+              >
+                <MaterialIcons name="add" size={20} color="#2563EB" />
+                <Text style={{ fontSize: 14, fontWeight: "600", color: "#2563EB" }}>
+                  Add Project
+                </Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Certifications Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <MaterialIcons
+                name="verified"
+                size={24}
+                color="#2563EB"
+                style={{ marginRight: 10 }}
+              />
+              <Text style={styles.sectionTitle}>Certifications</Text>
+            </View>
+            <Text style={styles.sectionSubtitle}>Add professional credentials.</Text>
+
+            {certifications.length > 0 && (
+              <View style={styles.skillsList}>
+                {certifications.map((cert) => (
+                  <View
+                    key={cert.id || cert.name}
+                    style={[styles.skillTag, { backgroundColor: "#047857" }]}
+                  >
+                    <Text style={styles.skillTagText}>{cert.name}</Text>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.skillTagRemove,
+                        pressed && styles.buttonPressed,
+                      ]}
+                      onPress={() => dispatch(removeCertification(cert.id || cert.name))}
+                    >
+                      <MaterialIcons name="close" size={16} color="white" />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <View style={styles.skillInputContainer}>
+              <RNTextInput
+                style={styles.skillInput}
+                placeholder="e.g. AWS Certified Solutions Architect"
+                placeholderTextColor="#9CA3AF"
+                value={certInput}
+                onChangeText={setCertInput}
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.skillAddButton,
+                  pressed && styles.buttonPressed,
+                  { backgroundColor: "#047857" },
+                ]}
+                onPress={handleAddCert}
+              >
+                <MaterialIcons name="add" size={20} color="white" />
+              </Pressable>
+            </View>
+          </View>
+
+          {/* Summary Section */}
+          {(skills.length > 0 || projects.length > 0 || certifications.length > 0) && (
             <View style={styles.summarySection}>
               <View style={styles.summaryHeader}>
                 <MaterialIcons name="check-circle" size={24} color="#10b981" />
-                <Text style={styles.summaryTitle}>Skills Added</Text>
+                <Text style={styles.summaryTitle}>Added Items</Text>
               </View>
               <Text style={styles.summaryText}>
-                You've added {skills.length} skill{skills.length !== 1 ? "s" : ""}. Great job!
-                You're almost done.
+                You've configured {skills.length} skills, {projects.length} projects, and{" "}
+                {certifications.length} certifications. Great job!
               </Text>
             </View>
           )}

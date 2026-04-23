@@ -17,11 +17,19 @@ import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { useUploadResumeMutation } from "@/services/api";
+import { useUploadResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setCurrentStep, resetResume, loadResumeData } from "@/store/slices/resume.slice";
+import {
+  setCurrentStep,
+  resetResume,
+  loadResumeData,
+  setError,
+  selectError,
+  setHasExistingResume,
+} from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
+import { ApiErrorHandler } from "@/services/error-handler";
 import type { ResumeParsedData } from "@app-powerup/shared";
 
 export function ResumeHomeScreen() {
@@ -29,7 +37,9 @@ export function ResumeHomeScreen() {
   const dispatch = useAppDispatch();
   const hasExistingResume = useAppSelector(selectHasExistingResume);
   const lastSaved = useAppSelector(selectLastSaved);
+  const error = useAppSelector(selectError);
   const [uploadResume] = useUploadResumeMutation();
+  const [deleteResumeReq] = useDeleteResumeMutation();
 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
@@ -109,11 +119,12 @@ export function ResumeHomeScreen() {
       return;
     }
 
-    let progressInterval;
+    let progressInterval: NodeJS.Timeout | undefined;
 
     try {
       setUploading(true);
       setUploadProgress(0);
+      dispatch(setError(null));
 
       progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90));
@@ -133,22 +144,13 @@ export function ResumeHomeScreen() {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      if (!response?.resume) {
+      if (!response) {
         throw new Error("Invalid response from upload API");
       }
 
-      // Transform API response (ResumeUploadResponse) to form data structure (ResumeParsedData)
-      const resumeData = {
-        contact: response.resume.personal,
-        summary: { text: "" }, // Summary not in API response, use empty
-        experience: response.resume.experience || [],
-        education: response.resume.education || [],
-        skills: response.resume.skills || [],
-      };
-
       // Load into Redux store
-      dispatch(loadResumeData(resumeData));
-      setParsedResume(response.resume);
+      dispatch(loadResumeData(response));
+      setParsedResume(response);
       dispatch(setCurrentStep(1));
 
       setUploadSuccess(true);
@@ -161,16 +163,40 @@ export function ResumeHomeScreen() {
           },
         },
       ]);
-    } catch (error) {
+    } catch (error: any) {
       if (progressInterval) {
         clearInterval(progressInterval);
       }
 
       setUploadProgress(0);
 
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to upload resume. Please try again.";
+      let errorMessage = "Failed to upload resume. Please try again.";
+
+      if (error?.status === 400) {
+        errorMessage =
+          error?.data?.message ||
+          "Invalid file format. Please ensure the PDF is readable and not corrupted.";
+      } else if (error?.status === 413) {
+        errorMessage = "File size exceeds 5MB limit. Please choose a smaller file.";
+      } else if (error?.status === 415) {
+        errorMessage = "Invalid file type. Only PDF files are supported.";
+      } else if (error?.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+      } else if (error?.status === 500) {
+        errorMessage = "Server error occurred. Please try again later.";
+      } else if (error?.status === 0 || error?.code === "NETWORK_ERROR") {
+        errorMessage = "Network connection error. Please check your internet connection.";
+      } else {
+        errorMessage =
+          error?.data?.message ||
+          error?.message ||
+          "An unexpected error occurred. Please try again.";
+      }
+
+      dispatch(setError(errorMessage));
       Alert.alert("Upload Failed", errorMessage);
+
+      console.error("Upload error:", error);
     } finally {
       setUploading(false);
     }
@@ -198,6 +224,31 @@ export function ResumeHomeScreen() {
     router.push("/(tabs)/two/preview");
   };
 
+  const handleDeleteResume = () => {
+    Alert.alert(
+      "Delete Resume",
+      "Are you sure you want to delete your current resume? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // TODO: Fetch user id from auth context
+              await deleteResumeReq("mock-uuid").unwrap();
+              dispatch(resetResume());
+              dispatch(setHasExistingResume(false));
+              Alert.alert("Success", "Resume deleted.");
+            } catch (err: any) {
+              Alert.alert("Error", err?.data?.message || "Failed to delete resume");
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
       <View style={styles.container}>
@@ -206,6 +257,20 @@ export function ResumeHomeScreen() {
           <Text style={styles.mainTitle}>Upload Your Resume</Text>
           <Text style={styles.subtitle}>Help us understand your professional background</Text>
         </View>
+
+        {/* Error Alert */}
+        {error && (
+          <View style={styles.errorAlert}>
+            <MaterialIcons name="error-outline" size={20} color="#dc2626" />
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Error</Text>
+              <Text style={styles.errorMessage}>{error}</Text>
+            </View>
+            <Pressable onPress={() => dispatch(setError(null))}>
+              <MaterialIcons name="close" size={20} color="#dc2626" />
+            </Pressable>
+          </View>
+        )}
 
         {/* Upload Box */}
         <View style={styles.uploadBoxWrapper}>
@@ -322,6 +387,47 @@ export function ResumeHomeScreen() {
         {/* Parsed Data Display */}
         {uploadSuccess && parsedResume && (
           <View style={styles.parsedDataContainer}>
+            {/* File Information Card */}
+            {parsedResume.file_name && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="description" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>File Information</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  <View style={styles.metadataRow}>
+                    <Text style={styles.metadataLabel}>Filename:</Text>
+                    <Text style={styles.metadataValue}>{parsedResume.file_name}</Text>
+                  </View>
+                  {parsedResume.parse_status && (
+                    <View style={styles.metadataRow}>
+                      <Text style={styles.metadataLabel}>Status:</Text>
+                      <View style={styles.statusBadge}>
+                        <MaterialIcons name="check-circle" size={14} color="#10b981" />
+                        <Text style={styles.statusText}>{parsedResume.parse_status}</Text>
+                      </View>
+                    </View>
+                  )}
+                  {parsedResume.created_at && (
+                    <View style={styles.metadataRow}>
+                      <Text style={styles.metadataLabel}>Uploaded:</Text>
+                      <Text style={styles.metadataValue}>
+                        {new Date(parsedResume.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  )}
+                  {parsedResume.id && (
+                    <View style={styles.metadataRow}>
+                      <Text style={styles.metadataLabel}>ID:</Text>
+                      <Text style={[styles.metadataValue, styles.codeText]}>
+                        {parsedResume.id.substring(0, 12)}...
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+
             {/* Personal Information Card */}
             {parsedResume.contact && (
               <View style={styles.dataCard}>
@@ -340,6 +446,22 @@ export function ResumeHomeScreen() {
                   {parsedResume.contact?.location && (
                     <Text style={styles.personalDetail}>{parsedResume.contact?.location}</Text>
                   )}
+                  {parsedResume.contact?.linkedin && (
+                    <Text style={styles.personalDetail}>{parsedResume.contact?.linkedin}</Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {/* Summary Card */}
+            {parsedResume.summary?.text && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="description" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Professional Summary</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  <Text style={styles.summaryText}>{parsedResume.summary.text}</Text>
                 </View>
               </View>
             )}
@@ -349,7 +471,7 @@ export function ResumeHomeScreen() {
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="code" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Skills</Text>
+                  <Text style={styles.cardTitle}>Skills ({parsedResume.skills.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
                   {parsedResume.skills?.map((skill: any, index: number) => (
@@ -368,7 +490,9 @@ export function ResumeHomeScreen() {
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="work" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Experience</Text>
+                  <Text style={styles.cardTitle}>
+                    Experience ({parsedResume.experience.length})
+                  </Text>
                 </View>
                 <View style={styles.cardContent}>
                   {parsedResume.experience?.map((exp: any, index: number) => (
@@ -381,6 +505,148 @@ export function ResumeHomeScreen() {
                       {exp.description && (
                         <Text style={styles.expDescription}>{exp.description}</Text>
                       )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Education Card */}
+            {parsedResume.education && parsedResume.education.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="school" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Education ({parsedResume.education.length})</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.education?.map((edu: any, index: number) => (
+                    <View key={index} style={styles.experienceItem}>
+                      <Text style={styles.expTitle}>{edu.degree}</Text>
+                      <Text style={styles.expCompany}>
+                        {edu.school} • {edu.graduationDate}
+                      </Text>
+                      {edu.field && <Text style={styles.expDescription}>{edu.field}</Text>}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Projects Card */}
+            {parsedResume.projects && parsedResume.projects.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="folder-open" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Projects ({parsedResume.projects.length})</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.projects?.map((proj: any, index: number) => (
+                    <View key={index} style={styles.experienceItem}>
+                      <Text style={styles.expTitle}>{proj.name}</Text>
+                      {proj.description && (
+                        <Text style={styles.expDescription}>{proj.description}</Text>
+                      )}
+                      {proj.technologies && proj.technologies.length > 0 && (
+                        <View style={styles.techStack}>
+                          {proj.technologies.map((tech: string, idx: number) => (
+                            <View key={idx} style={styles.techBadge}>
+                              <Text style={styles.techText}>{tech}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Certifications Card */}
+            {parsedResume.certifications && parsedResume.certifications.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="verified" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>
+                    Certifications ({parsedResume.certifications.length})
+                  </Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.certifications?.map((cert: any, index: number) => (
+                    <View key={index} style={styles.experienceItem}>
+                      <Text style={styles.expTitle}>{cert.name}</Text>
+                      <Text style={styles.expCompany}>
+                        {cert.issuer}
+                        {cert.issueDate ? ` • ${cert.issueDate}` : ""}
+                      </Text>
+                      {cert.expiryDate && (
+                        <Text style={styles.expDescription}>Expires: {cert.expiryDate}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Languages Card */}
+            {parsedResume.languages && parsedResume.languages.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="language" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>Languages ({parsedResume.languages.length})</Text>
+                </View>
+                <View style={styles.skillsContainer}>
+                  {parsedResume.languages?.map((lang: any, index: number) => (
+                    <View key={index} style={styles.languageBadge}>
+                      <Text style={styles.languageText}>
+                        {typeof lang === "string" ? lang : lang.name}
+                        {typeof lang === "object" && lang.proficiency
+                          ? ` (${lang.proficiency})`
+                          : ""}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Achievements Card */}
+            {parsedResume.achievements && parsedResume.achievements.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="star" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>
+                    Achievements ({parsedResume.achievements.length})
+                  </Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.achievements?.map((achievement: any, index: number) => (
+                    <View key={index} style={styles.achievementItem}>
+                      <MaterialIcons name="done" size={18} color="#10b981" />
+                      <Text style={styles.achievementText}>
+                        {typeof achievement === "string" ? achievement : achievement.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Extracurricular Card */}
+            {parsedResume.extracurricular && parsedResume.extracurricular.length > 0 && (
+              <View style={styles.dataCard}>
+                <View style={styles.cardHeader}>
+                  <MaterialIcons name="sports" size={22} color="#2563EB" />
+                  <Text style={styles.cardTitle}>
+                    Extracurricular ({parsedResume.extracurricular.length})
+                  </Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {parsedResume.extracurricular?.map((activity: any, index: number) => (
+                    <View key={index} style={styles.achievementItem}>
+                      <MaterialIcons name="done" size={18} color="#2563EB" />
+                      <Text style={styles.achievementText}>
+                        {typeof activity === "string" ? activity : activity.name}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -424,8 +690,8 @@ export function ResumeHomeScreen() {
           </View>
         )}
 
-        {/* Build from Scratch Button */}
-        {!selectedFile && !uploadSuccess && (
+        {/* Action Buttons */}
+        {!selectedFile && !uploadSuccess && !hasExistingResume && (
           <View style={styles.altActionContainer}>
             <Pressable
               onPress={handleBuildFromScratch}
@@ -436,6 +702,34 @@ export function ResumeHomeScreen() {
             >
               <MaterialIcons name="edit" size={20} color="#059669" />
               <Text style={styles.altActionText}>Build from Scratch</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {hasExistingResume && !selectedFile && !uploadSuccess && (
+          <View style={[styles.altActionContainer, { flexDirection: "row", gap: 12 }]}>
+            <Pressable
+              onPress={handleEditResume}
+              style={({ pressed }) => [
+                styles.altActionButton,
+                { flex: 1 },
+                pressed && styles.altActionButtonPressed,
+              ]}
+            >
+              <MaterialIcons name="edit" size={20} color="#059669" />
+              <Text style={styles.altActionText}>Edit Resume</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={handleDeleteResume}
+              style={({ pressed }) => [
+                styles.altActionButton,
+                { flex: 1, borderColor: "#fee2e2", backgroundColor: "#fef2f2" },
+                pressed && styles.altActionButtonPressed,
+              ]}
+            >
+              <MaterialIcons name="delete" size={20} color="#dc2626" />
+              <Text style={[styles.altActionText, { color: "#dc2626" }]}>Delete</Text>
             </Pressable>
           </View>
         )}
@@ -460,7 +754,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   headerSection: {
-    marginBottom: 32,
+    marginBottom: 24,
     marginTop: 12,
   },
   mainTitle: {
@@ -473,6 +767,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#6b7280",
     lineHeight: 24,
+  },
+  errorAlert: {
+    flexDirection: "row",
+    backgroundColor: "#fee2e2",
+    borderLeftWidth: 4,
+    borderLeftColor: "#dc2626",
+    padding: 12,
+    marginBottom: 20,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  errorContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#991b1b",
+    marginBottom: 2,
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: "#7f1d1d",
+    lineHeight: 16,
   },
   uploadBoxWrapper: {
     marginBottom: 24,
@@ -790,5 +1109,89 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#059669",
     marginLeft: 8,
+  },
+  metadataRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
+  },
+  metadataLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#0F172A",
+    flex: 0.4,
+  },
+  metadataValue: {
+    fontSize: 13,
+    color: "#64748B",
+    flex: 0.6,
+    textAlign: "right",
+  },
+  codeText: {
+    fontFamily: "monospace",
+    fontSize: 11,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#059669",
+    textTransform: "capitalize",
+  },
+  summaryText: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 22,
+  },
+  techStack: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
+  techBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  techText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#B45309",
+  },
+  languageBadge: {
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  languageText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4F46E5",
+  },
+  achievementItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    gap: 10,
+  },
+  achievementText: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
+    flex: 1,
   },
 });

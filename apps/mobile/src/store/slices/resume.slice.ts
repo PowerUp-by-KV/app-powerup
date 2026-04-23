@@ -12,6 +12,8 @@ import type {
   Experience,
   Education,
   Skill,
+  Project,
+  Certification,
 } from "@app-powerup/shared";
 
 const initialState: ResumeState = {
@@ -30,11 +32,17 @@ const initialState: ResumeState = {
     experience: [],
     education: [],
     skills: [],
+    projects: [],
+    certifications: [],
+    achievements: [],
+    languages: [],
+    extracurricular: [],
   },
   isUploading: false,
   isSaving: false,
   hasExistingResume: false,
   lastSaved: null,
+  error: null,
 };
 
 export const resumeSlice = createSlice({
@@ -109,6 +117,50 @@ export const resumeSlice = createSlice({
       state.formData.skills = state.formData.skills.filter((skill) => skill.id !== action.payload);
     },
 
+    addProject: (state, action: PayloadAction<Project>) => {
+      state.formData.projects = state.formData.projects || [];
+      state.formData.projects.push(action.payload);
+    },
+
+    updateProject: (state, action: PayloadAction<Project>) => {
+      if (!state.formData.projects) return;
+      const index = state.formData.projects.findIndex(
+        (proj) => proj.id === action.payload.id || proj.name === action.payload.name,
+      );
+      if (index !== -1) {
+        state.formData.projects[index] = action.payload;
+      }
+    },
+
+    removeProject: (state, action: PayloadAction<string>) => {
+      if (!state.formData.projects) return;
+      state.formData.projects = state.formData.projects.filter(
+        (proj) => proj.id !== action.payload && proj.name !== action.payload,
+      );
+    },
+
+    addCertification: (state, action: PayloadAction<Certification>) => {
+      state.formData.certifications = state.formData.certifications || [];
+      state.formData.certifications.push(action.payload);
+    },
+
+    updateCertification: (state, action: PayloadAction<Certification>) => {
+      if (!state.formData.certifications) return;
+      const index = state.formData.certifications.findIndex(
+        (cert) => cert.id === action.payload.id || cert.name === action.payload.name,
+      );
+      if (index !== -1) {
+        state.formData.certifications[index] = action.payload;
+      }
+    },
+
+    removeCertification: (state, action: PayloadAction<string>) => {
+      if (!state.formData.certifications) return;
+      state.formData.certifications = state.formData.certifications.filter(
+        (cert) => cert.id !== action.payload && cert.name !== action.payload,
+      );
+    },
+
     // Upload/Save State
     setIsUploading: (state, action: PayloadAction<boolean>) => {
       state.isUploading = action.payload;
@@ -137,6 +189,15 @@ export const resumeSlice = createSlice({
     resetResume: (state) => {
       return initialState;
     },
+
+    // Error Handling
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+
+    clearError: (state) => {
+      state.error = null;
+    },
   },
 });
 
@@ -154,12 +215,20 @@ export const {
   removeEducation,
   addSkill,
   removeSkill,
+  addProject,
+  updateProject,
+  removeProject,
+  addCertification,
+  updateCertification,
+  removeCertification,
   setIsUploading,
   setIsSaving,
   setHasExistingResume,
   setLastSaved,
   loadResumeData,
   resetResume,
+  setError,
+  clearError,
 } = resumeSlice.actions;
 
 export default resumeSlice.reducer;
@@ -173,8 +242,12 @@ export const selectExperience = (state: { resume: ResumeState }) =>
   state.resume.formData.experience;
 export const selectEducation = (state: { resume: ResumeState }) => state.resume.formData.education;
 export const selectSkills = (state: { resume: ResumeState }) => state.resume.formData.skills;
+export const selectProjects = (state: { resume: ResumeState }) => state.resume.formData.projects;
+export const selectCertifications = (state: { resume: ResumeState }) =>
+  state.resume.formData.certifications;
 export const selectIsUploading = (state: { resume: ResumeState }) => state.resume.isUploading;
 export const selectIsSaving = (state: { resume: ResumeState }) => state.resume.isSaving;
 export const selectHasExistingResume = (state: { resume: ResumeState }) =>
   state.resume.hasExistingResume;
 export const selectLastSaved = (state: { resume: ResumeState }) => state.resume.lastSaved;
+export const selectError = (state: { resume: ResumeState }) => state.resume.error;

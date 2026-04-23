@@ -3,7 +3,7 @@
  * Review resume and submit for saving
  */
 
-import { View, ScrollView, StyleSheet, Pressable, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -12,31 +12,83 @@ import {
   previousStep,
   setLastSaved,
   setIsSaving,
+  setError,
   resetResume,
+  selectError,
+  selectIsSaving,
 } from "@/store/slices/resume.slice";
-import { useUpdateResumeMutation } from "@/services/api";
-import { useState } from "react";
+import { useUpdateResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
+import { useState, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import * as SecureStore from "expo-secure-store";
 
 export function PreviewScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const formData = useAppSelector(selectFormData);
-  const [updateResume, { isLoading }] = useUpdateResumeMutation();
+  const isSaving = useAppSelector(selectIsSaving);
+  const error = useAppSelector(selectError);
+  const [updateResume, { isLoading: isUpdating }] = useUpdateResumeMutation();
+  const [deleteResume, { isLoading: isDeleting }] = useDeleteResumeMutation();
+  const [userId, setUserId] = useState<string>("");
+
+  useEffect(() => {
+    const loadUserId = async () => {
+      try {
+        // Try to get user ID from secure storage
+        let storedUserId = await SecureStore.getItemAsync("user_id");
+
+        // If no stored ID, create a temporary one
+        if (!storedUserId) {
+          storedUserId = `user_${Date.now()}`;
+          await SecureStore.setItemAsync("user_id", storedUserId);
+        }
+
+        setUserId(storedUserId);
+      } catch (err) {
+        console.warn("Failed to get user ID from secure storage:", err);
+        // Fallback to temporary user ID
+        setUserId(`user_${Date.now()}`);
+      }
+    };
+
+    loadUserId();
+  }, []);
+
+  const validateForm = (): boolean => {
+    if (!formData.contact.fullName?.trim()) {
+      dispatch(setError("Full name is required"));
+      return false;
+    }
+    if (!formData.contact.email?.trim()) {
+      dispatch(setError("Email is required"));
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = async () => {
     try {
+      if (!validateForm()) {
+        Alert.alert("Validation Error", "Please fill in all required fields.");
+        return;
+      }
+
+      if (!userId) {
+        Alert.alert("Error", "User ID not loaded. Please try again.");
+        return;
+      }
+
       dispatch(setIsSaving(true));
+      dispatch(setError(null));
 
-      // TODO: Get actual user ID from auth context
-      const userId = "current-user-id";
-
-      await updateResume({
+      const response = await updateResume({
         userId,
         data: formData,
       }).unwrap();
 
-      dispatch(setLastSaved(new Date().toLocaleString()));
+      const saveTime = new Date().toLocaleString();
+      dispatch(setLastSaved(saveTime));
 
       Alert.alert("Success", "Resume saved successfully!", [
         {
@@ -47,12 +99,96 @@ export function PreviewScreen() {
           },
         },
       ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to save resume. Please try again.");
-      console.error(error);
+    } catch (error: any) {
+      let errorMessage = "Failed to save resume. Please try again.";
+
+      if (error?.status === 400) {
+        errorMessage = error?.data?.message || "Invalid resume data. Please check your entries.";
+      } else if (error?.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+      } else if (error?.status === 500) {
+        errorMessage = "Server error. Please try again later.";
+      } else if (error?.status === 0) {
+        errorMessage = "Network error. Please check your connection.";
+      } else {
+        errorMessage =
+          error?.data?.message ||
+          error?.message ||
+          "An unexpected error occurred. Please try again.";
+      }
+
+      dispatch(setError(errorMessage));
+      Alert.alert("Save Failed", errorMessage);
+      console.error("Save error:", error);
     } finally {
       dispatch(setIsSaving(false));
     }
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Resume",
+      "Are you sure you want to delete this resume? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          onPress: () => {},
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            if (!userId) {
+              Alert.alert("Error", "User ID not loaded. Please try again.");
+              return;
+            }
+
+            try {
+              dispatch(setIsSaving(true));
+              dispatch(setError(null));
+
+              await deleteResume(userId).unwrap();
+
+              Alert.alert("Success", "Resume deleted successfully!", [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    dispatch(resetResume());
+                    router.replace("/resume");
+                  },
+                },
+              ]);
+            } catch (error: any) {
+              let errorMessage = "Failed to delete resume. Please try again.";
+
+              if (error?.status === 400) {
+                errorMessage = error?.data?.message || "Cannot delete this resume.";
+              } else if (error?.status === 401) {
+                errorMessage = "Session expired. Please log in again.";
+              } else if (error?.status === 404) {
+                errorMessage = "Resume not found.";
+              } else if (error?.status === 500) {
+                errorMessage = "Server error. Please try again later.";
+              } else if (error?.status === 0) {
+                errorMessage = "Network error. Please check your connection.";
+              } else {
+                errorMessage =
+                  error?.data?.message ||
+                  error?.message ||
+                  "An unexpected error occurred. Please try again.";
+              }
+
+              dispatch(setError(errorMessage));
+              Alert.alert("Delete Failed", errorMessage);
+              console.error("Delete error:", error);
+            } finally {
+              dispatch(setIsSaving(false));
+            }
+          },
+          style: "destructive",
+        },
+      ],
+    );
   };
 
   return (
@@ -71,6 +207,17 @@ export function PreviewScreen() {
             <View style={[styles.progressFill, { width: "100%" }]} />
           </View>
         </View>
+
+        {/* Error Alert */}
+        {error && (
+          <View style={styles.errorAlert}>
+            <MaterialIcons name="error-outline" size={20} color="#dc2626" />
+            <View style={styles.errorContent}>
+              <Text style={styles.errorTitle}>Error</Text>
+              <Text style={styles.errorMessage}>{error}</Text>
+            </View>
+          </View>
+        )}
 
         {/* Preview Content */}
         <View style={styles.formContainer}>
@@ -147,6 +294,95 @@ export function PreviewScreen() {
             </View>
           )}
 
+          {/* Projects Section */}
+          {formData.projects && formData.projects.length > 0 && (
+            <View style={styles.previewSection}>
+              <Text style={styles.previewHeading}>Projects</Text>
+              {formData.projects.map((project) => (
+                <View key={project.id || project.name} style={styles.previewItem}>
+                  <Text style={styles.itemTitle}>{project.name}</Text>
+                  {project.description && (
+                    <Text style={styles.itemDescription}>{project.description}</Text>
+                  )}
+                  {project.technologies && project.technologies.length > 0 && (
+                    <View style={styles.techStack}>
+                      {project.technologies.map((tech, idx) => (
+                        <View key={idx} style={styles.techBadge}>
+                          <Text style={styles.techText}>{tech}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {project.link && <Text style={styles.itemLink}>{project.link}</Text>}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Certifications Section */}
+          {formData.certifications && formData.certifications.length > 0 && (
+            <View style={styles.previewSection}>
+              <Text style={styles.previewHeading}>Certifications</Text>
+              {formData.certifications.map((cert) => (
+                <View key={cert.id || cert.name} style={styles.previewItem}>
+                  <View style={styles.itemHeader}>
+                    <Text style={styles.itemTitle}>{cert.name}</Text>
+                  </View>
+                  <Text style={styles.itemCompany}>{cert.issuer}</Text>
+                  {cert.issueDate && (
+                    <Text style={styles.itemDescription}>Issued: {cert.issueDate}</Text>
+                  )}
+                  {cert.expiryDate && (
+                    <Text style={styles.itemDescription}>Expires: {cert.expiryDate}</Text>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Languages Section */}
+          {formData.languages && formData.languages.length > 0 && (
+            <View style={styles.previewSection}>
+              <Text style={styles.previewHeading}>Languages</Text>
+              <View style={styles.skillsList}>
+                {formData.languages.map((language) => (
+                  <View key={language.id || language.name} style={styles.languageBadge}>
+                    <Text style={styles.languageText}>
+                      {language.name}
+                      {language.proficiency ? ` • ${language.proficiency}` : ""}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Achievements Section */}
+          {formData.achievements && formData.achievements.length > 0 && (
+            <View style={styles.previewSection}>
+              <Text style={styles.previewHeading}>Achievements</Text>
+              {formData.achievements.map((achievement, idx) => (
+                <View key={idx} style={styles.bulletItem}>
+                  <Text style={styles.bulletPoint}>•</Text>
+                  <Text style={styles.bulletText}>{achievement}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Extracurricular Section */}
+          {formData.extracurricular && formData.extracurricular.length > 0 && (
+            <View style={styles.previewSection}>
+              <Text style={styles.previewHeading}>Extracurricular Activities</Text>
+              {formData.extracurricular.map((activity, idx) => (
+                <View key={idx} style={styles.bulletItem}>
+                  <Text style={styles.bulletPoint}>•</Text>
+                  <Text style={styles.bulletText}>{activity}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
           {/* Summary Card */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryCardHeader}>
@@ -165,9 +401,10 @@ export function PreviewScreen() {
                 styles.button,
                 styles.secondaryButton,
                 pressed && styles.buttonPressed,
+                (isSaving || isUpdating || isDeleting) && styles.buttonDisabled,
               ]}
               onPress={() => dispatch(previousStep())}
-              disabled={isLoading}
+              disabled={isSaving || isUpdating || isDeleting}
             >
               <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
               <Text style={styles.secondaryButtonText}>Back</Text>
@@ -178,21 +415,47 @@ export function PreviewScreen() {
                 styles.button,
                 styles.primaryButton,
                 pressed && styles.buttonPressed,
-                isLoading && styles.buttonDisabled,
+                (isSaving || isUpdating) && styles.buttonDisabled,
               ]}
               onPress={handleSubmit}
-              disabled={isLoading}
+              disabled={isSaving || isUpdating}
             >
-              <MaterialIcons
-                name={isLoading ? "hourglass-empty" : "check"}
-                size={20}
-                color="white"
-              />
-              <Text style={styles.primaryButtonText}>
-                {isLoading ? "Saving..." : "Save & Submit"}
-              </Text>
+              {isUpdating || isSaving ? (
+                <>
+                  <ActivityIndicator color="white" size="small" style={{ marginRight: 8 }} />
+                  <Text style={styles.primaryButtonText}>Saving...</Text>
+                </>
+              ) : (
+                <>
+                  <MaterialIcons name="check" size={20} color="white" />
+                  <Text style={styles.primaryButtonText}>Save & Submit</Text>
+                </>
+              )}
             </Pressable>
           </View>
+
+          {/* Delete Button */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.deleteButton,
+              pressed && styles.deleteButtonPressed,
+              (isSaving || isDeleting) && styles.buttonDisabled,
+            ]}
+            onPress={handleDelete}
+            disabled={isSaving || isDeleting}
+          >
+            {isDeleting ? (
+              <>
+                <ActivityIndicator color="#dc2626" size="small" style={{ marginRight: 8 }} />
+                <Text style={styles.deleteButtonText}>Deleting...</Text>
+              </>
+            ) : (
+              <>
+                <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
+                <Text style={styles.deleteButtonText}>Delete Resume</Text>
+              </>
+            )}
+          </Pressable>
         </View>
       </View>
     </ScrollView>
@@ -246,6 +509,33 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     backgroundColor: "#2563EB",
+  },
+  errorAlert: {
+    flexDirection: "row",
+    backgroundColor: "#fee2e2",
+    borderLeftWidth: 4,
+    borderLeftColor: "#dc2626",
+    padding: 12,
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 16,
+    borderRadius: 6,
+    alignItems: "flex-start",
+  },
+  errorContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  errorTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#991b1b",
+    marginBottom: 2,
+  },
+  errorMessage: {
+    fontSize: 12,
+    color: "#7f1d1d",
+    lineHeight: 16,
   },
   formContainer: {
     padding: 20,
@@ -360,6 +650,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     marginTop: 20,
+    marginBottom: 12,
   },
   button: {
     flex: 1,
@@ -378,6 +669,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#d1d5db",
   },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#fee2e2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    gap: 8,
+  },
+  deleteButtonPressed: {
+    backgroundColor: "#fecaca",
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#dc2626",
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
@@ -393,5 +703,56 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: "#2563EB",
+  },
+  techStack: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8,
+  },
+  techBadge: {
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  techText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#B45309",
+  },
+  languageBadge: {
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  languageText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#4F46E5",
+  },
+  bulletItem: {
+    flexDirection: "row",
+    marginBottom: 8,
+    gap: 8,
+  },
+  bulletPoint: {
+    fontSize: 16,
+    color: "#2563EB",
+    fontWeight: "600",
+    width: 24,
+  },
+  bulletText: {
+    fontSize: 13,
+    color: "#6b7280",
+    flex: 1,
+    lineHeight: 18,
+  },
+  itemLink: {
+    fontSize: 12,
+    color: "#2563EB",
+    marginTop: 4,
+    textDecorationLine: "underline",
   },
 });

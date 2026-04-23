@@ -4,8 +4,10 @@
  */
 
 import { View } from "react-native";
-import { useAppSelector } from "@/store/hooks";
-import { selectCurrentStep } from "@/store/slices/resume.slice";
+import { useEffect } from "react";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { selectCurrentStep, loadResumeData } from "@/store/slices/resume.slice";
+import { useGetResumeQuery } from "@/services/resume-api";
 import {
   ContactSummaryScreen,
   ExperienceScreen,
@@ -14,7 +16,20 @@ import {
 } from "@/features/resume/screens";
 
 export default function ResumeBuilder() {
+  const dispatch = useAppDispatch();
   const currentStep = useAppSelector(selectCurrentStep);
+
+  // TODO: Get actual userId from auth context
+  // Replace "mock-uuid" with real ID when auth is implemented
+  const { data: resumeData } = useGetResumeQuery("mock-uuid", {
+    skip: false, // In a real app we'd trigger this conditionally based on auth
+  });
+
+  useEffect(() => {
+    if (resumeData) {
+      dispatch(loadResumeData(resumeData));
+    }
+  }, [resumeData, dispatch]);
 
   const renderScreen = () => {
     switch (currentStep) {
