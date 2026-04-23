@@ -10,6 +10,8 @@ if (!BASE_URL) {
   );
 }
 
+console.log("API Base URL:", BASE_URL);
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({

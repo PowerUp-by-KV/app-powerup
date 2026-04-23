@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 
-import { Feather } from "@expo/vector-icons";
+import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
@@ -19,6 +19,8 @@ import { useLoginMutation } from "@/services/auth-api";
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,34 +43,57 @@ export function LoginScreen() {
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Enter email and password");
+    const email_value = email.trim();
+    const phone_value = phoneNumber.trim();
+    const identifier_value = identifier.trim();
+    const password_value = password.trim();
+
+    // Validate password is required
+    if (!password_value) {
+      Alert.alert("Error", "Password is required");
+      return;
+    }
+
+    // At least one identifier must be provided
+    if (!email_value && !phone_value && !identifier_value) {
+      Alert.alert("Error", "Please enter email, phone number, or username/ID");
       return;
     }
 
     try {
       setIsLoading(true);
 
-      const response = await login({
-        email: email.trim(),
-        password,
+      // Build payload with only provided fields
+      const payload: any = {
+        password: password_value,
         remember_me: rememberMe,
-      }).unwrap();
+      };
 
+      if (email_value) payload.email = email_value;
+      if (phone_value) payload.phone_number = phone_value;
+      if (identifier_value) payload.identifier = identifier_value;
+
+      console.log("Login payload:", payload);
+
+      const response = await login(payload).unwrap();
+
+      console.log("Login response:", response);
       Alert.alert("Success", "Login successful");
       await persistAuthAndNavigate(response);
     } catch (error) {
-      const apiError = error as { response?: { status?: number } };
+      console.error("Login error:", error);
+      const apiError = error as { response?: { status?: number }; data?: { message?: string } };
       if (apiError?.response?.status === 401) {
         await clearAuthState();
+        Alert.alert("Error", "Invalid credentials");
         router.replace("/login");
         return;
       }
 
-      Alert.alert(
-        "Login Failed",
-        getApiErrorMessage(error, "Unable to login right now. Please try again."),
-      );
+      const errorMessage =
+        apiError?.data?.message ||
+        getApiErrorMessage(error, "Unable to login right now. Please try again.");
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +118,32 @@ export function LoginScreen() {
                 className="flex-1 text-base text-slate-900"
                 value={email}
                 onChangeText={setEmail}
+                autoCapitalize="none"
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+            </View>
+
+            <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+              <Feather name="phone" size={20} color="#94A3B8" className="mr-3" />
+              <TextInput
+                placeholder="Your phone number"
+                keyboardType="phone-pad"
+                className="flex-1 text-base text-slate-900"
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholderTextColor="#94A3B8"
+                editable={!isLoading}
+              />
+            </View>
+
+            <View className="flex-row items-center border-b-2 border-gray-200 py-2">
+              <Feather name="user" size={20} color="#94A3B8" className="mr-3" />
+              <TextInput
+                placeholder="Username or ID"
+                className="flex-1 text-base text-slate-900"
+                value={identifier}
+                onChangeText={setIdentifier}
                 autoCapitalize="none"
                 placeholderTextColor="#94A3B8"
                 editable={!isLoading}
@@ -138,7 +189,7 @@ export function LoginScreen() {
           </View>
 
           <TouchableOpacity
-            className={`rounded-full py-4 items-center justify-center mb-4 bg-gray-800 ${
+            className={`rounded-full py-3 items-center justify-center mb-3 bg-gray-800 ${
               isLoading ? "opacity-75" : ""
             }`}
             disabled={isLoading}
@@ -147,11 +198,11 @@ export function LoginScreen() {
             {isLoading ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text className="text-white text-base font-bold">Sign In</Text>
+              <Text className="text-white text-sm font-bold">Sign In</Text>
             )}
           </TouchableOpacity>
 
-          <View className="items-center mt-4">
+          <View className="items-center mt-3">
             <Text className="text-sm text-slate-500">
               Don&apos;t have an account?{" "}
               <Text className="text-indigo-600 font-bold" onPress={() => router.push("/register")}>
@@ -160,7 +211,7 @@ export function LoginScreen() {
             </Text>
           </View>
 
-          <View className="relative flex-row justify-center items-center my-6">
+          <View className="relative flex-row justify-center items-center my-4">
             <View className="h-px bg-slate-200 flex-1" />
             <Text className="mx-4 text-slate-400">OR</Text>
             <View className="h-px bg-slate-200 flex-1" />
@@ -168,9 +219,25 @@ export function LoginScreen() {
 
           <TouchableOpacity
             onPress={() => router.push("/otp")}
-            className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
+            className="rounded-full py-3 items-center justify-center border-2 border-slate-300"
           >
-            <Text className="text-slate-800 text-base font-bold">Login with OTP</Text>
+            <Text className="text-slate-800 text-sm font-bold">Login with OTP</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {}}
+            className="rounded-full py-3 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
+          >
+            <AntDesign name="google" size={18} color="#DB4437" className="mr-3" />
+            <Text className="text-slate-800 text-sm font-bold">Sign in with Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {}}
+            className="rounded-full py-3 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
+          >
+            <AntDesign name="github" size={18} color="#333" className="mr-3" />
+            <Text className="text-slate-800 text-sm font-bold">Sign in with GitHub</Text>
           </TouchableOpacity>
         </View>
       </View>
