@@ -25,9 +25,12 @@ import {
   loadResumeData,
   setError,
   selectError,
-  setHasExistingResume,
 } from "@/store/slices/resume.slice";
-import { selectHasExistingResume, selectLastSaved } from "@/store/slices/resume.slice";
+import {
+  selectHasExistingResume,
+  selectLastSaved,
+  selectFormData,
+} from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
 import { ApiErrorHandler } from "@/services/error-handler";
 import type { ResumeParsedData } from "@app-powerup/shared";
@@ -38,6 +41,7 @@ export function ResumeHomeScreen() {
   const hasExistingResume = useAppSelector(selectHasExistingResume);
   const lastSaved = useAppSelector(selectLastSaved);
   const error = useAppSelector(selectError);
+  const formData = useAppSelector(selectFormData);
   const [uploadResume] = useUploadResumeMutation();
   const [deleteResumeReq] = useDeleteResumeMutation();
 
@@ -132,11 +136,15 @@ export function ResumeHomeScreen() {
 
       // Create FormData
       const formData = new FormData();
-      formData.append("resume", {
-        uri: selectedFile.uri,
-        type: "application/pdf",
-        name: selectedFile.name,
-      } as any);
+      if (Platform.OS === "web") {
+        formData.append("file", selectedFile.uri);
+      } else {
+        formData.append("file", {
+          uri: selectedFile.uri,
+          type: "application/pdf",
+          name: selectedFile.name,
+        } as any);
+      }
 
       // Upload to server
       const response = await uploadResume(formData).unwrap();
@@ -149,7 +157,7 @@ export function ResumeHomeScreen() {
       }
 
       // Load into Redux store
-      dispatch(loadResumeData(response));
+      dispatch(loadResumeData(response.parsed_data || response));
       setParsedResume(response);
       dispatch(setCurrentStep(1));
 
@@ -429,52 +437,52 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Personal Information Card */}
-            {parsedResume.contact && (
+            {formData?.contact && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="person" size={22} color="#2563EB" />
                   <Text style={styles.cardTitle}>Personal Information</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={styles.personalName}>{parsedResume.contact?.fullName}</Text>
-                  {parsedResume.contact?.email && (
-                    <Text style={styles.personalDetail}>{parsedResume.contact?.email}</Text>
+                  <Text style={styles.personalName}>{formData.contact?.fullName}</Text>
+                  {formData.contact?.email && (
+                    <Text style={styles.personalDetail}>{formData.contact?.email}</Text>
                   )}
-                  {parsedResume.contact?.phone && (
-                    <Text style={styles.personalDetail}>{parsedResume.contact?.phone}</Text>
+                  {formData.contact?.phone && (
+                    <Text style={styles.personalDetail}>{formData.contact?.phone}</Text>
                   )}
-                  {parsedResume.contact?.location && (
-                    <Text style={styles.personalDetail}>{parsedResume.contact?.location}</Text>
+                  {formData.contact?.location && (
+                    <Text style={styles.personalDetail}>{formData.contact?.location}</Text>
                   )}
-                  {parsedResume.contact?.linkedin && (
-                    <Text style={styles.personalDetail}>{parsedResume.contact?.linkedin}</Text>
+                  {formData.contact?.linkedin && (
+                    <Text style={styles.personalDetail}>{formData.contact?.linkedin}</Text>
                   )}
                 </View>
               </View>
             )}
 
             {/* Summary Card */}
-            {parsedResume.summary?.text && (
+            {formData?.summary?.text && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="description" size={22} color="#2563EB" />
                   <Text style={styles.cardTitle}>Professional Summary</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  <Text style={styles.summaryText}>{parsedResume.summary.text}</Text>
+                  <Text style={styles.summaryText}>{formData.summary.text}</Text>
                 </View>
               </View>
             )}
 
             {/* Skills Card */}
-            {parsedResume.skills && parsedResume.skills.length > 0 && (
+            {formData?.skills && formData.skills.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="code" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Skills ({parsedResume.skills.length})</Text>
+                  <Text style={styles.cardTitle}>Skills ({formData.skills.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {parsedResume.skills?.map((skill: any, index: number) => (
+                  {formData.skills?.map((skill: any, index: number) => (
                     <View key={index} style={styles.skillBadge}>
                       <Text style={styles.skillText}>
                         {typeof skill === "string" ? skill : skill.name}
@@ -486,16 +494,14 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Experience Card */}
-            {parsedResume.experience && parsedResume.experience.length > 0 && (
+            {formData?.experience && formData.experience.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="work" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>
-                    Experience ({parsedResume.experience.length})
-                  </Text>
+                  <Text style={styles.cardTitle}>Experience ({formData.experience.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.experience?.map((exp: any, index: number) => (
+                  {formData.experience?.map((exp: any, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{exp.position}</Text>
                       <Text style={styles.expCompany}>
@@ -512,14 +518,14 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Education Card */}
-            {parsedResume.education && parsedResume.education.length > 0 && (
+            {formData?.education && formData.education.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="school" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Education ({parsedResume.education.length})</Text>
+                  <Text style={styles.cardTitle}>Education ({formData.education.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.education?.map((edu: any, index: number) => (
+                  {formData.education?.map((edu: any, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{edu.degree}</Text>
                       <Text style={styles.expCompany}>
@@ -533,14 +539,14 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Projects Card */}
-            {parsedResume.projects && parsedResume.projects.length > 0 && (
+            {formData?.projects && formData.projects.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="folder-open" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Projects ({parsedResume.projects.length})</Text>
+                  <Text style={styles.cardTitle}>Projects ({formData.projects.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.projects?.map((proj: any, index: number) => (
+                  {formData.projects?.map((proj: any, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{proj.name}</Text>
                       {proj.description && (
@@ -562,16 +568,16 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Certifications Card */}
-            {parsedResume.certifications && parsedResume.certifications.length > 0 && (
+            {formData?.certifications && formData.certifications.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="verified" size={22} color="#2563EB" />
                   <Text style={styles.cardTitle}>
-                    Certifications ({parsedResume.certifications.length})
+                    Certifications ({formData.certifications.length})
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.certifications?.map((cert: any, index: number) => (
+                  {formData.certifications?.map((cert: any, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{cert.name}</Text>
                       <Text style={styles.expCompany}>
@@ -588,38 +594,35 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Languages Card */}
-            {parsedResume.languages && parsedResume.languages.length > 0 && (
+            {formData?.languages && formData.languages.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="language" size={22} color="#2563EB" />
-                  <Text style={styles.cardTitle}>Languages ({parsedResume.languages.length})</Text>
+                  <Text style={styles.cardTitle}>Languages ({formData.languages.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {parsedResume.languages?.map((lang: any, index: number) => (
+                  {formData.languages?.map((lang: any, index: number) => (
                     <View key={index} style={styles.languageBadge}>
                       <Text style={styles.languageText}>
                         {typeof lang === "string" ? lang : lang.name}
-                        {typeof lang === "object" && lang.proficiency
-                          ? ` (${lang.proficiency})`
-                          : ""}
+                        {lang.proficiency ? ` - ${lang.proficiency}` : ""}
                       </Text>
                     </View>
                   ))}
                 </View>
               </View>
             )}
-
             {/* Achievements Card */}
-            {parsedResume.achievements && parsedResume.achievements.length > 0 && (
+            {formData?.achievements && formData.achievements.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="star" size={22} color="#2563EB" />
                   <Text style={styles.cardTitle}>
-                    Achievements ({parsedResume.achievements.length})
+                    Achievements ({formData.achievements.length})
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.achievements?.map((achievement: any, index: number) => (
+                  {formData.achievements?.map((achievement: any, index: number) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#10b981" />
                       <Text style={styles.achievementText}>
@@ -632,16 +635,16 @@ export function ResumeHomeScreen() {
             )}
 
             {/* Extracurricular Card */}
-            {parsedResume.extracurricular && parsedResume.extracurricular.length > 0 && (
+            {formData?.extracurricular && formData.extracurricular.length > 0 && (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="sports" size={22} color="#2563EB" />
                   <Text style={styles.cardTitle}>
-                    Extracurricular ({parsedResume.extracurricular.length})
+                    Extracurricular ({formData.extracurricular.length})
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {parsedResume.extracurricular?.map((activity: any, index: number) => (
+                  {formData.extracurricular?.map((activity: any, index: number) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#2563EB" />
                       <Text style={styles.achievementText}>

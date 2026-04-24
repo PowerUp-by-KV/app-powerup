@@ -179,8 +179,56 @@ export const resumeSlice = createSlice({
     },
 
     // Load Resume Data
-    loadResumeData: (state, action: PayloadAction<ResumeParsedData>) => {
-      state.formData = action.payload;
+    loadResumeData: (state, action: PayloadAction<any>) => {
+      const data = action.payload;
+
+      state.formData = {
+        contact: {
+          fullName: data.contact?.name || data.contact?.fullName || "",
+          email: data.contact?.email || "",
+          phone: data.contact?.phone || "",
+          linkedin: data.contact?.linkedin || "",
+          location: data.contact?.location || "",
+        },
+        summary:
+          typeof data.summary === "string" ? { text: data.summary } : data.summary || { text: "" },
+        education: (data.education || []).map((edu: any, i: number) => ({
+          id: edu.id || `edu-${Date.now()}-${i}`,
+          school: edu.institution || edu.school || "",
+          degree: edu.degree || "",
+          field: edu.field || "",
+          graduationDate: edu.end_year ? edu.end_year.toString() : edu.graduationDate || "",
+          details: edu.gpa ? `GPA: ${edu.gpa}` : edu.details || "",
+        })),
+        experience: (data.experience || []).map((exp: any, i: number) => ({
+          id: exp.id || `exp-${Date.now()}-${i}`,
+          company: exp.company || "",
+          position: exp.title || exp.position || "",
+          startDate: exp.start_date || exp.startDate || "",
+          endDate: exp.end_date || exp.endDate || "",
+          currentlyWorking: !exp.end_date && !exp.endDate,
+          description: exp.description || (exp.highlights ? exp.highlights.join("\n") : ""),
+        })),
+        skills: (data.skills || []).map((skill: any, i: number) => {
+          if (typeof skill === "string") return { id: `skill-${Date.now()}-${i}`, name: skill };
+          return skill;
+        }),
+        projects: (data.projects || []).map((proj: any, i: number) => ({
+          id: proj.id || `proj-${Date.now()}-${i}`,
+          name: proj.name || "",
+          description: proj.description || "",
+          technologies: proj.technologies || [],
+        })),
+        certifications: (data.certifications || []).map((cert: any, i: number) => {
+          if (typeof cert === "string")
+            return { id: `cert-${Date.now()}-${i}`, name: cert, issuer: "" };
+          return cert;
+        }),
+        achievements: data.achievements || [],
+        languages: data.languages || [],
+        extracurricular: data.extracurricular || [],
+      };
+
       state.hasExistingResume = true;
       state.currentStep = 1;
     },

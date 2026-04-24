@@ -27,7 +27,11 @@ export default function ResumeBuilder() {
 
   useEffect(() => {
     if (resumeData) {
-      dispatch(loadResumeData(resumeData));
+      if (resumeData.parsed_data) {
+        dispatch(loadResumeData(resumeData.parsed_data));
+      } else {
+        dispatch(loadResumeData(resumeData as any));
+      }
     }
   }, [resumeData, dispatch]);
 
