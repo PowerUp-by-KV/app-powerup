@@ -94,8 +94,8 @@ export const resumeApi = createApi({
             institution: edu.school || "",
             degree: edu.degree || "",
             field: edu.field || "",
-            start_year: "",
-            end_year: edu.graduationDate || "",
+            start_year: null,
+            end_year: edu.graduationDate ? parseInt(edu.graduationDate, 10) || null : null,
             gpa: edu.details ? edu.details.replace("GPA: ", "") : "",
           })),
           experience: (data.experience || []).map((exp) => ({
@@ -106,16 +106,24 @@ export const resumeApi = createApi({
             description: exp.description || "",
             highlights: [],
           })),
-          skills: (data.skills || []).map((s: any) => s.name || s),
+          skills: (data.skills || []).map((s: any) => (typeof s === "string" ? s : s.name || "")),
           projects: (data.projects || []).map((p) => ({
             name: p.name || "",
             description: p.description || "",
             technologies: p.technologies || [],
           })),
-          certifications: (data.certifications || []).map((c: any) => c.name || c),
-          achievements: data.achievements || [],
-          languages: data.languages || [],
-          extracurricular: data.extracurricular || [],
+          certifications: (data.certifications || []).map((c: any) =>
+            typeof c === "string" ? c : c.name || "",
+          ),
+          achievements: (data.achievements || []).map((a: any) =>
+            typeof a === "string" ? a : a.name || "",
+          ),
+          languages: (data.languages || []).map((l: any) =>
+            typeof l === "string" ? l : l.name || "",
+          ),
+          extracurricular: (data.extracurricular || []).map((e: any) =>
+            typeof e === "string" ? e : e.name || "",
+          ),
         };
 
         return {

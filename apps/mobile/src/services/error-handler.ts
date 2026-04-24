@@ -206,6 +206,7 @@ export class ApiErrorHandler {
    * Log error for debugging
    */
   static logError(error: any, operation: string, context?: Record<string, any>): void {
+    if (!error) return;
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] API Error - ${operation}:`, {
       status: error?.status,

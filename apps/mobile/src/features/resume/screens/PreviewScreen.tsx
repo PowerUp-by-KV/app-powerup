@@ -3,7 +3,15 @@
  * Review resume and submit for saving
  */
 
-import { View, ScrollView, StyleSheet, Pressable, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -18,9 +26,10 @@ import {
   selectIsSaving,
 } from "@/store/slices/resume.slice";
 import { useUpdateResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
+import { ApiErrorHandler } from "@/services/error-handler";
 
 export function PreviewScreen() {
   const router = useRouter();
@@ -31,24 +40,56 @@ export function PreviewScreen() {
   const [updateResume, { isLoading: isUpdating }] = useUpdateResumeMutation();
   const [deleteResume, { isLoading: isDeleting }] = useDeleteResumeMutation();
   const [userId, setUserId] = useState<string>("");
+  const isSubmittingRef = useRef(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
     const loadUserId = async () => {
       try {
-        // Try to get user ID from secure storage
-        let storedUserId = await SecureStore.getItemAsync("user_id");
+        // Try to get user ID from secure storage or local storage
+        let storedUserId: string | null = null;
 
-        // If no stored ID, create a temporary one
+        if (Platform.OS === "web") {
+          try {
+            storedUserId = window.localStorage.getItem("user_id");
+          } catch (e) {
+            console.warn("localStorage not available on web");
+          }
+        } else {
+          storedUserId = await SecureStore.getItemAsync("user_id");
+        }
+
+        // If no stored ID, create a temporary valid UUID
         if (!storedUserId) {
-          storedUserId = `user_${Date.now()}`;
-          await SecureStore.setItemAsync("user_id", storedUserId);
+          storedUserId = "123e4567-e89b-12d3-a456-426614174000"; // Mock valid UUID
+          // Alternatively, using a quick random UUID generator:
+          storedUserId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            const r = (Math.random() * 16) | 0,
+              v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          });
+
+          if (Platform.OS === "web") {
+            try {
+              window.localStorage.setItem("user_id", storedUserId);
+            } catch (e) {}
+          } else {
+            await SecureStore.setItemAsync("user_id", storedUserId);
+          }
         }
 
         setUserId(storedUserId);
       } catch (err) {
         console.warn("Failed to get user ID from secure storage:", err);
-        // Fallback to temporary user ID
-        setUserId(`user_${Date.now()}`);
+        // Fallback to temporary valid UUID
+        setUserId(
+          "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            const r = (Math.random() * 16) | 0,
+              v = c == "x" ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+          }),
+        );
       }
     };
 
@@ -68,17 +109,23 @@ export function PreviewScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current) return;
     try {
+      isSubmittingRef.current = true;
+      console.log("Starting save process...");
       if (!validateForm()) {
+        console.warn("Validation failed before save");
         Alert.alert("Validation Error", "Please fill in all required fields.");
         return;
       }
 
       if (!userId) {
+        console.warn("No user ID found before save");
         Alert.alert("Error", "User ID not loaded. Please try again.");
         return;
       }
 
+      console.log("Dispatching save for user ID:", userId);
       dispatch(setIsSaving(true));
       dispatch(setError(null));
 
@@ -87,45 +134,33 @@ export function PreviewScreen() {
         data: formData,
       }).unwrap();
 
+      console.log("Save successful! Response:", response);
       const saveTime = new Date().toLocaleString();
       dispatch(setLastSaved(saveTime));
 
-      Alert.alert("Success", "Resume saved successfully!", [
-        {
-          text: "OK",
-          onPress: () => {
-            dispatch(resetResume());
-            router.replace("/resume");
-          },
-        },
-      ]);
-    } catch (error: any) {
-      let errorMessage = "Failed to save resume. Please try again.";
+      setSuccessMessage("Your resume has been saved successfully!");
+      setShowSuccess(true);
 
-      if (error?.status === 400) {
-        errorMessage = error?.data?.message || "Invalid resume data. Please check your entries.";
-      } else if (error?.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
-      } else if (error?.status === 500) {
-        errorMessage = "Server error. Please try again later.";
-      } else if (error?.status === 0) {
-        errorMessage = "Network error. Please check your connection.";
-      } else {
-        errorMessage =
-          error?.data?.message ||
-          error?.message ||
-          "An unexpected error occurred. Please try again.";
-      }
+      setTimeout(() => {
+        dispatch(resetResume());
+        router.replace("/resume");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Save error caught:", error);
+      const parsedError = ApiErrorHandler.parseError(error, "update");
+      const errorMessage = parsedError.userMessage || "Failed to save resume. Please try again.";
 
       dispatch(setError(errorMessage));
       Alert.alert("Save Failed", errorMessage);
-      console.error("Save error:", error);
     } finally {
+      console.log("Save process finished, resetting saving state.");
       dispatch(setIsSaving(false));
+      isSubmittingRef.current = false;
     }
   };
 
   const handleDelete = () => {
+    if (isSubmittingRef.current) return;
     Alert.alert(
       "Delete Resume",
       "Are you sure you want to delete this resume? This action cannot be undone.",
@@ -144,45 +179,27 @@ export function PreviewScreen() {
             }
 
             try {
+              isSubmittingRef.current = true;
               dispatch(setIsSaving(true));
               dispatch(setError(null));
 
               await deleteResume(userId).unwrap();
 
-              Alert.alert("Success", "Resume deleted successfully!", [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    dispatch(resetResume());
-                    router.replace("/resume");
-                  },
-                },
-              ]);
+              setSuccessMessage("Resume deleted successfully!");
+              setShowSuccess(true);
+
+              setTimeout(() => {
+                dispatch(resetResume());
+                router.replace("/resume");
+              }, 2000);
             } catch (error: any) {
-              let errorMessage = "Failed to delete resume. Please try again.";
-
-              if (error?.status === 400) {
-                errorMessage = error?.data?.message || "Cannot delete this resume.";
-              } else if (error?.status === 401) {
-                errorMessage = "Session expired. Please log in again.";
-              } else if (error?.status === 404) {
-                errorMessage = "Resume not found.";
-              } else if (error?.status === 500) {
-                errorMessage = "Server error. Please try again later.";
-              } else if (error?.status === 0) {
-                errorMessage = "Network error. Please check your connection.";
-              } else {
-                errorMessage =
-                  error?.data?.message ||
-                  error?.message ||
-                  "An unexpected error occurred. Please try again.";
-              }
-
+              const parsedError = ApiErrorHandler.parseError(error, "delete");
+              const errorMessage = parsedError.userMessage || "Failed to delete resume.";
               dispatch(setError(errorMessage));
               Alert.alert("Delete Failed", errorMessage);
-              console.error("Delete error:", error);
             } finally {
               dispatch(setIsSaving(false));
+              isSubmittingRef.current = false;
             }
           },
           style: "destructive",
@@ -225,24 +242,24 @@ export function PreviewScreen() {
           <View style={styles.previewSection}>
             <Text style={styles.previewSectionTitle}>{formData.contact.fullName}</Text>
             <Text style={styles.previewSubtitle}>{formData.contact.email}</Text>
-            {formData.contact.phone && (
+            {formData.contact.phone ? (
               <Text style={styles.previewText}>{formData.contact.phone}</Text>
-            )}
-            {formData.contact.location && (
+            ) : null}
+            {formData.contact.location ? (
               <Text style={styles.previewText}>{formData.contact.location}</Text>
-            )}
-            {formData.contact.linkedin && (
+            ) : null}
+            {formData.contact.linkedin ? (
               <Text style={styles.previewText}>{formData.contact.linkedin}</Text>
-            )}
+            ) : null}
           </View>
 
           {/* Summary Section */}
-          {formData.summary?.text && (
+          {formData.summary?.text ? (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Professional Summary</Text>
               <Text style={styles.previewText}>{formData.summary.text}</Text>
             </View>
-          )}
+          ) : null}
 
           {/* Experience Section */}
           {formData.experience.length > 0 && (
@@ -257,7 +274,9 @@ export function PreviewScreen() {
                     </Text>
                   </View>
                   <Text style={styles.itemCompany}>{exp.company}</Text>
-                  {exp.description && <Text style={styles.itemDescription}>{exp.description}</Text>}
+                  {exp.description ? (
+                    <Text style={styles.itemDescription}>{exp.description}</Text>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -301,9 +320,9 @@ export function PreviewScreen() {
               {formData.projects.map((project) => (
                 <View key={project.id || project.name} style={styles.previewItem}>
                   <Text style={styles.itemTitle}>{project.name}</Text>
-                  {project.description && (
+                  {project.description ? (
                     <Text style={styles.itemDescription}>{project.description}</Text>
-                  )}
+                  ) : null}
                   {project.technologies && project.technologies.length > 0 && (
                     <View style={styles.techStack}>
                       {project.technologies.map((tech, idx) => (
@@ -313,7 +332,7 @@ export function PreviewScreen() {
                       ))}
                     </View>
                   )}
-                  {project.link && <Text style={styles.itemLink}>{project.link}</Text>}
+                  {project.link ? <Text style={styles.itemLink}>{project.link}</Text> : null}
                 </View>
               ))}
             </View>
@@ -329,12 +348,12 @@ export function PreviewScreen() {
                     <Text style={styles.itemTitle}>{cert.name}</Text>
                   </View>
                   <Text style={styles.itemCompany}>{cert.issuer}</Text>
-                  {cert.issueDate && (
+                  {cert.issueDate ? (
                     <Text style={styles.itemDescription}>Issued: {cert.issueDate}</Text>
-                  )}
-                  {cert.expiryDate && (
+                  ) : null}
+                  {cert.expiryDate ? (
                     <Text style={styles.itemDescription}>Expires: {cert.expiryDate}</Text>
-                  )}
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -384,78 +403,109 @@ export function PreviewScreen() {
           )}
 
           {/* Summary Card */}
-          <View style={styles.summaryCard}>
-            <View style={styles.summaryCardHeader}>
-              <MaterialIcons name="check-circle" size={24} color="#10b981" />
-              <Text style={styles.summaryCardTitle}>Resume Complete</Text>
+          {showSuccess ? (
+            <View
+              style={[
+                styles.summaryCard,
+                {
+                  backgroundColor: "#ecfccb",
+                  borderColor: "#84cc16",
+                  alignItems: "center",
+                  paddingVertical: 32,
+                },
+              ]}
+            >
+              <MaterialIcons
+                name="check-circle"
+                size={56}
+                color="#65a30d"
+                style={{ marginBottom: 16 }}
+              />
+              <Text style={{ fontSize: 22, fontWeight: "700", color: "#3f6212", marginBottom: 8 }}>
+                Success!
+              </Text>
+              <Text style={{ fontSize: 16, color: "#4d7c0f", textAlign: "center" }}>
+                {successMessage}
+              </Text>
             </View>
-            <Text style={styles.summaryCardText}>
-              Your resume is ready to submit. Click the button below to save your changes.
-            </Text>
-          </View>
+          ) : (
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryCardHeader}>
+                <MaterialIcons name="check-circle" size={24} color="#10b981" />
+                <Text style={styles.summaryCardTitle}>Resume Complete</Text>
+              </View>
+              <Text style={styles.summaryCardText}>
+                Your resume is ready to submit. Click the button below to save your changes.
+              </Text>
+            </View>
+          )}
 
           {/* Navigation Buttons */}
-          <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-                (isSaving || isUpdating || isDeleting) && styles.buttonDisabled,
-              ]}
-              onPress={() => dispatch(previousStep())}
-              disabled={isSaving || isUpdating || isDeleting}
-            >
-              <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
-              <Text style={styles.secondaryButtonText}>Back</Text>
-            </Pressable>
+          {!showSuccess && (
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.secondaryButton,
+                  pressed && styles.buttonPressed,
+                  (isSaving || isUpdating || isDeleting) && styles.buttonDisabled,
+                ]}
+                onPress={() => dispatch(previousStep())}
+                disabled={isSaving || isUpdating || isDeleting}
+              >
+                <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
+                <Text style={styles.secondaryButtonText}>Back</Text>
+              </Pressable>
 
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.primaryButton,
+                  pressed && styles.buttonPressed,
+                  (isSaving || isUpdating) && styles.buttonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={isSaving || isUpdating}
+              >
+                {isUpdating || isSaving ? (
+                  <>
+                    <ActivityIndicator color="white" size="small" style={{ marginRight: 8 }} />
+                    <Text style={styles.primaryButtonText}>Saving...</Text>
+                  </>
+                ) : (
+                  <>
+                    <MaterialIcons name="check" size={20} color="white" />
+                    <Text style={styles.primaryButtonText}>Save & Submit</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          )}
+
+          {/* Delete Button */}
+          {!showSuccess && (
             <Pressable
               style={({ pressed }) => [
-                styles.button,
-                styles.primaryButton,
-                pressed && styles.buttonPressed,
-                (isSaving || isUpdating) && styles.buttonDisabled,
+                styles.deleteButton,
+                pressed && styles.deleteButtonPressed,
+                (isSaving || isDeleting) && styles.buttonDisabled,
               ]}
-              onPress={handleSubmit}
-              disabled={isSaving || isUpdating}
+              onPress={handleDelete}
+              disabled={isSaving || isDeleting}
             >
-              {isUpdating || isSaving ? (
+              {isDeleting ? (
                 <>
-                  <ActivityIndicator color="white" size="small" style={{ marginRight: 8 }} />
-                  <Text style={styles.primaryButtonText}>Saving...</Text>
+                  <ActivityIndicator color="#dc2626" size="small" style={{ marginRight: 8 }} />
+                  <Text style={styles.deleteButtonText}>Deleting...</Text>
                 </>
               ) : (
                 <>
-                  <MaterialIcons name="check" size={20} color="white" />
-                  <Text style={styles.primaryButtonText}>Save & Submit</Text>
+                  <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
+                  <Text style={styles.deleteButtonText}>Delete Resume</Text>
                 </>
               )}
             </Pressable>
-          </View>
-
-          {/* Delete Button */}
-          <Pressable
-            style={({ pressed }) => [
-              styles.deleteButton,
-              pressed && styles.deleteButtonPressed,
-              (isSaving || isDeleting) && styles.buttonDisabled,
-            ]}
-            onPress={handleDelete}
-            disabled={isSaving || isDeleting}
-          >
-            {isDeleting ? (
-              <>
-                <ActivityIndicator color="#dc2626" size="small" style={{ marginRight: 8 }} />
-                <Text style={styles.deleteButtonText}>Deleting...</Text>
-              </>
-            ) : (
-              <>
-                <MaterialIcons name="delete-outline" size={18} color="#dc2626" />
-                <Text style={styles.deleteButtonText}>Delete Resume</Text>
-              </>
-            )}
-          </Pressable>
+          )}
         </View>
       </View>
     </ScrollView>

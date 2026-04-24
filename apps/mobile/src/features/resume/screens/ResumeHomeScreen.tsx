@@ -17,6 +17,7 @@ import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import * as SecureStore from "expo-secure-store";
 import { useUploadResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -51,6 +52,7 @@ export function ResumeHomeScreen() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedResume, setParsedResume] = useState<any>(null);
   const fileInputRef = useRef<any>(null);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     const initializeResume = async () => {
@@ -118,6 +120,7 @@ export function ResumeHomeScreen() {
   };
 
   const handleUpload = async () => {
+    if (isSubmittingRef.current) return;
     if (!selectedFile) {
       Alert.alert("No File Selected", "Please select a PDF resume first.");
       return;
@@ -126,6 +129,7 @@ export function ResumeHomeScreen() {
     let progressInterval: NodeJS.Timeout | undefined;
 
     try {
+      isSubmittingRef.current = true;
       setUploading(true);
       setUploadProgress(0);
       dispatch(setError(null));
@@ -154,6 +158,19 @@ export function ResumeHomeScreen() {
 
       if (!response) {
         throw new Error("Invalid response from upload API");
+      }
+
+      // Save the generated user_id from backend so we can update it later
+      if (response.user_id) {
+        if (Platform.OS === "web") {
+          try {
+            window.localStorage.setItem("user_id", response.user_id);
+          } catch (e) {
+            console.warn("localStorage not available on web");
+          }
+        } else {
+          await SecureStore.setItemAsync("user_id", response.user_id);
+        }
       }
 
       // Load into Redux store
@@ -207,6 +224,7 @@ export function ResumeHomeScreen() {
       console.error("Upload error:", error);
     } finally {
       setUploading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -242,14 +260,29 @@ export function ResumeHomeScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            if (isSubmittingRef.current) return;
             try {
-              // TODO: Fetch user id from auth context
-              await deleteResumeReq("mock-uuid").unwrap();
+              isSubmittingRef.current = true;
+
+              let storedUserId: string | null = null;
+              if (Platform.OS === "web") {
+                try {
+                  storedUserId = window.localStorage.getItem("user_id");
+                } catch (e) {}
+              } else {
+                storedUserId = await SecureStore.getItemAsync("user_id");
+              }
+
+              await deleteResumeReq(
+                storedUserId || "123e4567-e89b-12d3-a456-426614174000",
+              ).unwrap();
               dispatch(resetResume());
               dispatch(setHasExistingResume(false));
               Alert.alert("Success", "Resume deleted.");
             } catch (err: any) {
               Alert.alert("Error", err?.data?.message || "Failed to delete resume");
+            } finally {
+              isSubmittingRef.current = false;
             }
           },
         },
@@ -445,24 +478,24 @@ export function ResumeHomeScreen() {
                 </View>
                 <View style={styles.cardContent}>
                   <Text style={styles.personalName}>{formData.contact?.fullName}</Text>
-                  {formData.contact?.email && (
+                  {formData.contact?.email ? (
                     <Text style={styles.personalDetail}>{formData.contact?.email}</Text>
-                  )}
-                  {formData.contact?.phone && (
+                  ) : null}
+                  {formData.contact?.phone ? (
                     <Text style={styles.personalDetail}>{formData.contact?.phone}</Text>
-                  )}
-                  {formData.contact?.location && (
+                  ) : null}
+                  {formData.contact?.location ? (
                     <Text style={styles.personalDetail}>{formData.contact?.location}</Text>
-                  )}
-                  {formData.contact?.linkedin && (
+                  ) : null}
+                  {formData.contact?.linkedin ? (
                     <Text style={styles.personalDetail}>{formData.contact?.linkedin}</Text>
-                  )}
+                  ) : null}
                 </View>
               </View>
             )}
 
             {/* Summary Card */}
-            {formData?.summary?.text && (
+            {formData?.summary?.text ? (
               <View style={styles.dataCard}>
                 <View style={styles.cardHeader}>
                   <MaterialIcons name="description" size={22} color="#2563EB" />
@@ -472,7 +505,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.summaryText}>{formData.summary.text}</Text>
                 </View>
               </View>
-            )}
+            ) : null}
 
             {/* Skills Card */}
             {formData?.skills && formData.skills.length > 0 && (
@@ -508,9 +541,9 @@ export function ResumeHomeScreen() {
                         {exp.company} • {exp.startDate}
                         {exp.endDate ? ` - ${exp.endDate}` : " - Present"}
                       </Text>
-                      {exp.description && (
+                      {exp.description ? (
                         <Text style={styles.expDescription}>{exp.description}</Text>
-                      )}
+                      ) : null}
                     </View>
                   ))}
                 </View>
@@ -531,7 +564,7 @@ export function ResumeHomeScreen() {
                       <Text style={styles.expCompany}>
                         {edu.school} • {edu.graduationDate}
                       </Text>
-                      {edu.field && <Text style={styles.expDescription}>{edu.field}</Text>}
+                      {edu.field ? <Text style={styles.expDescription}>{edu.field}</Text> : null}
                     </View>
                   ))}
                 </View>
@@ -549,9 +582,9 @@ export function ResumeHomeScreen() {
                   {formData.projects?.map((proj: any, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{proj.name}</Text>
-                      {proj.description && (
+                      {proj.description ? (
                         <Text style={styles.expDescription}>{proj.description}</Text>
-                      )}
+                      ) : null}
                       {proj.technologies && proj.technologies.length > 0 && (
                         <View style={styles.techStack}>
                           {proj.technologies.map((tech: string, idx: number) => (
@@ -656,17 +689,37 @@ export function ResumeHomeScreen() {
               </View>
             )}
 
-            {/* Upload Another Button */}
-            <Pressable
-              style={({ pressed }) => [
-                styles.uploadAnotherButton,
-                pressed && styles.uploadAnotherPressed,
-              ]}
-              onPress={handleUploadAnother}
-            >
-              <MaterialIcons name="refresh" size={20} color="#2563EB" />
-              <Text style={styles.uploadAnotherText}>Upload Another Resume</Text>
-            </Pressable>
+            {/* Action Buttons */}
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.uploadAnotherButton,
+                  { flex: 1 },
+                  pressed && styles.uploadAnotherPressed,
+                ]}
+                onPress={handleUploadAnother}
+              >
+                <MaterialIcons name="refresh" size={20} color="#2563EB" />
+                <Text style={styles.uploadAnotherText}>Upload Another</Text>
+              </Pressable>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.uploadAnotherButton,
+                  { flex: 1, backgroundColor: "#2563EB", borderColor: "#2563EB" },
+                  pressed && { opacity: 0.8 },
+                ]}
+                onPress={handleEditResume}
+              >
+                <Text style={[styles.uploadAnotherText, { color: "white" }]}>Continue</Text>
+                <MaterialIcons
+                  name="arrow-forward"
+                  size={20}
+                  color="white"
+                  style={{ marginLeft: 4 }}
+                />
+              </Pressable>
+            </View>
           </View>
         )}
 
