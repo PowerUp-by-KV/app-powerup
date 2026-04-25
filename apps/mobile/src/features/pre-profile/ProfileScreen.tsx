@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { getApiErrorMessage } from "@/services/auth-service";
 import { setProfileCompletedInSession } from "@/services/auth-storage";
 import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
@@ -19,6 +20,7 @@ export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [dob, setDob] = useState("");
+  const [showDobPicker, setShowDobPicker] = useState(false);
   const [college, setCollege] = useState("");
   const [education, setEducation] = useState("");
   const [yearOfStudy, setYearOfStudy] = useState("");
@@ -47,6 +49,16 @@ export default function ProfileScreen() {
   const [dailyLearningGoal, setDailyLearningGoal] = useState("");
 
   const [submitOnboarding, { isLoading }] = useSubmitOnboardingMutation();
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDobPicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const day = selectedDate.getDate().toString().padStart(2, "0");
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, "0");
+      const year = selectedDate.getFullYear();
+      setDob(`${day}/${month}/${year}`);
+    }
+  };
 
   const handleToggle = (value: string, list: string[], setList: (s: string[]) => void) => {
     if (list.includes(value)) setList(list.filter((x) => x !== value));
@@ -170,12 +182,31 @@ export default function ProfileScreen() {
                 }}
               >
                 <Feather name="calendar" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
-                <TextInput
-                  placeholder="Date of Birth (DD/MM/YYYY)"
-                  value={dob}
-                  onChangeText={setDob}
+                <TouchableOpacity
+                  onPress={() => setShowDobPicker(true)}
                   style={{ flex: 1, paddingVertical: 12 }}
-                />
+                >
+                  <Text style={{ color: dob ? "#000" : "#9CA3AF" }}>
+                    {dob || "Date of Birth (DD/MM/YYYY)"}
+                  </Text>
+                </TouchableOpacity>
+                {showDobPicker && (
+                  <DateTimePicker
+                    value={
+                      dob
+                        ? new Date(
+                            parseInt(dob.split("/")[2]),
+                            parseInt(dob.split("/")[1]) - 1,
+                            parseInt(dob.split("/")[0]),
+                          )
+                        : new Date()
+                    }
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                )}
               </View>
               <View
                 style={{
@@ -387,25 +418,6 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  paddingHorizontal: 12,
-                  marginBottom: 10,
-                }}
-              >
-                <Feather name="target" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
-                <TextInput
-                  placeholder="Short-term goal"
-                  value={thirtyDayGoal}
-                  onChangeText={setThirtyDayGoal}
-                  style={{ flex: 1, paddingVertical: 12 }}
-                />
-              </View>
-
               <Text style={{ fontWeight: "600", marginTop: 12 }}>
                 Which areas do you want personalized guidance for?
               </Text>
@@ -544,25 +556,6 @@ export default function ProfileScreen() {
                     </Text>
                   </TouchableOpacity>
                 ))}
-              </View>
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: "#F8FAFC",
-                  borderRadius: 24,
-                  paddingHorizontal: 12,
-                  marginBottom: 10,
-                }}
-              >
-                <Feather name="heart" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
-                <TextInput
-                  placeholder="What motivates you to learn English?"
-                  value={motivation}
-                  onChangeText={setMotivation}
-                  style={{ flex: 1, paddingVertical: 12 }}
-                />
               </View>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>
