@@ -12,9 +12,9 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { LoginRequest, useLoginMutation } from "@/services/auth-api";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
-import { useLoginMutation } from "@/services/auth-api";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -27,19 +27,14 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
-      router.replace("/dashboard");
-      return;
-    }
-    // route to OTP verify flow before final success
-    router.push("/otp");
+  const handlePostAuthNavigation = () => {
+    router.replace("/dashboard");
   };
 
   const persistAuthAndNavigate = async (auth: AuthResponse) => {
     await saveAuthSession(auth);
     setAuthToken(auth.access_token);
-    handlePostAuthNavigation(auth.profile_completed);
+    handlePostAuthNavigation();
   };
 
   const handleLogin = async () => {
@@ -47,6 +42,7 @@ export function LoginScreen() {
     const phone_value = phoneNumber.trim();
     const identifier_value = identifier.trim();
     const password_value = password.trim();
+    const normalizedPhone = phone_value.replace(/[\s\-()]/g, "");
 
     // Validate password is required
     if (!password_value) {
@@ -54,24 +50,41 @@ export function LoginScreen() {
       return;
     }
 
-    // At least one identifier must be provided
-    if (!email_value && !phone_value && !identifier_value) {
+    const filledIdentifiers = [email_value, phone_value, identifier_value].filter(Boolean).length;
+
+    if (filledIdentifiers === 0) {
       Alert.alert("Error", "Please enter email, phone number, or username/ID");
+      return;
+    }
+
+    // Choose one identifier deterministically to keep requests valid for backend contract.
+    const identifierType = email_value ? "email" : phone_value ? "phone_number" : "identifier";
+
+    if (identifierType === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_value)) {
+      Alert.alert("Error", "Please enter a valid email address");
+      return;
+    }
+
+    if (identifierType === "phone_number" && !/^\+?\d{7,15}$/.test(normalizedPhone)) {
+      Alert.alert("Error", "Please enter a valid phone number");
       return;
     }
 
     try {
       setIsLoading(true);
 
-      // Build payload with only provided fields
-      const payload: any = {
+      const payload: LoginRequest = {
         password: password_value,
         remember_me: rememberMe,
       };
 
-      if (email_value) payload.email = email_value;
-      if (phone_value) payload.phone_number = phone_value;
-      if (identifier_value) payload.identifier = identifier_value;
+      if (identifierType === "email") {
+        payload.email = email_value.toLowerCase();
+      } else if (identifierType === "phone_number") {
+        payload.phone_number = normalizedPhone;
+      } else {
+        payload.identifier = identifier_value;
+      }
 
       console.log("Login payload:", payload);
 
@@ -82,8 +95,8 @@ export function LoginScreen() {
       await persistAuthAndNavigate(response);
     } catch (error) {
       console.error("Login error:", error);
-      const apiError = error as { response?: { status?: number }; data?: { message?: string } };
-      if (apiError?.response?.status === 401) {
+      const apiError = error as { status?: number; data?: { message?: string } };
+      if (apiError?.status === 401) {
         await clearAuthState();
         Alert.alert("Error", "Invalid credentials");
         router.replace("/login");

@@ -1,7 +1,28 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
+
+function normalizeBaseUrlForRuntime(url: string): string {
+  if (Platform.OS !== "android") {
+    return url;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") {
+      parsed.hostname = "10.0.2.2";
+    }
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return url;
+  }
+}
+
+const resolvedBaseUrl = rawBaseUrl || fallbackDevBaseUrl;
+const BASE_URL = resolvedBaseUrl ? normalizeBaseUrlForRuntime(resolvedBaseUrl) : undefined;
 
 if (!BASE_URL) {
   throw new Error(

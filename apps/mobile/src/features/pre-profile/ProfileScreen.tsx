@@ -9,10 +9,10 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { getApiErrorMessage } from "@/services/auth-service";
 import { setProfileCompletedInSession } from "@/services/auth-storage";
 import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
-import * as DocumentPicker from "expo-document-picker";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,9 +25,6 @@ export default function ProfileScreen() {
   const [branch, setBranch] = useState("");
   const [country, setCountry] = useState("");
   const [nativeLanguage, setNativeLanguage] = useState("");
-  const [resumeUploaded, setResumeUploaded] = useState(false);
-  const [resumeUri, setResumeUri] = useState<string | null>(null);
-  const [resumeName, setResumeName] = useState<string | null>(null);
 
   const [englishLevel, setEnglishLevel] = useState("");
   const [challengingSkills, setChallengingSkills] = useState<string[]>([]);
@@ -81,9 +78,6 @@ export default function ProfileScreen() {
         branch,
         country,
         nativeLanguage,
-        resumeUploaded,
-        resumeUri,
-        resumeName,
         englishLevel,
         challengingSkills,
         primaryGoal,
@@ -128,51 +122,79 @@ export default function ProfileScreen() {
                 Help us personalize your experience.
               </Text>
 
-              <TextInput
-                placeholder="Full Name"
-                value={name}
-                onChangeText={setName}
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
-              <TextInput
-                placeholder="Mobile Number"
-                value={mobile}
-                onChangeText={setMobile}
-                keyboardType="phone-pad"
+              >
+                <Feather name="user" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Full Name"
+                  value={name}
+                  onChangeText={setName}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
-              <TextInput
-                placeholder="Date of Birth (DD/MM/YYYY)"
-                value={dob}
-                onChangeText={setDob}
+              >
+                <Feather name="phone" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Mobile Number"
+                  value={mobile}
+                  onChangeText={setMobile}
+                  keyboardType="phone-pad"
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
-              <TextInput
-                placeholder="College Name"
-                value={college}
-                onChangeText={setCollege}
+              >
+                <Feather name="calendar" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Date of Birth (DD/MM/YYYY)"
+                  value={dob}
+                  onChangeText={setDob}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
+              >
+                <Feather name="book" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="College Name"
+                  value={college}
+                  onChangeText={setCollege}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>Education / Profession</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
@@ -189,7 +211,7 @@ export default function ProfileScreen() {
                         borderColor: "#E5E7EB",
                         marginRight: 8,
                         marginBottom: 8,
-                        backgroundColor: education === opt ? "#111827" : "#fff",
+                        backgroundColor: education === opt ? "#9CA3AF" : "#fff",
                       }}
                     >
                       <Text style={{ color: education === opt ? "#fff" : "#111827" }}>{opt}</Text>
@@ -214,7 +236,7 @@ export default function ProfileScreen() {
                           borderColor: "#E5E7EB",
                           marginRight: 8,
                           marginBottom: 8,
-                          backgroundColor: yearOfStudy === y ? "#111827" : "#fff",
+                          backgroundColor: yearOfStudy === y ? "#9CA3AF" : "#fff",
                         }}
                       >
                         <Text style={{ color: yearOfStudy === y ? "#fff" : "#111827" }}>{y}</Text>
@@ -236,7 +258,7 @@ export default function ProfileScreen() {
                           borderColor: "#E5E7EB",
                           marginRight: 8,
                           marginBottom: 8,
-                          backgroundColor: branch === b ? "#111827" : "#fff",
+                          backgroundColor: branch === b ? "#9CA3AF" : "#fff",
                         }}
                       >
                         <Text style={{ color: branch === b ? "#fff" : "#111827" }}>{b}</Text>
@@ -247,17 +269,24 @@ export default function ProfileScreen() {
               ) : null}
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>Country</Text>
-              <TextInput
-                placeholder="Country (auto-detect optional)"
-                value={country}
-                onChangeText={setCountry}
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
+              >
+                <Feather name="globe" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Country (auto-detect optional)"
+                  value={country}
+                  onChangeText={setCountry}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>Native Language</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
@@ -273,7 +302,7 @@ export default function ProfileScreen() {
                       borderColor: "#E5E7EB",
                       marginRight: 8,
                       marginBottom: 8,
-                      backgroundColor: nativeLanguage === lang ? "#111827" : "#fff",
+                      backgroundColor: nativeLanguage === lang ? "#9CA3AF" : "#fff",
                     }}
                   >
                     <Text style={{ color: nativeLanguage === lang ? "#fff" : "#111827" }}>
@@ -282,28 +311,6 @@ export default function ProfileScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-
-              <TouchableOpacity
-                onPress={async () => {
-                  try {
-                    const res = await DocumentPicker.getDocumentAsync({
-                      copyToCacheDirectory: false,
-                    });
-                    if (res.type === "success") {
-                      setResumeUploaded(true);
-                      setResumeUri(res.uri || null);
-                      setResumeName(res.name || null);
-                    }
-                  } catch (e) {
-                    console.warn(e);
-                  }
-                }}
-                style={{ alignItems: "center", marginVertical: 8 }}
-              >
-                <Text style={{ color: "#4F46E5" }}>
-                  {resumeUploaded ? `Resume: ${resumeName}` : "Upload Resume (Optional)"}
-                </Text>
-              </TouchableOpacity>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>Current English Level</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", marginVertical: 8 }}>
@@ -319,7 +326,7 @@ export default function ProfileScreen() {
                       borderColor: "#E5E7EB",
                       marginRight: 8,
                       marginBottom: 8,
-                      backgroundColor: englishLevel === l ? "#111827" : "#fff",
+                      backgroundColor: englishLevel === l ? "#9CA3AF" : "#fff",
                     }}
                   >
                     <Text style={{ color: englishLevel === l ? "#fff" : "#111827" }}>{l}</Text>
@@ -350,7 +357,7 @@ export default function ProfileScreen() {
                         height: 18,
                         borderRadius: 9,
                         marginRight: 10,
-                        backgroundColor: challengingSkills.includes(opt) ? "#111827" : "#E5E7EB",
+                        backgroundColor: challengingSkills.includes(opt) ? "#9CA3AF" : "#E5E7EB",
                       }}
                     />
                     <Text>{opt}</Text>
@@ -372,7 +379,7 @@ export default function ProfileScreen() {
                       borderColor: "#E5E7EB",
                       marginRight: 8,
                       marginBottom: 8,
-                      backgroundColor: primaryGoal === g ? "#111827" : "#fff",
+                      backgroundColor: primaryGoal === g ? "#9CA3AF" : "#fff",
                     }}
                   >
                     <Text style={{ color: primaryGoal === g ? "#fff" : "#111827" }}>{g}</Text>
@@ -380,17 +387,24 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <TextInput
-                placeholder="Short-term goal"
-                value={thirtyDayGoal}
-                onChangeText={setThirtyDayGoal}
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
+              >
+                <Feather name="target" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Short-term goal"
+                  value={thirtyDayGoal}
+                  onChangeText={setThirtyDayGoal}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>
                 Which areas do you want personalized guidance for?
@@ -408,7 +422,7 @@ export default function ProfileScreen() {
                         height: 18,
                         borderRadius: 9,
                         marginRight: 10,
-                        backgroundColor: personalizedAreas.includes(opt) ? "#111827" : "#E5E7EB",
+                        backgroundColor: personalizedAreas.includes(opt) ? "#9CA3AF" : "#E5E7EB",
                       }}
                     />
                     <Text>{opt}</Text>
@@ -430,7 +444,7 @@ export default function ProfileScreen() {
                       borderColor: "#E5E7EB",
                       marginRight: 8,
                       marginBottom: 8,
-                      backgroundColor: dailyTime === t ? "#111827" : "#fff",
+                      backgroundColor: dailyTime === t ? "#9CA3AF" : "#fff",
                     }}
                   >
                     <Text style={{ color: dailyTime === t ? "#fff" : "#111827" }}>{t}</Text>
@@ -454,7 +468,7 @@ export default function ProfileScreen() {
                       borderColor: "#E5E7EB",
                       marginRight: 8,
                       marginBottom: 8,
-                      backgroundColor: preferredTime === t ? "#111827" : "#fff",
+                      backgroundColor: preferredTime === t ? "#9CA3AF" : "#fff",
                     }}
                   >
                     <Text style={{ color: preferredTime === t ? "#fff" : "#111827" }}>{t}</Text>
@@ -532,17 +546,24 @@ export default function ProfileScreen() {
                 ))}
               </View>
 
-              <TextInput
-                placeholder="What motivates you to learn English?"
-                value={motivation}
-                onChangeText={setMotivation}
+              <View
                 style={{
+                  flexDirection: "row",
+                  alignItems: "center",
                   backgroundColor: "#F8FAFC",
                   borderRadius: 24,
-                  padding: 12,
+                  paddingHorizontal: 12,
                   marginBottom: 10,
                 }}
-              />
+              >
+                <Feather name="heart" size={20} color="#9CA3AF" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="What motivates you to learn English?"
+                  value={motivation}
+                  onChangeText={setMotivation}
+                  style={{ flex: 1, paddingVertical: 12 }}
+                />
+              </View>
 
               <Text style={{ fontWeight: "600", marginTop: 12 }}>
                 What stops you from practicing regularly?

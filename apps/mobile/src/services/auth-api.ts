@@ -36,13 +36,21 @@ export const authApi = api.injectEndpoints({
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (credentials) => {
+        const body = Object.fromEntries(
+          Object.entries(credentials).filter(([_, value]) => value !== undefined && value !== ""),
+        ) as LoginRequest;
         const url = "/v1/auth/login";
         console.log("Making login request to:", url);
         console.log("Full URL would be:", process.env.EXPO_PUBLIC_API_URL + url);
+        console.log("Login request body:", body);
         return {
           url,
           method: "POST",
-          body: credentials,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body,
         };
       },
       invalidatesTags: ["Auth"],

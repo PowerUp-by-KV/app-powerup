@@ -34,7 +34,7 @@ export function RegisterScreen() {
       return;
     }
 
-    router.replace("/success?mode=register");
+    router.replace("/profile");
   };
 
   const handleRegister = async () => {
