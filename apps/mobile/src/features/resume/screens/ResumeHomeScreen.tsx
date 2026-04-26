@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
+  Modal,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
@@ -51,6 +52,7 @@ export function ResumeHomeScreen() {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedResume, setParsedResume] = useState<any>(null);
   const fileInputRef = useRef<any>(null);
@@ -294,27 +296,13 @@ export function ResumeHomeScreen() {
   };
 
   const handleDeleteResume = () => {
-    if (Platform.OS === "web") {
-      const confirmed = window.confirm(
-        "Are you sure you want to delete your current resume? This cannot be undone.",
-      );
-      if (confirmed) {
-        executeDelete();
-      }
-    } else {
-      Alert.alert(
-        "Delete Resume",
-        "Are you sure you want to delete your current resume? This cannot be undone.",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: executeDelete,
-          },
-        ],
-      );
-    }
+    if (isSubmittingRef.current) return;
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    executeDelete();
   };
 
   return (

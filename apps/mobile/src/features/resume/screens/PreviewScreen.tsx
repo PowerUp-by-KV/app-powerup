@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Modal,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
@@ -39,11 +40,13 @@ export function PreviewScreen() {
   const isSaving = useAppSelector(selectIsSaving);
   const error = useAppSelector(selectError);
   const [updateResume, { isLoading: isUpdating }] = useUpdateResumeMutation();
-  const [deleteResume, { isLoading: isDeleting }] = useDeleteResumeMutation();
+  const [deleteResume] = useDeleteResumeMutation();
   const [userId, setUserId] = useState<string>("");
   const isSubmittingRef = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeletingLocal, setIsDeletingLocal] = useState(false);
 
   useEffect(() => {
     const loadUserId = async () => {
@@ -110,7 +113,7 @@ export function PreviewScreen() {
   };
 
   const handleSubmit = async () => {
-    if (isSubmittingRef.current) return;
+    if (isSubmittingRef.current || isDeletingLocal) return;
     try {
       isSubmittingRef.current = true;
       console.log("Starting save process...");
@@ -162,20 +165,18 @@ export function PreviewScreen() {
 
   const executeDelete = async () => {
     if (!userId) {
-      if (Platform.OS === "web") {
-        window.alert("User ID not loaded. Please try again.");
-      } else {
-        Alert.alert("Error", "User ID not loaded. Please try again.");
-      }
+      Alert.alert("Error", "User ID not loaded. Please try again.");
       return;
     }
 
     try {
       isSubmittingRef.current = true;
-      dispatch(setIsSaving(true));
+      setIsDeletingLocal(true);
       dispatch(setError(null));
 
-      await deleteResume(userId).unwrap();
+      console.log("Sending DELETE request for user ID:", userId);
+      const response = await deleteResume(userId).unwrap();
+      console.log("Delete successful! Response:", response);
 
       setSuccessMessage("Resume deleted successfully!");
       setShowSuccess(true);
@@ -186,6 +187,7 @@ export function PreviewScreen() {
         router.replace("/resume");
       }, 2000);
     } catch (error: any) {
+      console.error("Delete error:", error);
       if (error?.status === 404 || error?.status === "FETCH_ERROR") {
         // Already deleted or unreachable, force local deletion
         setSuccessMessage("Resume deleted successfully!");
@@ -199,46 +201,22 @@ export function PreviewScreen() {
         const parsedError = ApiErrorHandler.parseError(error, "delete");
         const errorMessage = parsedError.userMessage || "Failed to delete resume.";
         dispatch(setError(errorMessage));
-        if (Platform.OS === "web") {
-          window.alert(errorMessage);
-        } else {
-          Alert.alert("Delete Failed", errorMessage);
-        }
+        Alert.alert("Delete Failed", errorMessage);
       }
     } finally {
-      dispatch(setIsSaving(false));
+      setIsDeletingLocal(false);
       isSubmittingRef.current = false;
     }
   };
 
   const handleDelete = () => {
-    if (isSubmittingRef.current) return;
+    if (isSubmittingRef.current || isDeletingLocal) return;
+    setShowDeleteConfirm(true);
+  };
 
-    if (Platform.OS === "web") {
-      const confirmed = window.confirm(
-        "Are you sure you want to delete this resume? This action cannot be undone.",
-      );
-      if (confirmed) {
-        executeDelete();
-      }
-    } else {
-      Alert.alert(
-        "Delete Resume",
-        "Are you sure you want to delete this resume? This action cannot be undone.",
-        [
-          {
-            text: "Cancel",
-            onPress: () => {},
-            style: "cancel",
-          },
-          {
-            text: "Delete",
-            onPress: executeDelete,
-            style: "destructive",
-          },
-        ],
-      );
-    }
+  const confirmDelete = () => {
+    setShowDeleteConfirm(false);
+    executeDelete();
   };
 
   return (
@@ -483,10 +461,10 @@ export function PreviewScreen() {
                   styles.button,
                   styles.secondaryButton,
                   pressed && styles.buttonPressed,
-                  (isSaving || isUpdating || isDeleting) && styles.buttonDisabled,
+                  (isSaving || isUpdating || isDeletingLocal) && styles.buttonDisabled,
                 ]}
                 onPress={() => dispatch(previousStep())}
-                disabled={isSaving || isUpdating || isDeleting}
+                disabled={isSaving || isUpdating || isDeletingLocal}
               >
                 <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
                 <Text style={styles.secondaryButtonText}>Back</Text>
@@ -497,10 +475,10 @@ export function PreviewScreen() {
                   styles.button,
                   styles.primaryButton,
                   pressed && styles.buttonPressed,
-                  (isSaving || isUpdating) && styles.buttonDisabled,
+                  (isSaving || isUpdating || isDeletingLocal) && styles.buttonDisabled,
                 ]}
                 onPress={handleSubmit}
-                disabled={isSaving || isUpdating}
+                disabled={isSaving || isUpdating || isDeletingLocal}
               >
                 {isUpdating || isSaving ? (
                   <>
@@ -523,12 +501,12 @@ export function PreviewScreen() {
               style={({ pressed }) => [
                 styles.deleteButton,
                 pressed && styles.deleteButtonPressed,
-                (isSaving || isDeleting) && styles.buttonDisabled,
+                (isSaving || isDeletingLocal) && styles.buttonDisabled,
               ]}
               onPress={handleDelete}
-              disabled={isSaving || isDeleting}
+              disabled={isSaving || isDeletingLocal}
             >
-              {isDeleting ? (
+              {isDeletingLocal ? (
                 <>
                   <ActivityIndicator color="#dc2626" size="small" style={{ marginRight: 8 }} />
                   <Text style={styles.deleteButtonText}>Deleting...</Text>
@@ -543,6 +521,49 @@ export function PreviewScreen() {
           )}
         </View>
       </View>
+
+      {/* In-App Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <MaterialIcons name="warning" size={40} color="#dc2626" />
+            </View>
+            <Text style={styles.modalTitle}>Delete Resume?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete this resume? This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalCancelButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setShowDeleteConfirm(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalDeleteButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={confirmDelete}
+              >
+                <MaterialIcons name="delete" size={18} color="white" style={{ marginRight: 6 }} />
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -839,5 +860,79 @@ const styles = StyleSheet.create({
     color: "#2563EB",
     marginTop: 4,
     textDecorationLine: "underline",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 28,
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#fef2f2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCancelButton: {
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  modalDeleteButton: {
+    backgroundColor: "#dc2626",
+  },
+  modalDeleteText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "white",
   },
 });
