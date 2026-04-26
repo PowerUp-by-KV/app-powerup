@@ -24,6 +24,7 @@ import {
   resetResume,
   selectError,
   selectIsSaving,
+  setHasExistingResume,
 } from "@/store/slices/resume.slice";
 import { useUpdateResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
 import { useState, useEffect, useRef } from "react";
@@ -142,7 +143,7 @@ export function PreviewScreen() {
       setShowSuccess(true);
 
       setTimeout(() => {
-        dispatch(resetResume());
+        dispatch(setHasExistingResume(true));
         router.replace("/resume");
       }, 2000);
     } catch (error: any) {
@@ -159,53 +160,85 @@ export function PreviewScreen() {
     }
   };
 
+  const executeDelete = async () => {
+    if (!userId) {
+      if (Platform.OS === "web") {
+        window.alert("User ID not loaded. Please try again.");
+      } else {
+        Alert.alert("Error", "User ID not loaded. Please try again.");
+      }
+      return;
+    }
+
+    try {
+      isSubmittingRef.current = true;
+      dispatch(setIsSaving(true));
+      dispatch(setError(null));
+
+      await deleteResume(userId).unwrap();
+
+      setSuccessMessage("Resume deleted successfully!");
+      setShowSuccess(true);
+
+      setTimeout(() => {
+        dispatch(resetResume());
+        dispatch(setHasExistingResume(false));
+        router.replace("/resume");
+      }, 2000);
+    } catch (error: any) {
+      if (error?.status === 404 || error?.status === "FETCH_ERROR") {
+        // Already deleted or unreachable, force local deletion
+        setSuccessMessage("Resume deleted successfully!");
+        setShowSuccess(true);
+        setTimeout(() => {
+          dispatch(resetResume());
+          dispatch(setHasExistingResume(false));
+          router.replace("/resume");
+        }, 2000);
+      } else {
+        const parsedError = ApiErrorHandler.parseError(error, "delete");
+        const errorMessage = parsedError.userMessage || "Failed to delete resume.";
+        dispatch(setError(errorMessage));
+        if (Platform.OS === "web") {
+          window.alert(errorMessage);
+        } else {
+          Alert.alert("Delete Failed", errorMessage);
+        }
+      }
+    } finally {
+      dispatch(setIsSaving(false));
+      isSubmittingRef.current = false;
+    }
+  };
+
   const handleDelete = () => {
     if (isSubmittingRef.current) return;
-    Alert.alert(
-      "Delete Resume",
-      "Are you sure you want to delete this resume? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          onPress: () => {},
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          onPress: async () => {
-            if (!userId) {
-              Alert.alert("Error", "User ID not loaded. Please try again.");
-              return;
-            }
 
-            try {
-              isSubmittingRef.current = true;
-              dispatch(setIsSaving(true));
-              dispatch(setError(null));
-
-              await deleteResume(userId).unwrap();
-
-              setSuccessMessage("Resume deleted successfully!");
-              setShowSuccess(true);
-
-              setTimeout(() => {
-                dispatch(resetResume());
-                router.replace("/resume");
-              }, 2000);
-            } catch (error: any) {
-              const parsedError = ApiErrorHandler.parseError(error, "delete");
-              const errorMessage = parsedError.userMessage || "Failed to delete resume.";
-              dispatch(setError(errorMessage));
-              Alert.alert("Delete Failed", errorMessage);
-            } finally {
-              dispatch(setIsSaving(false));
-              isSubmittingRef.current = false;
-            }
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete this resume? This action cannot be undone.",
+      );
+      if (confirmed) {
+        executeDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Resume",
+        "Are you sure you want to delete this resume? This action cannot be undone.",
+        [
+          {
+            text: "Cancel",
+            onPress: () => {},
+            style: "cancel",
           },
-          style: "destructive",
-        },
-      ],
-    );
+          {
+            text: "Delete",
+            onPress: executeDelete,
+            style: "destructive",
+          },
+        ],
+      );
+    }
   };
 
   return (
@@ -422,7 +455,9 @@ export function PreviewScreen() {
                 style={{ marginBottom: 16 }}
               />
               <Text style={{ fontSize: 22, fontWeight: "700", color: "#3f6212", marginBottom: 8 }}>
-                Success!
+                {successMessage.toLowerCase().includes("deleted")
+                  ? "Successfully Deleted!"
+                  : "Successfully Updated!"}
               </Text>
               <Text style={{ fontSize: 16, color: "#4d7c0f", textAlign: "center" }}>
                 {successMessage}

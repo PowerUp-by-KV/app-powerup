@@ -153,6 +153,7 @@ export const resumeApi = createApi({
       query: (userId) => ({
         url: `/resume/${userId}`,
         method: "DELETE",
+        responseHandler: "text",
       }),
       invalidatesTags: ["Resume"],
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {

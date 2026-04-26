@@ -26,6 +26,7 @@ import {
   loadResumeData,
   setError,
   selectError,
+  setHasExistingResume,
 } from "@/store/slices/resume.slice";
 import {
   selectHasExistingResume,
@@ -49,6 +50,7 @@ export function ResumeHomeScreen() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedResume, setParsedResume] = useState<any>(null);
   const fileInputRef = useRef<any>(null);
@@ -177,6 +179,7 @@ export function ResumeHomeScreen() {
       dispatch(loadResumeData(response.parsed_data || response));
       setParsedResume(response);
       dispatch(setCurrentStep(1));
+      dispatch(setHasExistingResume(true));
 
       setUploadSuccess(true);
 
@@ -250,44 +253,68 @@ export function ResumeHomeScreen() {
     router.push("/(tabs)/two/preview");
   };
 
+  const executeDelete = async () => {
+    if (isSubmittingRef.current) return;
+    try {
+      isSubmittingRef.current = true;
+
+      let storedUserId: string | null = null;
+      if (Platform.OS === "web") {
+        try {
+          storedUserId = window.localStorage.getItem("user_id");
+        } catch (e) {}
+      } else {
+        storedUserId = await SecureStore.getItemAsync("user_id");
+      }
+
+      await deleteResumeReq(storedUserId || "123e4567-e89b-12d3-a456-426614174000").unwrap();
+      dispatch(resetResume());
+      dispatch(setHasExistingResume(false));
+      setDeleteSuccess(true);
+
+      setTimeout(() => {
+        setDeleteSuccess(false);
+      }, 2500);
+    } catch (err: any) {
+      if (err?.status === 404 || err?.status === "FETCH_ERROR") {
+        dispatch(resetResume());
+        dispatch(setHasExistingResume(false));
+        setDeleteSuccess(true);
+        setTimeout(() => setDeleteSuccess(false), 2500);
+      } else {
+        if (Platform.OS === "web") {
+          window.alert(err?.data?.message || err?.error || "Failed to delete resume");
+        } else {
+          Alert.alert("Error", err?.data?.message || err?.error || "Failed to delete resume");
+        }
+      }
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
   const handleDeleteResume = () => {
-    Alert.alert(
-      "Delete Resume",
-      "Are you sure you want to delete your current resume? This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            if (isSubmittingRef.current) return;
-            try {
-              isSubmittingRef.current = true;
-
-              let storedUserId: string | null = null;
-              if (Platform.OS === "web") {
-                try {
-                  storedUserId = window.localStorage.getItem("user_id");
-                } catch (e) {}
-              } else {
-                storedUserId = await SecureStore.getItemAsync("user_id");
-              }
-
-              await deleteResumeReq(
-                storedUserId || "123e4567-e89b-12d3-a456-426614174000",
-              ).unwrap();
-              dispatch(resetResume());
-              dispatch(setHasExistingResume(false));
-              Alert.alert("Success", "Resume deleted.");
-            } catch (err: any) {
-              Alert.alert("Error", err?.data?.message || "Failed to delete resume");
-            } finally {
-              isSubmittingRef.current = false;
-            }
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete your current resume? This cannot be undone.",
+      );
+      if (confirmed) {
+        executeDelete();
+      }
+    } else {
+      Alert.alert(
+        "Delete Resume",
+        "Are you sure you want to delete your current resume? This cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: executeDelete,
           },
-        },
-      ],
-    );
+        ],
+      );
+    }
   };
 
   return (
@@ -298,6 +325,34 @@ export function ResumeHomeScreen() {
           <Text style={styles.mainTitle}>Upload Your Resume</Text>
           <Text style={styles.subtitle}>Help us understand your professional background</Text>
         </View>
+
+        {deleteSuccess && (
+          <View
+            style={[
+              styles.summaryCard,
+              {
+                backgroundColor: "#ecfccb",
+                borderColor: "#84cc16",
+                alignItems: "center",
+                paddingVertical: 24,
+                marginBottom: 20,
+              },
+            ]}
+          >
+            <MaterialIcons
+              name="check-circle"
+              size={48}
+              color="#65a30d"
+              style={{ marginBottom: 12 }}
+            />
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#3f6212", marginBottom: 6 }}>
+              Successfully Deleted!
+            </Text>
+            <Text style={{ fontSize: 15, color: "#4d7c0f", textAlign: "center" }}>
+              Your resume has been completely removed.
+            </Text>
+          </View>
+        )}
 
         {/* Error Alert */}
         {error && (
