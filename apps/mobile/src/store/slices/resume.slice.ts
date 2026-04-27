@@ -180,7 +180,10 @@ export const resumeSlice = createSlice({
 
     // Load Resume Data
     loadResumeData: (state, action: PayloadAction<any>) => {
-      const data = action.payload;
+      const payload = action.payload;
+
+      // Extract parsed_data if it exists (from API response), otherwise use payload directly
+      const data = payload?.parsed_data || payload;
 
       state.formData = {
         contact: {
