@@ -22,6 +22,7 @@ export default function AuthLayout() {
         <Stack.Screen name="pre-profile-why" />
         <Stack.Screen name="pre-profile-frequency" />
         <Stack.Screen name="profile" />
+        <Stack.Screen name="dynamic-onboarding" />
         <Stack.Screen name="read" />
         <Stack.Screen name="speak-read" />
         <Stack.Screen name="listen-audio" />
