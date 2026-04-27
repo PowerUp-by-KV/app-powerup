@@ -72,7 +72,14 @@ export async function pickPDFFile(): Promise<PDFFile | PDFValidationError | null
       return null;
     }
 
-    const file = result.assets[0];
+    const file = result.assets?.[0];
+
+    if (!file) {
+      return {
+        type: "unknown" as const,
+        message: "No file selected",
+      };
+    }
 
     // Convert to our interface
     const pdfFile: PDFFile = {

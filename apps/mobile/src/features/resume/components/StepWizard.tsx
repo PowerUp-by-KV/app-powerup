@@ -35,7 +35,9 @@ export function StepWizard({
           {Array.from({ length: totalSteps }).map((_, index) => {
             const stepNumber = index + 1;
             const stepKey = stepNumber as keyof typeof RESUME_STEPS;
-            const stepLabel = STEP_LABELS[RESUME_STEPS[stepKey]];
+            const stepLabel = RESUME_STEPS[stepKey]
+              ? STEP_LABELS[RESUME_STEPS[stepKey]]
+              : "Unknown";
             const isActive = stepNumber === currentStep;
             const isCompleted = stepNumber < currentStep;
 

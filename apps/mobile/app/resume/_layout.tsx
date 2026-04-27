@@ -10,7 +10,6 @@ export default function ResumeLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
       }}
     >
       <Stack.Screen

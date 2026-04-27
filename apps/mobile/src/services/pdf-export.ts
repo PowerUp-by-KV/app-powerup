@@ -193,16 +193,8 @@ export async function exportResumePDF(data: ResumeParsedData): Promise<void> {
     // Generate PDF
     const { uri } = await Print.printToFileAsync({ html });
 
-    // Move to Documents directory for easier access
-    const documentsDir = FileSystem.documentDirectory || "";
-    const newPath = `${documentsDir}${fileName}`;
-    await FileSystem.copyAsync({
-      from: uri,
-      to: newPath,
-    });
-
-    // Share the PDF
-    await Sharing.shareAsync(newPath, {
+    // Share the PDF directly from temporary location
+    await Sharing.shareAsync(uri, {
       mimeType: "application/pdf",
       dialogTitle: "Export Resume",
     });
@@ -223,15 +215,8 @@ export async function saveResumePDF(data: ResumeParsedData): Promise<string> {
     // Generate PDF
     const { uri } = await Print.printToFileAsync({ html });
 
-    // Move to Documents directory
-    const documentsDir = FileSystem.documentDirectory || "";
-    const newPath = `${documentsDir}${fileName}`;
-    await FileSystem.copyAsync({
-      from: uri,
-      to: newPath,
-    });
-
-    return newPath;
+    // Return the generated PDF URI
+    return uri;
   } catch (error) {
     console.error("PDF Save Error:", error);
     throw new Error("Failed to save resume as PDF");

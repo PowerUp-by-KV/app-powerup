@@ -27,11 +27,8 @@ export default function ResumeBuilder() {
 
   useEffect(() => {
     if (resumeData) {
-      if (resumeData.parsed_data) {
-        dispatch(loadResumeData(resumeData.parsed_data));
-      } else {
-        dispatch(loadResumeData(resumeData as any));
-      }
+      // Response is already in ResumeParsedData structure (flat, not nested)
+      dispatch(loadResumeData(resumeData as any));
     }
   }, [resumeData, dispatch]);
 

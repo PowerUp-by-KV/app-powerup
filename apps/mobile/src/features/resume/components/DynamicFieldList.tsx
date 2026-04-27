@@ -66,7 +66,7 @@ export function DynamicFieldList<T extends DynamicListItem>({
 
           {/* Add More Button */}
           <Button variant="secondary" onPress={onAdd} size="md">
-            + {addButtonLabel}
+            {`+ ${addButtonLabel}`}
           </Button>
         </View>
       )}

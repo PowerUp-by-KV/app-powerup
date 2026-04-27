@@ -160,7 +160,7 @@ export function EducationScreen() {
               <TextInput
                 label="Additional Details"
                 multiline
-                rows={3}
+                numberOfLines={3}
                 placeholder="GPA, honors, relevant coursework, etc."
                 value={formData.details}
                 onChangeText={(text) => setFormData({ ...formData, details: text })}

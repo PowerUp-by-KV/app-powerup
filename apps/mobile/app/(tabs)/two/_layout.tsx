@@ -10,7 +10,6 @@ export default function TabTwoLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
       }}
     >
       <Stack.Screen name="index" options={{ title: "Resume" }} />

@@ -117,6 +117,11 @@ export const validatePhoneNumber = (
   }
 
   const countryInfo = countryCodeMap[countryCode];
+
+  if (!countryInfo) {
+    return { isValid: false, message: "Country code not found" };
+  }
+
   const phoneWithoutCode = trimmed.substring(countryCode.length);
   const digitCount = phoneWithoutCode.replace(/\D/g, "").length;
 

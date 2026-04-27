@@ -71,7 +71,6 @@ export function SkillsScreen() {
       addSkill({
         id: Date.now().toString(),
         name: skillInput.trim(),
-        category: "",
       }),
     );
     setSkillInput("");
@@ -93,7 +92,6 @@ export function SkillsScreen() {
       addSkill({
         id: Date.now().toString(),
         name: skillName,
-        category: suggestion.category,
       }),
     );
     setSkillInput("");

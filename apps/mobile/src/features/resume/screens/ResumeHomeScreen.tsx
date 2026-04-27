@@ -29,20 +29,13 @@ import {
   selectError,
   setHasExistingResume,
 } from "@/store/slices/resume.slice";
-import {
-  selectHasExistingResume,
-  selectLastSaved,
-  selectFormData,
-} from "@/store/slices/resume.slice";
+import { selectHasExistingResume, selectFormData } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
-import { ApiErrorHandler } from "@/services/error-handler";
-import type { ResumeParsedData } from "@app-powerup/shared";
 
 export function ResumeHomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const hasExistingResume = useAppSelector(selectHasExistingResume);
-  const lastSaved = useAppSelector(selectLastSaved);
   const error = useAppSelector(selectError);
   const formData = useAppSelector(selectFormData);
   const [uploadResume] = useUploadResumeMutation();
@@ -118,7 +111,7 @@ export function ResumeHomeScreen() {
           uri: file.uri,
         });
       }
-    } catch (err) {
+    } catch (_err) {
       Alert.alert("Error", "Failed to pick document. Please try again.");
     }
   };
@@ -177,8 +170,8 @@ export function ResumeHomeScreen() {
         }
       }
 
-      // Load into Redux store
-      dispatch(loadResumeData(response.parsed_data || response));
+      // Load into Redux store - response is already ResumeParsedData structure
+      dispatch(loadResumeData(response));
       setParsedResume(response);
       dispatch(setCurrentStep(1));
       dispatch(setHasExistingResume(true));
@@ -264,12 +257,22 @@ export function ResumeHomeScreen() {
       if (Platform.OS === "web") {
         try {
           storedUserId = window.localStorage.getItem("user_id");
-        } catch (e) {}
+        } catch (e) {
+          console.warn("localStorage access failed:", e);
+        }
       } else {
         storedUserId = await SecureStore.getItemAsync("user_id");
       }
 
-      await deleteResumeReq(storedUserId || "123e4567-e89b-12d3-a456-426614174000").unwrap();
+      if (!storedUserId) {
+        Alert.alert(
+          "Error",
+          "Unable to delete: User ID not found. Please try uploading your resume again.",
+        );
+        return;
+      }
+
+      await deleteResumeReq(storedUserId).unwrap();
       dispatch(resetResume());
       dispatch(setHasExistingResume(false));
       setDeleteSuccess(true);
@@ -278,18 +281,27 @@ export function ResumeHomeScreen() {
         setDeleteSuccess(false);
       }, 2500);
     } catch (err: any) {
-      if (err?.status === 404 || err?.status === "FETCH_ERROR") {
-        dispatch(resetResume());
-        dispatch(setHasExistingResume(false));
-        setDeleteSuccess(true);
-        setTimeout(() => setDeleteSuccess(false), 2500);
+      let errorMessage = "Failed to delete resume. Please try again.";
+
+      if (err?.status === 404) {
+        errorMessage = "Resume not found on server. It may have already been deleted.";
+      } else if (err?.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+      } else if (err?.status === 500) {
+        errorMessage = "Server error occurred. Please try again later.";
+      } else if (err?.status === 0 || err?.code === "NETWORK_ERROR") {
+        errorMessage = "Network connection error. Please check your internet connection.";
       } else {
-        if (Platform.OS === "web") {
-          window.alert(err?.data?.message || err?.error || "Failed to delete resume");
-        } else {
-          Alert.alert("Error", err?.data?.message || err?.error || "Failed to delete resume");
-        }
+        errorMessage = err?.data?.message || err?.message || errorMessage;
       }
+
+      if (Platform.OS === "web") {
+        window.alert(errorMessage);
+      } else {
+        Alert.alert("Delete Failed", errorMessage);
+      }
+
+      console.error("Delete error:", err);
     } finally {
       isSubmittingRef.current = false;
     }
@@ -317,10 +329,11 @@ export function ResumeHomeScreen() {
         {deleteSuccess && (
           <View
             style={[
-              styles.summaryCard,
               {
                 backgroundColor: "#ecfccb",
                 borderColor: "#84cc16",
+                borderWidth: 1,
+                borderRadius: 12,
                 alignItems: "center",
                 paddingVertical: 24,
                 marginBottom: 20,
@@ -833,6 +846,49 @@ export function ResumeHomeScreen() {
           </View>
         )}
       </View>
+
+      {/* In-App Delete Confirmation Modal */}
+      <Modal
+        visible={showDeleteConfirm}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowDeleteConfirm(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalIconContainer}>
+              <MaterialIcons name="warning" size={40} color="#dc2626" />
+            </View>
+            <Text style={styles.modalTitle}>Delete Resume?</Text>
+            <Text style={styles.modalMessage}>
+              Are you sure you want to delete your resume? This action cannot be undone.
+            </Text>
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalCancelButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={() => setShowDeleteConfirm(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.modalButton,
+                  styles.modalDeleteButton,
+                  pressed && { opacity: 0.7 },
+                ]}
+                onPress={confirmDelete}
+              >
+                <MaterialIcons name="delete" size={18} color="white" style={{ marginRight: 6 }} />
+                <Text style={styles.modalDeleteText}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1292,5 +1348,79 @@ const styles = StyleSheet.create({
     color: "#475569",
     lineHeight: 20,
     flex: 1,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    borderRadius: 16,
+    padding: 28,
+    width: "100%",
+    maxWidth: 360,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#fef2f2",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCancelButton: {
+    backgroundColor: "#f3f4f6",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  modalDeleteButton: {
+    backgroundColor: "#dc2626",
+  },
+  modalDeleteText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "white",
   },
 });
