@@ -1,6 +1,7 @@
+import { useLocalSearchParams } from "expo-router";
 import { ListeningScreen } from "@/features/pre-listening";
-import { mockListeningAssessment } from "@/utils/mock-assessments";
 
 export default function ListenRoute() {
-  return <ListeningScreen assessment={mockListeningAssessment} />;
+  const { session_id } = useLocalSearchParams<{ session_id: string }>();
+  return <ListeningScreen sessionId={session_id} />;
 }

@@ -21,13 +21,14 @@ export function OtpVerifyScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -80,7 +81,7 @@ export function OtpVerifyScreen() {
 
             <View className="items-center">
               <Text className="text-sm text-slate-500">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Text
                   className="text-slate-900 font-bold underline"
                   onPress={() => router.push("/register")}

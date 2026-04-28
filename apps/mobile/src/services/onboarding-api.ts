@@ -21,31 +21,47 @@ export interface OnboardingQuestion {
 
 export type GroupedOnboardingQuestions = Record<string, OnboardingQuestion[]>;
 
+export interface OnboardingAnswer {
+  question_id: string;
+  answer_text?: string;
+  answer_json?: Record<string, any>;
+  is_skipped: boolean;
+}
+
 export interface OnboardingSubmissionRequest {
-  [key: string]: any;
+  answers: OnboardingAnswer[];
 }
 
 export interface OnboardingResult {
-  success: boolean;
   message: string;
+  answers: any[];
 }
 
 export const onboardingApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
     getGroupedQuestions: builder.query<GroupedOnboardingQuestions, void>({
-      query: () => "/api/v1/onboarding/questions/grouped",
+      query: () => "/v1/onboarding/questions/grouped",
       providesTags: ["Onboarding"],
     }),
     submitOnboarding: builder.mutation<OnboardingResult, OnboardingSubmissionRequest>({
       query: (data) => ({
-        url: "/api/v1/onboarding",
+        url: "/v1/onboarding/questions/answers",
         method: "POST",
         body: data,
       }),
       invalidatesTags: ["Onboarding"],
     }),
+    uploadResume: builder.mutation<string, FormData>({
+      query: (formData) => ({
+        url: "/v1/onboarding/resume",
+        method: "POST",
+        body: formData,
+        // Content-Type is intentionally omitted so the browser/fetch automatically sets the boundary for multipart/form-data
+      }),
+    }),
   }),
 });
 
-export const { useGetGroupedQuestionsQuery, useSubmitOnboardingMutation } = onboardingApi;
+export const { useGetGroupedQuestionsQuery, useSubmitOnboardingMutation, useUploadResumeMutation } =
+  onboardingApi;

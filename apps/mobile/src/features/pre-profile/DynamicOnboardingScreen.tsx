@@ -16,6 +16,7 @@ import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
 } from "@/services/onboarding-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import { setProfileCompletedInSession } from "@/services/auth-storage";
 import { getApiErrorMessage } from "@/services/auth-service";
@@ -28,6 +29,7 @@ export default function DynamicOnboardingScreen() {
 
   const { data: groupedQuestions, isLoading: isFetching } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
+  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -51,10 +53,21 @@ export default function DynamicOnboardingScreen() {
       <View className="flex-1 justify-center items-center bg-white p-6">
         <Text className="text-slate-500 text-center text-lg">No more questions available.</Text>
         <TouchableOpacity
-          onPress={() => router.replace("/read")}
-          className="mt-6 px-8 py-3 bg-indigo-600 rounded-2xl"
+          onPress={async () => {
+            try {
+              const session = await startSession().unwrap();
+              router.replace({ pathname: "/read", params: { session_id: session.session_id } });
+            } catch (err) {
+              Alert.alert("Error", getApiErrorMessage(err, "Could not start assessment session"));
+            }
+          }}
+          disabled={isStarting}
+          className={`mt-6 px-8 py-3 rounded-2xl flex-row items-center justify-center ${isStarting ? "bg-indigo-400" : "bg-indigo-600"}`}
         >
-          <Text className="text-white font-bold">Go to Dashboard</Text>
+          {isStarting && <ActivityIndicator color="white" className="mr-2" />}
+          <Text className="text-white font-bold">
+            {isStarting ? "Starting..." : "Start Reading"}
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => dispatch(prevStep())} className="mt-4">
           <Text className="text-indigo-600 font-medium">Go Back</Text>
@@ -81,10 +94,39 @@ export default function DynamicOnboardingScreen() {
     } else {
       // Final submission
       try {
-        const { currentStep, showDatePicker, ...submissionData } = formData;
-        await submitOnboarding(submissionData).unwrap();
+        const answersPayload = flattenedQuestions.map((q) => {
+          const answerValue = formData[q.question_key as keyof typeof formData];
+
+          // Determine if skipped
+          const isSkipped = answerValue === undefined || answerValue === null || answerValue === "";
+
+          let answer_text: string | undefined;
+          let answer_json: Record<string, any> | undefined;
+
+          if (!isSkipped) {
+            if (typeof answerValue === "string") {
+              answer_text = answerValue;
+            } else if (typeof answerValue === "object") {
+              // Wrap array or object into a JSON format
+              answer_json = Array.isArray(answerValue) ? { values: answerValue } : answerValue;
+            } else {
+              // Fallback for numbers, booleans, etc.
+              answer_text = String(answerValue);
+            }
+          }
+
+          return {
+            question_id: q.id,
+            answer_text,
+            answer_json,
+            is_skipped: isSkipped,
+          };
+        });
+
+        await submitOnboarding({ answers: answersPayload }).unwrap();
         await setProfileCompletedInSession(true);
-        router.replace("/read"); // Go to read page as requested
+        const session = await startSession().unwrap();
+        router.replace({ pathname: "/read", params: { session_id: session.session_id } });
       } catch (err) {
         Alert.alert("Error", getApiErrorMessage(err, "Submission failed"));
       }
@@ -102,14 +144,15 @@ export default function DynamicOnboardingScreen() {
   const progress = (stepNumber / flattenedQuestions.length) * 100;
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       {/* Progress Bar */}
       <View className="h-1 bg-slate-100 w-full">
         <View className="h-full bg-indigo-600" style={{ width: `${progress}%` }} />
       </View>
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="mb-8">
@@ -146,15 +189,15 @@ export default function DynamicOnboardingScreen() {
 
           <TouchableOpacity
             onPress={handleNext}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isStarting}
             className={`px-12 py-4 rounded-2xl flex-row items-center justify-center shadow-lg ${
-              isSubmitting ? "bg-indigo-400" : "bg-indigo-600"
+              isSubmitting || isStarting ? "bg-indigo-400" : "bg-indigo-600"
             }`}
           >
-            {isSubmitting && <ActivityIndicator color="white" className="mr-2" />}
+            {(isSubmitting || isStarting) && <ActivityIndicator color="white" className="mr-2" />}
             <Text className="text-white font-bold text-xl">
               {stepNumber === flattenedQuestions.length
-                ? isSubmitting
+                ? isSubmitting || isStarting
                   ? "Saving..."
                   : "Finish"
                 : "Next"}

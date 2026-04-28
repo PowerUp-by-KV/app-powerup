@@ -31,7 +31,7 @@ export function SentenceDisplay({ question, questionIndex, totalQuestions }: Sen
       <View className="bg-gradient-to-b from-blue-50 to-blue-100 p-4 rounded-lg mb-4 border-l-4 border-blue-500">
         <Text className="text-sm text-blue-600 font-semibold mb-2">Read the sentence:</Text>
         <Text className="text-lg text-gray-800 leading-relaxed font-medium">
-          {question.sentence}
+          {question.sentence || (question as any).question}
         </Text>
       </View>
 

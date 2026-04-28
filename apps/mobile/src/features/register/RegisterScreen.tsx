@@ -14,7 +14,7 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { setAuthToken } from "@/services/auth-service";
+import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { saveAuthSession } from "@/services/auth-storage";
 import { useRegisterMutation } from "@/services/auth-api";
 
@@ -37,7 +37,7 @@ export function RegisterScreen() {
       return;
     }
 
-    router.replace("/profile");
+    router.replace("/dynamic-onboarding");
   };
 
   const handleRegister = async () => {
@@ -73,8 +73,8 @@ export function RegisterScreen() {
       return;
     }
 
-    if (password_value.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
+    if (password_value.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters");
       return;
     }
 
@@ -96,7 +96,6 @@ export function RegisterScreen() {
         phone_number: phoneNumber_value,
         password: password_value,
         name: name_value,
-        remember_me: true,
       }).unwrap();
 
       await saveAuthSession(auth);
@@ -104,21 +103,46 @@ export function RegisterScreen() {
       Alert.alert("Success", "Registration successful.");
       handlePostAuthNavigation(auth.profile_completed);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      Alert.alert("Registration Failed", errorMessage);
+      console.error("Registration error:", error);
+      const apiError = error as { status?: number; data?: { message?: string; detail?: any } };
+
+      let errorMessage: string | undefined;
+
+      // Handle FastAPI validation error format (array of details)
+      if (Array.isArray(apiError?.data?.detail)) {
+        errorMessage = apiError.data.detail.map((err: any) => err.msg).join("\n");
+      } else if (typeof apiError?.data?.detail === "string") {
+        errorMessage = apiError.data.detail;
+      } else if (apiError?.data?.message) {
+        errorMessage = apiError.data.message;
+      }
+
+      if (!errorMessage) {
+        errorMessage = getApiErrorMessage(error, "Unable to register right now. Please try again.");
+      }
+
+      if (apiError?.status === 409) {
+        Alert.alert(
+          "Registration Failed",
+          errorMessage || "An account with this email or phone number already exists.",
+        );
+      } else {
+        Alert.alert("Registration Failed", errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"

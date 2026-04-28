@@ -1,79 +1,129 @@
 import React, { useState, useEffect } from "react";
-import { View, ScrollView, SafeAreaView, TouchableOpacity, Text } from "react-native";
+import {
+  View,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { useReadingState } from "./hooks/useReadingState";
+import {
+  useGetAssessmentSectionQuery,
+  useSubmitAssessmentSectionMutation,
+  getNextRouteForSection,
+} from "@/services/assessment-api";
 import { ReadingQuestion as ReadingQuestionComponent } from "./components/ReadingQuestion";
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/MCQOption";
-import type { ReadingAssessment } from "./types";
+import { FillBlankInput } from "@/features/pre-grammar/components/FillBlankInput";
 
 interface ReadingScreenProps {
-  assessment: ReadingAssessment;
+  sessionId?: string;
 }
 
-export function ReadingScreen({ assessment }: ReadingScreenProps) {
+export function ReadingScreen({ sessionId }: ReadingScreenProps) {
   const router = useRouter();
-  const {
-    currentQuestion,
-    currentQuestionIndex,
-    answers,
-    selectAnswer,
-    goToNextQuestion,
-    goToPreviousQuestion,
-  } = useReadingState({ questions: assessment.questions });
 
-  const [timeLeft, setTimeLeft] = useState(assessment.timeLimit ?? 60);
-  const [isRunning, setIsRunning] = useState(true);
+  const { data: sectionData, isLoading } = useGetAssessmentSectionQuery(
+    { session_id: sessionId!, section: "A_READING" },
+    { skip: !sessionId },
+  );
+
+  const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes default
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    if (sectionData) {
+      setIsRunning(true);
+    }
+  }, [sectionData]);
 
   useEffect(() => {
     if (!isRunning) return;
     if (timeLeft <= 0) {
       setIsRunning(false);
-      if (currentQuestionIndex < assessment.questions.length - 1) {
-        goToNextQuestion();
-        setTimeLeft(assessment.timeLimit ?? 60);
-        setIsRunning(true);
-      } else {
-        router.push("/speak-read");
-      }
+      handleFinish();
       return;
     }
 
     const timer = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearTimeout(timer);
-  }, [
-    isRunning,
-    timeLeft,
-    currentQuestionIndex,
-    assessment.questions.length,
-    assessment.timeLimit,
-    goToNextQuestion,
-    router,
-  ]);
+  }, [isRunning, timeLeft]);
 
-  useEffect(() => {
-    setTimeLeft(assessment.timeLimit ?? 60);
-    setIsRunning(true);
-  }, [currentQuestionIndex, assessment.timeLimit]);
-
-  if (!currentQuestion) {
-    return <View className="flex-1 items-center justify-center" />;
+  if (isLoading || !sectionData) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#4f46e5" />
+      </View>
+    );
   }
 
-  const currentAnswer = answers[currentQuestionIndex] || "";
-  const isLastQuestion = currentQuestionIndex === assessment.questions.length - 1;
-  const progressText = `Question ${currentQuestionIndex + 1} of ${assessment.questions.length}`;
+  const questions = sectionData.questions || [];
+  const currentQuestion = questions[currentQuestionIndex];
+
+  if (!currentQuestion) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text>No questions found for this section.</Text>
+      </View>
+    );
+  }
+
+  const currentAnswer = answers[currentQuestion.id] || "";
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const isMCQ = currentQuestion.options && currentQuestion.options.length > 0;
+  const progressText = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
 
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
   const timerLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+  const selectAnswer = (value: string) => {
+    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
+  };
+
+  const handleFinish = async () => {
+    try {
+      // Format answers for submission
+      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
+        question_id: qId,
+        answer: val,
+      }));
+
+      const response = await submitSection({
+        session_id: sessionId!,
+        section: "A_READING",
+        data: { answers: formattedAnswers },
+      }).unwrap();
+
+      const nextRoute = getNextRouteForSection(response.next_section);
+      router.push({ pathname: nextRoute, params: { session_id: sessionId } });
+    } catch (err) {
+      Alert.alert("Error", "Could not submit answers.");
+    }
+  };
+
   const handleNext = () => {
     if (isLastQuestion) {
-      router.push("/speak-read");
+      handleFinish();
       return;
     }
-    goToNextQuestion();
+    setCurrentQuestionIndex((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex((prev) => prev - 1);
+    } else {
+      router.back();
+    }
   };
 
   return (
@@ -92,50 +142,61 @@ export function ReadingScreen({ assessment }: ReadingScreenProps) {
             </Text>
           </View>
 
-          <ParagraphDisplay paragraph={currentQuestion.paragraph} topic={currentQuestion.topic} />
+          {sectionData.paragraph && (
+            <ParagraphDisplay paragraph={sectionData.paragraph} topic="Reading Comprehension" />
+          )}
 
           <ReadingQuestionComponent
             question={currentQuestion.question}
             questionIndex={currentQuestionIndex}
-            totalQuestions={assessment.questions.length}
+            totalQuestions={questions.length}
           />
 
           <View className="mt-4">
-            {currentQuestion.options &&
-              Object.entries(currentQuestion.options).map(([key, value]) => {
-                const label = key.replace("option", "");
+            {isMCQ ? (
+              currentQuestion.options &&
+              currentQuestion.options.map((option, idx) => {
                 return (
                   <MCQOption
-                    key={key}
-                    label={label}
-                    text={value}
-                    isSelected={currentAnswer === value}
-                    onSelect={() => selectAnswer(value)}
+                    key={idx}
+                    label={option.label || String.fromCharCode(65 + idx)}
+                    text={option.value}
+                    isSelected={currentAnswer === option.value}
+                    onSelect={() => selectAnswer(option.value)}
                   />
                 );
-              })}
+              })
+            ) : (
+              <FillBlankInput
+                value={currentAnswer}
+                placeholder="Type your answer here..."
+                onChange={(text: string) => selectAnswer(text)}
+              />
+            )}
           </View>
 
           <View className="flex-row justify-between mt-8 gap-3 mb-8">
             <TouchableOpacity
               className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-              onPress={() => {
-                if (currentQuestionIndex > 0) {
-                  goToPreviousQuestion();
-                } else {
-                  router.back();
-                }
-              }}
+              onPress={handleBack}
+              disabled={isSubmitting}
               activeOpacity={0.7}
             >
               <Text className="text-white font-semibold">Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 bg-indigo-600 py-3 rounded-lg items-center"
+              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
               onPress={handleNext}
+              disabled={isSubmitting}
               activeOpacity={0.7}
             >
-              <Text className="text-white font-semibold">{isLastQuestion ? "Submit" : "Next"}</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-semibold">
+                  {isLastQuestion ? "Submit" : "Next"}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

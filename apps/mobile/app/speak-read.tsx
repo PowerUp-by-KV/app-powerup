@@ -1,6 +1,7 @@
+import { useLocalSearchParams } from "expo-router";
 import { SpeakingReadScreen } from "@/features/pre-speaking-read";
-import { mockSpeakingReadAssessment } from "@/utils/mock-assessments";
 
 export default function SpeakReadRoute() {
-  return <SpeakingReadScreen assessment={mockSpeakingReadAssessment} />;
+  const { session_id } = useLocalSearchParams<{ session_id: string }>();
+  return <SpeakingReadScreen sessionId={session_id} />;
 }

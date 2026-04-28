@@ -30,14 +30,18 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
 
-  const handlePostAuthNavigation = () => {
-    router.replace("/dashboard");
+  const handlePostAuthNavigation = (profileCompleted: boolean) => {
+    if (profileCompleted) {
+      router.replace("/dashboard");
+    } else {
+      router.replace("/dynamic-onboarding");
+    }
   };
 
   const persistAuthAndNavigate = async (auth: AuthResponse) => {
     await saveAuthSession(auth);
     setAuthToken(auth.access_token);
-    handlePostAuthNavigation();
+    handlePostAuthNavigation(auth.profile_completed);
   };
 
   const handleLogin = async () => {
@@ -116,13 +120,14 @@ export function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center" }}
+          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -229,7 +234,7 @@ export function LoginScreen() {
 
             <View className="items-center mt-2">
               <Text className="text-sm text-slate-500">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Text
                   className="text-indigo-600 font-bold"
                   onPress={() => router.push("/register")}

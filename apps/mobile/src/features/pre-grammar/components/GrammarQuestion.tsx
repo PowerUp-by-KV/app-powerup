@@ -29,10 +29,14 @@ export function GrammarQuestion({ question, questionIndex, totalQuestions }: Gra
       </View>
 
       <View className="flex-row items-center mb-4">
-        <View className="bg-purple-600 rounded-lg px-3 py-1 mr-2">
-          <Text className="text-white text-xs font-bold">{question.topic}</Text>
-        </View>
-        <Text className="text-xs text-gray-600">{question.questionType}</Text>
+        {question.topic && (
+          <View className="bg-purple-600 rounded-lg px-3 py-1 mr-2">
+            <Text className="text-white text-xs font-bold">{question.topic}</Text>
+          </View>
+        )}
+        {question.questionType && (
+          <Text className="text-xs text-gray-600">{question.questionType}</Text>
+        )}
       </View>
 
       <View className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
