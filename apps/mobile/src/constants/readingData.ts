@@ -1,5 +1,6 @@
-// Placeholder for readingData.ts - the original file was not found
-export const readingData = [
+import { RawReadingData } from "./raw-data-types";
+
+export const readingData: RawReadingData[] = [
   {
     id: "r1",
     title: "A Busy Morning",
@@ -35,49 +36,6 @@ export const readingData = [
         options: ["6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM"],
         answer: "6:30 AM",
         difficulty: "easy",
-      },
-      {
-        id: "r1q2",
-        question: "What does Sarah do first after waking up?",
-        options: [
-          "Makes breakfast",
-          "Walks to the bus stop",
-          "Drinks water and stretches",
-          "Listens to podcasts",
-        ],
-        answer: "Drinks water and stretches",
-        difficulty: "easy",
-      },
-      {
-        id: "r1q3",
-        question: "What is Sarah's profession?",
-        options: ["Teacher", "Doctor", "Graphic Designer", "Architect"],
-        answer: "Graphic Designer",
-        difficulty: "medium",
-      },
-      {
-        id: "r1q4",
-        question: "How does Sarah feel about her commute?",
-        options: [
-          "She finds it boring.",
-          "She likes it because she listens to podcasts.",
-          "She hates walking to the bus stop.",
-          "She thinks it is too long.",
-        ],
-        answer: "She likes it because she listens to podcasts.",
-        difficulty: "medium",
-      },
-      {
-        id: "r1q5",
-        question: "Which of the following can be inferred about Sarah's lifestyle?",
-        options: [
-          "She is a morning person who values health.",
-          "She is always late for work.",
-          "She prefers driving to taking the bus.",
-          "She doesn't like city life.",
-        ],
-        answer: "She is a morning person who values health.",
-        difficulty: "hard",
       },
     ],
   },
@@ -121,54 +79,6 @@ export const readingData = [
         ],
         answer: "Self-driving cars and virtual assistants",
         difficulty: "easy",
-      },
-      {
-        id: "r2q2",
-        question: "What do experts think AI will solve in the future?",
-        options: [
-          "Cooking and cleaning",
-          "Complex problems in medicine and environment",
-          "Math homework",
-          "Traffic lights",
-        ],
-        answer: "Complex problems in medicine and environment",
-        difficulty: "easy",
-      },
-      {
-        id: "r2q3",
-        question: "What are two main concerns people have about AI?",
-        options: [
-          "Expensive costs and slow speed",
-          "Job displacement and data privacy",
-          "Colors and shapes",
-          "Weight and size",
-        ],
-        answer: "Job displacement and data privacy",
-        difficulty: "medium",
-      },
-      {
-        id: "r2q4",
-        question: "According to the passage, why are ethical guidelines needed?",
-        options: [
-          "To make AI faster",
-          "To ensure AI benefits everyone",
-          "To sell more AI products",
-          "To stop AI development",
-        ],
-        answer: "To ensure AI benefits everyone",
-        difficulty: "medium",
-      },
-      {
-        id: "r2q5",
-        question: "What is the main theme of the passage?",
-        options: [
-          "How to build a self-driving car",
-          "The impact and future of AI with its benefits and challenges",
-          "Why job Displacement is good",
-          "The history of computers",
-        ],
-        answer: "The impact and future of AI with its benefits and challenges",
-        difficulty: "hard",
       },
     ],
   },

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Check, Star, Zap, Shield, Headphones, Brain, ArrowLeft } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,7 +8,7 @@ import { GradientButton } from "./components/GradientButton";
 export const SubscriptionScreen = () => {
   const [selectedPlan, setSelectedPlan] = useState<"monthly" | "annual">("annual");
   const features = [
-    { text: "Unlimited lessons & practices", icon: <Zap size={20} color="#F59E0B" /> },
+    { text: "Unlimited lessons and practices", icon: <Zap size={20} color="#F59E0B" /> },
     { text: "Personalized AI coaching", icon: <Star size={20} color="#6366F1" /> },
     { text: "Advanced behaviour insights", icon: <Brain size={20} color="#10B981" /> },
     { text: "Full listening library", icon: <Headphones size={20} color="#3B82F6" /> },
@@ -41,7 +41,7 @@ export const SubscriptionScreen = () => {
         </LinearGradient>
 
         <View className="p-5">
-          <Text className="text-xl text-black mb-5 font-bold">What's included</Text>
+          <Text className="text-xl text-black mb-5 font-bold">What&apos;s included</Text>
           {features.map((feature, index) => (
             <View key={index} className="flex-row items-center mb-[15px]">
               <View className="w-10 h-10 rounded-lg bg-white justify-center items-center mr-[15px] shadow-sm shadow-black/5 elevation-2">

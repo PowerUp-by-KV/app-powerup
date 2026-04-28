@@ -1,89 +1,112 @@
 import React from "react";
-import { SafeAreaView, ScrollView, View, Alert, StatusBar } from "react-native";
-import { router } from "expo-router";
-import { User, Award, LogOut, TrendingUp, Shield } from "lucide-react-native";
+import { ScrollView, View, Alert, StatusBar, TouchableOpacity, Text } from "react-native";
+import { Zap, ChevronDown } from "lucide-react-native";
 
 import { ProfileHeader } from "./components/ProfileHeader";
 import { ProfileStats } from "./components/ProfileStats";
 import { ProfileMenu } from "./components/ProfileMenu";
+import { StreakCalendar } from "./components/StreakCalendar";
 import { useProfileLogic } from "./hooks/useProfileLogic";
 
 export const ProfileScreen = () => {
+  const [activeTab, setActiveTab] = React.useState<"Stats" | "Space">("Stats");
+  const [calendarViewMode, setCalendarViewMode] = React.useState<"Weekly" | "Monthly">("Weekly");
   const {
     user,
     isEditing,
     editedName,
     setEditedName,
     handleSave,
-    handleCancel,
     handleStartEditing,
     pickImage,
-    toggleAvatar,
     logout,
   } = useProfileLogic();
 
-  const menuItems = [
-    {
-      icon: <User size={20} color="#6366F1" />,
-      label: "Edit Profile",
-      onPress: handleStartEditing,
-    },
-    {
-      icon: <Award size={20} color="#8B5CF6" />,
-      label: "Badges & Achievements",
-      onPress: () => router.push("/progress/badges"),
-    },
-    {
-      icon: <TrendingUp size={20} color="#10B981" />,
-      label: "Learning Progress",
-      onPress: () => router.push("/(tabs)/progress"),
-    },
-    {
-      icon: <Shield size={20} color="#F59E0B" />,
-      label: "Privacy & Security",
-      onPress: () =>
-        Alert.alert(
-          "Settings",
-          "Privacy & Security settings will be available in the next update.",
-        ),
-    },
-    {
-      icon: <LogOut size={20} color="#EF4444" />,
-      label: "Logout",
-      isDestructive: true,
-      onPress: logout,
-    },
-  ];
-
   return (
-    <View className="flex-1 bg-[#F8FAFC]">
+    <View style={{ flex: 1, backgroundColor: "white" }}>
       <StatusBar barStyle="dark-content" />
-      <SafeAreaView className="flex-1">
+      <View style={{ flex: 1, width: "100%" }}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+          style={{ flex: 1 }}
         >
           <ProfileHeader
             user={user}
             isEditing={isEditing}
             editedName={editedName}
             setEditedName={setEditedName}
-            handleCancel={handleCancel}
             handleSave={handleSave}
             handleStartEditing={handleStartEditing}
-            toggleAvatar={toggleAvatar}
             pickImage={pickImage}
           />
 
-          <ProfileStats user={user} />
+          <View className="mt-2 mb-2">
+            <ProfileStats user={user} />
+          </View>
 
-          <ProfileMenu menuItems={menuItems} />
+          {/* Tab Switcher */}
+          <View className="flex-row px-5 border-b border-gray-100 mb-2">
+            <TouchableOpacity
+              onPress={() => setActiveTab("Stats")}
+              className={`pb-1.5 mr-8 ${activeTab === "Stats" ? "border-b-2 border-black" : ""}`}
+            >
+              <Text
+                className={`font-bold text-[13px] ${activeTab === "Stats" ? "text-black" : "text-gray-400"}`}
+              >
+                My Stats
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setActiveTab("Space")}
+              className={`pb-1.5 ${activeTab === "Space" ? "border-b-2 border-black" : ""}`}
+            >
+              <Text
+                className={`font-bold text-[13px] ${activeTab === "Space" ? "text-black" : "text-gray-400"}`}
+              >
+                My Space
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-          <View className="h-10" />
+          {activeTab === "Stats" ? (
+            <View className="px-5">
+              {/* Pro Subscription Card */}
+              <View className="bg-slate-200 rounded-[32px] p-6 mb-2 flex-row justify-between items-center h-20">
+                <View className="flex-1">
+                  <Text className="text-slate-600 font-bold text-base">Pro Subscription</Text>
+                </View>
+                <View className="items-center justify-center transform scale-110">
+                  <Zap size={22} color="#334155" fill="#334155" />
+                </View>
+              </View>
+
+              <View className="mb-2 flex-row justify-between items-center px-1">
+                <Text className="text-slate-600 font-bold text-base">Streak Calendar</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    setCalendarViewMode((prev) => (prev === "Weekly" ? "Monthly" : "Weekly"))
+                  }
+                  className="bg-black px-2 py-1 rounded-lg flex-row items-center"
+                >
+                  <Text className="text-white text-[10px] font-bold mr-1">{calendarViewMode}</Text>
+                  <ChevronDown size={12} color="white" />
+                </TouchableOpacity>
+              </View>
+
+              <StreakCalendar viewMode={calendarViewMode} />
+            </View>
+          ) : (
+            <ProfileMenu
+              onLogout={logout}
+              onPrivacy={() => Alert.alert("Privacy", "Commonly requested features coming soon...")}
+            />
+          )}
+
+          {/* Bottom Buffer for TabBar */}
+          <View style={{ height: 120 }} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 };
-
-// export default ProfileScreen;

@@ -5,14 +5,23 @@ import { ChevronLeft, CheckCircle, AlertTriangle } from "lucide-react-native";
 import { useProgress } from "./hooks/ProgressContext";
 import { ProgressBar } from "@/features/progress/components";
 
-const HeatmapSection = ({ title, items, color, icon }: any) => (
+import { HeatmapItem } from "@/services/types";
+
+interface HeatmapSectionProps {
+  title: string;
+  items: HeatmapItem[];
+  color: string;
+  icon: React.ReactNode;
+}
+
+const HeatmapSection = ({ title, items, color, icon }: HeatmapSectionProps) => (
   <View className="mb-[25px]">
     <View className="flex-row items-center mb-3">
       <Text className="text-lg text-black font-bold mr-2">{title}</Text>
       {icon}
     </View>
     <View className="bg-white rounded-[20px] p-5 shadow-sm shadow-black/10 elevation-5">
-      {items.map((item: any, index: number) => (
+      {items.map((item, index) => (
         <View key={index} className="mb-[15px]">
           <View className="flex-row justify-between mb-2">
             <Text className="text-base text-black font-medium">{item.name}</Text>
@@ -72,7 +81,7 @@ export const StrengthWeaknessHeatmap = () => {
 
         <TouchableOpacity
           className="bg-[#6366F1] py-4 rounded-[15px] items-center mt-2.5 shadow-lg shadow-[#6366F1]/30"
-          onPress={() => router.push("/LearningModules")}
+          onPress={() => router.push("/LearningModules" as any)}
         >
           <Text className="text-white text-base font-bold">Practice Weak Areas</Text>
         </TouchableOpacity>

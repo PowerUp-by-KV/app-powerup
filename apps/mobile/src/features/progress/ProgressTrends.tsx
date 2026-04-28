@@ -1,16 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Modal, FlatList } from "react-native";
 import { router } from "expo-router";
 import { ChevronLeft, ChevronDown, Check } from "lucide-react-native";
-import { useProgress } from "./hooks/ProgressContext";
 import { ProgressChart } from "./components";
 
 const DropdownSelector = ({
@@ -102,7 +93,7 @@ export const ProgressTrends = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View className="flex-1 bg-white">
       <View className="px-5 py-5">
         <TouchableOpacity onPress={handleBack} className="flex-row items-center">
           <ChevronLeft size={28} color="#000" />
@@ -138,6 +129,6 @@ export const ProgressTrends = () => {
 
         <View className="h-[50px]" />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };

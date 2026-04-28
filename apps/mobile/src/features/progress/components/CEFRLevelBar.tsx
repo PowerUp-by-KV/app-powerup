@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { COLORS } from "@/constants/theme";
 
 interface CEFRLevelBarProps {
   currentLevel: string;

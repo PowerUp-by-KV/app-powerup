@@ -1,32 +1,33 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
-import { LEADERBOARD } from "@/constants/mockData";
 import { ArrowLeft, Crown, Timer } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
-interface Player {
-  id: string;
-  name: string;
-  points: number;
-}
+import { useGetLeaderboardQuery, LeaderboardEntry } from "@/services/leaderboard-api";
 
 /**
  * High-Fidelity Professional Leaderboard Screen.
  * Features a podium for top 3 and a sleek list for remaining ranks.
  */
+
 export const LeaderboardScreen = () => {
   const [tab, setTab] = useState<"Weekly" | "All Time">("Weekly");
+  const { data: leaderboardData } = useGetLeaderboardQuery({
+    category: tab.toLowerCase(),
+    limit: 20,
+  });
 
-  const topThree = LEADERBOARD.slice(0, 3);
-  const remaining = LEADERBOARD.slice(3);
+  const displayData = leaderboardData || [];
+  const topThree = displayData.slice(0, 3);
+  const remaining = displayData.slice(3);
 
-  const renderPodiumItem = (player: Player, rank: number) => {
+  const renderPodiumItem = (player: LeaderboardEntry, rank: number) => {
     const isFirst = rank === 1;
     const height = isFirst ? 100 : rank === 2 ? 75 : 60;
 
     return (
-      <View key={player.id} className="items-center flex-1">
+      <View key={player.userId} className="items-center flex-1">
         <View className="items-center mb-2.5 w-full">
           {isFirst && <Crown size={24} color="#FFD700" fill="#FFD700" className="mb-1" />}
           <View
@@ -44,7 +45,7 @@ export const LeaderboardScreen = () => {
           </Text>
           <View className="bg-black/30 px-2 py-1 rounded-xl">
             <Text className="text-white text-[10px] font-bold">
-              {player.points.toLocaleString()} XP
+              {player.score.toLocaleString()} XP
             </Text>
           </View>
         </View>
@@ -64,7 +65,7 @@ export const LeaderboardScreen = () => {
     );
   };
 
-  const renderListItem = ({ item, index }: { item: Player; index: number }) => {
+  const renderListItem = ({ item, index }: { item: LeaderboardEntry; index: number }) => {
     const rank = index + 4;
     return (
       <View className="flex-row items-center bg-white mx-5 mb-2.5 p-[15px] rounded-[24px] shadow-sm shadow-black/5 elevation-2">
@@ -82,7 +83,7 @@ export const LeaderboardScreen = () => {
         <View className="flex-1">
           <Text className="text-[15px] text-black font-bold">{item.name}</Text>
           <Text className="text-[12px] text-[#9EA0A4] mt-0.5">
-            {item.points.toLocaleString()} points
+            {item.score.toLocaleString()} points
           </Text>
         </View>
         {index === 0 && (
@@ -161,7 +162,7 @@ export const LeaderboardScreen = () => {
         <FlatList
           data={remaining}
           renderItem={renderListItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.userId}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
           className="flex-1"

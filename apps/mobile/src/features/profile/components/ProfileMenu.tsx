@@ -1,50 +1,91 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import { ChevronRight } from "lucide-react-native";
-
-interface MenuItem {
-  icon: React.ReactNode;
-  label: string;
-  onPress: () => void;
-  isDestructive?: boolean;
-}
+import { View, Text, TouchableOpacity, Switch } from "react-native";
+import { ChevronRight, User, Globe, Lock, Sun, Bell, Info, ShieldCheck } from "lucide-react-native";
 
 interface ProfileMenuProps {
-  menuItems: MenuItem[];
+  onLogout: () => void;
+  onPrivacy: () => void;
 }
 
-export const ProfileMenu = ({ menuItems }: ProfileMenuProps) => {
+export const ProfileMenu = ({ onLogout, onPrivacy }: ProfileMenuProps) => {
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const [isNotificationsEnabled, setIsNotificationsEnabled] = React.useState(true);
+
+  const SettingsItem = ({
+    icon,
+    label,
+    onPress,
+    hasChevron = true,
+    hasToggle = false,
+    toggleValue,
+    onToggle,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    onPress?: () => void;
+    hasChevron?: boolean;
+    hasToggle?: boolean;
+    toggleValue?: boolean;
+    onToggle?: (val: boolean) => void;
+  }) => (
+    <TouchableOpacity
+      activeOpacity={0.7}
+      disabled={hasToggle}
+      onPress={onPress}
+      className="bg-slate-100 rounded-2xl px-5 py-3 mb-3 flex-row items-center justify-between"
+    >
+      <View className="flex-row items-center">
+        <View className="mr-4">{icon}</View>
+        <Text className="text-slate-700 font-bold text-base">{label}</Text>
+      </View>
+      {hasToggle ? (
+        <Switch
+          value={toggleValue}
+          onValueChange={onToggle}
+          trackColor={{ false: "#CBD5E1", true: "#334155" }}
+        />
+      ) : (
+        hasChevron && <ChevronRight size={20} color="#94A3B8" />
+      )}
+    </TouchableOpacity>
+  );
+
   return (
-    <View className="px-5 mb-10">
-      <View className="bg-white rounded-[30px] py-2.5 shadow-sm shadow-black/5 elevation-3">
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            className={`flex-row items-center justify-between py-3.5 px-5 ${
-              index === menuItems.length - 1 ? "" : "border-b border-[#F1F5F9]"
-            }`}
-            onPress={item.onPress}
-            activeOpacity={0.6}
-          >
-            <View className="flex-row items-center">
-              <View
-                className={`w-10 h-10 rounded-xl justify-center items-center ${
-                  item.isDestructive ? "bg-[#FEE2E2]" : "bg-[#F8FAFC]"
-                }`}
-              >
-                {item.icon}
-              </View>
-              <Text
-                className={`text-base ml-[15px] font-bold ${
-                  item.isDestructive ? "text-[#EF4444]" : "text-[#334155]"
-                }`}
-              >
-                {item.label}
-              </Text>
-            </View>
-            {!item.isDestructive && <ChevronRight size={18} color="#CBD5E1" />}
-          </TouchableOpacity>
-        ))}
+    <View className="px-5">
+      <Text className="text-slate-400 font-bold text-[12px] uppercase tracking-widest mb-4 ml-1">
+        Settings
+      </Text>
+
+      <SettingsItem icon={<User size={20} color="#64748B" />} label="Personal Details" />
+      <SettingsItem icon={<Globe size={20} color="#64748B" />} label="Language" />
+      <SettingsItem icon={<Lock size={20} color="#64748B" />} label="Passwords" />
+      <SettingsItem
+        icon={<Sun size={20} color="#64748B" />}
+        label="Mode"
+        hasChevron={false}
+        hasToggle={true}
+        toggleValue={isDarkMode}
+        onToggle={setIsDarkMode}
+      />
+      <SettingsItem
+        icon={<Bell size={20} color="#64748B" />}
+        label="Notifications"
+        hasChevron={false}
+        hasToggle={true}
+        toggleValue={isNotificationsEnabled}
+        onToggle={setIsNotificationsEnabled}
+      />
+
+      <View className="mt-6">
+        <SettingsItem icon={<Info size={20} color="#64748B" />} label="About Us" />
+        <SettingsItem
+          icon={<ShieldCheck size={20} color="#64748B" />}
+          label="Privacy & Security"
+          onPress={onPrivacy}
+        />
+        <TouchableOpacity onPress={onLogout} className="mt-4 items-center">
+          <Text className="text-red-500 font-bold">Logout</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

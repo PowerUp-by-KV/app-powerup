@@ -59,7 +59,7 @@ export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () 
     ]);
   };
 
-  const renderMessage = ({ item }: { item: any }) => (
+  const renderMessage = ({ item }: { item: { id: string; text: string; sender: string } }) => (
     <View
       className={`flex-row mb-5 max-w-[85%] ${item.sender === "user" ? "self-end justify-end" : "self-start"}`}
     >

@@ -24,7 +24,7 @@ export const GradientButton = ({
       className={`rounded-xl overflow-hidden w-full my-2.5 ${className || ""}`}
     >
       <LinearGradient
-        colors={(colors || ["#FFAD60", "#FF8C42"]) as any}
+        colors={(colors as any) || ["#FFAD60", "#FF8C42"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         className="py-4 px-5 items-center justify-center"

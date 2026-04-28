@@ -16,4 +16,15 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
+// Handle ReactDevToolsSettingsManager resolution error on Web
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (platform === "web" && moduleName.includes("ReactDevToolsSettingsManager")) {
+    return {
+      type: "empty",
+    };
+  }
+  // Fallback to default resolution
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: "./global.css" });
