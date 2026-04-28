@@ -10,15 +10,10 @@ const config = getDefaultConfig(projectRoot);
 // Watch all files in the monorepo
 config.watchFolders = [monorepoRoot];
 
-// Let Metro know where to resolve packages from (including pnpm virtual store)
+// Let Metro know where to resolve packages from
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(monorepoRoot, "node_modules"),
-  path.resolve(monorepoRoot, "node_modules/.pnpm/node_modules"),
 ];
-
-// Ensure Metro resolves symlinks correctly for pnpm
-config.resolver.unstable_enableSymlinks = true;
-config.resolver.unstable_enablePackageExports = true;
 
 module.exports = withNativeWind(config, { input: "./global.css" });
