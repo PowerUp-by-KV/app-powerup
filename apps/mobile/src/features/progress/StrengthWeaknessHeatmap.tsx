@@ -81,7 +81,7 @@ export const StrengthWeaknessHeatmap = () => {
 
         <TouchableOpacity
           className="bg-[#6366F1] py-4 rounded-[15px] items-center mt-2.5 shadow-lg shadow-[#6366F1]/30"
-          onPress={() => router.push("/LearningModules" as any)}
+          onPress={() => router.push("/(tabs)/my-learning")}
         >
           <Text className="text-white text-base font-bold">Practice Weak Areas</Text>
         </TouchableOpacity>

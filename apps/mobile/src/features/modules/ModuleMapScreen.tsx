@@ -1,110 +1,85 @@
 import React from "react";
-import { View, Text, ActivityIndicator, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image } from "react-native";
 import { router } from "expo-router";
 import { useAppSelector } from "@/store/hooks";
-import { selectUserId, selectCefrLevel } from "@/store/slices/authSlice";
-import { useGetModulesQuery } from "@/services/module-api";
+import { selectUserId } from "@/store/slices/authSlice";
 import { useGetUserProfileQuery } from "@/services/user-api";
 import { useUser } from "@/features/profile/hooks/UserContext";
-import { RefreshCcw } from "lucide-react-native";
 import { Card } from "@/components/ui/Card";
 import { ModuleTimelineItem } from "./components/ModuleTimelineItem";
 
 export const ModuleMapScreen = () => {
   const userId = useAppSelector(selectUserId);
-  const cefrLevel = useAppSelector(selectCefrLevel);
 
   const { data: userProfile } = useGetUserProfileQuery(userId || "user-1");
   const { user: contextUser } = useUser();
   const userName = userProfile?.name || contextUser?.name || "Explorer";
   const userAvatar = userProfile?.avatarUri || contextUser?.avatarUri;
 
-  const { isLoading, isError, refetch } = useGetModulesQuery({
-    user_id: userId,
-    cefr_level: cefrLevel,
-  });
-
-  const getModuleMetadata = (no: number) => {
-    const metadataMap: Record<number, { name: string; subtitle: string }> = {
-      1: { name: "Pre Assesment", subtitle: "Master the fundamentals" },
-      2: { name: "CEFR Score", subtitle: "Challenge yourself" },
-      3: { name: "Post Assesment", subtitle: "Craft effective messages" },
-      4: { name: "Resume option", subtitle: "Optimize your Resume" },
-    };
-    return metadataMap[no] || { name: `Stage ${no}`, subtitle: "Continue your journey" };
-  };
-
-  const completedStageNos = useAppSelector(
-    (state) => state.progress.completedDays["global-journey"] || [],
-  );
-  const allStageProgress = useAppSelector((state) => state.progress.completedDays);
+  // Static UI-only modules data matching the screenshot
+  const STATIC_MODULES = [
+    {
+      module_id: "pre-assessment",
+      module_no: 0,
+      name: "Pre Assesment",
+      description: "Master the fundamentals",
+      total_days: 8,
+      lessonsCompleted: 8,
+      xpEarned: 350,
+    },
+    {
+      module_id: "cefr-score",
+      module_no: 1,
+      name: "CEFR Score",
+      description: "Challenge yourself",
+      total_days: 7, // To get ~70% with 5 lessons (5/7 = 71%)
+      lessonsCompleted: 5,
+      xpEarned: 210,
+    },
+    {
+      module_id: "post-assessment",
+      module_no: 2,
+      name: "Post Assesment",
+      description: "Craft effective messages",
+      total_days: 10,
+      lessonsCompleted: 0,
+      xpEarned: 0,
+    },
+    {
+      module_id: "resume-option",
+      module_no: 3,
+      name: "Resume option",
+      description: "Optimize your Resume",
+      total_days: 5,
+      lessonsCompleted: 0,
+      xpEarned: 0,
+    },
+  ];
 
   const getProcessedModules = () => {
-    const totalModuleCount = 4;
-    const processed = new Array(totalModuleCount).fill(null).map((_, index) => {
-      const moduleNo = index + 1;
-      const moduleId = `m${moduleNo}`;
-      const isCompleted = completedStageNos.includes(moduleNo);
-      const meta = getModuleMetadata(moduleNo);
-
-      // Calculate how many sub-modules are done in this stage
-      const subModulesDone = allStageProgress[moduleId]?.length || 0;
-      const totalSubModules = 12;
+    return STATIC_MODULES.map((moduleItem) => {
+      // For this static UI, we'll manually set statuses to match the screenshot
+      let newStatus: "completed" | "in_progress" | "locked" = "locked";
+      if (moduleItem.name === "Pre Assesment") newStatus = "completed";
+      else if (moduleItem.name === "CEFR Score") newStatus = "in_progress";
+      else newStatus = "locked";
 
       return {
-        module_id: moduleId,
-        module_no: moduleNo,
-        name: meta.name,
-        subtitle: meta.subtitle,
-        status: (isCompleted ? "completed" : "locked") as "completed" | "in_progress" | "locked",
-        lessonsCompleted: subModulesDone,
-        totalLessons: totalSubModules,
-        xpEarned: subModulesDone * 30, // Mock XP calculation
+        module_id: moduleItem.module_id,
+        module_no: moduleItem.module_no,
+        name: moduleItem.name,
+        subtitle: moduleItem.description,
+        status: newStatus,
+        lessonsCompleted: moduleItem.lessonsCompleted,
+        totalLessons: moduleItem.total_days,
+        xpEarned: moduleItem.xpEarned,
       };
-    });
-
-    let foundCurrent = false;
-    return processed.map((module) => {
-      if (foundCurrent) {
-        return { ...module, status: "locked" as const };
-      }
-      if (module.status !== "completed") {
-        foundCurrent = true;
-        return { ...module, status: "in_progress" as const };
-      }
-      return module;
     });
   };
 
   const modules = getProcessedModules();
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-[#F8FAFC] justify-center items-center">
-        <ActivityIndicator size="large" color="#475569" />
-        <Text className="mt-4 text-slate-500 font-medium tracking-tight">
-          Loading your journey...
-        </Text>
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View className="flex-1 bg-[#F8FAFC] justify-center items-center px-10">
-        <Text className="text-xl font-bold text-slate-800 mb-4 text-center">
-          Something went wrong while loading your path
-        </Text>
-        <TouchableOpacity
-          className="bg-[#475569] px-8 py-3 rounded-full flex-row items-center"
-          onPress={() => refetch()}
-        >
-          <RefreshCcw size={18} color="white" className="mr-2" />
-          <Text className="text-white font-bold text-base">Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+  // We no longer need the global isLoading/isError for modules since they are static
 
   return (
     <View className="flex-1 bg-[#F8FAFC]">
@@ -120,7 +95,7 @@ export const ModuleMapScreen = () => {
         </View>
         <TouchableOpacity
           className="w-10 h-10 rounded-full bg-[#F1F5F9] justify-center items-center shadow-sm border border-[#475569]/10"
-          onPress={() => router.push("/(tabs)/profile")}
+          onPress={() => router.push("/profile")}
         >
           {userAvatar ? (
             <Image source={{ uri: userAvatar }} className="w-full h-full rounded-full" />
@@ -155,11 +130,11 @@ export const ModuleMapScreen = () => {
               onPress={() => {
                 if (module.name === "Pre Assesment") {
                   router.push({
-                    pathname: "/(tabs)/my-learning/modules/assessment-result",
+                    pathname: "/modules/assessment-result",
                     params: { moduleId: module.module_id },
                   });
                 } else {
-                  router.push(`/(tabs)/my-learning/modules/${module.module_id}`);
+                  router.push(`/modules/${module.module_id}`);
                 }
               }}
             />

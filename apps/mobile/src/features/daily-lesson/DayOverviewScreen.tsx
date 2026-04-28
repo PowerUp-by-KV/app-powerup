@@ -91,7 +91,7 @@ export const DayOverviewScreen: React.FC<DayOverviewScreenProps> = ({ progress, 
                 if (onSelect) {
                   onSelect(index);
                 } else {
-                  router.push(`/(tabs)/my-learning/lesson/${moduleId}/${dayNo}`);
+                  router.push(`/lesson/${moduleId}/${dayNo}`);
                 }
               }}
             />

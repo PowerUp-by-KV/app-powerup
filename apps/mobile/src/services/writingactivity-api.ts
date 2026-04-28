@@ -1,16 +1,10 @@
 import { api } from "./api";
-import { MOCK_ACTIVITIES } from "@/constants/learning-data";
-import { ActivityBase, WritingActivityData } from "./types";
+import { WritingActivityData } from "./types";
 
 export const writingApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getWritingActivity: builder.query<WritingActivityData, string>({
-      queryFn: (id) => {
-        const activity = Object.values(MOCK_ACTIVITIES)
-          .flat()
-          .find((a) => a.id === id);
-        return { data: activity as WritingActivityData };
-      },
+      query: (id) => `/v1/modules/activities/${id}`,
       providesTags: ["Results"],
     }),
 

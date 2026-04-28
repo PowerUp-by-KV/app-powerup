@@ -1,7 +1,5 @@
 import { api } from "./api";
 
-import { MOCK_MODULES, MOCK_ACTIVITIES } from "@/constants/learning-data";
-
 export interface Module {
   module_id: string;
   module_no: number;
@@ -14,10 +12,18 @@ export interface Module {
 }
 
 export interface ModuleDay {
-  day_no: number;
-  status: "completed" | "current" | "locked";
+  id: string;
+  title: string;
+  order_index: number;
+  is_active: boolean;
+
+  // Optional/missing fields that might be calculated or fetched elsewhere
+  tag?: string;
+  duration?: string;
+  gradient?: string[];
+  status?: "completed" | "current" | "locked";
   score?: number;
-  activities: unknown[];
+  activities?: unknown[];
 }
 
 export const moduleApi = api.injectEndpoints({
@@ -25,28 +31,18 @@ export const moduleApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getModules: builder.query<Module[], { user_id?: string; cefr_level?: string } | void>({
       // Backend Endpoint: query: () => '/api/v1/modules/',
-      queryFn: () => ({ data: MOCK_MODULES }),
+      query: (params) => ({ url: "/v1/modules/", params: params || {} }),
       providesTags: ["Results"],
     }),
     getVariants: builder.query<unknown[], { moduleId: string }>({
-      query: ({ moduleId }) => `/api/v1/modules/${moduleId}/variants`,
+      query: ({ moduleId }) => `/v1/modules/${moduleId}/variants`,
     }),
     getModuleDays: builder.query<ModuleDay[], { moduleId: string; cefr_level?: string }>({
-      // Backend Endpoint: query: ({ moduleId, variantId }) => `/api/v1/modules/${moduleId}/variants/${variantId}/days`,
-      queryFn: ({ moduleId }) => {
-        const days: ModuleDay[] = new Array(12).fill(null).map((_, i) => {
-          const dayNo = i + 1;
-          const key = `${moduleId}_${dayNo}`;
-          const dayActivities = MOCK_ACTIVITIES[key] || [];
-
-          return {
-            day_no: dayNo,
-            status: i === 0 ? "current" : "locked",
-            activities: dayActivities,
-          };
-        });
-        return { data: days };
-      },
+      // Backend Endpoint: query: ({ moduleId, variantId }) => `/v1/modules/${moduleId}/variants/${variantId}/days`,
+      query: ({ moduleId, cefr_level }) => ({
+        url: `/v1/modules/${moduleId}/days`,
+        params: { cefr_level },
+      }),
       providesTags: (result, error, { moduleId }) => [{ type: "Results", id: `DAYS-${moduleId}` }],
     }),
   }),

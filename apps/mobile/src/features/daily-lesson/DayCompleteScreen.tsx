@@ -148,7 +148,7 @@ export const DayCompleteScreen = ({
                   className="bg-emerald-600 p-5 rounded-full flex-row items-center justify-center shadow-lg"
                   onPress={() => {
                     router.replace({
-                      pathname: "/(tabs)/my-learning/lesson/[moduleId]/[dayNo]",
+                      pathname: "/lesson/[moduleId]/[dayNo]",
                       params: {
                         moduleId: params.moduleId,
                         dayNo: parseInt(params.dayNo!) + 1,
@@ -169,7 +169,7 @@ export const DayCompleteScreen = ({
                 className="bg-[#475569] p-5 rounded-full flex-row items-center justify-center shadow-lg"
                 onPress={() =>
                   router.push({
-                    pathname: "/(tabs)/my-learning/modules/[moduleId]/[subModuleId]",
+                    pathname: "/modules/[moduleId]/[subModuleId]",
                     params: {
                       moduleId: params.stageId || "m1",
                       subModuleId: params.moduleId,

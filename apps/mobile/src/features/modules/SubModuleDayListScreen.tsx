@@ -117,7 +117,7 @@ export const SubModuleDayListScreen = () => {
 
           <TouchableOpacity
             className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-[#E2E8F0]"
-            onPress={() => router.push("/(tabs)/profile")}
+            onPress={() => router.push("/profile")}
           >
             {userAvatar ? (
               <Image source={{ uri: userAvatar }} className="w-full h-full rounded-full" />
@@ -136,7 +136,7 @@ export const SubModuleDayListScreen = () => {
               router.back();
             } else {
               router.push({
-                pathname: "/(tabs)/my-learning/modules/[moduleId]",
+                pathname: "/modules/[moduleId]",
                 params: { moduleId },
               });
             }
@@ -161,7 +161,7 @@ export const SubModuleDayListScreen = () => {
             gradient={day.gradient}
             onPress={() => {
               router.push({
-                pathname: "/(tabs)/my-learning/lesson/[moduleId]/[dayNo]",
+                pathname: "/lesson/[moduleId]/[dayNo]",
                 params: {
                   moduleId: subModuleId,
                   dayNo: day.day_no,

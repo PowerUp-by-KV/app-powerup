@@ -217,7 +217,7 @@ export interface ListeningActivityData extends ActivityBase {
 export interface ReadingActivityData extends ActivityBase {
   paragraph: string;
   questions: ActivityQuestion[];
-  vocabulary?: any[];
+  vocabulary?: ReadingVocabulary[];
 }
 
 export interface VocabularyActivityData extends ActivityBase {

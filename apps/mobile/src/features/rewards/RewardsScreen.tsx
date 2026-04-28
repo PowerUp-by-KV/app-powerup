@@ -128,12 +128,12 @@ export const RewardsScreen = () => {
           <View className="mb-6">
             <View className="flex-row gap-x-4 mb-4">
               <StatsCard title="XP Points" value={profile.points} />
-              <TouchableOpacity className="flex-1" onPress={() => router.push("/medals" as any)}>
+              <TouchableOpacity className="flex-1" onPress={() => router.push("/rewards")}>
                 <StatsCard title="Medals" value="" icon={Medal} />
               </TouchableOpacity>
             </View>
             <View className="flex-row gap-x-4">
-              <TouchableOpacity className="flex-1" onPress={() => router.push("/accuracy" as any)}>
+              <TouchableOpacity className="flex-1" onPress={() => router.push("/rewards")}>
                 <StatsCard title="Accuracy" value="" icon={Target} />
               </TouchableOpacity>
               <StatsCard title="Level" value="8" />

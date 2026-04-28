@@ -72,7 +72,7 @@ export const HomeScreen = () => {
 
           <TouchableOpacity
             className="w-10 h-10 rounded-full bg-white justify-center items-center shadow-sm border border-[#E2E8F0]"
-            onPress={() => router.push("/(tabs)/profile")}
+            onPress={() => router.push("/profile")}
           >
             {userAvatar ? (
               <Image source={{ uri: userAvatar }} className="w-full h-full rounded-full" />
@@ -124,7 +124,7 @@ export const HomeScreen = () => {
             ].map((stat, i) => (
               <LinearGradient
                 key={i}
-                colors={stat.colors as any}
+                colors={stat.colors as [string, string, ...string[]]}
                 className="w-[31%] h-[48px] flex-row items-center justify-center rounded-[12px] shadow-sm"
               >
                 <View className="mr-1.5">{stat.icon}</View>

@@ -6,10 +6,8 @@ import {
   GrammarQuestion,
   GrammarSubmitRequest,
   SubmitResponse,
-  ActivityBase,
   GrammarActivityData,
 } from "./types";
-import { MOCK_ACTIVITIES } from "@/constants/learning-data";
 
 export const grammarApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -61,12 +59,7 @@ export const grammarApi = api.injectEndpoints({
 
     // Lesson-specific endpoints (migrated from activity-api)
     getGrammarActivity: builder.query<GrammarActivityData, string>({
-      queryFn: (id) => {
-        const activity = Object.values(MOCK_ACTIVITIES)
-          .flat()
-          .find((a) => a.id === id);
-        return { data: activity as GrammarActivityData };
-      },
+      query: (id) => `/v1/modules/activities/${id}`,
       providesTags: ["Grammar"],
     }),
 

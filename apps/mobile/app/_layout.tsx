@@ -22,6 +22,12 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" />
                 <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="profile" />
+                <Stack.Screen name="rewards" />
+                <Stack.Screen name="lesson" />
+                <Stack.Screen name="modules" />
+                <Stack.Screen name="progress_details" />
+                <Stack.Screen name="+not-found" />
               </Stack>
             </ProgressProvider>
           </AppProvider>

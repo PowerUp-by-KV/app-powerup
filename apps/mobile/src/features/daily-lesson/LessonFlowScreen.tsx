@@ -39,7 +39,7 @@ export const LessonFlowScreen = () => {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace(`/(tabs)/my-learning/modules/${stageId || "m1"}/${moduleId}`);
+      router.replace(`/modules/${stageId || "m1"}/${moduleId}`);
     }
   };
 

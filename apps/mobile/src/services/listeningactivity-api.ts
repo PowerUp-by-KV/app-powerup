@@ -5,10 +5,8 @@ import {
   ListeningQuestion,
   ListeningSubmitRequest,
   SubmitResponse,
-  ActivityBase,
   ListeningActivityData,
 } from "./types";
-import { MOCK_ACTIVITIES } from "@/constants/learning-data";
 
 export const listeningApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -48,12 +46,7 @@ export const listeningApi = api.injectEndpoints({
 
     // Lesson-specific endpoints (migrated from activity-api)
     getListeningActivity: builder.query<ListeningActivityData, string>({
-      queryFn: (id) => {
-        const activity = Object.values(MOCK_ACTIVITIES)
-          .flat()
-          .find((a) => a.id === id);
-        return { data: activity as ListeningActivityData };
-      },
+      query: (id) => `/v1/modules/activities/${id}`,
       providesTags: ["Listening"],
     }),
 
