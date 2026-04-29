@@ -14,16 +14,25 @@ export interface AssessmentOption {
 
 export interface AssessmentQuestion {
   id: string;
-  question_no: number;
-  question: string;
-  options: AssessmentOption[];
+  question_id?: string;
+  question_no?: number;
+  question?: string;
+  text?: string;
+  sentence?: string;
+  prompt?: string;
+  story?: string;
+  options?: AssessmentOption[];
 }
 
 export interface AssessmentSectionResponse {
   section: string;
   paragraph?: string;
   audio_url?: string;
-  questions: AssessmentQuestion[];
+  questions?: AssessmentQuestion[];
+  sentences?: any[];
+  items?: any[];
+  prompts?: any[];
+  stories?: any[];
 }
 
 export interface AssessmentAnswer {

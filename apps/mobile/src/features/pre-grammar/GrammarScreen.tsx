@@ -7,6 +7,8 @@ import {
   Text,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -17,13 +19,24 @@ import {
 import { GrammarQuestion as GrammarQuestionComponent } from "./components/GrammarQuestion";
 import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
+import { useEffect } from "react";
+import { getAssessmentSessionId } from "@/services/auth-storage";
 
 interface GrammarScreenProps {
   sessionId?: string;
 }
 
-export function GrammarScreen({ sessionId }: GrammarScreenProps) {
+export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) {
   const router = useRouter();
+  const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
+
+  useEffect(() => {
+    if (!sessionId) {
+      getAssessmentSessionId().then((id) => {
+        if (id) setSessionId(id);
+      });
+    }
+  }, [sessionId]);
 
   const { data: sectionData, isLoading } = useGetAssessmentSectionQuery(
     { session_id: sessionId!, section: "C_GRAMMAR" },
@@ -35,6 +48,15 @@ export function GrammarScreen({ sessionId }: GrammarScreenProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
+  const questions =
+    sectionData?.questions ||
+    sectionData?.sentences ||
+    sectionData?.items ||
+    sectionData?.prompts ||
+    sectionData?.stories ||
+    [];
+  const currentQuestion = questions[currentQuestionIndex];
+
   if (isLoading || !sectionData) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -42,9 +64,6 @@ export function GrammarScreen({ sessionId }: GrammarScreenProps) {
       </View>
     );
   }
-
-  const questions = sectionData.questions || [];
-  const currentQuestion = questions[currentQuestionIndex];
 
   if (!currentQuestion) {
     return (
@@ -99,59 +118,71 @@ export function GrammarScreen({ sessionId }: GrammarScreenProps) {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <ScrollView className="flex-1 px-4 py-4">
-        <GrammarQuestionComponent
-          question={currentQuestion as any}
-          questionIndex={currentQuestionIndex}
-          totalQuestions={questions.length}
-        />
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          className="flex-1 px-4 py-4"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <GrammarQuestionComponent
+            question={currentQuestion as any}
+            questionIndex={currentQuestionIndex}
+            totalQuestions={questions.length}
+          />
 
-        {isMCQ ? (
-          <View className="mt-4">
-            {currentQuestion.options.map((option, idx) => {
-              return (
-                <MCQOption
-                  key={idx}
-                  label={option.label || String.fromCharCode(65 + idx)}
-                  text={option.value}
-                  isSelected={currentAnswer === option.value}
-                  onSelect={() => selectAnswer(option.value)}
-                />
-              );
-            })}
-          </View>
-        ) : (
-          <View className="mt-4">
-            <FillBlankInput
-              value={currentAnswer}
-              placeholder="Fill in the blank..."
-              onChange={(text: string) => selectAnswer(text)}
-            />
-          </View>
-        )}
+          {isMCQ && currentQuestion.options ? (
+            <View className="mt-4">
+              {currentQuestion.options.map((option: any, idx: number) => {
+                return (
+                  <MCQOption
+                    key={idx}
+                    label={option.label || String.fromCharCode(65 + idx)}
+                    text={option.value}
+                    isSelected={currentAnswer === option.value}
+                    onSelect={() => selectAnswer(option.value)}
+                  />
+                );
+              })}
+            </View>
+          ) : (
+            <View className="mt-4">
+              <FillBlankInput
+                value={currentAnswer}
+                placeholder="Fill in the blank..."
+                onChange={(text: string) => selectAnswer(text)}
+              />
+            </View>
+          )}
 
-        <View className="flex-row justify-between mt-8 gap-3">
-          <TouchableOpacity
-            className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-            onPress={handleBack}
-            disabled={isSubmitting}
-          >
-            <Text className="text-white font-semibold">Back</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
-            onPress={handleNext}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-semibold">{isLastQuestion ? "Submit" : "Next"}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          <View className="flex-row justify-between mt-8 gap-3">
+            <TouchableOpacity
+              className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+              onPress={handleBack}
+              disabled={isSubmitting}
+            >
+              <Text className="text-white font-semibold">Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+              onPress={handleNext}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-semibold">
+                  {isLastQuestion ? "Submit" : "Next"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

@@ -18,7 +18,7 @@ import {
 } from "@/services/onboarding-api";
 import { useStartSessionMutation } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
-import { setProfileCompletedInSession } from "@/services/auth-storage";
+import { setProfileCompletedInSession, saveAssessmentSessionId } from "@/services/auth-storage";
 import { getApiErrorMessage } from "@/services/auth-service";
 
 export default function DynamicOnboardingScreen() {
@@ -126,6 +126,7 @@ export default function DynamicOnboardingScreen() {
         await submitOnboarding({ answers: answersPayload }).unwrap();
         await setProfileCompletedInSession(true);
         const session = await startSession().unwrap();
+        await saveAssessmentSessionId(session.session_id);
         router.replace({ pathname: "/read", params: { session_id: session.session_id } });
       } catch (err) {
         Alert.alert("Error", getApiErrorMessage(err, "Submission failed"));

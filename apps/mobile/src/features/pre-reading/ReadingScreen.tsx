@@ -7,6 +7,8 @@ import {
   Text,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -18,13 +20,23 @@ import { ReadingQuestion as ReadingQuestionComponent } from "./components/Readin
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "@/features/pre-grammar/components/FillBlankInput";
+import { getAssessmentSessionId } from "@/services/auth-storage";
 
 interface ReadingScreenProps {
   sessionId?: string;
 }
 
-export function ReadingScreen({ sessionId }: ReadingScreenProps) {
+export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) {
   const router = useRouter();
+  const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
+
+  useEffect(() => {
+    if (!sessionId) {
+      getAssessmentSessionId().then((id) => {
+        if (id) setSessionId(id);
+      });
+    }
+  }, [sessionId]);
 
   const { data: sectionData, isLoading } = useGetAssessmentSectionQuery(
     { session_id: sessionId!, section: "A_READING" },
@@ -65,7 +77,13 @@ export function ReadingScreen({ sessionId }: ReadingScreenProps) {
     );
   }
 
-  const questions = sectionData.questions || [];
+  const questions =
+    sectionData.questions ||
+    sectionData.sentences ||
+    sectionData.items ||
+    sectionData.prompts ||
+    sectionData.stories ||
+    [];
   const currentQuestion = questions[currentQuestionIndex];
 
   if (!currentQuestion) {
@@ -128,79 +146,90 @@ export function ReadingScreen({ sessionId }: ReadingScreenProps) {
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
-      <ScrollView
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
       >
-        <View className="px-4 py-4">
-          <View className="rounded-3xl bg-slate-100 p-4 mb-4">
-            <Text className="text-sm text-slate-500">{progressText}</Text>
-            <Text className="text-sm text-right text-indigo-600 font-semibold">
-              Time left: {timerLabel}
-            </Text>
-          </View>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ paddingBottom: 50, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="px-4 py-4">
+            <View className="rounded-3xl bg-slate-100 p-4 mb-4">
+              <Text className="text-sm text-slate-500">{progressText}</Text>
+              <Text className="text-sm text-right text-indigo-600 font-semibold">
+                Time left: {timerLabel}
+              </Text>
+            </View>
 
-          {sectionData.paragraph && (
-            <ParagraphDisplay paragraph={sectionData.paragraph} topic="Reading Comprehension" />
-          )}
-
-          <ReadingQuestionComponent
-            question={currentQuestion.question}
-            questionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-          />
-
-          <View className="mt-4">
-            {isMCQ ? (
-              currentQuestion.options &&
-              currentQuestion.options.map((option, idx) => {
-                return (
-                  <MCQOption
-                    key={idx}
-                    label={option.label || String.fromCharCode(65 + idx)}
-                    text={option.value}
-                    isSelected={currentAnswer === option.value}
-                    onSelect={() => selectAnswer(option.value)}
-                  />
-                );
-              })
-            ) : (
-              <FillBlankInput
-                value={currentAnswer}
-                placeholder="Type your answer here..."
-                onChange={(text: string) => selectAnswer(text)}
-              />
+            {sectionData.paragraph && (
+              <ParagraphDisplay paragraph={sectionData.paragraph} topic="Reading Comprehension" />
             )}
-          </View>
 
-          <View className="flex-row justify-between mt-8 gap-3 mb-8">
-            <TouchableOpacity
-              className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-              onPress={handleBack}
-              disabled={isSubmitting}
-              activeOpacity={0.7}
-            >
-              <Text className="text-white font-semibold">Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
-              onPress={handleNext}
-              disabled={isSubmitting}
-              activeOpacity={0.7}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="white" />
+            <ReadingQuestionComponent
+              question={
+                currentQuestion.question ||
+                currentQuestion.text ||
+                currentQuestion.sentence ||
+                currentQuestion.prompt ||
+                currentQuestion.story ||
+                ""
+              }
+              questionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
+            />
+
+            <View className="mt-4">
+              {isMCQ && currentQuestion.options ? (
+                currentQuestion.options.map((option: any, idx: number) => {
+                  return (
+                    <MCQOption
+                      key={idx}
+                      label={option.label || String.fromCharCode(65 + idx)}
+                      text={option.value}
+                      isSelected={currentAnswer === option.value}
+                      onSelect={() => selectAnswer(option.value)}
+                    />
+                  );
+                })
               ) : (
-                <Text className="text-white font-semibold">
-                  {isLastQuestion ? "Submit" : "Next"}
-                </Text>
+                <FillBlankInput
+                  value={currentAnswer}
+                  placeholder="Type your answer here..."
+                  onChange={(text: string) => selectAnswer(text)}
+                />
               )}
-            </TouchableOpacity>
+            </View>
+
+            <View className="flex-row justify-between mt-8 gap-3 mb-8">
+              <TouchableOpacity
+                className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+                onPress={handleBack}
+                disabled={isSubmitting}
+                activeOpacity={0.7}
+              >
+                <Text className="text-white font-semibold">Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+                onPress={handleNext}
+                disabled={isSubmitting}
+                activeOpacity={0.7}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <Text className="text-white font-semibold">
+                    {isLastQuestion ? "Submit" : "Next"}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
