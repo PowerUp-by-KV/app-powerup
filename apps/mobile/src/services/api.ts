@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
+import type { ResumeParsedData } from "@app-powerup/shared/types";
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
@@ -49,6 +50,51 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding", "Assessment"],
-  endpoints: () => ({}),
+  tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding", "Assessment", "Resume"],
+  endpoints: (builder) => ({
+    // Upload Resume PDF
+    uploadResume: builder.mutation<{ data: ResumeParsedData; message: string }, FormData>({
+      query: (formData) => ({
+        url: "/v1/resume/upload",
+        method: "POST",
+        body: formData,
+      }),
+      invalidatesTags: ["Resume"],
+    }),
+
+    // Get Resume by User ID
+    getResume: builder.query<ResumeParsedData, string>({
+      query: (userId) => `/v1/resume/${userId}`,
+      providesTags: ["Resume"],
+    }),
+
+    // Update Resume
+    updateResume: builder.mutation<
+      { data: ResumeParsedData; message: string },
+      { userId: string; data: ResumeParsedData }
+    >({
+      query: ({ userId, data }) => ({
+        url: `/v1/resume/${userId}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Resume"],
+    }),
+
+    // Delete Resume
+    deleteResume: builder.mutation<{ message: string }, string>({
+      query: (userId) => ({
+        url: `/v1/resume/${userId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Resume"],
+    }),
+  }),
 });
+
+export const {
+  useUploadResumeMutation,
+  useGetResumeQuery,
+  useUpdateResumeMutation,
+  useDeleteResumeMutation,
+} = api;
