@@ -5,6 +5,8 @@ import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { UserProvider } from "@/features/profile/hooks/UserContext";
+import { ProgressProvider } from "@/features/progress/hooks/ProgressContext";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -37,32 +39,36 @@ export default function AuthLayout() {
 
   return (
     <Provider store={store}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-        }}
-        initialRouteName="splash"
-      >
-        {/* Splash -> Login -> Register -> Google-Success -> Profile -> Read -> Listen -> Write */}
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="otp" />
-        <Stack.Screen name="success" />
-        <Stack.Screen name="pre-profile-why" />
-        <Stack.Screen name="pre-profile-frequency" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="dynamic-onboarding" />
-        <Stack.Screen name="read" />
-        <Stack.Screen name="speak-read" />
-        <Stack.Screen name="listen-audio" />
-        <Stack.Screen name="speak" />
-        <Stack.Screen name="pre-grammer" />
-        <Stack.Screen name="listen" />
-        <Stack.Screen name="results" />
-        <Stack.Screen name="dashboard" />
-      </Stack>
+      <UserProvider>
+        <ProgressProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              gestureEnabled: true,
+            }}
+            initialRouteName="splash"
+          >
+            {/* Splash -> Login -> Register -> Google-Success -> Profile -> Read -> Listen -> Write */}
+            <Stack.Screen name="splash" />
+            <Stack.Screen name="login" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="otp" />
+            <Stack.Screen name="success" />
+            <Stack.Screen name="pre-profile-why" />
+            <Stack.Screen name="pre-profile-frequency" />
+            <Stack.Screen name="profile" />
+            <Stack.Screen name="dynamic-onboarding" />
+            <Stack.Screen name="read" />
+            <Stack.Screen name="speak-read" />
+            <Stack.Screen name="listen-audio" />
+            <Stack.Screen name="speak" />
+            <Stack.Screen name="pre-grammer" />
+            <Stack.Screen name="listen" />
+            <Stack.Screen name="results" />
+            <Stack.Screen name="dashboard" />
+          </Stack>
+        </ProgressProvider>
+      </UserProvider>
     </Provider>
   );
 }

@@ -1,70 +1,68 @@
 import React from "react";
-import { SymbolView } from "expo-symbols";
-import { Link, Tabs } from "expo-router";
-import { Pressable } from "react-native";
+import { Tabs } from "expo-router";
 
-import Colors from "@/constants/Colors";
-import { useColorScheme } from "@/components/useColorScheme";
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { Home, BookOpen, Compass, Medal } from "lucide-react-native";
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
-        headerShown: useClientOnlyValue(false, true),
+        tabBarActiveTintColor: "#475569",
+        tabBarInactiveTintColor: "#94A3B8",
+        tabBarItemStyle: { display: "none" }, // Hide all by default
+        tabBarStyle: {
+          borderTopLeftRadius: 16,
+          borderTopRightRadius: 16,
+          height: 80,
+          paddingBottom: 12,
+          paddingTop: 10,
+          backgroundColor: "#FFFFFF",
+          elevation: 20,
+          borderTopWidth: 0,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 10,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+        },
+        headerShown: false,
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: "Tab One",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "chevron.left.forwardslash.chevron.right",
-                android: "code",
-                web: "code",
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: "info.circle", android: "info", web: "info" }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
+          title: "Home",
+          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarItemStyle: { display: "flex" }, // Show Home
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="my-learning"
         options={{
-          title: "Tab Two",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "chevron.left.forwardslash.chevron.right",
-                android: "code",
-                web: "code",
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
+          title: "My Learning",
+          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+          tabBarItemStyle: { display: "flex" },
+        }}
+      />
+
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: "Progress",
+          tabBarIcon: ({ color, size }) => <Compass size={size} color={color} />,
+          tabBarItemStyle: { display: "flex" },
+        }}
+      />
+
+      <Tabs.Screen
+        name="achievements"
+        options={{
+          title: "Achievements",
+          tabBarIcon: ({ color, size }) => <Medal size={size} color={color} />,
+          tabBarItemStyle: { display: "flex" },
         }}
       />
     </Tabs>
