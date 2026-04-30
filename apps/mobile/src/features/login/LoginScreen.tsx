@@ -32,7 +32,7 @@ export function LoginScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/home");
     } else {
       router.replace("/dynamic-onboarding");
     }

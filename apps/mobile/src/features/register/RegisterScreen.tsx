@@ -33,7 +33,7 @@ export function RegisterScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/home");
       return;
     }
 

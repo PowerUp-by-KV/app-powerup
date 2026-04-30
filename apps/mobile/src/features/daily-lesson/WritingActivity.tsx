@@ -187,7 +187,7 @@ export const WritingActivity = ({
             className="bg-[#1E293B] p-5 rounded-full flex-row items-center justify-center shadow-lg"
             onPress={handleFinish}
           >
-            <Text className="text-white font-bold text-lg mr-2">Continue to Dashboard</Text>
+            <Text className="text-white font-bold text-lg mr-2">Continue to Home</Text>
             <ArrowRight size={20} color="white" />
           </TouchableOpacity>
         </View>

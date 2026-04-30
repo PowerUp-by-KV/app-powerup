@@ -65,7 +65,7 @@ export default function AuthLayout() {
             <Stack.Screen name="pre-grammer" />
             <Stack.Screen name="listen" />
             <Stack.Screen name="results" />
-            <Stack.Screen name="dashboard" />
+            <Stack.Screen name="home" />
           </Stack>
         </ProgressProvider>
       </UserProvider>
