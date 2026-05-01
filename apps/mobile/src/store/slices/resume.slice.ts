@@ -179,7 +179,7 @@ export const resumeSlice = createSlice({
     },
 
     // Load Resume Data
-    loadResumeData: (state, action: PayloadAction<any>) => {
+    loadResumeData: (state, action: PayloadAction<ResumeUploadResponse>) => {
       const payload = action.payload;
 
       // Extract parsed_data if it exists (from API response), otherwise use payload directly
