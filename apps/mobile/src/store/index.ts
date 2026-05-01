@@ -6,6 +6,7 @@ import resumeReducer from "./slices/resume.slice";
 export const store = configureStore({
   reducer: {
     app: appReducer,
+    onboarding: onboardingReducer,
     resume: resumeReducer,
     [api.reducerPath]: api.reducer,
   },
