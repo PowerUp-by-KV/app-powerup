@@ -5,13 +5,20 @@ export interface LoginRequest {
   password?: string;
   remember_me?: boolean;
   oauth_id_token?: string;
+  oauth_code?: string;
+  oauth_redirect_uri?: string;
+  oauth_code_verifier?: string;
 }
 
 export interface RegisterRequest {
   email: string;
-  password: string;
-  confirm_password: string;
+  password?: string;
+  confirm_password?: string;
   remember_me?: boolean;
+  oauth_id_token?: string;
+  oauth_code?: string;
+  oauth_redirect_uri?: string;
+  oauth_code_verifier?: string;
 }
 
 export interface AuthResponse {
@@ -22,10 +29,11 @@ export interface AuthResponse {
 }
 
 export const authApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (credentials) => ({
-        url: "/auth/login",
+        url: "/api/v1/auth/login",
         method: "POST",
         body: credentials,
       }),
@@ -34,7 +42,7 @@ export const authApi = api.injectEndpoints({
 
     register: builder.mutation<AuthResponse, RegisterRequest>({
       query: (userData) => ({
-        url: "/auth/register",
+        url: "/api/v1/auth/signup",
         method: "POST",
         body: userData,
       }),
