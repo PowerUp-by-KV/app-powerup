@@ -52,3 +52,10 @@ export const api = createApi({
   tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding", "Assessment"],
   endpoints: () => ({}),
 });
+
+export const {
+  useUploadResumeMutation,
+  useGetResumeQuery,
+  useUpdateResumeMutation,
+  useDeleteResumeMutation,
+} = api;
