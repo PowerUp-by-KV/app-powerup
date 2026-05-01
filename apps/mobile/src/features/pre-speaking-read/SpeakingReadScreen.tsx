@@ -16,6 +16,7 @@ import {
 } from "@/services/assessment-api";
 import { SentenceDisplay } from "./components/SentenceDisplay";
 import { Recorder } from "./components/Recorder";
+import type { SpeakingReadQuestion } from "./types";
 
 interface SpeakingReadScreenProps {
   sessionId?: string;
@@ -52,7 +53,11 @@ export function SpeakingReadScreen({ sessionId }: SpeakingReadScreenProps) {
   const stopRecording = () => {
     setIsRecording(false);
     if (currentQuestion) {
-      setAnswers((prev) => ({ ...prev, [currentQuestion.id]: "recorded_audio.m4a" }));
+      // use `id` if available, otherwise fall back to questionNo
+      const key =
+        (currentQuestion as any).id ??
+        String(currentQuestion.questionNo ?? currentQuestion.questionNo);
+      setAnswers((prev) => ({ ...prev, [key]: "recorded_audio.m4a" }));
     }
   };
 
@@ -64,7 +69,30 @@ export function SpeakingReadScreen({ sessionId }: SpeakingReadScreenProps) {
     );
   }
 
-  const questions = sectionData.questions || [];
+  // API may return either `questions` or `sentences` depending on section.
+  const rawItems: any[] = (sectionData as any).questions || (sectionData as any).sentences || [];
+
+  const questions: SpeakingReadQuestion[] = rawItems.map((it) => {
+    // If the API already uses our shape, return as-is
+    if (it.sentence && it.recordingTime !== undefined) {
+      return it as SpeakingReadQuestion;
+    }
+
+    // Map API fields to our local type
+    return {
+      section: (sectionData as any).section || "A_SPEAKING",
+      subSection: (it.sub_section as string) || "",
+      questionNo: (it.question_no ?? it.questionNo ?? 0) as number,
+      sentence: it.text ?? it.question ?? "",
+      noOfLines: Number(it.no_of_lines ?? it.noOfLines ?? 1),
+      complexity: (typeof it.complexity === "string"
+        ? it.complexity.charAt(0).toUpperCase() + it.complexity.slice(1).toLowerCase()
+        : "Medium") as "Easy" | "Medium" | "Advanced",
+      answerType: "Record Voice",
+      recordingTime: Number(it.recording_time_seconds ?? it.recordingTime ?? 30),
+    };
+  });
+
   const currentQuestion = questions[currentQuestionIndex];
 
   if (!currentQuestion) {

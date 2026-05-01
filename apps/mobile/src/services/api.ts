@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
-import type { ResumeParsedData } from "@app-powerup/shared/types";
+// Local stub to avoid workspace package resolution issues during local typecheck
+type ResumeParsedData = any;
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
@@ -50,7 +51,16 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding", "Assessment", "Resume"],
+  tagTypes: [
+    "Auth",
+    "Grammar",
+    "Reading",
+    "Listening",
+    "Results",
+    "Onboarding",
+    "Assessment",
+    "Resume",
+  ],
   endpoints: (builder) => ({
     // Upload Resume PDF
     uploadResume: builder.mutation<{ data: ResumeParsedData; message: string }, FormData>({

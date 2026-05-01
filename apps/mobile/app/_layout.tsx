@@ -62,7 +62,7 @@ export default function AuthLayout() {
             <Stack.Screen name="speak-read" />
             <Stack.Screen name="listen-audio" />
             <Stack.Screen name="speak" />
-            <Stack.Screen name="pre-grammer" />
+            <Stack.Screen name="pre-grammar" />
             <Stack.Screen name="listen" />
             <Stack.Screen name="results" />
             <Stack.Screen name="home" />

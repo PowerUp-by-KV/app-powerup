@@ -5,7 +5,7 @@ export const progressApi = api.injectEndpoints({
   endpoints: (builder) => ({
     getProgressSummary: builder.query<ProgressSummary, string>({
       query: (userId) => ({
-        url: "/progress/summary",
+        url: "/v1/progress/summary",
         params: { userId },
       }),
       transformResponse: (response: ApiResponse<ProgressSummary>) => {
@@ -17,7 +17,7 @@ export const progressApi = api.injectEndpoints({
 
     getHeatmapData: builder.query<HeatmapData, string>({
       query: (userId) => ({
-        url: "/progress/heatmap",
+        url: "/v1/progress/heatmap",
         params: { userId },
       }),
       transformResponse: (response: ApiResponse<HeatmapData>) => {
@@ -29,7 +29,7 @@ export const progressApi = api.injectEndpoints({
 
     getTrendData: builder.query<TrendData, { userId: string; module: string }>({
       query: ({ userId, module }) => ({
-        url: "/progress/trend",
+        url: "/v1/progress/trend",
         params: { userId, module },
       }),
       transformResponse: (response: ApiResponse<TrendData>) => {
@@ -43,7 +43,7 @@ export const progressApi = api.injectEndpoints({
 
     getBadges: builder.query<Badge[], string>({
       query: (userId) => ({
-        url: "/progress/badges",
+        url: "/v1/progress/badges",
         params: { userId },
       }),
       transformResponse: (response: ApiResponse<Badge[]>) => {
