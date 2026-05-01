@@ -33,7 +33,9 @@ export function SpeakingQuestion({
       </View>
 
       <View className="bg-blue-50 p-4 rounded-lg mb-4">
-        <Text className="text-sm font-semibold text-blue-900 mb-2">Topic: {question.topic}</Text>
+        {question.topic && (
+          <Text className="text-sm font-semibold text-blue-900 mb-2">Topic: {question.topic}</Text>
+        )}
         <Text className="text-base text-gray-800 leading-relaxed">{question.question}</Text>
       </View>
 

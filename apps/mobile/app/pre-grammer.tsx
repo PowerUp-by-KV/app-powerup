@@ -1,6 +1,7 @@
+import { useLocalSearchParams } from "expo-router";
 import { GrammarScreen } from "@/features/pre-grammar";
-import { mockGrammarAssessment } from "@/utils/mock-assessments";
 
 export default function WriteRoute() {
-  return <GrammarScreen assessment={mockGrammarAssessment} />;
+  const { session_id } = useLocalSearchParams<{ session_id: string }>();
+  return <GrammarScreen sessionId={session_id} />;
 }

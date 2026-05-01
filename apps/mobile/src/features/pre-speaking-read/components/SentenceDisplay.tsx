@@ -31,17 +31,28 @@ export function SentenceDisplay({ question, questionIndex, totalQuestions }: Sen
       <View className="bg-gradient-to-b from-blue-50 to-blue-100 p-4 rounded-lg mb-4 border-l-4 border-blue-500">
         <Text className="text-sm text-blue-600 font-semibold mb-2">Read the sentence:</Text>
         <Text className="text-lg text-gray-800 leading-relaxed font-medium">
-          {question.sentence}
+          {question.sentence ||
+            (question as any).question ||
+            (question as any).text ||
+            (question as any).prompt ||
+            (question as any).story ||
+            (question as any).item ||
+            "No sentence text found."}
         </Text>
       </View>
 
       <View className="flex-row justify-between items-center bg-gray-100 p-3 rounded-lg">
         <Text className="text-xs text-gray-600">
-          <Text className="font-bold">{question.noOfLines}</Text> line
-          {question.noOfLines !== 1 ? "s" : ""}
+          <Text className="font-bold">{question.noOfLines || 1}</Text> line
+          {(question.noOfLines || 1) !== 1 ? "s" : ""}
         </Text>
         <Text className="text-xs text-gray-600">
-          Time: <Text className="font-bold">{question.recordingTime}s</Text>
+          Time:{" "}
+          <Text className="font-bold">
+            {question.recordingTime ||
+              (question.complexity === "Advanced" || question.complexity === "Difficult" ? 30 : 15)}
+            s
+          </Text>
         </Text>
       </View>
     </View>

@@ -33,10 +33,14 @@ export function ListenWithAudioQuestion({
       </View>
 
       <View className="bg-gray-100 p-4 rounded-lg mb-3">
-        <Text className="text-sm text-gray-600 mb-2">
-          Audio Duration: {question.audioDuration}s
-        </Text>
-        <Text className="text-sm text-gray-600">Content Lines: {question.noOfLines}</Text>
+        {question.audioDuration && (
+          <Text className="text-sm text-gray-600 mb-2">
+            Audio Duration: {question.audioDuration}s
+          </Text>
+        )}
+        {question.noOfLines && (
+          <Text className="text-sm text-gray-600">Content Lines: {question.noOfLines}</Text>
+        )}
       </View>
     </View>
   );

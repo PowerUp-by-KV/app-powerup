@@ -138,6 +138,37 @@ export async function clearAuthSession(): Promise<void> {
   return clearAuthState();
 }
 
+const SESSION_ID_KEY = "@powerup_assessment_session_id";
+
+export async function saveAssessmentSessionId(sessionId: string): Promise<void> {
+  const SecureStore = await trySecureStoreAvailable();
+  if (SecureStore && typeof (SecureStore as any).setItemAsync === "function") {
+    await (SecureStore as any).setItemAsync(SESSION_ID_KEY, sessionId);
+    return;
+  }
+  try {
+    const mod = await import("@react-native-async-storage/async-storage");
+    const AsyncStorage = (mod as any).default ?? mod;
+    await AsyncStorage.setItem(SESSION_ID_KEY, sessionId);
+  } catch {
+    // fallback to memory or ignore
+  }
+}
+
+export async function getAssessmentSessionId(): Promise<string | null> {
+  const SecureStore = await trySecureStoreAvailable();
+  if (SecureStore && typeof (SecureStore as any).getItemAsync === "function") {
+    return await (SecureStore as any).getItemAsync(SESSION_ID_KEY);
+  }
+  try {
+    const mod = await import("@react-native-async-storage/async-storage");
+    const AsyncStorage = (mod as any).default ?? mod;
+    return await AsyncStorage.getItem(SESSION_ID_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export async function setProfileCompletedInSession(completed: boolean): Promise<void> {
   if (!inMemorySession) {
     inMemorySession = await getAuthSession();

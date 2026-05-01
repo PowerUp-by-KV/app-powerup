@@ -28,7 +28,7 @@ export function SuccessScreen() {
 
           <TouchableOpacity
             className="rounded-full py-4 px-10 items-center bg-gray-700"
-            onPress={() => router.replace(isRegister ? "/pre-profile-why" : "/dashboard")}
+            onPress={() => router.replace(isRegister ? "/dynamic-onboarding" : "/dashboard")}
           >
             <Text className="text-white font-bold">{isRegister ? "Continue" : "Get Started"}</Text>
           </TouchableOpacity>

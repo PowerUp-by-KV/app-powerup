@@ -1,12 +1,17 @@
 export interface SpeakingQuestion {
-  section: string;
-  subSection: string;
-  topic: string;
-  questionType: "Describing Topic Question";
-  question: string;
-  complexity: "Easy" | "Medium" | "Advanced";
-  answerType: "Record Voice";
-  recordingTime: number; // in seconds
+  id: string;
+  section?: string;
+  subSection?: string;
+  topic?: string;
+  questionType?: string;
+  question?: string;
+  complexity?: string;
+  answerType?: string;
+  recordingTime?: number;
+  text?: string;
+  prompt?: string;
+  story?: string;
+  item?: string;
 }
 
 export interface SpeakingAssessment {

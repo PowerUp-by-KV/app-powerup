@@ -1,12 +1,18 @@
 export interface SpeakingReadQuestion {
-  section: string;
-  subSection: string;
-  questionNo: number;
-  sentence: string;
-  noOfLines: number;
-  complexity: "Easy" | "Medium" | "Advanced";
-  answerType: "Record Voice";
-  recordingTime: number; // in seconds
+  id: string;
+  section?: string;
+  subSection?: string;
+  question_no?: number;
+  sentence?: string;
+  noOfLines?: number;
+  complexity?: string;
+  answerType?: string;
+  recordingTime?: number;
+  question?: string;
+  text?: string;
+  prompt?: string;
+  story?: string;
+  item?: string;
 }
 
 export interface SpeakingReadAssessment {
