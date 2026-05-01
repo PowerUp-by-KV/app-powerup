@@ -13,10 +13,11 @@ export interface OnboardingResult {
 }
 
 export const onboardingApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     submitOnboarding: builder.mutation<OnboardingResult, OnboardingSubmissionRequest>({
       query: (data) => ({
-        url: "/onboarding/submit",
+        url: "/api/v1/onboarding",
         method: "POST",
         body: data,
       }),
