@@ -12,7 +12,12 @@ import type {
   Skill,
   Project,
   Certification,
+  ResumeUploadResponse,
 } from "@app-powerup/shared";
+
+type ResumeLoadPayload = ResumeUploadResponse & {
+  parsed_data?: any;
+};
 
 const initialState: ResumeState = {
   currentStep: 1,
@@ -177,7 +182,7 @@ export const resumeSlice = createSlice({
     },
 
     // Load Resume Data
-    loadResumeData: (state, action: PayloadAction<any>) => {
+    loadResumeData: (state, action: PayloadAction<ResumeLoadPayload>) => {
       const payload = action.payload;
 
       // Extract parsed_data if it exists (from API response), otherwise use payload directly

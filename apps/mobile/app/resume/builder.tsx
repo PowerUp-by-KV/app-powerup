@@ -29,7 +29,7 @@ export default function ResumeBuilder() {
   useEffect(() => {
     if (resumeData) {
       // Response is already in ResumeParsedData structure (flat, not nested)
-      dispatch(loadResumeData(resumeData as any));
+      dispatch(loadResumeData(resumeData));
     }
   }, [resumeData, dispatch]);
 

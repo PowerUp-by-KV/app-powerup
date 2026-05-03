@@ -77,7 +77,9 @@ export const resumeApi = api.injectEndpoints({
             degree: edu.degree || "",
             field: edu.field || "",
             start_year: null,
-            end_year: edu.graduationDate ? parseInt(edu.graduationDate, 10) || null : null,
+            end_year: edu.graduationDate
+              ? parseInt(edu.graduationDate.match(/\d{4}/)?.[0] || "", 10) || null
+              : null,
             gpa: edu.details ? edu.details.replace("GPA: ", "") : "",
           })),
           experience: (data.experience || []).map((exp) => ({
