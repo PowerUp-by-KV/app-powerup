@@ -1,6 +1,6 @@
 import "../global.css";
-import { useEffect } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useState } from "react";
+import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
@@ -12,8 +12,31 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
+import { getAuthSession } from "@/services/auth-storage";
 
 SplashScreen.preventAutoHideAsync();
+
+const PUBLIC_ROUTES = ["login", "register", "otp", "splash"];
+
+function RouteGuard({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const segments = useSegments();
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    getAuthSession().then((session) => {
+      const currentRoute = segments[0] as string | undefined;
+      const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+      if (!session && !isPublic) {
+        router.replace("/login");
+      }
+      setChecked(true);
+    });
+  }, [segments]);
+
+  if (!checked) return null;
+  return <>{children}</>;
+}
 
 export default function AuthLayout() {
   const [loaded, error] = useFonts({
@@ -37,32 +60,33 @@ export default function AuthLayout() {
 
   return (
     <Provider store={store}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-        }}
-        initialRouteName="splash"
-      >
-        {/* Splash -> Login -> Register -> Google-Success -> Profile -> Read -> Listen -> Write */}
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="otp" />
-        <Stack.Screen name="success" />
-        <Stack.Screen name="pre-profile-why" />
-        <Stack.Screen name="pre-profile-frequency" />
-        <Stack.Screen name="profile" />
-        <Stack.Screen name="dynamic-onboarding" />
-        <Stack.Screen name="read" />
-        <Stack.Screen name="speak-read" />
-        <Stack.Screen name="listen-audio" />
-        <Stack.Screen name="speak" />
-        <Stack.Screen name="pre-grammer" />
-        <Stack.Screen name="listen" />
-        <Stack.Screen name="results" />
-        <Stack.Screen name="dashboard" />
-      </Stack>
+      <RouteGuard>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+          }}
+          initialRouteName="splash"
+        >
+          <Stack.Screen name="splash" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="otp" />
+          <Stack.Screen name="success" />
+          <Stack.Screen name="pre-profile-why" />
+          <Stack.Screen name="pre-profile-frequency" />
+          <Stack.Screen name="profile" />
+          <Stack.Screen name="dynamic-onboarding" />
+          <Stack.Screen name="read" />
+          <Stack.Screen name="speak-read" />
+          <Stack.Screen name="listen-audio" />
+          <Stack.Screen name="speak" />
+          <Stack.Screen name="pre-grammer" />
+          <Stack.Screen name="listen" />
+          <Stack.Screen name="results" />
+          <Stack.Screen name="dashboard" />
+        </Stack>
+      </RouteGuard>
     </Provider>
   );
 }
