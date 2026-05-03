@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 
 import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { saveAuthSession } from "@/services/auth-storage";
-import { useRegisterMutation } from "@/services/auth-api";
+import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 
 export function RegisterScreen() {
   const router = useRouter();
@@ -31,13 +31,12 @@ export function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
+  const handlePostAuthNavigation = (auth: AuthResponse) => {
+    if (auth.user.cefr_range) {
       router.replace("/dashboard");
-      return;
+    } else {
+      router.replace("/dynamic-onboarding");
     }
-
-    router.replace("/dynamic-onboarding");
   };
 
   const handleRegister = async () => {
@@ -101,7 +100,7 @@ export function RegisterScreen() {
       await saveAuthSession(auth);
       setAuthToken(auth.access_token);
       Alert.alert("Success", "Registration successful.");
-      handlePostAuthNavigation(auth.profile_completed);
+      handlePostAuthNavigation(auth);
     } catch (error) {
       console.error("Registration error:", error);
       const apiError = error as { status?: number; data?: { message?: string; detail?: any } };
