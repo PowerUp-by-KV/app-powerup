@@ -30,7 +30,7 @@ import {
   getCountryCodesList,
   getExpectedDigitCount,
 } from "@/utils/phoneValidation";
-import { getLocationSuggestions } from "@/utils/locationAutocomplete";
+import { getLocationSuggestions, type LocationSuggestion } from "@/utils/locationAutocomplete";
 
 export function ContactSummaryScreen() {
   const router = useRouter();
@@ -43,7 +43,7 @@ export function ContactSummaryScreen() {
     message: string;
     isValid: boolean;
   } | null>(null);
-  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [showCountryCodeModal, setShowCountryCodeModal] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");

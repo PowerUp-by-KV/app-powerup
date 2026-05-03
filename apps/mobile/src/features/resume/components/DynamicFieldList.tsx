@@ -9,7 +9,7 @@ import { Button } from "./Button";
 
 interface DynamicListItem {
   id: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DynamicFieldListProps<T extends DynamicListItem> {

@@ -124,7 +124,7 @@ export function PreviewScreen() {
 
       setTimeout(() => {
         dispatch(setHasExistingResume(true));
-        router.replace("/resume");
+        router.replace("/(tabs)/two");
       }, 2000);
     } catch (error: any) {
       console.error("Save error caught:", error);
@@ -164,7 +164,7 @@ export function PreviewScreen() {
       setTimeout(() => {
         dispatch(resetResume());
         dispatch(setHasExistingResume(false));
-        router.replace("/resume");
+        router.replace("/(tabs)/two");
       }, 2000);
     } catch (error: any) {
       console.error("Delete error:", error);
@@ -175,7 +175,7 @@ export function PreviewScreen() {
         setTimeout(() => {
           dispatch(resetResume());
           dispatch(setHasExistingResume(false));
-          router.replace("/resume");
+          router.replace("/(tabs)/two");
         }, 2000);
       } else {
         const parsedError = ApiErrorHandler.parseError(error, "delete");

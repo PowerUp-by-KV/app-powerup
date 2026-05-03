@@ -29,10 +29,18 @@ export function TagInput({
 }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
+  const createChipId = () => {
+    if (typeof globalThis.crypto?.randomUUID === "function") {
+      return globalThis.crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  };
+
   const handleAddTag = () => {
     if (inputValue.trim()) {
       onAdd({
-        id: Date.now().toString(),
+        id: createChipId(),
         name: inputValue.trim(),
       });
       setInputValue("");

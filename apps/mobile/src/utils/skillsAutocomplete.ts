@@ -163,6 +163,9 @@ export const getSkillSuggestions = (input: string): SkillSuggestion[] => {
 /**
  * Check if skill already exists in list
  */
-export const skillExists = (skillName: string, existingSkills: any[]): boolean => {
+export const skillExists = (
+  skillName: string,
+  existingSkills: Array<{ name: string }>,
+): boolean => {
   return existingSkills.some((s) => s.name.toLowerCase() === skillName.toLowerCase());
 };

@@ -24,7 +24,7 @@ import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Project } from "@app-powerup/shared";
-import { getSkillSuggestions } from "@/utils/skillsAutocomplete";
+import { getSkillSuggestions, type SkillSuggestion } from "@/utils/skillsAutocomplete";
 
 export function SkillsScreen() {
   const dispatch = useAppDispatch();
@@ -35,7 +35,7 @@ export function SkillsScreen() {
   // Skills state
   const [skillInput, setSkillInput] = useState("");
   const [skillErrors, setSkillErrors] = useState("");
-  const [skillSuggestions, setSkillSuggestions] = useState<any[]>([]);
+  const [skillSuggestions, setSkillSuggestions] = useState<SkillSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // Projects state
@@ -76,7 +76,7 @@ export function SkillsScreen() {
     setShowSuggestions(false);
   };
 
-  const handleAddSuggestionSkill = (suggestion: any) => {
+  const handleAddSuggestionSkill = (suggestion: SkillSuggestion) => {
     const skillName = suggestion.name;
 
     // Check if skill already exists

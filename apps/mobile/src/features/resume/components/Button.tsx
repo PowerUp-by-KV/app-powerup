@@ -3,9 +3,8 @@
  * Enterprise-grade styling with Tailwind CSS
  */
 
-import { Pressable, PressableProps, StyleSheet } from "react-native";
+import { ActivityIndicator, Pressable, PressableProps } from "react-native";
 import { Text } from "@/components/Themed";
-import { ActivityIndicator } from "react-native";
 
 interface ButtonProps extends PressableProps {
   variant?: "primary" | "secondary" | "danger";
@@ -22,59 +21,45 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const variantStyles = {
-    primary: { backgroundColor: "#2563EB" },
-    secondary: { backgroundColor: "#e5e7eb" },
-    danger: { backgroundColor: "#dc2626" },
+  const variantClasses = {
+    primary: "bg-blue-600",
+    secondary: "bg-gray-200",
+    danger: "bg-red-600",
   };
 
-  const textColorStyles = {
+  const textColorClasses = {
+    primary: "text-white",
+    secondary: "text-gray-900",
+    danger: "text-white",
+  };
+
+  const indicatorColors = {
     primary: "#ffffff",
     secondary: "#111827",
     danger: "#ffffff",
   };
 
-  const isDisabled = disabled || isLoading;
-  const sizeStyles = {
-    sm: { paddingHorizontal: 12, paddingVertical: 8 },
-    md: { paddingHorizontal: 16, paddingVertical: 12 },
-    lg: { paddingHorizontal: 20, paddingVertical: 14 },
+  const sizeClasses = {
+    sm: "px-3 py-2",
+    md: "px-4 py-3",
+    lg: "px-5 py-3.5",
   };
+
+  const isDisabled = disabled || isLoading;
 
   return (
     <Pressable
       {...props}
       disabled={isDisabled}
-      style={[
-        styles.button,
-        sizeStyles[size],
-        variantStyles[variant],
-        isDisabled && styles.disabled,
-      ]}
+      className={`flex-row items-center justify-center rounded-lg ${sizeClasses[size]} ${
+        variantClasses[variant]
+      } ${isDisabled ? "opacity-50" : ""}`}
     >
       {isLoading ? (
-        <ActivityIndicator color={textColorStyles[variant]} size="small" />
+        <ActivityIndicator color={indicatorColors[variant]} size="small" />
       ) : (
-        <Text style={[styles.buttonText, { color: textColorStyles[variant] }]}>{children}</Text>
+        <Text className={`text-sm font-semibold ${textColorClasses[variant]}`}>{children}</Text>
       )}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});

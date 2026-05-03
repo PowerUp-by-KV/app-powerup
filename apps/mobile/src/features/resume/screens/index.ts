@@ -8,5 +8,3 @@ export { ContactSummaryScreen } from "./ContactSummaryScreen";
 export { ExperienceScreen } from "./ExperienceScreen";
 export { SkillsScreen } from "./SkillsScreen";
 export { PreviewScreen } from "./PreviewScreen";
-// Deprecated: EducationScreen - merged into ExperienceScreen
-export { EducationScreen } from "./EducationScreen";
