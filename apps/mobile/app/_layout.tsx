@@ -1,60 +1,68 @@
 import "../global.css";
-
-import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import "react-native-reanimated";
+import { Stack } from "expo-router";
 import { Provider } from "react-redux";
-
-import { useColorScheme } from "@/components/useColorScheme";
 import { store } from "@/store";
-
-export { ErrorBoundary } from "expo-router";
-
-export const unstable_settings = {
-  initialRouteName: "(tabs)",
-};
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default function AuthLayout() {
   const [loaded, error] = useFonts({
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    Inter: Inter_400Regular,
+    "Inter-Regular": Inter_400Regular,
+    "Inter-Medium": Inter_500Medium,
+    "Inter-SemiBold": Inter_600SemiBold,
+    "Inter-Bold": Inter_700Bold,
+    "Inter-ExtraBold": Inter_800ExtraBold,
   });
 
   useEffect(() => {
-    if (error) throw error;
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
+    if (loaded || error) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, error]);
 
-  if (!loaded) {
+  if (!loaded && !error) {
     return null;
   }
 
   return (
     <Provider store={store}>
-      <RootLayoutNav />
-    </Provider>
-  );
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
+        initialRouteName="splash"
+      >
+        {/* Splash -> Login -> Register -> Google-Success -> Profile -> Read -> Listen -> Write */}
+        <Stack.Screen name="splash" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="otp" />
+        <Stack.Screen name="success" />
+        <Stack.Screen name="pre-profile-why" />
+        <Stack.Screen name="pre-profile-frequency" />
+        <Stack.Screen name="profile" />
+        <Stack.Screen name="dynamic-onboarding" />
+        <Stack.Screen name="read" />
+        <Stack.Screen name="speak-read" />
+        <Stack.Screen name="listen-audio" />
+        <Stack.Screen name="speak" />
+        <Stack.Screen name="pre-grammer" />
+        <Stack.Screen name="listen" />
+        <Stack.Screen name="results" />
+        <Stack.Screen name="dashboard" />
       </Stack>
-    </ThemeProvider>
+    </Provider>
   );
 }

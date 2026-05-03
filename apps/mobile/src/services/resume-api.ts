@@ -12,7 +12,7 @@ export const resumeApi = api.injectEndpoints({
     // POST /v1/resume/upload - Upload PDF and parse
     uploadResume: builder.mutation<ResumeUploadResponse, FormData>({
       query: (formData) => ({
-        url: "/resume/upload",
+        url: "/v1/resume/upload",
         method: "POST",
         body: formData,
         headers: {
@@ -37,7 +37,7 @@ export const resumeApi = api.injectEndpoints({
     // GET /v1/resume/{user_id} - Fetch user's resume
     getResume: builder.query<ResumeUploadResponse, string>({
       query: (userId) => ({
-        url: `/resume/${userId}`,
+        url: `/v1/resume/${userId}`,
         method: "GET",
       }),
       providesTags: ["Resume"],
@@ -111,7 +111,7 @@ export const resumeApi = api.injectEndpoints({
         };
 
         return {
-          url: `/resume/${userId}`,
+          url: `/v1/resume/${userId}`,
           method: "PUT",
           body: { parsed_data: mappedData },
         };
@@ -135,7 +135,7 @@ export const resumeApi = api.injectEndpoints({
     // DELETE /v1/resume/{user_id} - Delete resume
     deleteResume: builder.mutation<{ message: string }, string>({
       query: (userId) => ({
-        url: `/resume/${userId}`,
+        url: `/v1/resume/${userId}`,
         method: "DELETE",
         responseHandler: "text",
       }),

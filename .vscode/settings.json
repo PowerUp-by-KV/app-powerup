@@ -12,5 +12,6 @@
     "**/node_modules": true,
     "**/.turbo": true,
     "**/.expo": true
-  }
+  },
+  "editor.fontFamily": "Jetbrains Mono, Consolas, 'Courier New', monospace"
 }

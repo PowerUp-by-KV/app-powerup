@@ -3,7 +3,7 @@
  * Enterprise-grade styling with Tailwind CSS
  */
 
-import { ActivityIndicator, Pressable, PressableProps } from "react-native";
+import { ActivityIndicator, Pressable, PressableProps, View } from "react-native";
 import { Text } from "@/components/Themed";
 
 interface ButtonProps extends PressableProps {
@@ -21,13 +21,25 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const variantClasses = {
-    primary: "bg-blue-600",
-    secondary: "bg-gray-200",
-    danger: "bg-red-600",
+  const variantStyles = {
+    primary: "bg-blue-600 active:bg-blue-700",
+    secondary: "bg-gray-200 active:bg-gray-300",
+    danger: "bg-red-600 active:bg-red-700",
   };
 
-  const textColorClasses = {
+  const sizeStyles = {
+    sm: "px-4 py-2 rounded-lg",
+    md: "px-6 py-3 rounded-xl",
+    lg: "px-8 py-4 rounded-xl",
+  };
+
+  const textSizeStyles = {
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-lg",
+  };
+
+  const textColorStyles = {
     primary: "text-white",
     secondary: "text-gray-900",
     danger: "text-white",
@@ -39,27 +51,24 @@ export function Button({
     danger: "#ffffff",
   };
 
-  const sizeClasses = {
-    sm: "px-3 py-2",
-    md: "px-4 py-3",
-    lg: "px-5 py-3.5",
-  };
-
   const isDisabled = disabled || isLoading;
 
   return (
     <Pressable
       {...props}
       disabled={isDisabled}
-      className={`flex-row items-center justify-center rounded-lg ${sizeClasses[size]} ${
-        variantClasses[variant]
-      } ${isDisabled ? "opacity-50" : ""}`}
+      className={`${variantStyles[variant]} ${sizeStyles[size]} ${
+        isDisabled ? "opacity-50" : ""
+      } flex-row items-center justify-center`}
     >
-      {isLoading ? (
-        <ActivityIndicator color={indicatorColors[variant]} size="small" />
-      ) : (
-        <Text className={`text-sm font-semibold ${textColorClasses[variant]}`}>{children}</Text>
+      {isLoading && (
+        <View className="mr-2">
+          <ActivityIndicator color={indicatorColors[variant]} size="small" />
+        </View>
       )}
+      <Text className={`font-semibold ${textColorStyles[variant]} ${textSizeStyles[size]}`}>
+        {children}
+      </Text>
     </Pressable>
   );
 }

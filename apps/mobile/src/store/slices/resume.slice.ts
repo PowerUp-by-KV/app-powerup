@@ -78,17 +78,20 @@ export const resumeSlice = createSlice({
     // Step Navigation
     setCurrentStep: (state, action: PayloadAction<number>) => {
       state.currentStep = action.payload;
+      state.error = null;
     },
 
     nextStep: (state) => {
       if (state.currentStep < 4) {
         state.currentStep += 1;
+        state.error = null;
       }
     },
 
     previousStep: (state) => {
       if (state.currentStep > 1) {
         state.currentStep -= 1;
+        state.error = null;
       }
     },
 
@@ -204,6 +207,15 @@ export const resumeSlice = createSlice({
       state.lastSaved = action.payload;
     },
 
+    // Error Handling
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+
+    clearError: (state) => {
+      state.error = null;
+    },
+
     // Load Resume Data
     loadResumeData: (state, action: PayloadAction<ResumeLoadPayload>) => {
       const payload = action.payload;
@@ -260,20 +272,12 @@ export const resumeSlice = createSlice({
 
       state.hasExistingResume = true;
       state.currentStep = 1;
+      state.error = null;
     },
 
     // Reset
     resetResume: () => {
       return initialState;
-    },
-
-    // Error Handling
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-
-    clearError: (state) => {
-      state.error = null;
     },
   },
 });
@@ -302,10 +306,10 @@ export const {
   setIsSaving,
   setHasExistingResume,
   setLastSaved,
-  loadResumeData,
-  resetResume,
   setError,
   clearError,
+  loadResumeData,
+  resetResume,
 } = resumeSlice.actions;
 
 export default resumeSlice.reducer;

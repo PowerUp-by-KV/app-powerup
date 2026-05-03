@@ -12,6 +12,8 @@ interface TextInputProps extends RNTextInputProps {
   required?: boolean;
   multiline?: boolean;
   numberOfLines?: number;
+  rows?: number;
+  className?: string;
 }
 
 export function TextInput({
@@ -20,15 +22,18 @@ export function TextInput({
   required,
   multiline = false,
   numberOfLines = 1,
+  rows,
+  className,
   ...props
 }: TextInputProps) {
+  const resolvedLines = rows ?? numberOfLines;
   const heightClass = multiline
     ? {
         1: "h-12",
         2: "h-20",
         3: "h-[120px]",
         4: "h-40",
-      }[numberOfLines] || "h-[120px]"
+      }[resolvedLines] || "h-[120px]"
     : "h-12";
 
   return (
@@ -42,10 +47,10 @@ export function TextInput({
       <RNTextInput
         {...props}
         multiline={multiline}
-        numberOfLines={multiline ? numberOfLines : 1}
+        numberOfLines={multiline ? resolvedLines : 1}
         className={`${heightClass} rounded-lg border ${
           error ? "border-red-500" : "border-gray-300"
-        } bg-white px-3 py-2.5 text-sm text-gray-900`}
+        } bg-white px-3 py-2.5 text-sm text-gray-900 ${className || ""}`}
         placeholderTextColor="#9CA3AF"
       />
       {error && <Text className="mt-1.5 text-xs text-red-600">{error}</Text>}
