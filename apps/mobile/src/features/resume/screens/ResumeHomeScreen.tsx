@@ -30,7 +30,8 @@ import {
   setHasExistingResume,
 } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectFormData } from "@/store/slices/resume.slice";
-import { validatePDFFile, formatFileSize } from "@/services/pdf-validation";
+import { validatePDFFile, formatFileSize, type FileInfo } from "@/services/pdf-validation";
+import type { ResumeUploadResponse } from "@app-powerup/shared";
 
 export function ResumeHomeScreen() {
   const router = useRouter();
