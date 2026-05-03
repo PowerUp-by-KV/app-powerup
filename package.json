@@ -30,8 +30,5 @@
   "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=22"
-  },
-  "dependencies": {
-    "expo-secure-store": "^55.0.13"
   }
 }
