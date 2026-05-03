@@ -3,7 +3,7 @@
  * Displays list of items with delete button
  */
 
-import { View, Pressable, FlatList } from "react-native";
+import { View, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { Button } from "./Button";
 
@@ -40,29 +40,24 @@ export function DynamicFieldList<T extends DynamicListItem>({
         </View>
       ) : (
         <View>
-          <FlatList
-            scrollEnabled={false}
-            data={items}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View key={item.id} className="mb-4">
-                <Pressable
-                  onPress={() => onEdit(item)}
-                  className="mb-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
-                >
-                  <View className="flex-1">{renderItem(item)}</View>
+          {items.map((item) => (
+            <View key={item.id} className="mb-4">
+              <Pressable
+                onPress={() => onEdit(item)}
+                className="mb-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
+              >
+                <View className="flex-1">{renderItem(item)}</View>
 
-                  {/* Delete Button */}
-                  <Pressable
-                    onPress={() => onRemove(item.id)}
-                    className="ml-2 items-center justify-center rounded-lg bg-red-50 p-2"
-                  >
-                    <Text className="text-lg text-red-600">✕</Text>
-                  </Pressable>
+                {/* Delete Button */}
+                <Pressable
+                  onPress={() => onRemove(item.id)}
+                  className="ml-2 items-center justify-center rounded-lg bg-red-50 p-2"
+                >
+                  <Text className="text-lg text-red-600">×</Text>
                 </Pressable>
-              </View>
-            )}
-          />
+              </Pressable>
+            </View>
+          ))}
 
           {/* Add More Button */}
           <Button variant="secondary" onPress={onAdd} size="md">

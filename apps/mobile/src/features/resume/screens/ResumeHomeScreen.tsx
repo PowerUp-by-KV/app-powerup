@@ -33,6 +33,27 @@ import { selectHasExistingResume, selectFormData } from "@/store/slices/resume.s
 import { validatePDFFile, formatFileSize, type FileInfo } from "@/services/pdf-validation";
 import type { ResumeUploadResponse } from "@app-powerup/shared";
 
+type SelectedResumeFile = Omit<FileInfo, "uri"> & {
+  uri: string | Blob;
+};
+
+interface PickedResumeFile {
+  name: string;
+  size?: number;
+  mimeType?: string;
+  type?: string;
+  uri: string | Blob;
+}
+
+interface ApiRequestError {
+  status?: number;
+  code?: string;
+  data?: {
+    message?: string;
+  };
+  message?: string;
+}
+
 export function ResumeHomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -42,14 +63,14 @@ export function ResumeHomeScreen() {
   const [uploadResume] = useUploadResumeMutation();
   const [deleteResumeReq] = useDeleteResumeMutation();
 
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<SelectedResumeFile | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [parsedResume, setParsedResume] = useState<any>(null);
-  const fileInputRef = useRef<any>(null);
+  const [parsedResume, setParsedResume] = useState<ResumeUploadResponse | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isSubmittingRef = useRef(false);
 
   useEffect(() => {
@@ -64,15 +85,15 @@ export function ResumeHomeScreen() {
     initializeResume();
   }, []);
 
-  const handleFileSelect = async (file: any) => {
+  const handleFileSelect = async (file: PickedResumeFile) => {
     if (!file) return;
 
     // Use validation service for comprehensive checks
-    const fileInfo = {
+    const fileInfo: FileInfo = {
       name: file.name,
       size: file.size || 0,
       type: file.mimeType || file.type || "application/pdf",
-      uri: file.uri || file,
+      uri: typeof file.uri === "string" ? file.uri : file.name,
     };
 
     const validation = validatePDFFile(fileInfo);
@@ -83,8 +104,9 @@ export function ResumeHomeScreen() {
 
     setSelectedFile({
       name: file.name,
+      type: fileInfo.type,
       size: fileInfo.size,
-      uri: file.uri || file,
+      uri: file.uri,
     });
     setUploadSuccess(false);
   };
@@ -137,19 +159,19 @@ export function ResumeHomeScreen() {
       }, 300);
 
       // Create FormData
-      const formData = new FormData();
+      const uploadData = new FormData();
       if (Platform.OS === "web") {
-        formData.append("file", selectedFile.uri);
+        uploadData.append("file", selectedFile.uri);
       } else {
-        formData.append("file", {
+        uploadData.append("file", {
           uri: selectedFile.uri,
           type: "application/pdf",
           name: selectedFile.name,
-        } as any);
+        } as unknown as Blob);
       }
 
       // Upload to server
-      const response = await uploadResume(formData).unwrap();
+      const response = await uploadResume(uploadData).unwrap();
 
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -187,7 +209,8 @@ export function ResumeHomeScreen() {
           },
         },
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiRequestError;
       if (progressInterval) {
         clearInterval(progressInterval);
       }
@@ -196,31 +219,31 @@ export function ResumeHomeScreen() {
 
       let errorMessage = "Failed to upload resume. Please try again.";
 
-      if (error?.status === 400) {
+      if (apiError.status === 400) {
         errorMessage =
-          error?.data?.message ||
+          apiError.data?.message ||
           "Invalid file format. Please ensure the PDF is readable and not corrupted.";
-      } else if (error?.status === 413) {
+      } else if (apiError.status === 413) {
         errorMessage = "File size exceeds 5MB limit. Please choose a smaller file.";
-      } else if (error?.status === 415) {
+      } else if (apiError.status === 415) {
         errorMessage = "Invalid file type. Only PDF files are supported.";
-      } else if (error?.status === 401) {
+      } else if (apiError.status === 401) {
         errorMessage = "Session expired. Please log in again.";
-      } else if (error?.status === 500) {
+      } else if (apiError.status === 500) {
         errorMessage = "Server error occurred. Please try again later.";
-      } else if (error?.status === 0 || error?.code === "NETWORK_ERROR") {
+      } else if (apiError.status === 0 || apiError.code === "NETWORK_ERROR") {
         errorMessage = "Network connection error. Please check your internet connection.";
       } else {
         errorMessage =
-          error?.data?.message ||
-          error?.message ||
+          apiError.data?.message ||
+          apiError.message ||
           "An unexpected error occurred. Please try again.";
       }
 
       dispatch(setError(errorMessage));
       Alert.alert("Upload Failed", errorMessage);
 
-      console.error("Upload error:", error);
+      console.error("Upload error:", apiError);
     } finally {
       setUploading(false);
       isSubmittingRef.current = false;
@@ -277,19 +300,20 @@ export function ResumeHomeScreen() {
       setTimeout(() => {
         setDeleteSuccess(false);
       }, 2500);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const apiError = err as ApiRequestError;
       let errorMessage = "Failed to delete resume. Please try again.";
 
-      if (err?.status === 404) {
+      if (apiError.status === 404) {
         errorMessage = "Resume not found on server. It may have already been deleted.";
-      } else if (err?.status === 401) {
+      } else if (apiError.status === 401) {
         errorMessage = "Session expired. Please log in again.";
-      } else if (err?.status === 500) {
+      } else if (apiError.status === 500) {
         errorMessage = "Server error occurred. Please try again later.";
-      } else if (err?.status === 0 || err?.code === "NETWORK_ERROR") {
+      } else if (apiError.status === 0 || apiError.code === "NETWORK_ERROR") {
         errorMessage = "Network connection error. Please check your internet connection.";
       } else {
-        errorMessage = err?.data?.message || err?.message || errorMessage;
+        errorMessage = apiError.data?.message || apiError.message || errorMessage;
       }
 
       if (Platform.OS === "web") {
@@ -298,7 +322,7 @@ export function ResumeHomeScreen() {
         Alert.alert("Delete Failed", errorMessage);
       }
 
-      console.error("Delete error:", err);
+      console.error("Delete error:", apiError);
     } finally {
       isSubmittingRef.current = false;
     }
@@ -404,6 +428,7 @@ export function ResumeHomeScreen() {
                   handleFileSelect({
                     name: file.name,
                     size: file.size,
+                    type: file.type,
                     uri: file,
                   });
                 }
@@ -568,7 +593,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Skills ({formData.skills.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {formData.skills?.map((skill: any, index: number) => (
+                  {formData.skills?.map((skill, index) => (
                     <View key={index} style={styles.skillBadge}>
                       <Text style={styles.skillText}>
                         {typeof skill === "string" ? skill : skill.name}
@@ -587,7 +612,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Experience ({formData.experience.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.experience?.map((exp: any, index: number) => (
+                  {formData.experience?.map((exp, index) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{exp.position}</Text>
                       <Text style={styles.expCompany}>
@@ -611,7 +636,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Education ({formData.education.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.education?.map((edu: any, index: number) => (
+                  {formData.education?.map((edu, index) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{edu.degree}</Text>
                       <Text style={styles.expCompany}>
@@ -632,7 +657,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Projects ({formData.projects.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.projects?.map((proj: any, index: number) => (
+                  {formData.projects?.map((proj, index) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{proj.name}</Text>
                       {proj.description ? (
@@ -663,7 +688,7 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.certifications?.map((cert: any, index: number) => (
+                  {formData.certifications?.map((cert, index) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{cert.name}</Text>
                       <Text style={styles.expCompany}>
@@ -687,7 +712,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Languages ({formData.languages.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {formData.languages?.map((lang: any, index: number) => (
+                  {formData.languages?.map((lang, index) => (
                     <View key={index} style={styles.languageBadge}>
                       <Text style={styles.languageText}>
                         {typeof lang === "string" ? lang : lang.name}
@@ -708,12 +733,10 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.achievements?.map((achievement: any, index: number) => (
+                  {formData.achievements?.map((achievement, index) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#10b981" />
-                      <Text style={styles.achievementText}>
-                        {typeof achievement === "string" ? achievement : achievement.name}
-                      </Text>
+                      <Text style={styles.achievementText}>{achievement}</Text>
                     </View>
                   ))}
                 </View>
@@ -730,12 +753,10 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.extracurricular?.map((activity: any, index: number) => (
+                  {formData.extracurricular?.map((activity, index) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#2563EB" />
-                      <Text style={styles.achievementText}>
-                        {typeof activity === "string" ? activity : activity.name}
-                      </Text>
+                      <Text style={styles.achievementText}>{activity}</Text>
                     </View>
                   ))}
                 </View>

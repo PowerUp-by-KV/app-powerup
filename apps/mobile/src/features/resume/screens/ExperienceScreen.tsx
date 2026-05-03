@@ -23,6 +23,14 @@ import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import type { Experience, Education } from "@app-powerup/shared";
 
+const createResumeItemId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 export function ExperienceScreen() {
   const dispatch = useAppDispatch();
   const experience = useAppSelector(selectExperience);
@@ -74,7 +82,7 @@ export function ExperienceScreen() {
         dispatch(
           addExperience({
             ...experienceForm,
-            id: Date.now().toString(),
+            id: createResumeItemId(),
           } as Experience),
         );
       }
@@ -132,7 +140,7 @@ export function ExperienceScreen() {
         dispatch(
           addEducation({
             ...educationForm,
-            id: Date.now().toString(),
+            id: createResumeItemId(),
           } as Education),
         );
       }

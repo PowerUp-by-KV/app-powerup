@@ -13,10 +13,33 @@ import type {
   Project,
   Certification,
   ResumeUploadResponse,
+  ResumeParsedData,
 } from "@app-powerup/shared";
 
 type ResumeLoadPayload = ResumeUploadResponse & {
-  parsed_data?: any;
+  parsed_data?: ResumeParsedData;
+};
+
+type ResumeLoadData = Omit<ResumeParsedData, "contact" | "summary" | "education" | "experience"> & {
+  contact: ResumeParsedData["contact"] & {
+    name?: string;
+  };
+  summary: ResumeParsedData["summary"] | string;
+  education: Array<
+    Education & {
+      institution?: string;
+      end_year?: number | string;
+      gpa?: string;
+    }
+  >;
+  experience: Array<
+    Experience & {
+      title?: string;
+      start_date?: string;
+      end_date?: string | null;
+      highlights?: string[];
+    }
+  >;
 };
 
 const initialState: ResumeState = {
@@ -186,7 +209,7 @@ export const resumeSlice = createSlice({
       const payload = action.payload;
 
       // Extract parsed_data if it exists (from API response), otherwise use payload directly
-      const data = payload?.parsed_data || payload;
+      const data = (payload?.parsed_data || payload) as ResumeLoadData;
 
       state.formData = {
         contact: {
@@ -198,7 +221,7 @@ export const resumeSlice = createSlice({
         },
         summary:
           typeof data.summary === "string" ? { text: data.summary } : data.summary || { text: "" },
-        education: (data.education || []).map((edu: any, i: number) => ({
+        education: (data.education || []).map((edu, i) => ({
           id: edu.id || `edu-${Date.now()}-${i}`,
           school: edu.institution || edu.school || "",
           degree: edu.degree || "",
@@ -206,7 +229,7 @@ export const resumeSlice = createSlice({
           graduationDate: edu.end_year ? edu.end_year.toString() : edu.graduationDate || "",
           details: edu.gpa ? `GPA: ${edu.gpa}` : edu.details || "",
         })),
-        experience: (data.experience || []).map((exp: any, i: number) => ({
+        experience: (data.experience || []).map((exp, i) => ({
           id: exp.id || `exp-${Date.now()}-${i}`,
           company: exp.company || "",
           position: exp.title || exp.position || "",
@@ -215,17 +238,17 @@ export const resumeSlice = createSlice({
           currentlyWorking: !exp.end_date && !exp.endDate,
           description: exp.description || (exp.highlights ? exp.highlights.join("\n") : ""),
         })),
-        skills: (data.skills || []).map((skill: any, i: number) => {
+        skills: (data.skills || []).map((skill, i) => {
           if (typeof skill === "string") return { id: `skill-${Date.now()}-${i}`, name: skill };
           return skill;
         }),
-        projects: (data.projects || []).map((proj: any, i: number) => ({
+        projects: (data.projects || []).map((proj, i) => ({
           id: proj.id || `proj-${Date.now()}-${i}`,
           name: proj.name || "",
           description: proj.description || "",
           technologies: proj.technologies || [],
         })),
-        certifications: (data.certifications || []).map((cert: any, i: number) => {
+        certifications: (data.certifications || []).map((cert, i) => {
           if (typeof cert === "string")
             return { id: `cert-${Date.now()}-${i}`, name: cert, issuer: "" };
           return cert;
