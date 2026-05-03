@@ -3,29 +3,11 @@
  * RTK Query endpoints for resume management with comprehensive error handling
  */
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { ResumeParsedData, ResumeUploadResponse } from "@app-powerup/shared";
+import { api } from "./api";
 import { ApiErrorHandler } from "./error-handler";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
-export const resumeApi = createApi({
-  reducerPath: "resumeApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${BASE_URL}/v1`,
-    prepareHeaders: (headers) => {
-      // Use token from environment variables
-      const token = process.env.EXPO_PUBLIC_ACCESS_TOKEN;
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-
-      // Note: We don't explicitly set Content-Type to application/json here
-      // so that FormData requests can automatically set their boundary headers.
-      return headers;
-    },
-  }),
-  tagTypes: ["Resume"],
+export const resumeApi = api.injectEndpoints({
   endpoints: (builder) => ({
     // POST /v1/resume/upload - Upload PDF and parse
     uploadResume: builder.mutation<ResumeUploadResponse, FormData>({
@@ -38,9 +20,9 @@ export const resumeApi = createApi({
         },
       }),
       invalidatesTags: ["Resume"],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { queryFulfilled }) {
         try {
-          const result = await queryFulfilled;
+          await queryFulfilled;
           ApiErrorHandler.logError(null, "uploadResume", { success: true });
         } catch (error: any) {
           const apiError = ApiErrorHandler.parseError(error.error, "upload");
@@ -59,9 +41,9 @@ export const resumeApi = createApi({
         method: "GET",
       }),
       providesTags: ["Resume"],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(arg, { queryFulfilled }) {
         try {
-          const result = await queryFulfilled;
+          await queryFulfilled;
           ApiErrorHandler.logError(null, "getResume", { success: true, userId: arg });
         } catch (error: any) {
           const apiError = ApiErrorHandler.parseError(error.error, "fetch");
@@ -133,9 +115,9 @@ export const resumeApi = createApi({
         };
       },
       invalidatesTags: ["Resume"],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(arg, { queryFulfilled }) {
         try {
-          const result = await queryFulfilled;
+          await queryFulfilled;
           ApiErrorHandler.logError(null, "updateResume", { success: true, userId: arg.userId });
         } catch (error: any) {
           const apiError = ApiErrorHandler.parseError(error.error, "update");
@@ -156,9 +138,9 @@ export const resumeApi = createApi({
         responseHandler: "text",
       }),
       invalidatesTags: ["Resume"],
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(arg, { queryFulfilled }) {
         try {
-          const result = await queryFulfilled;
+          await queryFulfilled;
           ApiErrorHandler.logError(null, "deleteResume", { success: true, userId: arg });
         } catch (error: any) {
           const apiError = ApiErrorHandler.parseError(error.error, "delete");
@@ -171,6 +153,7 @@ export const resumeApi = createApi({
       },
     }),
   }),
+  overrideExisting: false,
 });
 
 export const {

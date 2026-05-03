@@ -6,9 +6,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type {
   ResumeState,
-  ResumeParsedData,
   Contact,
-  Summary,
   Experience,
   Education,
   Skill,
@@ -237,7 +235,7 @@ export const resumeSlice = createSlice({
     },
 
     // Reset
-    resetResume: (state) => {
+    resetResume: () => {
       return initialState;
     },
 

@@ -57,43 +57,17 @@ export function PreviewScreen() {
         if (Platform.OS === "web") {
           try {
             storedUserId = window.localStorage.getItem("user_id");
-          } catch (e) {
+          } catch {
             console.warn("localStorage not available on web");
           }
         } else {
           storedUserId = await SecureStore.getItemAsync("user_id");
         }
 
-        // If no stored ID, create a temporary valid UUID
-        if (!storedUserId) {
-          storedUserId = "123e4567-e89b-12d3-a456-426614174000"; // Mock valid UUID
-          // Alternatively, using a quick random UUID generator:
-          storedUserId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-            const r = (Math.random() * 16) | 0,
-              v = c == "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-          });
-
-          if (Platform.OS === "web") {
-            try {
-              window.localStorage.setItem("user_id", storedUserId);
-            } catch (e) {}
-          } else {
-            await SecureStore.setItemAsync("user_id", storedUserId);
-          }
-        }
-
-        setUserId(storedUserId);
+        setUserId(storedUserId ?? "");
       } catch (err) {
         console.warn("Failed to get user ID from secure storage:", err);
-        // Fallback to temporary valid UUID
-        setUserId(
-          "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-            const r = (Math.random() * 16) | 0,
-              v = c == "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-          }),
-        );
+        setUserId("");
       }
     };
 
@@ -125,7 +99,10 @@ export function PreviewScreen() {
 
       if (!userId) {
         console.warn("No user ID found before save");
-        Alert.alert("Error", "User ID not loaded. Please try again.");
+        Alert.alert(
+          "Unable to Save",
+          "No uploaded resume was found for this session. Please upload your resume before saving changes.",
+        );
         return;
       }
 
@@ -165,7 +142,10 @@ export function PreviewScreen() {
 
   const executeDelete = async () => {
     if (!userId) {
-      Alert.alert("Error", "User ID not loaded. Please try again.");
+      Alert.alert(
+        "Unable to Delete",
+        "No uploaded resume was found for this session. Please upload your resume before deleting it.",
+      );
       return;
     }
 

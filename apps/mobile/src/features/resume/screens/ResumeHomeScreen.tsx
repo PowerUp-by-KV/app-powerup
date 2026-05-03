@@ -82,7 +82,7 @@ export function ResumeHomeScreen() {
 
     setSelectedFile({
       name: file.name,
-      size: file.size,
+      size: fileInfo.size,
       uri: file.uri || file,
     });
     setUploadSuccess(false);
@@ -111,7 +111,7 @@ export function ResumeHomeScreen() {
           uri: file.uri,
         });
       }
-    } catch (_err) {
+    } catch {
       Alert.alert("Error", "Failed to pick document. Please try again.");
     }
   };
@@ -123,7 +123,7 @@ export function ResumeHomeScreen() {
       return;
     }
 
-    let progressInterval: NodeJS.Timeout | undefined;
+    let progressInterval: ReturnType<typeof setInterval> | undefined;
 
     try {
       isSubmittingRef.current = true;
@@ -162,7 +162,7 @@ export function ResumeHomeScreen() {
         if (Platform.OS === "web") {
           try {
             window.localStorage.setItem("user_id", response.user_id);
-          } catch (e) {
+          } catch {
             console.warn("localStorage not available on web");
           }
         } else {
@@ -242,10 +242,6 @@ export function ResumeHomeScreen() {
   const handleEditResume = () => {
     dispatch(setCurrentStep(1));
     router.push("/(tabs)/two/builder");
-  };
-
-  const handlePreviewResume = () => {
-    router.push("/(tabs)/two/preview");
   };
 
   const executeDelete = async () => {

@@ -19,10 +19,11 @@ export default function ResumeBuilder() {
   const dispatch = useAppDispatch();
   const currentStep = useAppSelector(selectCurrentStep);
 
-  // TODO: Get actual userId from auth context
-  // Replace "mock-uuid" with real ID when auth is implemented
-  const { data: resumeData } = useGetResumeQuery("mock-uuid", {
-    skip: false, // In a real app we'd trigger this conditionally based on auth
+  // TODO: Get actual userId from auth context or secure storage.
+  // Until auth is implemented, do not issue the resume request.
+  const userId: string | null = null;
+  const { data: resumeData } = useGetResumeQuery(userId ?? "", {
+    skip: !userId,
   });
 
   useEffect(() => {

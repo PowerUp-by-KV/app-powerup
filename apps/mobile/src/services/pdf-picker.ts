@@ -5,7 +5,7 @@
  */
 
 import * as DocumentPicker from "expo-document-picker";
-import { Platform, Alert } from "react-native";
+import { Alert } from "react-native";
 
 export interface PDFFile {
   name: string;

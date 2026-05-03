@@ -35,12 +35,22 @@ export function Button({
   };
 
   const isDisabled = disabled || isLoading;
+  const sizeStyles = {
+    sm: { paddingHorizontal: 12, paddingVertical: 8 },
+    md: { paddingHorizontal: 16, paddingVertical: 12 },
+    lg: { paddingHorizontal: 20, paddingVertical: 14 },
+  };
 
   return (
     <Pressable
       {...props}
       disabled={isDisabled}
-      style={[styles.button, variantStyles[variant], isDisabled && styles.disabled]}
+      style={[
+        styles.button,
+        sizeStyles[size],
+        variantStyles[variant],
+        isDisabled && styles.disabled,
+      ]}
     >
       {isLoading ? (
         <ActivityIndicator color={textColorStyles[variant]} size="small" />

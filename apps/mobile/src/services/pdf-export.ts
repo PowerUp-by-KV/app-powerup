@@ -4,9 +4,33 @@
  */
 
 import * as Print from "expo-print";
-import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import type { ResumeParsedData } from "@app-powerup/shared";
+
+/**
+ * Escape HTML special characters to prevent injection
+ */
+function escapeHTML(text: string | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Validate and sanitize URLs
+ */
+function sanitizeURL(url: string | undefined): string {
+  if (!url) return "";
+  // Only allow http:// and https:// protocols
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    return "";
+  }
+  return escapeHTML(url);
+}
 
 /**
  * Generate HTML resume from resume data
@@ -99,14 +123,14 @@ function generateResumeHTML(data: ResumeParsedData): string {
     </head>
     <body>
       <!-- Header -->
-      <h1>${data.contact.fullName || "Unnamed Resume"}</h1>
+      <h1>${escapeHTML(data.contact.fullName) || "Unnamed Resume"}</h1>
 
       <!-- Contact Info -->
       <div class="contact-info">
-        ${data.contact.email ? `<span>${data.contact.email}</span>` : ""}
-        ${data.contact.phone ? `<span>${data.contact.phone}</span>` : ""}
-        ${data.contact.location ? `<span>${data.contact.location}</span>` : ""}
-        ${data.contact.linkedin ? `<span><a href="${data.contact.linkedin}">${data.contact.linkedin}</a></span>` : ""}
+        ${data.contact.email ? `<span>${escapeHTML(data.contact.email)}</span>` : ""}
+        ${data.contact.phone ? `<span>${escapeHTML(data.contact.phone)}</span>` : ""}
+        ${data.contact.location ? `<span>${escapeHTML(data.contact.location)}</span>` : ""}
+        ${data.contact.linkedin ? `<span><a href="${sanitizeURL(data.contact.linkedin)}">${escapeHTML(data.contact.linkedin)}</a></span>` : ""}
       </div>
 
       <!-- Professional Summary -->
@@ -114,7 +138,7 @@ function generateResumeHTML(data: ResumeParsedData): string {
         data.summary.text
           ? `
         <h2>Professional Summary</h2>
-        <div class="summary">${data.summary.text}</div>
+        <div class="summary">${escapeHTML(data.summary.text)}</div>
       `
           : ""
       }
@@ -129,11 +153,11 @@ function generateResumeHTML(data: ResumeParsedData): string {
             (exp) => `
           <div class="entry">
             <div class="entry-header">
-              <span class="entry-title">${exp.position}</span>
-              <span class="entry-date">${exp.startDate}${exp.endDate ? ` - ${exp.endDate}` : " - Present"}</span>
+              <span class="entry-title">${escapeHTML(exp.position)}</span>
+              <span class="entry-date">${escapeHTML(exp.startDate)}${exp.endDate ? ` - ${escapeHTML(exp.endDate)}` : " - Present"}</span>
             </div>
-            <div class="entry-subtitle">${exp.company}</div>
-            <div class="entry-description">${exp.description}</div>
+            <div class="entry-subtitle">${escapeHTML(exp.company)}</div>
+            <div class="entry-description">${escapeHTML(exp.description)}</div>
           </div>
         `,
           )
@@ -152,12 +176,12 @@ function generateResumeHTML(data: ResumeParsedData): string {
             (edu) => `
           <div class="entry">
             <div class="entry-header">
-              <span class="entry-title">${edu.degree}</span>
-              <span class="entry-date">${edu.graduationDate}</span>
+              <span class="entry-title">${escapeHTML(edu.degree)}</span>
+              <span class="entry-date">${escapeHTML(edu.graduationDate)}</span>
             </div>
-            <div class="entry-subtitle">${edu.school}</div>
-            ${edu.field ? `<div class="entry-subtitle">Field: ${edu.field}</div>` : ""}
-            ${edu.details ? `<div class="entry-description">${edu.details}</div>` : ""}
+            <div class="entry-subtitle">${escapeHTML(edu.school)}</div>
+            ${edu.field ? `<div class="entry-subtitle">Field: ${escapeHTML(edu.field)}</div>` : ""}
+            ${edu.details ? `<div class="entry-description">${escapeHTML(edu.details)}</div>` : ""}
           </div>
         `,
           )
@@ -172,7 +196,7 @@ function generateResumeHTML(data: ResumeParsedData): string {
           ? `
         <h2>Skills</h2>
         <div class="skills">
-          ${data.skills.map((skill) => `<span class="skill-tag">${skill.name}</span>`).join("")}
+          ${data.skills.map((skill) => `<span class="skill-tag">${escapeHTML(skill.name)}</span>`).join("")}
         </div>
       `
           : ""
@@ -188,7 +212,6 @@ function generateResumeHTML(data: ResumeParsedData): string {
 export async function exportResumePDF(data: ResumeParsedData): Promise<void> {
   try {
     const html = generateResumeHTML(data);
-    const fileName = `${data.contact.fullName || "Resume"}_${new Date().toISOString().split("T")[0]}.pdf`;
 
     // Generate PDF
     const { uri } = await Print.printToFileAsync({ html });
@@ -210,7 +233,6 @@ export async function exportResumePDF(data: ResumeParsedData): Promise<void> {
 export async function saveResumePDF(data: ResumeParsedData): Promise<string> {
   try {
     const html = generateResumeHTML(data);
-    const fileName = `${data.contact.fullName || "Resume"}_${new Date().toISOString().split("T")[0]}.pdf`;
 
     // Generate PDF
     const { uri } = await Print.printToFileAsync({ html });

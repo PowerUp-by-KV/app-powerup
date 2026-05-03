@@ -5,7 +5,6 @@
 
 import { View, ScrollView, StyleSheet, Pressable, TextInput as RNTextInput } from "react-native";
 import { Text } from "@/components/Themed";
-import { useRouter } from "expo-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addSkill,
@@ -16,7 +15,6 @@ import {
   removeProject,
   selectProjects,
   addCertification,
-  updateCertification,
   removeCertification,
   selectCertifications,
   nextStep,
@@ -25,11 +23,10 @@ import {
 import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { Skill, Project, Certification } from "@app-powerup/shared";
-import { getSkillSuggestions, skillExists } from "@/utils/skillsAutocomplete";
+import type { Project } from "@app-powerup/shared";
+import { getSkillSuggestions } from "@/utils/skillsAutocomplete";
 
 export function SkillsScreen() {
-  const router = useRouter();
   const dispatch = useAppDispatch();
   const skills = useAppSelector(selectSkills);
   const projects = useAppSelector(selectProjects) || [];
@@ -472,8 +469,9 @@ export function SkillsScreen() {
                 <Text style={styles.summaryTitle}>Added Items</Text>
               </View>
               <Text style={styles.summaryText}>
-                You've configured {skills.length} skills, {projects.length} projects, and{" "}
-                {certifications.length} certifications. Great job!
+                {"You've configured "}
+                {skills.length} skills, {projects.length} projects, and {certifications.length}{" "}
+                certifications. Great job!
               </Text>
             </View>
           )}

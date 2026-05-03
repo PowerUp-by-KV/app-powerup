@@ -44,7 +44,7 @@ export function DynamicFieldList<T extends DynamicListItem>({
             scrollEnabled={false}
             data={items}
             keyExtractor={(item) => item.id}
-            renderItem={({ item, index }) => (
+            renderItem={({ item }) => (
               <View key={item.id} className="mb-4">
                 <Pressable
                   onPress={() => onEdit(item)}

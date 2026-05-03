@@ -28,7 +28,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import {
   validatePhoneDigits,
   getCountryCodesList,
-  countryCodeMap,
   getExpectedDigitCount,
 } from "@/utils/phoneValidation";
 import { getLocationSuggestions } from "@/utils/locationAutocomplete";
@@ -108,7 +107,7 @@ export function ContactSummaryScreen() {
           <View style={styles.headerContent}>
             <Text style={styles.stepNumber}>Step 1 of 4</Text>
             <Text style={styles.headerTitle}>Contact & Summary</Text>
-            <Text style={styles.headerSubtitle}>Let's start with your personal details</Text>
+            <Text style={styles.headerSubtitle}>{"Let's start with your personal details"}</Text>
           </View>
 
           {/* Progress Bar */}

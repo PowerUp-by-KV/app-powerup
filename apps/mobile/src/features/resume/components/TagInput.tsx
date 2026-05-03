@@ -3,7 +3,7 @@
  * Add and remove skills as tags/chips
  */
 
-import { View, TextInput, Pressable, FlatList } from "react-native";
+import { View, TextInput, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { useState } from "react";
 
