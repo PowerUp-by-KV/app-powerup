@@ -3,7 +3,7 @@
  * Enterprise-grade styling with Tailwind CSS
  */
 
-import { Pressable, PressableProps, View } from "react-native";
+import { ActivityIndicator, Pressable, PressableProps, View } from "react-native";
 import { Text } from "@/components/Themed";
 
 interface ButtonProps extends PressableProps {
@@ -45,6 +45,12 @@ export function Button({
     danger: "text-white",
   };
 
+  const indicatorColors = {
+    primary: "#ffffff",
+    secondary: "#111827",
+    danger: "#ffffff",
+  };
+
   const isDisabled = disabled || isLoading;
 
   return (
@@ -55,7 +61,11 @@ export function Button({
         isDisabled ? "opacity-50" : ""
       } flex-row items-center justify-center`}
     >
-      {isLoading && <Text className="mr-2">...</Text>}
+      {isLoading && (
+        <View className="mr-2">
+          <ActivityIndicator color={indicatorColors[variant]} size="small" />
+        </View>
+      )}
       <Text className={`font-semibold ${textColorStyles[variant]} ${textSizeStyles[size]}`}>
         {children}
       </Text>

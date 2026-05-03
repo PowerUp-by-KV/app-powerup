@@ -11,7 +11,9 @@ interface TextInputProps extends RNTextInputProps {
   error?: string;
   required?: boolean;
   multiline?: boolean;
+  numberOfLines?: number;
   rows?: number;
+  className?: string;
 }
 
 export function TextInput({
@@ -19,30 +21,39 @@ export function TextInput({
   error,
   required,
   multiline = false,
-  rows = 1,
+  numberOfLines = 1,
+  rows,
   className,
   ...props
 }: TextInputProps) {
+  const resolvedLines = rows ?? numberOfLines;
+  const heightClass = multiline
+    ? {
+        1: "h-12",
+        2: "h-20",
+        3: "h-[120px]",
+        4: "h-40",
+      }[resolvedLines] || "h-[120px]"
+    : "h-12";
+
   return (
     <View className="mb-4">
       {label && (
-        <Text className="mb-2 text-sm font-semibold text-gray-900">
-          {label}
-          {required && <Text className="text-red-600"> *</Text>}
-        </Text>
+        <View className="mb-2 flex-row items-center">
+          <Text className="text-sm font-semibold text-gray-900">{label}</Text>
+          {required && <Text className="ml-1 text-sm font-semibold text-red-600">*</Text>}
+        </View>
       )}
       <RNTextInput
         {...props}
         multiline={multiline}
-        numberOfLines={multiline ? rows : 1}
-        className={`${
-          multiline ? "h-24" : "h-12"
-        } rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 ${
-          error ? "border-red-500" : ""
-        } ${className || ""}`}
+        numberOfLines={multiline ? resolvedLines : 1}
+        className={`${heightClass} rounded-lg border ${
+          error ? "border-red-500" : "border-gray-300"
+        } bg-white px-3 py-2.5 text-sm text-gray-900 ${className || ""}`}
         placeholderTextColor="#9CA3AF"
       />
-      {error && <Text className="mt-1 text-xs text-red-600">{error}</Text>}
+      {error && <Text className="mt-1.5 text-xs text-red-600">{error}</Text>}
     </View>
   );
 }
