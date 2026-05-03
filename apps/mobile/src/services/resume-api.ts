@@ -7,6 +7,17 @@ import type { ResumeParsedData, ResumeUploadResponse } from "@app-powerup/shared
 import { api } from "./api";
 import { ApiErrorHandler } from "./error-handler";
 
+type NamedResumeValue = string | { name?: string };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getQueryError = (error: unknown) =>
+  isRecord(error) && "error" in error ? error.error : error;
+
+const getResumeValueName = (value: NamedResumeValue) =>
+  typeof value === "string" ? value : value.name || "";
+
 export const resumeApi = api.injectEndpoints({
   endpoints: (builder) => ({
     // POST /v1/resume/upload - Upload PDF and parse
@@ -24,9 +35,10 @@ export const resumeApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           ApiErrorHandler.logError(null, "uploadResume", { success: true });
-        } catch (error: any) {
-          const apiError = ApiErrorHandler.parseError(error.error, "upload");
-          ApiErrorHandler.logError(error.error, "uploadResume", {
+        } catch (error: unknown) {
+          const queryError = getQueryError(error);
+          const apiError = ApiErrorHandler.parseError(queryError, "upload");
+          ApiErrorHandler.logError(queryError, "uploadResume", {
             userMessage: apiError.userMessage,
           });
           console.error("Upload error:", apiError.userMessage);
@@ -45,9 +57,10 @@ export const resumeApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           ApiErrorHandler.logError(null, "getResume", { success: true, userId: arg });
-        } catch (error: any) {
-          const apiError = ApiErrorHandler.parseError(error.error, "fetch");
-          ApiErrorHandler.logError(error.error, "getResume", {
+        } catch (error: unknown) {
+          const queryError = getQueryError(error);
+          const apiError = ApiErrorHandler.parseError(queryError, "fetch");
+          ApiErrorHandler.logError(queryError, "getResume", {
             userId: arg,
             userMessage: apiError.userMessage,
           });
@@ -90,24 +103,16 @@ export const resumeApi = api.injectEndpoints({
             description: exp.description || "",
             highlights: [],
           })),
-          skills: (data.skills || []).map((s: any) => (typeof s === "string" ? s : s.name || "")),
+          skills: (data.skills || []).map(getResumeValueName),
           projects: (data.projects || []).map((p) => ({
             name: p.name || "",
             description: p.description || "",
             technologies: p.technologies || [],
           })),
-          certifications: (data.certifications || []).map((c: any) =>
-            typeof c === "string" ? c : c.name || "",
-          ),
-          achievements: (data.achievements || []).map((a: any) =>
-            typeof a === "string" ? a : a.name || "",
-          ),
-          languages: (data.languages || []).map((l: any) =>
-            typeof l === "string" ? l : l.name || "",
-          ),
-          extracurricular: (data.extracurricular || []).map((e: any) =>
-            typeof e === "string" ? e : e.name || "",
-          ),
+          certifications: (data.certifications || []).map(getResumeValueName),
+          achievements: (data.achievements || []).map(getResumeValueName),
+          languages: (data.languages || []).map(getResumeValueName),
+          extracurricular: (data.extracurricular || []).map(getResumeValueName),
         };
 
         return {
@@ -121,9 +126,10 @@ export const resumeApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           ApiErrorHandler.logError(null, "updateResume", { success: true, userId: arg.userId });
-        } catch (error: any) {
-          const apiError = ApiErrorHandler.parseError(error.error, "update");
-          ApiErrorHandler.logError(error.error, "updateResume", {
+        } catch (error: unknown) {
+          const queryError = getQueryError(error);
+          const apiError = ApiErrorHandler.parseError(queryError, "update");
+          ApiErrorHandler.logError(queryError, "updateResume", {
             userId: arg.userId,
             userMessage: apiError.userMessage,
           });
@@ -144,9 +150,10 @@ export const resumeApi = api.injectEndpoints({
         try {
           await queryFulfilled;
           ApiErrorHandler.logError(null, "deleteResume", { success: true, userId: arg });
-        } catch (error: any) {
-          const apiError = ApiErrorHandler.parseError(error.error, "delete");
-          ApiErrorHandler.logError(error.error, "deleteResume", {
+        } catch (error: unknown) {
+          const queryError = getQueryError(error);
+          const apiError = ApiErrorHandler.parseError(queryError, "delete");
+          ApiErrorHandler.logError(queryError, "deleteResume", {
             userId: arg,
             userMessage: apiError.userMessage,
           });

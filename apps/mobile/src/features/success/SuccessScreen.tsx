@@ -1,6 +1,6 @@
 import React from "react";
 import { SafeAreaView, View, Text, TouchableOpacity } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, type Href } from "expo-router";
 
 export function SuccessScreen() {
   const router = useRouter();
@@ -28,7 +28,9 @@ export function SuccessScreen() {
 
           <TouchableOpacity
             className="rounded-full py-4 px-10 items-center bg-gray-700"
-            onPress={() => router.replace(isRegister ? "/dynamic-onboarding" : "/dashboard")}
+            onPress={() =>
+              router.replace((isRegister ? "/dynamic-onboarding" : "/dashboard") as Href)
+            }
           >
             <Text className="text-white font-bold">{isRegister ? "Continue" : "Get Started"}</Text>
           </TouchableOpacity>

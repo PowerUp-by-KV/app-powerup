@@ -1,6 +1,6 @@
 import React, { useRef, useState } from "react";
 import { View, Text, Animated, TouchableOpacity, Image } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { restoreSession } from "@/services/auth-service";
 
 const slides = [
@@ -61,10 +61,10 @@ export function SplashScreen() {
       if (session?.profile_completed) {
         router.replace("/(tabs)");
       } else {
-        router.replace("/login");
+        router.replace("/login" as Href);
       }
     } catch {
-      router.replace("/login");
+      router.replace("/login" as Href);
     }
   };
 

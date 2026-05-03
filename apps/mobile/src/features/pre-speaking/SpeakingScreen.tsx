@@ -157,7 +157,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch (err) {
+    } catch {
       Alert.alert("Error", "Could not submit answers.");
     }
   };

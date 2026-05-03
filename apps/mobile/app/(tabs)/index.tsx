@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ScrollView } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function HomeScreen() {
 
       <View className="px-6 mb-10">
         <Pressable
-          onPress={() => router.push("/(tabs)/quiz")}
+          onPress={() => router.push("/(tabs)/quiz" as Href)}
           className="bg-blue-600 p-8 rounded-[32px] shadow-xl active:scale-95 transition-all"
         >
           <View className="flex-row justify-between items-center mb-4">

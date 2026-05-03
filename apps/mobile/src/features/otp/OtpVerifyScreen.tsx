@@ -9,7 +9,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 export function OtpVerifyScreen() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export function OtpVerifyScreen() {
 
   const handleSendOtp = () => {
     // in real app, trigger OTP send here
-    router.push("/otp-enter");
+    router.push("/otp-enter" as Href);
   };
 
   return (
@@ -74,7 +74,7 @@ export function OtpVerifyScreen() {
 
             <TouchableOpacity
               className="border border-slate-300 rounded-xl py-4 items-center mb-8 active:bg-slate-50"
-              onPress={() => router.replace("/login")}
+              onPress={() => router.replace("/login" as Href)}
             >
               <Text className="text-slate-600 text-base font-bold">Back to Email Login</Text>
             </TouchableOpacity>
@@ -84,7 +84,7 @@ export function OtpVerifyScreen() {
                 Don&apos;t have an account?{" "}
                 <Text
                   className="text-slate-900 font-bold underline"
-                  onPress={() => router.push("/register")}
+                  onPress={() => router.push("/register" as Href)}
                 >
                   Sign up
                 </Text>

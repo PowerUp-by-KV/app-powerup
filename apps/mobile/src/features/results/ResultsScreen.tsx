@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { useGetAssessmentResultQuery } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
@@ -39,7 +39,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   } = useGetAssessmentResultQuery({ session_id: sessionId! }, { skip: !sessionId });
 
   const handleBack = () => {
-    router.replace("/dashboard");
+    router.replace("/dashboard" as Href);
   };
 
   if (isLoading) {

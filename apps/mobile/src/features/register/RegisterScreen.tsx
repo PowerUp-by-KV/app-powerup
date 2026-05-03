@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { Feather, AntDesign } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { saveAuthSession } from "@/services/auth-storage";
@@ -33,11 +33,11 @@ export function RegisterScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/dashboard" as Href);
       return;
     }
 
-    router.replace("/dynamic-onboarding");
+    router.replace("/dynamic-onboarding" as Href);
   };
 
   const handleRegister = async () => {
@@ -273,7 +273,10 @@ export function RegisterScreen() {
               <View className="items-center mt-2">
                 <Text className="text-sm text-slate-500">
                   Already have an account?{" "}
-                  <Text className="text-indigo-600 font-bold" onPress={() => router.push("/login")}>
+                  <Text
+                    className="text-indigo-600 font-bold"
+                    onPress={() => router.push("/login" as Href)}
+                  >
                     Sign In
                   </Text>
                 </Text>
@@ -286,7 +289,7 @@ export function RegisterScreen() {
               </View>
 
               <TouchableOpacity
-                onPress={() => router.push("/otp")}
+                onPress={() => router.push("/otp" as Href)}
                 className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
               >
                 <Text className="text-slate-800 text-base font-bold">Sign up with OTP</Text>

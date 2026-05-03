@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { RootState } from "@/store";
 import { updateField, nextStep, prevStep } from "@/store/slices/onboardingSlice";
 import {
@@ -56,7 +56,10 @@ export default function DynamicOnboardingScreen() {
           onPress={async () => {
             try {
               const session = await startSession().unwrap();
-              router.replace({ pathname: "/read", params: { session_id: session.session_id } });
+              router.replace({
+                pathname: "/read",
+                params: { session_id: session.session_id },
+              } as unknown as Href);
             } catch (err) {
               Alert.alert("Error", getApiErrorMessage(err, "Could not start assessment session"));
             }
@@ -127,7 +130,10 @@ export default function DynamicOnboardingScreen() {
         await setProfileCompletedInSession(true);
         const session = await startSession().unwrap();
         await saveAssessmentSessionId(session.session_id);
-        router.replace({ pathname: "/read", params: { session_id: session.session_id } });
+        router.replace({
+          pathname: "/read",
+          params: { session_id: session.session_id },
+        } as unknown as Href);
       } catch (err) {
         Alert.alert("Error", getApiErrorMessage(err, "Submission failed"));
       }

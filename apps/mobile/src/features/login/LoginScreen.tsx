@@ -13,7 +13,7 @@ import {
 } from "react-native";
 
 import { Feather, AntDesign } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 import { LoginRequest, useLoginMutation } from "@/services/auth-api";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
@@ -32,9 +32,9 @@ export function LoginScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/dashboard" as Href);
     } else {
-      router.replace("/dynamic-onboarding");
+      router.replace("/dynamic-onboarding" as Href);
     }
   };
 
@@ -106,7 +106,7 @@ export function LoginScreen() {
       if (apiError?.status === 401) {
         await clearAuthState();
         Alert.alert("Error", "Invalid credentials");
-        router.replace("/login");
+        router.replace("/login" as Href);
         return;
       }
 
@@ -237,7 +237,7 @@ export function LoginScreen() {
                 Don&apos;t have an account?{" "}
                 <Text
                   className="text-indigo-600 font-bold"
-                  onPress={() => router.push("/register")}
+                  onPress={() => router.push("/register" as Href)}
                 >
                   Sign up
                 </Text>
@@ -251,7 +251,7 @@ export function LoginScreen() {
             </View>
 
             <TouchableOpacity
-              onPress={() => router.push("/otp")}
+              onPress={() => router.push("/otp" as Href)}
               className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
             >
               <Text className="text-slate-800 text-base font-bold">Login with OTP</Text>

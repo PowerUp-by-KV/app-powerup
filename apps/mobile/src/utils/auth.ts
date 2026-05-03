@@ -1,6 +1,6 @@
 import { clearAuthState, setAuthToken } from "@/services/auth-service";
 import { getAuthSession } from "@/services/auth-storage";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 export const useLogout = () => {
   const router = useRouter();
@@ -8,7 +8,7 @@ export const useLogout = () => {
   const logout = async () => {
     try {
       await clearAuthState();
-      router.replace("/splash");
+      router.replace("/splash" as Href);
     } catch (error) {
       console.error("Logout error:", error);
     }

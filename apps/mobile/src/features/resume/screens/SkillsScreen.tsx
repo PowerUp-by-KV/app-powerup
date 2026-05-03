@@ -26,6 +26,14 @@ import { MaterialIcons } from "@expo/vector-icons";
 import type { Project } from "@app-powerup/shared";
 import { getSkillSuggestions, type SkillSuggestion } from "@/utils/skillsAutocomplete";
 
+const createResumeItemId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 export function SkillsScreen() {
   const dispatch = useAppDispatch();
   const skills = useAppSelector(selectSkills);
@@ -66,7 +74,7 @@ export function SkillsScreen() {
 
     dispatch(
       addSkill({
-        id: Date.now().toString(),
+        id: createResumeItemId(),
         name: skillInput.trim(),
       }),
     );
@@ -87,7 +95,7 @@ export function SkillsScreen() {
 
     dispatch(
       addSkill({
-        id: Date.now().toString(),
+        id: createResumeItemId(),
         name: skillName,
       }),
     );
@@ -109,7 +117,7 @@ export function SkillsScreen() {
       description: projectForm.description,
       link: projectForm.link,
       technologies: projectTechs,
-      id: editingProjectId || Date.now().toString(),
+      id: editingProjectId || createResumeItemId(),
     };
     if (editingProjectId) dispatch(updateProject(projData));
     else dispatch(addProject(projData));
@@ -131,7 +139,7 @@ export function SkillsScreen() {
   // --- Certification Handlers ---
   const handleAddCert = () => {
     if (!certInput.trim()) return;
-    dispatch(addCertification({ name: certInput.trim(), issuer: "", id: Date.now().toString() }));
+    dispatch(addCertification({ name: certInput.trim(), issuer: "", id: createResumeItemId() }));
     setCertInput("");
   };
 

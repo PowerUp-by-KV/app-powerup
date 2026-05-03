@@ -9,7 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 
 export function OtpEnterScreen() {
   const router = useRouter();
@@ -17,7 +17,7 @@ export function OtpEnterScreen() {
 
   const handleVerify = () => {
     // in real app, verify OTP here
-    router.replace("/success?mode=login");
+    router.replace("/success?mode=login" as Href);
   };
 
   return (

@@ -33,6 +33,15 @@ import { MaterialIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { ApiErrorHandler } from "@/services/error-handler";
 
+const getErrorStatus = (error: unknown) => {
+  if (typeof error !== "object" || error === null || !("status" in error)) {
+    return undefined;
+  }
+
+  const status = (error as { status?: unknown }).status;
+  return typeof status === "number" || typeof status === "string" ? status : undefined;
+};
+
 export function PreviewScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -126,7 +135,7 @@ export function PreviewScreen() {
         dispatch(setHasExistingResume(true));
         router.replace("/(tabs)/two");
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Save error caught:", error);
       const parsedError = ApiErrorHandler.parseError(error, "update");
       const errorMessage = parsedError.userMessage || "Failed to save resume. Please try again.";
@@ -166,9 +175,10 @@ export function PreviewScreen() {
         dispatch(setHasExistingResume(false));
         router.replace("/(tabs)/two");
       }, 2000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Delete error:", error);
-      if (error?.status === 404 || error?.status === "FETCH_ERROR") {
+      const errorStatus = getErrorStatus(error);
+      if (errorStatus === 404 || errorStatus === "FETCH_ERROR") {
         // Already deleted or unreachable, force local deletion
         setSuccessMessage("Resume deleted successfully!");
         setShowSuccess(true);

@@ -9,7 +9,7 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 export function EmailOtpScreen() {
@@ -18,7 +18,7 @@ export function EmailOtpScreen() {
 
   const handleSendOtp = () => {
     // Logic to trigger Email OTP send
-    router.push("/otp-enter");
+    router.push("/otp-enter" as Href);
   };
 
   return (
@@ -72,7 +72,7 @@ export function EmailOtpScreen() {
 
             <TouchableOpacity
               className="border border-slate-300 rounded-xl py-4 items-center mb-8 active:bg-slate-50"
-              onPress={() => router.push("/otp-mobile")}
+              onPress={() => router.push("/otp-mobile" as Href)}
             >
               <Text className="text-slate-600 text-base font-bold">Use Mobile number Instead</Text>
             </TouchableOpacity>
@@ -82,7 +82,7 @@ export function EmailOtpScreen() {
                 Don&apos;t have an account?{" "}
                 <Text
                   className="text-slate-900 font-bold underline"
-                  onPress={() => router.push("/register")}
+                  onPress={() => router.push("/register" as Href)}
                 >
                   Sign up
                 </Text>

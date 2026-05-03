@@ -54,6 +54,38 @@ interface ApiRequestError {
   message?: string;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isPickerCanceled = (result: unknown) => {
+  if (!isRecord(result)) return true;
+  if (typeof result.canceled === "boolean") return result.canceled;
+  return result.type === "cancel";
+};
+
+const toPickedDocument = (value: unknown): PickedResumeFile | undefined => {
+  if (!isRecord(value) || typeof value.name !== "string" || typeof value.uri !== "string") {
+    return undefined;
+  }
+
+  return {
+    name: value.name,
+    size: typeof value.size === "number" ? value.size : undefined,
+    mimeType: typeof value.mimeType === "string" ? value.mimeType : undefined,
+    uri: value.uri,
+  };
+};
+
+const getPickedDocument = (result: unknown): PickedResumeFile | undefined => {
+  if (!isRecord(result)) return undefined;
+
+  if (Array.isArray(result.assets)) {
+    return toPickedDocument(result.assets[0]);
+  }
+
+  return result.type === "success" ? toPickedDocument(result) : undefined;
+};
+
 export function ResumeHomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -122,9 +154,9 @@ export function ResumeHomeScreen() {
           multiple: false,
         });
 
-        if (result.canceled) return;
+        if (isPickerCanceled(result)) return;
 
-        const file = result.assets?.[0];
+        const file = getPickedDocument(result);
         if (!file) return;
 
         handleFileSelect({
