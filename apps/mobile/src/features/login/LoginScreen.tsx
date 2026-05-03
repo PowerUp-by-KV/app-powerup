@@ -15,9 +15,9 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { LoginRequest, useLoginMutation } from "@/services/auth-api";
+import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
+import { saveAuthSession } from "@/services/auth-storage";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -30,18 +30,14 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
+  const persistAuthAndNavigate = async (auth: AuthResponse) => {
+    await saveAuthSession(auth);
+    setAuthToken(auth.access_token);
+    if (auth.user.cefr_range) {
       router.replace("/dashboard");
     } else {
       router.replace("/dynamic-onboarding");
     }
-  };
-
-  const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    setAuthToken(auth.access_token);
-    handlePostAuthNavigation(auth.profile_completed);
   };
 
   const handleLogin = async () => {

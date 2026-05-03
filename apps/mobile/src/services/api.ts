@@ -53,9 +53,4 @@ export const api = createApi({
   endpoints: () => ({}),
 });
 
-export const {
-  useUploadResumeMutation,
-  useGetResumeQuery,
-  useUpdateResumeMutation,
-  useDeleteResumeMutation,
-} = api;
+export { api };
