@@ -59,6 +59,7 @@ export const api = createApi({
     "Assessment",
     "Resume",
     "Modules",
+    "Chat",
   ],
   endpoints: () => ({}),
 });
