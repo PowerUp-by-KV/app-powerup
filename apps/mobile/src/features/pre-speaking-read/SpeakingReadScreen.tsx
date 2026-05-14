@@ -21,6 +21,7 @@ import {
 import { SentenceDisplay } from "./components/SentenceDisplay";
 import { Recorder } from "./components/Recorder";
 import { getAssessmentSessionId } from "@/services/auth-storage";
+import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface SpeakingReadScreenProps {
   sessionId?: string;
@@ -47,6 +48,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [startedAt] = useState(() => Date.now());
 
   const questions =
     sectionData?.questions ||
@@ -180,6 +182,19 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <AssessmentHeader
+        section="A_SPEAKING"
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        startedAtMs={startedAt}
+        onFinish={handleFinish}
+        onSectionChange={(next) =>
+          router.replace({
+            pathname: getNextRouteForSection(next),
+            params: { session_id: sessionId },
+          })
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}

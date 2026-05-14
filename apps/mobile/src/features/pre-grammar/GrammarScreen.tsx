@@ -21,6 +21,7 @@ import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
 import { useEffect } from "react";
 import { getAssessmentSessionId } from "@/services/auth-storage";
+import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface GrammarScreenProps {
   sessionId?: string;
@@ -47,6 +48,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [startedAt] = useState(() => Date.now());
 
   const questions =
     sectionData?.questions ||
@@ -119,6 +121,19 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <AssessmentHeader
+        section="C_GRAMMAR"
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        startedAtMs={startedAt}
+        onFinish={handleFinish}
+        onSectionChange={(next) =>
+          router.replace({
+            pathname: getNextRouteForSection(next),
+            params: { session_id: sessionId },
+          })
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
