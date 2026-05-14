@@ -1,13 +1,26 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { SymbolView } from "expo-symbols";
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 
 import Colors from "@/constants/Colors";
 import { useColorScheme } from "@/components/useColorScheme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { getAuthSession } from "@/services/auth-storage";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    getAuthSession().then((session) => {
+      const authed = !!session?.access_token;
+      setIsAuthed(authed);
+      if (!authed) router.replace("/login");
+    });
+  }, [router]);
+
+  if (isAuthed !== true) return null;
 
   return (
     <Tabs

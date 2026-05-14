@@ -1,4 +1,4 @@
-import { AuthResponse } from "@/services/auth-storage";
+import type { AuthResponse } from "@/services/auth-api";
 
 export function clearAuthState(): Promise<void> {
   return Promise.resolve();
@@ -40,8 +40,8 @@ export async function signupWithEmail(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
-    profile_completed: false,
-    email: data.email,
+    token_type: "bearer",
+    user: { id: "", email: data.email, name: "", cefr_range: null },
   } as AuthResponse;
 }
 
@@ -53,8 +53,8 @@ export async function signupWithGoogleCode(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
-    profile_completed: false,
-    email: data.email,
+    token_type: "bearer",
+    user: { id: "", email: data.email, name: "", cefr_range: null },
   } as AuthResponse;
 }
 
@@ -64,7 +64,7 @@ export async function signupWithGoogleIdToken(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
-    profile_completed: false,
-    email: data.email,
+    token_type: "bearer",
+    user: { id: "", email: data.email, name: "", cefr_range: null },
   } as AuthResponse;
 }

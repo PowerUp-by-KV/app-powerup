@@ -1,11 +1,12 @@
-import { View } from "react-native";
-import { QuizEngine } from "./components/QuizEngine";
+import { QuizShell } from "./components/QuizShell";
+import { QUIZ_ACTIVITY_IDS } from "./constants/activity-ids";
 import { PAST_PERFECT_QUESTIONS } from "./constants/quiz-data";
 
 export function PastPerfectQuizScreen() {
   return (
-    <View className="flex-1 bg-white">
-      <QuizEngine questions={PAST_PERFECT_QUESTIONS} />
-    </View>
+    <QuizShell
+      activityId={QUIZ_ACTIVITY_IDS.pastPerfect}
+      fallbackQuestions={PAST_PERFECT_QUESTIONS}
+    />
   );
 }
