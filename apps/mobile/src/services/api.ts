@@ -62,5 +62,3 @@ export const api = createApi({
   ],
   endpoints: () => ({}),
 });
-
-export { api };
