@@ -10,6 +10,7 @@ import { getAuthSession } from "@/services/auth-storage";
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
+  const headerShown = useClientOnlyValue(false, true);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
+        headerShown,
       }}
     >
       <Tabs.Screen

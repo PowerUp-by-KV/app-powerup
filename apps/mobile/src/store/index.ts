@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { api } from "@/services/api";
 import appReducer from "./slices/app.slice";
+import onboardingReducer from "./slices/onboardingSlice";
 import resumeReducer from "./slices/resume.slice";
 
 export const store = configureStore({
