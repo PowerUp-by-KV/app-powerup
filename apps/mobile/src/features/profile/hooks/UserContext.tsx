@@ -13,13 +13,11 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider = ({
-  children,
-  userId = "user-1",
-}: {
-  children: ReactNode;
-  userId?: string;
-}) => {
+import { useAppSelector } from "@/store/hooks";
+import { selectUserId } from "@/store/slices/authSlice";
+
+export const UserProvider = ({ children }: { children: ReactNode }) => {
+  const userId = useAppSelector(selectUserId);
   const { data: userData } = useGetUserProfileQuery(userId);
   const [updateUser] = useUpdateUserProfileMutation();
   const [localUser, setLocalUser] = React.useState<User | null>(null);

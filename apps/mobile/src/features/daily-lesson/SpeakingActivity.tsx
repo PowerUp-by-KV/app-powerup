@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from "react-native";
 import { Audio } from "expo-av";
 import {
   useGetSpeakingActivityQuery,
@@ -9,10 +9,15 @@ import { useGetDayActivitiesQuery } from "@/services/lesson-api";
 import { useLocalSearchParams } from "expo-router";
 import { Mic, Square, Check, ArrowRight, Play, RefreshCw } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useActivityProgress } from "./hooks/useActivityProgress";
 
 import { MicRecorder } from "./components/MicRecorder";
 
-export const SpeakingActivity = ({ progress }: { progress: any }) => {
+export const SpeakingActivity = ({
+  progress,
+}: {
+  progress: ReturnType<typeof useActivityProgress>;
+}) => {
   const params = useLocalSearchParams<{ moduleId: string; dayNo: string; cefr_level: string }>();
 
   const { data: activities } = useGetDayActivitiesQuery({
@@ -70,12 +75,11 @@ export const SpeakingActivity = ({ progress }: { progress: any }) => {
       }
     } catch (error) {
       console.error("Failed to submit speaking activity:", error);
-      // Fallback for demo
-      setResult({
-        score: 85,
-        feedback: "Demo Mode: Great job!",
-        analysis: ["Connected to backend (Base64)", "Awaiting live analysis"],
-      });
+      Alert.alert(
+        "Submission Failed",
+        "We couldn't analyze your recording. Please check your connection and try again.",
+        [{ text: "OK" }],
+      );
     } finally {
       setIsProcessing(false);
     }

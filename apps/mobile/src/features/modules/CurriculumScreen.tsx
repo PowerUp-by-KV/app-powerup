@@ -10,6 +10,8 @@ import { RefreshCcw, ChevronLeft } from "lucide-react-native";
 import { Card } from "@/components/ui/Card";
 import { ModuleTimelineItem } from "./components/ModuleTimelineItem";
 
+const TOTAL_SUB_MODULES = 12;
+
 export const CurriculumScreen = () => {
   const userId = useAppSelector(selectUserId);
   const cefrLevel = useAppSelector(selectCefrLevel);
@@ -33,7 +35,7 @@ export const CurriculumScreen = () => {
     const processed = rawModules.map((module) => {
       // Calculate how many sub-modules are done in this stage
       const subModulesDone = allStageProgress[module.id]?.length || 0;
-      const totalSubModules = 12; // Assuming 12 days per module for now
+      const totalSubModules = TOTAL_SUB_MODULES; // Assuming 12 days per module for now
 
       return {
         module_id: module.id,

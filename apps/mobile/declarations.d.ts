@@ -1,24 +1,26 @@
+import { ImageSourcePropType } from "react-native";
+
 declare module "*.mp3" {
-  const value: any;
+  const value: number;
   export default value;
 }
 
 declare module "*.png" {
-  const value: any;
+  const value: ImageSourcePropType;
   export default value;
 }
 
 declare module "*.jpg" {
-  const value: any;
+  const value: ImageSourcePropType;
   export default value;
 }
 
 declare module "*.jpeg" {
-  const value: any;
+  const value: ImageSourcePropType;
   export default value;
 }
 
 declare module "*.svg" {
-  const value: any;
+  const value: ImageSourcePropType;
   export default value;
 }

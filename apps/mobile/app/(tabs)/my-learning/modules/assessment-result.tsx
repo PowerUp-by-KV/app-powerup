@@ -4,21 +4,20 @@ import { router, useLocalSearchParams, Stack } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { CefrResultView } from "@/features/modules/components/CefrResultView";
 
-export default function AssessmentResultScreen() {
-  const { moduleId } = useLocalSearchParams();
+import { ActivityIndicator } from "react-native";
+import { useGetAssessmentResultQuery } from "@/services/progress-api";
 
-  // Mock data matching the requested design
-  const mockData = {
-    overallScore: 5.0,
-    totalScore: 100,
-    maxScore: 6,
-    maxTotalPoints: 120,
-    cefrLevel: "C1",
-    readingScore: 5.0,
-    listeningScore: 5.0,
-    writingScore: 4.0,
-    speakingScore: 6.0,
-  };
+export default function AssessmentResultScreen() {
+  const { moduleId } = useLocalSearchParams<{ moduleId: string }>();
+  const { data: mockData, isLoading } = useGetAssessmentResultQuery(moduleId || "global-journey");
+
+  if (isLoading || !mockData) {
+    return (
+      <View className="flex-1 bg-white justify-center items-center">
+        <ActivityIndicator color="#475569" size="large" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">

@@ -124,4 +124,18 @@ export const Colors = {
   },
 };
 
+export const Gradients = {
+  // Activity / Card Gradients
+  primary: [palette.secondary[600], palette.secondary[400]] as const, // ["#475569", "#94a3b8"]
+  secondary: [palette.secondary[800], palette.secondary[600]] as const, // ["#1E293B", "#475569"]
+  tertiary: [palette.secondary[700], palette.secondary[500]] as const, // ["#334155", "#64748B"]
+  quaternary: [palette.secondary[500], palette.secondary[300]] as const, // ["#64748B", "#CBD5E1"]
+
+  // Sub-module specific
+  subPrimary: [palette.secondary[600], palette.secondary[500]] as const, // ["#475569", "#64748B"]
+  subSecondary: [palette.secondary[700], palette.secondary[600]] as const, // ["#334155", "#475569"]
+  subTertiary: [palette.secondary[800], palette.secondary[700]] as const, // ["#1E293B", "#334155"]
+  subQuaternary: [palette.secondary[500], palette.secondary[400]] as const, // ["#64748B", "#94A3B8"]
+};
+
 export default Colors;

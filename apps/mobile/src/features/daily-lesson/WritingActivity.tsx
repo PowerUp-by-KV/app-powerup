@@ -8,7 +8,13 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { Check, X, ArrowRight, PenTool } from "lucide-react-native";
 
-export const WritingActivity = ({ progress }: { progress: any }) => {
+import { useActivityProgress } from "./hooks/useActivityProgress";
+
+export const WritingActivity = ({
+  progress,
+}: {
+  progress: ReturnType<typeof useActivityProgress>;
+}) => {
   const params = useLocalSearchParams<{ moduleId: string; dayNo: string; cefr_level: string }>();
 
   const { data: activities } = useGetDayActivitiesQuery({
@@ -97,7 +103,7 @@ export const WritingActivity = ({ progress }: { progress: any }) => {
       </View>
 
       <View className="space-y-4">
-        {currentQuestion.options?.map((option: any, index: number) => {
+        {currentQuestion.options?.map((option: string, index: number) => {
           const isSelected = selectedOption === index;
           const isCorrect = result?.correct_answer === option;
           const isWrong = result && isSelected && !isCorrect;

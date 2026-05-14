@@ -17,9 +17,7 @@ export const MicRecorder = ({ onRecordingComplete, isProcessing }: MicRecorderPr
   useEffect(() => {
     return () => {
       if (recordingRef.current) {
-        recordingRef.current.stopAndUnloadAsync().catch(() => {
-          /* ignore */
-        });
+        recordingRef.current.stopAndUnloadAsync().catch(console.warn);
       }
     };
   }, []);

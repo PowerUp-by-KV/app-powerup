@@ -13,9 +13,17 @@ import { useGetDayActivitiesQuery } from "@/services/lesson-api";
 import { useLocalSearchParams } from "expo-router";
 import { Check, X, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react-native";
 
+import { ActivityQuestion } from "@/services/types";
+import { useActivityProgress } from "./hooks/useActivityProgress";
+import type { NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+
 const { width } = Dimensions.get("window");
 
-export const ListeningActivity = ({ progress }: { progress: any }) => {
+export const ListeningActivity = ({
+  progress,
+}: {
+  progress: ReturnType<typeof useActivityProgress>;
+}) => {
   const params = useLocalSearchParams<{ moduleId: string; dayNo: string; cefr_level: string }>();
   const scrollRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState(Dimensions.get("window").width);
@@ -81,7 +89,7 @@ export const ListeningActivity = ({ progress }: { progress: any }) => {
     progress.nextActivity();
   };
 
-  const onScroll = (event: any) => {
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const offsetX = event.nativeEvent.contentOffset.x;
     const slide = Math.round(offsetX / containerWidth);
     if (slide !== currentIdx && slide >= 0 && slide <= totalQuestions) {
@@ -126,7 +134,7 @@ export const ListeningActivity = ({ progress }: { progress: any }) => {
         className="flex-1"
         contentContainerStyle={{ width: containerWidth * (totalQuestions + (showResult ? 1 : 0)) }}
       >
-        {questions.map((question: any, qIdx: number) => {
+        {questions.map((question: ActivityQuestion, qIdx: number) => {
           const result = results[qIdx];
 
           return (
@@ -137,7 +145,7 @@ export const ListeningActivity = ({ progress }: { progress: any }) => {
                     {question.question}
                   </Text>
 
-                  {question.options?.map((option: any, oIdx: number) => {
+                  {question.options?.map((option: string, oIdx: number) => {
                     const isSelected = result?.selected === oIdx;
                     const isCorrect = result ? option === question.answer : false;
                     const isWrong = result && isSelected && !isCorrect;
@@ -259,7 +267,7 @@ export const ListeningActivity = ({ progress }: { progress: any }) => {
           </TouchableOpacity>
 
           <View className="flex-row">
-            {questions.map((_: any, i: number) => (
+            {questions.map((_: ActivityQuestion, i: number) => (
               <View
                 key={i}
                 className={`h-1.5 rounded-full mx-1 ${i === currentIdx ? "w-6 bg-[#1E293B]" : "w-1.5 bg-slate-200"}`}

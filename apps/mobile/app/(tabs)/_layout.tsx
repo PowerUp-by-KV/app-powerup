@@ -7,8 +7,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: "#475569",
-        tabBarInactiveTintColor: "#94A3B8",
+        tabBarActiveTintColor: Colors.light.secondary,
+        tabBarInactiveTintColor: Colors.light.textMuted,
         tabBarItemStyle: { display: "none" }, // Hide all by default
         tabBarStyle: {
           borderTopLeftRadius: 24,
@@ -16,10 +16,10 @@ export default function TabsLayout() {
           height: 56,
           paddingBottom: 4,
           paddingTop: 4,
-          backgroundColor: "#FFFFFF",
+          backgroundColor: Colors.light.background,
           elevation: 20,
           borderTopWidth: 0,
-          shadowColor: "#000",
+          shadowColor: Colors.light.black,
           shadowOffset: { width: 0, height: -4 },
           shadowOpacity: 0.1,
           shadowRadius: 10,

@@ -23,13 +23,13 @@ export const ProfileScreen = () => {
   } = useProfileLogic();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "white" }}>
+    <View className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
-      <View style={{ flex: 1, width: "100%" }}>
+      <View className="flex-1 w-full">
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
-          style={{ flex: 1 }}
+          className="flex-1"
         >
           <ProfileHeader
             user={user}
@@ -104,7 +104,7 @@ export const ProfileScreen = () => {
           )}
 
           {/* Bottom Buffer for TabBar */}
-          <View style={{ height: 120 }} />
+          <View className="h-[120px]" />
         </ScrollView>
       </View>
     </View>

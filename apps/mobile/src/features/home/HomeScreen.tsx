@@ -29,6 +29,10 @@ import { AIChatbot } from "./components/AIChatbot";
 
 const { width } = Dimensions.get("window");
 
+const DEFAULT_TOTAL_MODULES = 6;
+const DEFAULT_COMPLETED_MODULES = 2;
+const DAILY_GOAL_SECONDS = 1800;
+
 export const HomeScreen = () => {
   const { data: userProfile } = useGetUserProfileQuery("user-1");
   const { user: contextUser } = useUser();
@@ -38,14 +42,15 @@ export const HomeScreen = () => {
   const userAvatar = userProfile?.avatarUri || contextUser?.avatarUri;
   const userStreak = userProfile?.streak ?? contextUser?.streak ?? 0;
 
-  const totalModules = summary?.modules?.length || 6;
+  const totalModules = summary?.modules?.length || DEFAULT_TOTAL_MODULES;
   const completedModules =
-    summary?.modules?.filter((m) => m.status === "Done" || m.status === "Mastery").length || 2;
+    summary?.modules?.filter((m) => m.status === "Done" || m.status === "Mastery").length ||
+    DEFAULT_COMPLETED_MODULES;
 
   const [isChatVisible, setIsChatVisible] = useState(false);
 
   const totalSeconds = useAppSelector(selectTotalTime);
-  const progress = Math.min(Math.round((totalSeconds / 1800) * 100), 100);
+  const progress = Math.min(Math.round((totalSeconds / DAILY_GOAL_SECONDS) * 100), 100);
   const lastActivity = useAppSelector((state) => state.progress.lastActivity);
   const completedDays = useAppSelector((state) => state.progress.completedDays);
   const cefrLevel = useAppSelector(selectCefrLevel);
@@ -107,134 +112,59 @@ export const HomeScreen = () => {
   const activityStatus = getWeeklyActivity();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F8F9FA" }}>
+    <View className="flex-1 bg-[#F8F9FA]">
       <ScrollView
-        style={{ flex: 1 }}
+        className="flex-1"
         contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 24, paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header Section */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 20,
-          }}
-        >
+        <View className="flex-row justify-between items-center mb-5">
           <View>
-            <Text style={{ fontSize: 28, color: "#1E293B", fontWeight: "bold" }}>
+            <Text className="text-[28px] text-[#1E293B] font-bold">
               Hi, {userName.split(" ")[0]}!
             </Text>
-            <Text style={{ fontSize: 14, color: "#94A3B8", fontWeight: "500" }}>
+            <Text className="text-sm text-[#94A3B8] font-medium">
               Ready to learn something new?
             </Text>
           </View>
           <TouchableOpacity
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 24,
-              backgroundColor: "white",
-              borderColor: "#E2E8F0",
-              borderWidth: 1,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            className="w-12 h-12 rounded-full bg-white border border-[#E2E8F0] items-center justify-center"
             onPress={() => router.push("/profile")}
           >
             {userAvatar ? (
-              <Image
-                source={{ uri: userAvatar }}
-                style={{ width: "100%", height: "100%", borderRadius: 24 }}
-              />
+              <Image source={{ uri: userAvatar }} className="w-full h-full rounded-full" />
             ) : (
-              <View
-                style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#F1F5F9" }}
-              />
+              <View className="w-7 h-7 rounded-full bg-[#F1F5F9]" />
             )}
           </TouchableOpacity>
         </View>
 
         {/* Weekly Streak */}
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 16,
-            borderRadius: 24,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: "#F1F5F9",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 15,
-              color: "#1E293B",
-              fontWeight: "bold",
-              marginBottom: 12,
-            }}
-          >
+        <View className="bg-white p-4 rounded-3xl mb-4 border border-[#F1F5F9] shadow-sm elevation-2">
+          <Text className="text-center text-[15px] text-[#1E293B] font-bold mb-3">
             Weekly Streak
           </Text>
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 8 }}
-          >
+          <View className="flex-row justify-between px-2">
             {daysRow.map((day, index) => (
-              <View key={index} style={{ alignItems: "center" }}>
+              <View key={index} className="items-center">
                 <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginBottom: 6,
-                    backgroundColor: activityStatus[index] ? "#475569" : "#F1F5F9",
-                  }}
+                  className={`w-[42px] h-[42px] rounded-full justify-center items-center mb-1.5 ${
+                    activityStatus[index] ? "bg-[#475569]" : "bg-[#F1F5F9]"
+                  }`}
                 >
                   {activityStatus[index] && <Flame size={20} color="white" />}
                 </View>
-                <Text style={{ fontSize: 12, fontWeight: "bold", color: "#94A3B8" }}>{day}</Text>
+                <Text className="text-xs font-bold text-[#94A3B8]">{day}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* My Learning */}
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderRadius: 28,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: "#F1F5F9",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 4,
-            elevation: 2,
-          }}
-        >
-          <Text
-            style={{
-              textAlign: "center",
-              fontSize: 16,
-              color: "#1E293B",
-              fontWeight: "bold",
-              marginBottom: 16,
-            }}
-          >
-            My Learning
-          </Text>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+        <View className="bg-white p-5 rounded-[28px] mb-4 border border-[#F1F5F9] shadow-sm elevation-2">
+          <Text className="text-center text-base text-[#1E293B] font-bold mb-4">My Learning</Text>
+          <View className="flex-row justify-between mb-4">
             {[
               { label: "2 Streaks", icon: <Flame size={14} color="white" /> },
               { label: "12 Badges", icon: <Medal size={14} color="white" /> },
@@ -242,78 +172,36 @@ export const HomeScreen = () => {
             ].map((stat, i) => (
               <View
                 key={i}
-                style={{
-                  backgroundColor: "#64748B",
-                  width: "31%",
-                  height: 56,
-                  borderRadius: 16,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
+                className="bg-[#64748B] w-[31%] h-14 rounded-2xl items-center justify-center"
               >
-                <View style={{ marginBottom: 3 }}>{stat.icon}</View>
-                <Text style={{ fontSize: 10, color: "white", fontWeight: "bold" }}>
-                  {stat.label}
-                </Text>
+                <View className="mb-1">{stat.icon}</View>
+                <Text className="text-[10px] text-white font-bold">{stat.label}</Text>
               </View>
             ))}
           </View>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 6,
-            }}
-          >
-            <Text style={{ color: "#94A3B8", fontSize: 12, fontWeight: "bold" }}>
+          <View className="flex-row justify-between items-center mb-1.5">
+            <Text className="text-[#94A3B8] text-xs font-bold">
               {completedModules}/{totalModules} modules
             </Text>
-            <Text style={{ color: "#94A3B8", fontSize: 12, fontWeight: "bold" }}>{progress}%</Text>
+            <Text className="text-[#94A3B8] text-xs font-bold">{progress}%</Text>
           </View>
-          <View
-            style={{
-              height: 8,
-              width: "100%",
-              backgroundColor: "#F1F5F9",
-              borderRadius: 4,
-              overflow: "hidden",
-              marginBottom: 16,
-            }}
-          >
-            <View style={{ width: `${progress}%`, height: "100%", backgroundColor: "#475569" }} />
+          <View className="h-2 w-full bg-[#F1F5F9] rounded overflow-hidden mb-4">
+            <View style={{ width: `${progress}%` }} className="h-full bg-[#475569]" />
           </View>
           <TouchableOpacity
-            style={{
-              backgroundColor: "#475569",
-              borderRadius: 20,
-              alignItems: "center",
-              paddingVertical: 14,
-            }}
+            className="bg-[#475569] rounded-2xl items-center py-3.5"
             onPress={() => router.push("/(tabs)/my-learning")}
           >
-            <Text style={{ color: "white", fontSize: 15, fontWeight: "bold" }}>
-              Track My Learning
-            </Text>
+            <Text className="text-white text-[15px] font-bold">Track My Learning</Text>
           </TouchableOpacity>
         </View>
 
         {/* Continue Learning */}
         <View style={{ marginBottom: 16 }}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 10,
-              paddingHorizontal: 4,
-            }}
-          >
-            <Text style={{ fontSize: 18, color: "#1E293B", fontWeight: "bold" }}>
-              Continue Learning
-            </Text>
+          <View className="flex-row justify-between items-center mb-2.5 px-1">
+            <Text className="text-lg text-[#1E293B] font-bold">Continue Learning</Text>
             <TouchableOpacity onPress={() => router.push("/(tabs)/my-learning")}>
-              <Text style={{ fontSize: 13, color: "#94A3B8", fontWeight: "bold" }}>View All</Text>
+              <Text className="text-[13px] text-[#94A3B8] font-bold">View All</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
@@ -333,34 +221,16 @@ export const HomeScreen = () => {
                 router.push("/(tabs)/my-learning");
               }
             }}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              padding: 18,
-              borderRadius: 24,
-              backgroundColor: "white",
-              borderWidth: 1,
-              borderColor: "#F1F5F9",
-            }}
+            className="flex-row items-center p-4.5 rounded-3xl bg-white border border-[#F1F5F9]"
           >
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 16,
-                backgroundColor: "#64748B",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 20,
-              }}
-            >
+            <View className="w-12 h-12 rounded-2xl bg-[#64748B] items-center justify-center mr-5">
               <BookOpen size={24} color="white" />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 18, color: "#1E293B", fontWeight: "bold" }}>
+            <View className="flex-1">
+              <Text className="text-lg text-[#1E293B] font-bold">
                 {nextActivity?.activityTitle || "Resume Learning"}
               </Text>
-              <Text style={{ fontSize: 13, color: "#94A3B8", fontWeight: "500" }}>
+              <Text className="text-[13px] text-[#94A3B8] font-medium">
                 {nextActivity
                   ? (nextActivity as any).isNewDay
                     ? "Next Lesson"
@@ -373,40 +243,14 @@ export const HomeScreen = () => {
         </View>
 
         {/* Convo Coach Card */}
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderRadius: 32,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: "#F1F5F9",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.03,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: "#64748B",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 16,
-              }}
-            >
+        <View className="bg-white p-5 rounded-[32px] mb-4 border border-[#F1F5F9] shadow-sm elevation-2">
+          <View className="flex-row items-center mb-3">
+            <View className="w-11 h-11 rounded-full bg-[#64748B] items-center justify-center mr-4">
               <Sparkles size={20} color="white" />
             </View>
             <View>
-              <Text style={{ fontSize: 16, color: "#1E293B", fontWeight: "bold" }}>
-                Convo Coach
-              </Text>
-              <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
+              <Text className="text-base text-[#1E293B] font-bold">Convo Coach</Text>
+              <Text className="text-[11px] text-[#94A3B8] font-medium">
                 Say it better, every time
               </Text>
             </View>
@@ -416,62 +260,23 @@ export const HomeScreen = () => {
               { title: "Interview Playground", sub: "Try, learn and improve - No pressure" },
               { title: "Interview Buddy", sub: "Practice with a buddy before it counts" },
             ].map((item, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={{
-                  backgroundColor: "#F1F5F9",
-                  borderRadius: 20,
-                  padding: 12,
-                  paddingHorizontal: 16,
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ color: "#1E293B", fontSize: 14, fontWeight: "bold" }}>
-                  {item.title}
-                </Text>
-                <Text style={{ fontSize: 10, color: "#94A3B8", fontWeight: "500" }}>
-                  {item.sub}
-                </Text>
+              <TouchableOpacity key={idx} className="bg-[#F1F5F9] rounded-2xl p-3 px-4 mb-2">
+                <Text className="text-[#1E293B] text-[14px] font-bold">{item.title}</Text>
+                <Text className="text-[10px] text-[#94A3B8] font-medium">{item.sub}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Resume Studio Card */}
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderRadius: 32,
-            marginBottom: 16,
-            borderWidth: 1,
-            borderColor: "#F1F5F9",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.03,
-            shadowRadius: 8,
-            elevation: 2,
-          }}
-        >
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 22,
-                backgroundColor: "#64748B",
-                alignItems: "center",
-                justifyContent: "center",
-                marginRight: 16,
-              }}
-            >
+        <View className="bg-white p-5 rounded-[32px] mb-4 border border-[#F1F5F9] shadow-sm elevation-2">
+          <View className="flex-row items-center mb-3">
+            <View className="w-11 h-11 rounded-full bg-[#64748B] items-center justify-center mr-4">
               <PenTool size={20} color="white" />
             </View>
             <View>
-              <Text style={{ fontSize: 16, color: "#1E293B", fontWeight: "bold" }}>
-                Resume Studio
-              </Text>
-              <Text style={{ fontSize: 11, color: "#94A3B8", fontWeight: "500" }}>
+              <Text className="text-base text-[#1E293B] font-bold">Resume Studio</Text>
+              <Text className="text-[11px] text-[#94A3B8] font-medium">
                 Build a resume you're proud to share
               </Text>
             </View>
@@ -481,22 +286,9 @@ export const HomeScreen = () => {
               { title: "Resume Buddy", sub: "Know what recruiters notice" },
               { title: "Craft your Resume", sub: "Design your story, your way" },
             ].map((item, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={{
-                  backgroundColor: "#F1F5F9",
-                  borderRadius: 20,
-                  padding: 12,
-                  paddingHorizontal: 16,
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ color: "#1E293B", fontSize: 14, fontWeight: "bold" }}>
-                  {item.title}
-                </Text>
-                <Text style={{ fontSize: 10, color: "#94A3B8", fontWeight: "500" }}>
-                  {item.sub}
-                </Text>
+              <TouchableOpacity key={idx} className="bg-[#F1F5F9] rounded-2xl p-3 px-4 mb-2">
+                <Text className="text-[#1E293B] text-[14px] font-bold">{item.title}</Text>
+                <Text className="text-[10px] text-[#94A3B8] font-medium">{item.sub}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -504,28 +296,10 @@ export const HomeScreen = () => {
       </ScrollView>
 
       {/* Floating Chat Button */}
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => setIsChatVisible(true)}
-        style={{
-          position: "absolute",
-          bottom: 24,
-          right: 32,
-          width: 60,
-          height: 60,
-          borderRadius: 30,
-          backgroundColor: "#475569",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 50,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.2,
-          shadowRadius: 8,
-          elevation: 10,
-        }}
-      >
-        <MessageCircle size={28} color="white" />
+      <TouchableOpacity activeOpacity={0.9} onPress={() => setIsChatVisible(true)}>
+        <View className="absolute bottom-6 right-8 w-[60px] h-[60px] rounded-full bg-[#475569] items-center justify-center z-50 shadow-md elevation-10">
+          <MessageCircle size={28} color="white" />
+        </View>
       </TouchableOpacity>
 
       <AIChatbot visible={isChatVisible} onClose={() => setIsChatVisible(false)} />

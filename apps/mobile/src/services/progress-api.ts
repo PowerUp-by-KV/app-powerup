@@ -53,6 +53,27 @@ export const progressApi = api.injectEndpoints({
       },
       providesTags: (result, error, userId) => [{ type: "Results", id: `BADGES-${userId}` }],
     }),
+
+    getAssessmentResult: builder.query<any, string>({
+      // MOCK ENDPOINT
+      query: (moduleId) => ({
+        url: `/progress/assessment/${moduleId}`,
+      }),
+      // Simulated response matching the requested design
+      transformResponse: () => {
+        return {
+          overallScore: 5.0,
+          totalScore: 100,
+          maxScore: 6,
+          maxTotalPoints: 120,
+          cefrLevel: "C1",
+          readingScore: 5.0,
+          listeningScore: 5.0,
+          writingScore: 4.0,
+          speakingScore: 6.0,
+        };
+      },
+    }),
   }),
 });
 
@@ -61,4 +82,5 @@ export const {
   useGetHeatmapDataQuery,
   useGetTrendDataQuery,
   useGetBadgesQuery,
+  useGetAssessmentResultQuery,
 } = progressApi;

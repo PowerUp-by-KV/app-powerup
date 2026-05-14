@@ -2,12 +2,13 @@ import React from "react";
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useAppSelector } from "@/store/hooks";
-import { selectCefrLevel } from "@/store/slices/authSlice";
+import { selectCefrLevel, selectUserId } from "@/store/slices/authSlice";
 import { useGetDayActivitiesQuery } from "@/services/lesson-api";
 import { RefreshCcw, ChevronLeft } from "lucide-react-native";
 import { HighFidelityCard } from "@/components/ui/HighFidelityCard";
 import { useGetUserProfileQuery } from "@/services/user-api";
 import { useUser } from "@/features/profile/hooks/UserContext";
+import { Gradients } from "@/constants/Colors";
 import { Image } from "react-native";
 
 export const SubModuleDayListScreen = () => {
@@ -16,7 +17,8 @@ export const SubModuleDayListScreen = () => {
     subModuleId: string;
   }>();
   const cefrLevel = useAppSelector(selectCefrLevel);
-  const { data: userProfile } = useGetUserProfileQuery("00000000-0000-0000-0000-000000000001");
+  const userId = useAppSelector(selectUserId);
+  const { data: userProfile } = useGetUserProfileQuery(userId);
   const { user: contextUser } = useUser();
 
   const userName = userProfile?.name || contextUser?.name || "User";
@@ -31,10 +33,10 @@ export const SubModuleDayListScreen = () => {
 
   const getDayMetadata = (no: number) => {
     const gradients = [
-      ["#475569", "#64748B"],
-      ["#334155", "#475569"],
-      ["#1E293B", "#334155"],
-      ["#64748B", "#94A3B8"],
+      Gradients.subPrimary,
+      Gradients.subSecondary,
+      Gradients.subTertiary,
+      Gradients.subQuaternary,
     ];
     return {
       tag: "Practice",

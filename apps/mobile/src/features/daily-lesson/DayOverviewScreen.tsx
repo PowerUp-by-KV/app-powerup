@@ -4,11 +4,25 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useGetDayActivitiesQuery } from "@/services/lesson-api";
 import { HighFidelityCard } from "@/components/ui/HighFidelityCard";
 import { ArrowRight } from "lucide-react-native";
+import { useActivityProgress } from "./hooks/useActivityProgress";
+import { Gradients } from "@/constants/Colors";
 
 interface DayOverviewScreenProps {
-  progress: any;
+  progress: ReturnType<typeof useActivityProgress>;
   onSelect?: (index: number) => void;
 }
+
+const ACTIVITY_METADATA: Record<
+  string,
+  { tag: string; duration: string; gradient: readonly [string, string, ...string[]] }
+> = {
+  listening: { tag: "Auditory", duration: "15m", gradient: Gradients.primary },
+  reading: { tag: "Comprehension", duration: "10m", gradient: Gradients.quaternary },
+  vocabulary: { tag: "Language", duration: "12m", gradient: Gradients.tertiary },
+  speaking: { tag: "Communication", duration: "20m", gradient: Gradients.secondary },
+  grammar: { tag: "Structure", duration: "10m", gradient: Gradients.primary },
+  writing: { tag: "Composition", duration: "25m", gradient: Gradients.subSecondary },
+};
 
 export const DayOverviewScreen: React.FC<DayOverviewScreenProps> = ({ progress, onSelect }) => {
   const { moduleId, dayNo, cefr_level } = useLocalSearchParams<{
@@ -51,22 +65,10 @@ export const DayOverviewScreen: React.FC<DayOverviewScreenProps> = ({ progress, 
           const isLocked = index > 0 && !progress.completedIndices.includes(index - 1);
           const status = isLocked ? "locked" : isCompleted ? "completed" : "in_progress";
 
-          const metadata: Record<
-            string,
-            { tag: string; duration: string; gradient: readonly [string, string, ...string[]] }
-          > = {
-            listening: { tag: "Auditory", duration: "15m", gradient: ["#475569", "#94A3B8"] },
-            reading: { tag: "Comprehension", duration: "10m", gradient: ["#64748B", "#CBD5E1"] },
-            vocabulary: { tag: "Language", duration: "12m", gradient: ["#334155", "#64748B"] },
-            speaking: { tag: "Communication", duration: "20m", gradient: ["#1E293B", "#475569"] },
-            grammar: { tag: "Structure", duration: "10m", gradient: ["#475569", "#94A3B8"] },
-            writing: { tag: "Composition", duration: "25m", gradient: ["#1E293B", "#64748B"] },
-          };
-
           const meta = (
-            activity.skill_type && metadata[activity.skill_type]
-              ? metadata[activity.skill_type]
-              : metadata.speaking
+            activity.skill_type && ACTIVITY_METADATA[activity.skill_type]
+              ? ACTIVITY_METADATA[activity.skill_type]
+              : ACTIVITY_METADATA.speaking
           )!;
 
           const displayTitle = activity.skill_type

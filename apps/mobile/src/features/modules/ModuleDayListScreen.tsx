@@ -4,6 +4,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useAppSelector } from "@/store/hooks";
 import { selectCefrLevel, selectUserId } from "@/store/slices/authSlice";
 import { useGetDaysByVariantQuery, useGetVariantsQuery } from "@/services/module-api";
+import { Gradients } from "@/constants/Colors";
 import { RefreshCcw, ChevronLeft } from "lucide-react-native";
 import { HighFidelityCard } from "@/components/ui/HighFidelityCard";
 import { useGetUserProfileQuery } from "@/services/user-api";
@@ -39,10 +40,10 @@ export const ModuleDayListScreen = () => {
     if (!rawDays) return [];
 
     const gradients = [
-      ["#475569", "#94A3B8"],
-      ["#1E293B", "#475569"],
-      ["#334155", "#64748B"],
-      ["#64748B", "#CBD5E1"],
+      Gradients.primary,
+      Gradients.secondary,
+      Gradients.tertiary,
+      Gradients.quaternary,
     ];
 
     const processed = rawDays.map((day, index) => {

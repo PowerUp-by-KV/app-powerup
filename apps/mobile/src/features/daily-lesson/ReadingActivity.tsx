@@ -8,7 +8,14 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import { Check, X, ArrowRight, BookOpen } from "lucide-react-native";
 
-export const ReadingActivity = ({ progress }: { progress: any }) => {
+import { useActivityProgress } from "./hooks/useActivityProgress";
+import { ReadingVocabulary } from "@/services/types";
+
+export const ReadingActivity = ({
+  progress,
+}: {
+  progress: ReturnType<typeof useActivityProgress>;
+}) => {
   const params = useLocalSearchParams<{ moduleId: string; dayNo: string; cefr_level: string }>();
 
   const { data: activities } = useGetDayActivitiesQuery({
@@ -95,7 +102,7 @@ export const ReadingActivity = ({ progress }: { progress: any }) => {
           Vocabulary Focus
         </Text>
         <View className="flex-row flex-wrap gap-2">
-          {activity.vocabulary?.map((v: any, i: number) => (
+          {activity.vocabulary?.map((v: ReadingVocabulary, i: number) => (
             <View
               key={i}
               className="bg-white border border-slate-100 px-4 py-2 rounded-2xl shadow-sm"
@@ -111,7 +118,7 @@ export const ReadingActivity = ({ progress }: { progress: any }) => {
           {currentQuestion.question}
         </Text>
 
-        {currentQuestion.options?.map((option: any, index: number) => {
+        {currentQuestion.options?.map((option: string, index: number) => {
           const isSelected = selectedOption === index;
           const isCorrect = result?.correct_answer === option;
           const isWrong = result && isSelected && !isCorrect;

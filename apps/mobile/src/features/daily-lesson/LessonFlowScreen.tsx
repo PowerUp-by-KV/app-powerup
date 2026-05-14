@@ -117,7 +117,7 @@ export const LessonFlowScreen = () => {
             <ActivityTimer
               duration={currentActivityData.time_limit}
               paused={progress.currentActivity === "overview"}
-              onTimeUp={() => console.log("Time is up!")}
+              onTimeUp={() => progress.nextActivity()}
             />
           </View>
         )}

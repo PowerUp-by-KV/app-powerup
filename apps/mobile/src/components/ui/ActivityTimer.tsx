@@ -28,20 +28,21 @@ export const ActivityTimer: React.FC<ActivityTimerProps> = ({
       return;
     }
 
-    if (timeLeft <= 0) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      onTimeUp?.();
-      return;
-    }
-
     timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          onTimeUp?.();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [timeLeft, paused]);
+  }, [paused, onTimeUp]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

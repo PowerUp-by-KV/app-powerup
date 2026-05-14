@@ -45,7 +45,8 @@ export const DayCompleteScreen = ({
       // 3. If it's the last day of the sub-module (Day 12), mark this sub-module as completed in the main Stage
       if (currentDayNo === 12 && params.stageId && params.moduleId) {
         // Extract the sub-module index from ID like "placeholder-1" -> 1
-        const subModuleIndex = parseInt(params.moduleId.replace("placeholder-", ""));
+        const subModuleMatch = params.moduleId.match(/\d+/);
+        const subModuleIndex = subModuleMatch ? parseInt(subModuleMatch[0], 10) : 1;
         if (!isNaN(subModuleIndex)) {
           dispatch(
             completeDayAction({
@@ -58,10 +59,12 @@ export const DayCompleteScreen = ({
           // Note: "stages" progress is tracked in a special "global" key or just implied.
           // For now, we follow the pattern of marking dayNo in the parent moduleId.
           if (subModuleIndex === 12) {
+            const stageNoMatch = params.stageId?.match(/\d+/);
+            const stageNo = stageNoMatch ? parseInt(stageNoMatch[0]) : 1;
             dispatch(
               completeDayAction({
                 moduleId: "global-journey",
-                dayNo: parseInt(params.stageId.replace("m", "")),
+                dayNo: stageNo,
               }),
             );
           }
@@ -143,7 +146,7 @@ export const DayCompleteScreen = ({
         <View className="mt-8 gap-y-4">
           {isPassed ? (
             <>
-              {parseInt(params.dayNo!) < 12 && (
+              {currentDayNo < 12 && (
                 <TouchableOpacity
                   className="bg-emerald-600 p-5 rounded-full flex-row items-center justify-center shadow-lg"
                   onPress={() => {
@@ -151,7 +154,7 @@ export const DayCompleteScreen = ({
                       pathname: "/(tabs)/my-learning/lesson/[moduleId]/[dayNo]",
                       params: {
                         moduleId: params.moduleId,
-                        dayNo: parseInt(params.dayNo!) + 1,
+                        dayNo: currentDayNo + 1,
                         cefr_level: params.cefr_level,
                         stageId: params.stageId || "m1",
                       },
@@ -159,7 +162,7 @@ export const DayCompleteScreen = ({
                   }}
                 >
                   <Text className="text-white font-bold text-lg mr-2">
-                    Go to Day {parseInt(params.dayNo!) + 1}
+                    Go to Day {currentDayNo + 1}
                   </Text>
                   <ArrowRight size={22} color="white" />
                 </TouchableOpacity>
