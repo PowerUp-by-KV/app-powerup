@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { Check, Star, Book, Lock } from "lucide-react-native";
 

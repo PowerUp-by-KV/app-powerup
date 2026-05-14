@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, ReactNode, useEffect } from "react";
 import { ProgressSummary, HeatmapData, TrendData, Badge } from "@/services/types";
 import {
   useGetProgressSummaryQuery,
   useGetHeatmapDataQuery,
-  useGetTrendsDataQuery,
+  useGetTrendDataQuery,
   useGetBadgesQuery,
-} from "@/services/ProgressApi";
+} from "@/services/progress-api";
 
 interface ProgressContextType {
   summary: ProgressSummary | null;
@@ -13,7 +13,7 @@ interface ProgressContextType {
   trends: TrendData | null;
   badges: Badge[];
   isLoading: boolean;
-  error: any;
+  error: unknown;
   refetchAll: () => void;
 }
 
@@ -49,7 +49,7 @@ export const ProgressProvider = ({
     data: trendsData,
     isLoading: isTrendsLoading,
     refetch: refetchTrends,
-  } = useGetTrendsDataQuery({ userId });
+  } = useGetTrendDataQuery({ userId, module: "all" });
 
   const {
     data: badgesData,
@@ -65,10 +65,10 @@ export const ProgressProvider = ({
   };
 
   const value = {
-    summary: summaryData?.data || null,
-    heatmap: heatmapData?.data || null,
-    trends: trendsData?.data || null,
-    badges: badgesData?.data || [],
+    summary: summaryData || null,
+    heatmap: heatmapData || null,
+    trends: trendsData || null,
+    badges: badgesData || [],
     isLoading: isSummaryLoading || isHeatmapLoading || isTrendsLoading || isBadgesLoading,
     error: summaryError,
     refetchAll,

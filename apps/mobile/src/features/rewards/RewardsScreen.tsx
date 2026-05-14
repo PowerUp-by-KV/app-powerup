@@ -1,297 +1,333 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, SafeAreaView, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { BADGES, USER_PROFILE, LEARNING_MODULES } from "@/constants/mockData";
+import { useGetUserProfileQuery } from "@/services/user-api";
 import {
-  Award,
-  ArrowLeft,
-  Star,
-  Lock,
   Trophy,
-  Zap,
   Medal,
   Target,
-  Flame,
-  ChevronRight,
+  TrendingUp,
   BookOpen,
-  Check,
+  Zap,
+  Code,
+  Lock,
+  Brain,
+  Rocket,
+  Lightbulb,
+  Crown,
+  Share,
 } from "lucide-react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { useAppSelector } from "@/store/hooks";
-import { selectTimeForModule } from "@/store/slices/timeTrackingSlice";
+import { LucideIcon } from "lucide-react-native";
 
-/**
- * High-Fidelity Learning Dashboard & Rewards Screen
- */
 export const RewardsScreen = () => {
-  const [activeTab, setActiveTab] = useState<"Badges" | "Challenges">("Badges");
+  const [activeTab, setActiveTab] = useState<"Achievements" | "Skills">("Achievements");
+  const { data: userProfile } = useGetUserProfileQuery("user-1");
+  const profile = userProfile || { name: "User", streak: 0, points: 2438 };
 
-  const earnedBadgesCount = BADGES.filter((b) => b.earned).length;
-
-  const mockChallenges = [
-    {
-      id: "q1",
-      title: "Grammar",
-      desc: "Complete 2 grammar exercises",
-      progress: 1,
-      total: 2,
-      xp: 50,
-      icon: "book",
-    },
-    {
-      id: "q2",
-      title: "Speaking ",
-      desc: "Practice speaking for 10 mins",
-      progress: 10,
-      total: 10,
-      xp: 100,
-      completed: true,
-      icon: "mic",
-    },
-    {
-      id: "q3",
-      title: "Reading ",
-      desc: "Read 3 articles",
-      progress: 0,
-      total: 3,
-      xp: 75,
-      icon: "book-open",
-    },
-  ];
-
-  const renderHeader = () => (
-    <View className="mb-2.5">
-      <LinearGradient colors={["#6366F1", "#4F46E5"]} className="pb-[25px] rounded-b-[40px]">
-        <SafeAreaView>
-          <View className="flex-row items-center justify-between px-5 pt-10">
-            <TouchableOpacity
-              className="w-11 h-11 rounded-full bg-white/20 justify-center items-center"
-              onPress={() => router.back()}
-            >
-              <ArrowLeft size={24} color="#FFF" />
-            </TouchableOpacity>
-            <Text className="text-white text-lg font-bold">Learning Dashboard</Text>
-            <TouchableOpacity className="w-11 h-11 rounded-full bg-white/20 justify-center items-center">
-              <Flame size={24} color="#FF8C42" fill="#FF8C42" />
-            </TouchableOpacity>
-          </View>
-
-          <View className="mt-[25px] px-5">
-            <View className="flex-row justify-between">
-              <View className="flex-1 bg-white/15 mx-[5px] py-[15px] rounded-[20px] items-center border border-white/20">
-                <Flame size={32} color="#FF8C42" fill="#FF8C42" />
-                <Text className="text-white text-xl font-bold mt-2">{USER_PROFILE.streak}</Text>
-                <Text className="text-[#E0E7FF] text-[10px] font-medium">Day Streak</Text>
-              </View>
-              <View className="flex-1 bg-white/15 mx-[5px] py-[15px] rounded-[20px] items-center border border-white/20">
-                <Zap size={32} color="#FFD700" fill="#FFD700" />
-                <Text className="text-white text-xl font-bold mt-2">{USER_PROFILE.points}</Text>
-                <Text className="text-[#E0E7FF] text-[10px] font-medium">Total XP</Text>
-              </View>
-              <View className="flex-1 bg-white/15 mx-[5px] py-[15px] rounded-[20px] items-center border border-white/20">
-                <Trophy size={32} color="#FFFFFF" fill="rgba(255,255,255,0.3)" />
-                <Text className="text-white text-xl font-bold mt-2">{earnedBadgesCount}</Text>
-                <Text className="text-[#E0E7FF] text-[10px] font-medium">Badges</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="flex-row bg-black/20 mx-5 mt-[25px] rounded-[25px] p-1">
-            <TouchableOpacity
-              className={`flex-1 py-3 items-center rounded-[22px] ${activeTab === "Badges" ? "bg-white" : ""}`}
-              onPress={() => setActiveTab("Badges")}
-            >
-              <Text
-                className={`text-sm font-bold ${activeTab === "Badges" ? "text-[#6366F1]" : "text-[#E0E7FF]"}`}
-              >
-                Badges
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 items-center rounded-[22px] ${activeTab === "Challenges" ? "bg-white" : ""}`}
-              onPress={() => setActiveTab("Challenges")}
-            >
-              <Text
-                className={`text-sm font-bold ${activeTab === "Challenges" ? "text-[#6366F1]" : "text-[#E0E7FF]"}`}
-              >
-                Daily Challenges
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
-    </View>
-  );
-
-  const renderMasterySection = () => (
-    <View className="mt-5 mb-2.5">
-      <View className="flex-row justify-between items-center px-5 mb-[15px]">
-        <Text className="text-lg text-[#1E293B] font-bold">Skill Mastery</Text>
-        <TouchableOpacity>
-          <Text className="text-[#6366F1] text-sm font-bold">View Details</Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingLeft: 20, paddingRight: 10 }}
-      >
-        {LEARNING_MODULES.map((module) => {
-          const seconds = useAppSelector((state) => selectTimeForModule(state, module.id));
-          const masteryPercent = Math.min(Math.round((seconds / 600) * 100), 100);
-
-          return (
-            <View
-              key={module.id}
-              className="bg-white w-[120px] p-[15px] rounded-[24px] mr-3 items-center shadow-sm shadow-black/5 elevation-2"
-            >
-              <LinearGradient
-                colors={module.gradient as any}
-                className="w-11 h-11 rounded-[15px] justify-center items-center mb-2.5"
-              >
-                <BookOpen size={24} color="#FFF" />
-              </LinearGradient>
-              <Text className="text-[13px] text-[#1E293B] font-bold mb-2 capitalize">
-                {module.title}
-              </Text>
-              <View className="h-1 w-full bg-[#F1F5F9] rounded-sm overflow-hidden">
-                <View
-                  style={{ width: `${masteryPercent}%`, backgroundColor: module.gradient[0] }}
-                  className="h-full rounded-sm"
-                />
-              </View>
-              <Text className="text-[10px] text-[#64748B] mt-1 font-medium">
-                {seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m`} spent
-              </Text>
-            </View>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
-
-  const renderBadgeItem = ({ item }: { item: any }) => (
-    <TouchableOpacity
-      className={`mb-5 rounded-[30px] bg-white shadow-md shadow-[#6366F1]/10 elevation-4 ${!item.earned ? "opacity-70 bg-[#F1F5F9]" : ""}`}
-      style={{ width: "47%" }}
-      activeOpacity={0.9}
-    >
-      <View className="p-5 items-center">
-        <View
-          className={`w-[70px] h-[70px] rounded-full justify-center items-center mb-3 relative ${item.earned ? "bg-[#F0F9FF]" : "bg-[#F8FAFC]"}`}
-        >
-          <Award
-            size={40}
-            color={item.earned ? "#6366F1" : "#94A3B8"}
-            fill={item.earned ? "rgba(99,102,241,0.2)" : "transparent"}
-          />
-          {!item.earned && (
-            <View className="absolute bottom-[-2px] right-[-2px] w-6 h-6 rounded-full bg-[#475569] justify-center items-center border-2 border-white">
-              <Lock size={12} color="#FFF" />
-            </View>
-          )}
-        </View>
-        <Text
-          className={`text-[15px] font-bold text-center ${!item.earned ? "text-[#94A3B8]" : "text-[#1E293B]"}`}
-          numberOfLines={1}
-        >
-          {item.name}
+  const StatsCard = ({
+    title,
+    value,
+    icon: Icon,
+  }: {
+    title: string;
+    value: string | number;
+    icon?: LucideIcon;
+  }) => (
+    <View className="bg-[#475569] p-4 rounded-[20px] flex-1 shadow-sm shadow-black/20">
+      <View className="flex-row items-center justify-between mb-1">
+        <Text className="text-white/70 text-[10px] font-bold uppercase tracking-wider">
+          {title}
         </Text>
-        <View className="bg-[#F1F5F9] px-2.5 py-1 rounded-lg mt-2.5">
-          <Text className="text-[11px] text-[#6366F1] font-bold">+{item.points} XP</Text>
-        </View>
+        {Icon && <Icon size={14} color="white" />}
       </View>
-    </TouchableOpacity>
+      <View className="flex-row items-baseline">
+        <Text className="text-white text-xl font-bold">{value}</Text>
+        {title === "Level" && <TrendingUp size={14} color="#10B981" className="ml-1" />}
+      </View>
+    </View>
   );
 
-  const renderChallengeItem = (challenge: any) => (
-    <TouchableOpacity
-      key={challenge.id}
-      className="flex-row items-center bg-white p-[18px] rounded-[24px] mb-[13px] shadow-sm shadow-black/5 elevation-2"
-      activeOpacity={0.8}
+  const AchievementItem = ({
+    icon: Icon,
+    title,
+    desc,
+    xp,
+    time,
+    isLocked,
+    accentColor = "#3B82F6",
+  }: {
+    icon: LucideIcon;
+    title: string;
+    desc: string;
+    xp: string | number;
+    time: string;
+    isLocked?: boolean;
+    accentColor?: string;
+  }) => (
+    <View
+      className={`flex-row items-center bg-[#EFF6FF] p-3 rounded-[20px] mb-2 ${isLocked ? "opacity-60" : ""}`}
     >
-      <View className="w-12 h-12 rounded-2xl bg-[#F1F5F9] justify-center items-center mr-[15px]">
-        <Target size={24} color={challenge.completed ? "#10B981" : "#6366F1"} />
+      <View
+        style={{ backgroundColor: isLocked ? "#F1F5F9" : `${accentColor}15` }}
+        className="w-10 h-10 rounded-xl items-center justify-center mr-3 shadow-sm shadow-blue-200"
+      >
+        {isLocked ? <Lock size={16} color="#64748B" /> : <Icon size={20} color={accentColor} />}
       </View>
       <View className="flex-1">
-        <Text className="text-base text-[#1E293B] font-bold">{challenge.title}</Text>
-        <Text className="text-[13px] text-[#64748B] font-medium mt-0.5">{challenge.desc}</Text>
-        <View className="flex-row items-center mt-2.5">
-          <View className="flex-1 h-1.5 bg-[#F1F5F9] rounded-sm overflow-hidden mr-2.5">
-            <View
-              style={{
-                width: `${(challenge.progress / challenge.total) * 100}%`,
-                backgroundColor: challenge.completed ? "#10B981" : "#6366F1",
-              }}
-              className="h-full rounded-sm"
-            />
-          </View>
-          <Text className="text-[11px] text-[#64748B] font-bold">
-            {challenge.progress}/{challenge.total}
+        <View className="flex-row justify-between items-center">
+          <Text
+            style={{ color: isLocked ? "#64748B" : accentColor }}
+            className="font-bold text-[14px]"
+          >
+            {title}
+          </Text>
+          <Text style={{ color: accentColor }} className="font-bold text-[10px]">
+            +{xp} XP
           </Text>
         </View>
+        <View className="flex-row justify-between items-center mt-0.5">
+          <Text className="text-[#64748B] text-[11px] font-medium">{desc}</Text>
+          <Text className="text-[#94A3B8] text-[9px]">{time}</Text>
+        </View>
       </View>
-      <View className="flex-row items-center">
-        {challenge.completed ? (
-          <View className="w-6 h-6 rounded-full bg-[#10B981] justify-center items-center mr-2">
-            <Check size={16} color="#FFF" />
-          </View>
-        ) : (
-          <View className="bg-[#EEF2FF] px-2 py-1 rounded-lg mr-2">
-            <Text className="text-[12px] text-[#6366F1] font-bold">+{challenge.xp} XP</Text>
-          </View>
-        )}
-        <ChevronRight size={20} color="#CBD5E1" />
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
-    <View className="flex-1 bg-[#F8FAFC]">
-      {renderHeader()}
-      {activeTab === "Badges" ? (
-        <FlatList
-          data={BADGES}
-          renderItem={renderBadgeItem}
-          keyExtractor={(item) => item.id}
-          numColumns={2}
-          ListHeaderComponent={renderMasterySection}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          columnWrapperStyle={{ justifyContent: "space-between" }}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Header */}
+      <View className="px-6 pt-4 pb-3 flex-row justify-between items-center">
+        <Text className="text-2xl font-black text-[#1E3A8A]">Your Achievements!</Text>
+        <TouchableOpacity
+          style={{ backgroundColor: "#1D4ED8" }}
+          className="w-10 h-10 rounded-full items-center justify-center shadow-md shadow-blue-400"
         >
-          <View className="flex-row justify-between items-center mb-[15px]">
-            <Text className="text-lg text-[#1E293B] font-bold"> Active Challenges</Text>
-            <Text className="text-[12px] text-[#94A3B8] font-medium">Resets in 12h</Text>
-          </View>
-          {mockChallenges.map(renderChallengeItem)}
+          <Text className="text-white text-[12px] font-black">JD</Text>
+        </TouchableOpacity>
+      </View>
 
-          <View className="flex-row justify-between items-center mt-[30px] mb-[15px]">
-            <Text className="text-lg text-[#1E293B] font-bold">Streak Milestones</Text>
+      <View className="h-[0.5px] bg-[#EFF6FF] w-full" />
+
+      {/* Main Content (No Scroll) */}
+      <View className="flex-1 px-6 pt-4 justify-between">
+        <View>
+          {/* Spotlight Trophy Card */}
+          <View className="bg-[#DBEAFE] p-6 rounded-[24px] items-center mb-5 relative overflow-hidden">
+            {/* Abstract BG elements */}
+            <View className="absolute right-0 top-[-40px] w-20 h-20 rounded-full bg-[#3B82F6]/20" />
+            <View className="absolute right-[-10px] top-[10px] w-24 h-24 rounded-full bg-[#3B82F6]/30" />
+
+            <Trophy size={50} color="#1E3A8A" strokeWidth={1.5} />
+            <Text className="text-[#1E3A8A] font-bold text-center mt-3 px-4 text-sm">
+              Congratulations for your 1st trophy !
+            </Text>
           </View>
-          <LinearGradient
-            colors={["#FFAD60", "#FF8C42"]}
-            className="flex-row items-center p-[25px] rounded-[30px] mt-2.5"
-          >
-            <Flame size={40} color="#FFF" fill="#FFF" />
-            <View className="flex-1 ml-5">
-              <Text className="text-white text-lg font-bold">7-Day Warrior</Text>
-              <Text className="text-white text-[13px] opacity-90 mt-0.5 font-medium">
-                Complete 2 more days to unlock!
+
+          {/* 2x2 Stats Grid */}
+          <View className="mb-6">
+            <View className="flex-row gap-x-4 mb-4">
+              <StatsCard title="XP Points" value={profile.points} />
+              <TouchableOpacity className="flex-1" onPress={() => router.push("/medals" as any)}>
+                <StatsCard title="Medals" value="" icon={Medal} />
+              </TouchableOpacity>
+            </View>
+            <View className="flex-row gap-x-4">
+              <TouchableOpacity className="flex-1" onPress={() => router.push("/accuracy" as any)}>
+                <StatsCard title="Accuracy" value="" icon={Target} />
+              </TouchableOpacity>
+              <StatsCard title="Level" value="8" />
+            </View>
+          </View>
+
+          {/* Tab Switcher */}
+          <View className="flex-row items-center mb-4">
+            <TouchableOpacity
+              onPress={() => setActiveTab("Achievements")}
+              className={`px-6 py-2 rounded-xl mr-3 ${activeTab === "Achievements" ? "bg-[#DBEAFE]" : ""}`}
+            >
+              <Text
+                className={`text-[13px] font-bold ${activeTab === "Achievements" ? "text-[#1E3A8A]" : "text-[#94A3B8]"}`}
+              >
+                Achievements
               </Text>
-            </View>
-            <View className="items-center">
-              <Text className="text-white text-xl font-bold">+500</Text>
-              <Text className="text-white text-[10px] font-bold opacity-80">XP</Text>
-            </View>
-          </LinearGradient>
-        </ScrollView>
-      )}
-    </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setActiveTab("Skills")}
+              className={`px-6 py-2 rounded-xl ${activeTab === "Skills" ? "bg-[#DBEAFE]" : ""}`}
+            >
+              <Text
+                className={`text-[13px] font-bold ${activeTab === "Skills" ? "text-[#1E3A8A]" : "text-[#94A3B8]"}`}
+              >
+                Skills
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tab Content */}
+          <View className="mb-2">
+            {activeTab === "Achievements" ? (
+              <View>
+                <AchievementItem
+                  icon={BookOpen}
+                  title="First Steps"
+                  desc="Complete your first lesson"
+                  xp="50"
+                  time="2 days ago"
+                  accentColor="#10B981"
+                />
+                <AchievementItem
+                  icon={Zap}
+                  title="Speed Learner"
+                  desc="Complete 3 lessons in one day"
+                  xp="300"
+                  time="Today"
+                  accentColor="#F59E0B"
+                />
+                <AchievementItem
+                  icon={Lock}
+                  title="Week Warrior"
+                  desc="Complete the challenge to unlock"
+                  xp="300"
+                  time="Today"
+                  isLocked
+                />
+              </View>
+            ) : (
+              <View className="bg-[#475569] rounded-[24px] p-5 h-[220px] overflow-hidden border border-slate-700 shadow-inner">
+                <View className="flex-row justify-between items-center mb-4 absolute top-4 left-5 right-5 z-10">
+                  <Text className="text-white font-bold text-sm">Skills</Text>
+                  <Text className="text-slate-300 text-[10px] font-bold">3/6 unlocked</Text>
+                </View>
+
+                <View className="flex-1 mt-6 relative">
+                  {/* Simplified Connections (Manual rendering with absolute views) */}
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "15%",
+                      left: "15%",
+                      width: "20%",
+                      height: 2,
+                      backgroundColor: "#94A3B840",
+                      transform: [{ rotate: "30deg" }],
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "40%",
+                      left: "35%",
+                      width: "25%",
+                      height: 2,
+                      backgroundColor: "#94A3B840",
+                      transform: [{ rotate: "0deg" }],
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "40%",
+                      left: "35%",
+                      width: "15%",
+                      height: 2,
+                      backgroundColor: "#94A3B840",
+                      transform: [{ rotate: "60deg" }],
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "65%",
+                      left: "25%",
+                      width: "25%",
+                      height: 2,
+                      backgroundColor: "#1E293B60",
+                      transform: [{ rotate: "20deg" }],
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "35%",
+                      left: "60%",
+                      width: "20%",
+                      height: 2,
+                      backgroundColor: "#1E293B60",
+                      transform: [{ rotate: "45deg" }],
+                    }}
+                  />
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: "75%",
+                      left: "50%",
+                      width: "30%",
+                      height: 2,
+                      backgroundColor: "#1E293B60",
+                      transform: [{ rotate: "-15deg" }],
+                    }}
+                  />
+
+                  {/* Nodes (Matching the specific layout in image 1152) */}
+                  {/* 1. Book (Unlocked) */}
+                  <View className="absolute top-[5%] left-[10%] w-11 h-11 rounded-full bg-[#94A3B8] items-center justify-center shadow-lg shadow-black/20">
+                    <BookOpen size={18} color="white" />
+                  </View>
+
+                  {/* 2. Code (Unlocked) - using Code2/Terminal if Brackets not available, but let's use code-brackets style */}
+                  <View className="absolute top-[30%] left-[30%] w-11 h-11 rounded-full bg-[#94A3B8] items-center justify-center shadow-lg shadow-black/20">
+                    <Code size={18} color="white" />
+                  </View>
+
+                  {/* 3. Brain (Locked) */}
+                  <View className="absolute top-[25%] left-[55%] w-11 h-11 rounded-full bg-[#334155] items-center justify-center shadow-lg shadow-black/20">
+                    <Brain size={18} color="#94A3B8" />
+                  </View>
+
+                  {/* 4. Lightbulb (Unlocked) */}
+                  <View className="absolute top-[60%] left-[20%] w-11 h-11 rounded-full bg-[#94A3B8] items-center justify-center shadow-lg shadow-black/20">
+                    <Lightbulb size={18} color="white" />
+                  </View>
+
+                  {/* 5. Rocket (Locked) */}
+                  <View className="absolute top-[70%] left-[45%] w-11 h-11 rounded-full bg-[#334155] items-center justify-center shadow-lg shadow-black/20">
+                    <Rocket size={18} color="#94A3B8" />
+                  </View>
+
+                  {/* 6. Crown (Locked/Target) */}
+                  <View className="absolute top-[45%] left-[75%] w-14 h-14 rounded-full bg-[#1E293B] items-center justify-center shadow-2xl shadow-black/40">
+                    <Crown size={28} color="#94A3B8" />
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Footer Share Button */}
+        <View className="pb-6">
+          <TouchableOpacity activeOpacity={0.8} className="shadow-lg shadow-blue-900/40">
+            <LinearGradient
+              colors={["#3B82F6", "#1E40AF"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{
+                borderRadius: 16,
+                paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ color: "white", fontWeight: "bold", fontSize: 18, marginRight: 8 }}>
+                Share
+              </Text>
+              <Share size={20} color="white" />
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };

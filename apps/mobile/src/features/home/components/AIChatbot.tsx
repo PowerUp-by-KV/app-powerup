@@ -59,19 +59,19 @@ export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () 
     ]);
   };
 
-  const renderMessage = ({ item }: { item: any }) => (
+  const renderMessage = ({ item }: { item: { id: string; text: string; sender: string } }) => (
     <View
       className={`flex-row mb-5 max-w-[85%] ${item.sender === "user" ? "self-end justify-end" : "self-start"}`}
     >
       {item.sender === "bot" && (
-        <View className="w-7 h-7 rounded-full bg-[#6366F1] justify-center items-center mr-2 mt-1">
+        <View className="w-7 h-7 rounded-full bg-[#475569] justify-center items-center mr-2 mt-1">
           <Bot size={16} color="#FFF" />
         </View>
       )}
       <View
         className={`p-3 rounded-[18px] ${
           item.sender === "user"
-            ? "bg-[#6366F1] rounded-br-[5px]"
+            ? "bg-[#475569] rounded-br-[5px]"
             : "bg-[#F8F9FA] rounded-bl-[5px] flex-1"
         }`}
       >
@@ -89,11 +89,11 @@ export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () 
       <View className="flex-1 bg-transparent">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="absolute bottom-[80px] left-5 bg-white rounded-[25px] overflow-hidden shadow-2xl shadow-black/20 elevation-15 border border-[#F8F9FA]"
+          className="absolute bottom-[80px] right-5 bg-white rounded-[25px] overflow-hidden shadow-2xl shadow-black/20 elevation-15 border border-[#F8F9FA]"
           style={{ width: 320, height: 480 }}
         >
           {/* Header */}
-          <View className="flex-row items-center justify-between p-5 pt-6.5 bg-[#6366F1]">
+          <View className="flex-row items-center justify-between p-5 pt-6.5 bg-[#475569]">
             <View className="flex-row items-center">
               <Bot size={24} color="#FFF" />
               <View className="ml-3">
@@ -134,7 +134,7 @@ export const AIChatbot = ({ visible, onClose }: { visible: boolean; onClose: () 
               multiline
             />
             <TouchableOpacity
-              className={`w-[45px] h-[45px] rounded-[22.5px] justify-center items-center ml-2.5 bg-[#6366F1] ${inputText.trim() === "" ? "bg-[#94A3B8] opacity-50" : ""}`}
+              className={`w-[45px] h-[45px] rounded-[22.5px] justify-center items-center ml-2.5 bg-[#475569] ${inputText.trim() === "" ? "bg-[#94A3B8] opacity-50" : ""}`}
               onPress={sendMessage}
               disabled={inputText.trim() === ""}
             >

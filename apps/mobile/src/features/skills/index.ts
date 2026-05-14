@@ -1,1 +1,0 @@
-export { VerbalCategoriesScreen } from "./VerbalCategoriesScreen";

@@ -7,8 +7,8 @@ export const PathConnector = ({
   endPos,
   isFilled,
 }: {
-  startPos: any;
-  endPos: any;
+  startPos: { x: number; y: number };
+  endPos: { x: number; y: number };
   isFilled: boolean;
 }) => {
   const color = isFilled ? "#10B981" : "#E2E8F0";

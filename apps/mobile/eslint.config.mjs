@@ -1,3 +1,8 @@
 import rnConfig from "@powerup/eslint-config/react-native";
 
-export default [...rnConfig];
+export default [
+  ...rnConfig,
+  {
+    ignores: [".expo/**/*"],
+  },
+];

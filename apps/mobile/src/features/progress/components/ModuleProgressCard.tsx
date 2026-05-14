@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { Card } from "@/features/learning/components";
+import { Card } from "@/components/ui";
 import { ProgressBar } from "@/features/progress/components";
 
 interface ModuleProgressCardProps {

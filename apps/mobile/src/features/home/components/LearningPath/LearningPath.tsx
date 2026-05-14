@@ -11,8 +11,8 @@ export const LearningPath = ({
   onNodePress,
   onContinuePress,
 }: {
-  data: any[];
-  onNodePress: (node: any) => void;
+  data: { id: string; status: "completed" | "current" | "locked"; title: string }[];
+  onNodePress: (node: { id: string; status: string; title: string }) => void;
   onContinuePress: () => void;
 }) => {
   const NODE_SPACING_Y = 120;

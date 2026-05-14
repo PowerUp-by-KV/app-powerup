@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  RefreshControl,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl } from "react-native";
 import { router } from "expo-router";
 import { StreakIndicators, CEFRLevelBar, ModuleProgressCard } from "./components";
 import { useProgress } from "./hooks/ProgressContext";
@@ -55,7 +48,7 @@ export const ProgressDashboard = () => {
 
         <View className="flex-row justify-between items-center mt-2.5 mb-[15px]">
           <Text className="text-xl font-bold text-black">Module Progress</Text>
-          <TouchableOpacity onPress={() => router.push("/progress/trends")}>
+          <TouchableOpacity onPress={() => router.push("/progress/trends" as any)}>
             <Text className="text-sm color-[#6366F1] font-medium">View Trends</Text>
           </TouchableOpacity>
         </View>
@@ -73,7 +66,7 @@ export const ProgressDashboard = () => {
 
         <TouchableOpacity
           className="bg-white border border-[#6366F1] py-[15px] rounded-[15px] items-center mt-2.5"
-          onPress={() => router.push("/progress/heatmap")}
+          onPress={() => router.push("/progress/heatmap" as any)}
         >
           <Text className="text-[#6366F1] text-base font-bold">View Detailed Analysis</Text>
         </TouchableOpacity>

@@ -1,1 +1,1 @@
-// Export shared UI components here
+export * from "./Card";
