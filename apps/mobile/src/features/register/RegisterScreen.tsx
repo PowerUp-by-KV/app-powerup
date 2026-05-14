@@ -14,7 +14,7 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
+import { getApiErrorMessage } from "@/utils/error-message";
 import { saveAuthSession } from "@/services/auth-storage";
 import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 
@@ -31,12 +31,10 @@ export function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const handlePostAuthNavigation = (auth: AuthResponse) => {
-    if (auth.user.cefr_range) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/dynamic-onboarding");
-    }
+  const handlePostAuthNavigation = (auth: AuthResponse, fallbackEmail: string) => {
+    // After signup: route through the OTP screens (dev-bypass keeps them passable).
+    router.replace({ pathname: "/verify-email", params: { email: fallbackEmail } });
+    void auth;
   };
 
   const handleRegister = async () => {
@@ -98,9 +96,8 @@ export function RegisterScreen() {
       }).unwrap();
 
       await saveAuthSession(auth);
-      setAuthToken(auth.access_token);
       Alert.alert("Success", "Registration successful.");
-      handlePostAuthNavigation(auth);
+      handlePostAuthNavigation(auth, email_value);
     } catch (error) {
       console.error("Registration error:", error);
       const apiError = error as { status?: number; data?: { message?: string; detail?: any } };
@@ -285,7 +282,9 @@ export function RegisterScreen() {
               </View>
 
               <TouchableOpacity
-                onPress={() => router.push("/otp")}
+                onPress={() =>
+                  router.push({ pathname: "/verify-email", params: { email: email_value } })
+                }
                 className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
               >
                 <Text className="text-slate-800 text-base font-bold">Sign up with OTP</Text>
