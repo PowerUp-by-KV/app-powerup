@@ -1,7 +1,7 @@
 import { api } from "./api";
 import type { StoredSession } from "./auth-storage";
 
-export type { StoredSession as AuthResponse };
+export type AuthResponse = StoredSession;
 
 export interface LoginRequest {
   email?: string;
@@ -25,6 +25,18 @@ export interface RegisterRequest {
   oauth_code?: string;
   oauth_redirect_uri?: string;
   oauth_code_verifier?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  phone_number: string | null;
+  name: string;
+  cefr_range: string | null;
+  learning_goal: string | null;
+  learning_frequency: string | null;
+  streak_count: number;
+  total_xp: number;
 }
 
 export const authApi = api.injectEndpoints({
@@ -67,11 +79,8 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
-    getProfile: builder.query<
-      { id: string; email: string; name: string; cefr_range: string | null },
-      void
-    >({
-      query: () => "/v1/auth/profile",
+    getProfile: builder.query<UserProfile, void>({
+      query: () => "/v1/auth/me",
       providesTags: ["Auth"],
     }),
   }),

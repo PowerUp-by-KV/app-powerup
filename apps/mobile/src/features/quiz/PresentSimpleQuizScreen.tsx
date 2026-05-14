@@ -1,11 +1,12 @@
-import { View } from "react-native";
-import { QuizEngine } from "./components/QuizEngine";
+import { QuizShell } from "./components/QuizShell";
+import { QUIZ_ACTIVITY_IDS } from "./constants/activity-ids";
 import { PRESENT_SIMPLE_QUESTIONS } from "./constants/quiz-data";
 
 export function PresentSimpleQuizScreen() {
   return (
-    <View className="flex-1 bg-white">
-      <QuizEngine questions={PRESENT_SIMPLE_QUESTIONS} />
-    </View>
+    <QuizShell
+      activityId={QUIZ_ACTIVITY_IDS.presentSimple}
+      fallbackQuestions={PRESENT_SIMPLE_QUESTIONS}
+    />
   );
 }

@@ -1,11 +1,6 @@
-import { View } from "react-native";
-import { QuizEngine } from "./components/QuizEngine";
-import { PLACEHOLDER_QUESTIONS } from "./constants/quiz-data";
+import { QuizShell } from "./components/QuizShell";
+import { QUIZ_ACTIVITY_IDS } from "./constants/activity-ids";
 
 export function FutureTenseScreen() {
-  return (
-    <View className="flex-1 bg-white">
-      <QuizEngine questions={PLACEHOLDER_QUESTIONS} />
-    </View>
-  );
+  return <QuizShell activityId={QUIZ_ACTIVITY_IDS.futureTense} />;
 }
