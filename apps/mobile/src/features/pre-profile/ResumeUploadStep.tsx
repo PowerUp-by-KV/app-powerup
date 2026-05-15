@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 
+import { useStartSessionMutation } from "@/services/assessment-api";
 import { useUploadResumeMutation } from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 
@@ -11,6 +12,7 @@ export function ResumeUploadStep() {
   const router = useRouter();
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploadResume, { isLoading }] = useUploadResumeMutation();
+  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
 
   const handlePick = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -25,6 +27,16 @@ export function ResumeUploadStep() {
     setPicked(result.assets[0] ?? null);
   };
 
+  const goToAssessment = async () => {
+    try {
+      const session = await startSession().unwrap();
+      router.replace(`/read?session_id=${session.session_id}` as never);
+    } catch {
+      // If session start fails, still land user in the app — they can retry from My Learning
+      router.replace("/(tabs)" as never);
+    }
+  };
+
   const handleContinue = async () => {
     if (!picked) return;
     try {
@@ -36,14 +48,14 @@ export function ResumeUploadStep() {
         type: picked.mimeType ?? "application/pdf",
       } as unknown as Blob);
       await uploadResume(formData).unwrap();
-      router.replace("/(tabs)");
+      await goToAssessment();
     } catch (err) {
       Alert.alert("Upload failed", getApiErrorMessage(err, "Could not upload your resume."));
     }
   };
 
-  const handleSkip = () => {
-    router.replace("/(tabs)");
+  const handleSkip = async () => {
+    await goToAssessment();
   };
 
   return (
@@ -85,17 +97,19 @@ export function ResumeUploadStep() {
         <View className="flex-1 justify-end pb-6">
           <Pressable
             onPress={handleContinue}
-            disabled={!picked || isLoading}
-            className={`rounded-full py-4 items-center mb-3 ${!picked || isLoading ? "bg-slate-300" : "bg-slate-700"}`}
+            disabled={!picked || isLoading || isStarting}
+            className={`rounded-full py-4 items-center mb-3 ${!picked || isLoading || isStarting ? "bg-slate-300" : "bg-slate-700"}`}
           >
-            {isLoading ? (
+            {isLoading || isStarting ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text className="text-white font-bold">Continue</Text>
             )}
           </Pressable>
-          <Pressable onPress={handleSkip} className="items-center py-2">
-            <Text className="text-slate-500 font-semibold">Skip for now</Text>
+          <Pressable onPress={handleSkip} disabled={isStarting} className="items-center py-2">
+            <Text className="text-slate-500 font-semibold">
+              {isStarting ? "Starting assessment..." : "Skip for now"}
+            </Text>
           </Pressable>
         </View>
       </View>
