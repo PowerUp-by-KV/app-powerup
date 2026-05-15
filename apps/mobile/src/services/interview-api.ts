@@ -38,14 +38,6 @@ export const interviewApi = api.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["PracticeHistory"],
-      async onQueryStarted(_arg, { queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          console.log("[interviewApi] getPracticeHistory: success");
-        } catch (error: unknown) {
-          console.error("[interviewApi] getPracticeHistory: error", error);
-        }
-      },
     }),
   }),
   overrideExisting: false,

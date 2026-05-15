@@ -5,42 +5,48 @@
  */
 
 import React from "react";
-import { View, ScrollView, ActivityIndicator, Pressable, StyleSheet } from "react-native";
+import { View, ScrollView, ActivityIndicator, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useGetPracticeHistoryQuery } from "@/services/interview-api";
 import { ResponseCard } from "../components/ResponseCard";
-
-function formatDetailDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch {
-    return dateStr;
-  }
-}
+import { getStatusConfig, formatDetailDate } from "../constants";
 
 export function InterviewDetailScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  const { data: sessions, isLoading } = useGetPracticeHistoryQuery();
+  const { data: sessions, isLoading, error, refetch } = useGetPracticeHistoryQuery();
 
   const session = sessions?.find((s) => s.session_id === sessionId);
+  const statusCfg = getStatusConfig(session?.status);
 
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
+      <View className="flex-1 items-center justify-center bg-slate-50 px-8">
         <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Loading session details...</Text>
+        <Text className="mt-4 text-[15px] text-slate-500">Loading session details...</Text>
+      </View>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <View className="flex-1 items-center justify-center bg-slate-50 px-8">
+        <MaterialIcons name="error-outline" size={56} color="#ef4444" />
+        <Text className="mb-2 mt-4 text-xl font-bold text-slate-800">Failed to Load Session</Text>
+        <Text className="mb-6 max-w-[300px] text-center text-sm leading-5 text-slate-500">
+          Something went wrong while loading this session. Please try again.
+        </Text>
+        <Pressable
+          className="flex-row items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 active:bg-blue-700"
+          onPress={refetch}
+        >
+          <MaterialIcons name="refresh" size={20} color="#ffffff" />
+          <Text className="text-[15px] font-semibold text-white">Retry</Text>
+        </Pressable>
       </View>
     );
   }
@@ -48,15 +54,18 @@ export function InterviewDetailScreen() {
   // Session not found
   if (!session) {
     return (
-      <View style={styles.centerContainer}>
+      <View className="flex-1 items-center justify-center bg-slate-50 px-8">
         <MaterialIcons name="search-off" size={56} color="#94a3b8" />
-        <Text style={styles.notFoundTitle}>Session Not Found</Text>
-        <Text style={styles.notFoundDescription}>
+        <Text className="mb-2 mt-4 text-xl font-bold text-slate-800">Session Not Found</Text>
+        <Text className="mb-6 max-w-[300px] text-center text-sm leading-5 text-slate-500">
           This practice session could not be found. It may have been removed.
         </Text>
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
+        <Pressable
+          className="flex-row items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 active:bg-blue-700"
+          onPress={() => router.back()}
+        >
           <MaterialIcons name="arrow-back" size={20} color="#ffffff" />
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text className="text-[15px] font-semibold text-white">Go Back</Text>
         </Pressable>
       </View>
     );
@@ -65,45 +74,50 @@ export function InterviewDetailScreen() {
   const responses = session.responses || [];
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+    <ScrollView className="flex-1 bg-slate-50" contentContainerClassName="p-5 pb-10">
       {/* Back Navigation */}
-      <Pressable style={styles.backNav} onPress={() => router.back()}>
+      <Pressable className="mb-5 flex-row items-center gap-1.5" onPress={() => router.back()}>
         <MaterialIcons name="arrow-back" size={22} color="#3b82f6" />
-        <Text style={styles.backNavText}>Back to History</Text>
+        <Text className="text-[15px] font-semibold text-blue-500">Back to History</Text>
       </Pressable>
 
-      {/* Session Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Session Replay</Text>
-        <Text style={styles.headerDate}>{formatDetailDate(session.created_at)}</Text>
+      {/* Session Header Card */}
+      <View className="mb-5 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+        <Text className="mb-1 text-2xl font-extrabold text-slate-900">Session Replay</Text>
+        <Text className="mb-4 text-sm text-slate-500">{formatDetailDate(session.created_at)}</Text>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
+        {/* Stats Row */}
+        <View className="flex-row items-center justify-center rounded-xl bg-slate-50 px-5 py-3.5">
+          <View className="flex-1 items-center gap-1">
             <MaterialIcons name="question-answer" size={20} color="#3b82f6" />
-            <Text style={styles.statValue}>{session.response_count}</Text>
-            <Text style={styles.statLabel}>Responses</Text>
+            <Text className="text-base font-bold text-slate-800">{session.response_count}</Text>
+            <Text className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Responses
+            </Text>
           </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <MaterialIcons
-              name={session.status === "completed" ? "check-circle" : "access-time"}
-              size={20}
-              color={session.status === "completed" ? "#15803d" : "#b45309"}
-            />
-            <Text style={styles.statValue}>{session.status}</Text>
-            <Text style={styles.statLabel}>Status</Text>
+
+          <View className="mx-4 h-9 w-px bg-slate-200" />
+
+          <View className="flex-1 items-center gap-1">
+            <MaterialIcons name={statusCfg.icon} size={20} color={statusCfg.color} />
+            <Text className="text-base font-bold capitalize text-slate-800">{statusCfg.label}</Text>
+            <Text className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              Status
+            </Text>
           </View>
         </View>
       </View>
 
       {/* Responses */}
       {responses.length === 0 ? (
-        <View style={styles.noResponses}>
+        <View className="items-center py-12">
           <MaterialIcons name="inbox" size={40} color="#cbd5e1" />
-          <Text style={styles.noResponsesText}>No responses recorded for this session.</Text>
+          <Text className="mt-3 text-sm text-slate-400">
+            No responses recorded for this session.
+          </Text>
         </View>
       ) : (
-        <View style={styles.responsesList}>
+        <View>
           {responses.map((response, index) => (
             <ResponseCard key={response.response_id} response={response} index={index} />
           ))}
@@ -112,135 +126,3 @@ export function InterviewDetailScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  contentContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 32,
-    backgroundColor: "#f8fafc",
-  },
-  loadingText: {
-    fontSize: 15,
-    color: "#64748b",
-    marginTop: 16,
-  },
-  notFoundTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  notFoundDescription: {
-    fontSize: 14,
-    color: "#64748b",
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 24,
-    maxWidth: 300,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#2563eb",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  backButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#ffffff",
-  },
-  backNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 20,
-  },
-  backNavText: {
-    fontSize: 15,
-    color: "#3b82f6",
-    fontWeight: "600",
-  },
-  header: {
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 4,
-  },
-  headerDate: {
-    fontSize: 14,
-    color: "#64748b",
-    marginBottom: 16,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-  },
-  statItem: {
-    alignItems: "center",
-    flex: 1,
-    gap: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1e293b",
-    textTransform: "capitalize",
-  },
-  statLabel: {
-    fontSize: 11,
-    color: "#94a3b8",
-    fontWeight: "500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  statDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: "#e2e8f0",
-    marginHorizontal: 16,
-  },
-  noResponses: {
-    alignItems: "center",
-    paddingVertical: 48,
-  },
-  noResponsesText: {
-    fontSize: 14,
-    color: "#94a3b8",
-    marginTop: 12,
-  },
-  responsesList: {
-    gap: 0,
-  },
-});
