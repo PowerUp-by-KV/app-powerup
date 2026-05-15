@@ -3,7 +3,11 @@ import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } fr
 import { useRouter } from "expo-router";
 
 import { useGetProfileQuery } from "@/services/auth-api";
-import { useGetPersonalizedPathQuery, useGetModuleDaysQuery } from "@/services/module-api";
+import {
+  useGetPersonalizedPathQuery,
+  useGetModuleDaysQuery,
+  useGetModuleProgressQuery,
+} from "@/services/module-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 
 import { TimelineRow } from "./components/TimelineRow";
@@ -50,6 +54,9 @@ export function LearningJourneyScreen() {
     firstUnlockedModule?.id ?? "",
     { skip: !firstUnlockedModule },
   );
+  const { data: moduleProgress } = useGetModuleProgressQuery(firstUnlockedModule?.id ?? "", {
+    skip: !firstUnlockedModule,
+  });
 
   if (!gate.ready) {
     return (
@@ -79,7 +86,7 @@ export function LearningJourneyScreen() {
   }
 
   const totalDays = days?.length ?? 0;
-  const completedDays = 0;
+  const completedDays = moduleProgress ? moduleProgress.current_day - 1 : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -124,7 +131,7 @@ export function LearningJourneyScreen() {
           </View>
         )}
 
-        {days?.slice(0, 12).map((day, idx) => {
+        {days?.slice(0, 12)?.map((day, idx) => {
           const dayNumber = idx + 1;
           const isLocked = dayNumber > completedDays + 1;
           return (
