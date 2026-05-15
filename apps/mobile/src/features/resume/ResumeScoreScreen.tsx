@@ -40,7 +40,7 @@ export function ResumeScoreScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
         {isLoading ? (
           <ActivityIndicator color="#6366f1" />
         ) : isError ? (

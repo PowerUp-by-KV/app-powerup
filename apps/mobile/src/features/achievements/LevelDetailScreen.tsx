@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
@@ -19,7 +19,16 @@ export function LevelDetailScreen() {
         <Text className="flex-1 text-center font-bold text-slate-900">Level</Text>
         <View className="w-9" />
       </View>
-      <View className="flex-1 items-center justify-center px-8">
+      <ScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          paddingHorizontal: 32,
+          paddingVertical: 40,
+          paddingBottom: 96,
+        }}
+      >
         <Text className="text-slate-500 mb-2">Keep going, you&apos;re in level</Text>
         <Text className="text-slate-900 text-7xl font-extrabold">
           {profile?.current_level ?? 1}
@@ -33,7 +42,7 @@ export function LevelDetailScreen() {
         >
           <Text className="text-white font-bold">Continue learning</Text>
         </Pressable>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

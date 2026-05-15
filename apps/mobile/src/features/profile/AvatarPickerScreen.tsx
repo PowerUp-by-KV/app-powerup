@@ -46,7 +46,7 @@ export function AvatarPickerScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, alignItems: "center" }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96, alignItems: "center" }}>
         <View className="w-28 h-28 rounded-full bg-slate-200 items-center justify-center overflow-hidden mb-2">
           {selectedAvatar ? (
             <Image source={{ uri: selectedAvatar.url }} className="w-full h-full" />

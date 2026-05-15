@@ -59,7 +59,7 @@ export function CheckoutScreen() {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
         <View className="bg-slate-900 rounded-3xl p-5 mb-6">
           <Text className="text-white font-bold">{plan.name}</Text>
           <Text className="text-white text-3xl font-extrabold mt-1">

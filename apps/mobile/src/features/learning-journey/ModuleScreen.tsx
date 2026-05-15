@@ -135,7 +135,7 @@ export function ModuleScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 24 }}>
+      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 96 }}>
         <TapToBuild
           promptText={currentQuestion.question_text}
           audioUrl={currentQuestion.audio_url}
