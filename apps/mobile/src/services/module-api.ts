@@ -9,6 +9,26 @@ import type {
 
 import { api } from "./api";
 
+export interface PersonalizedModuleItem {
+  id: string;
+  module_no: number;
+  title: string;
+  variant_id: string | null;
+  is_unlocked: boolean;
+}
+
+export interface PersonalizedPathResponse {
+  cefr_band: string;
+  modules: PersonalizedModuleItem[];
+}
+
+export interface ModuleProgressResponse {
+  total_activities: number;
+  completed_activities: number;
+  progress_percentage: number;
+  current_day: number;
+}
+
 export interface SubmitAnswerArgs {
   activity_id: string;
   answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
@@ -17,6 +37,16 @@ export interface SubmitAnswerArgs {
 export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
+    getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
+      query: () => "/v1/learning-path/personalized",
+      providesTags: ["Modules"],
+    }),
+
+    getModuleProgress: builder.query<ModuleProgressResponse, string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/progress`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
     getModules: builder.query<Module[], void>({
       query: () => "/v1/modules/",
       providesTags: ["Modules"],
@@ -70,6 +100,8 @@ export const moduleApi = api.injectEndpoints({
 });
 
 export const {
+  useGetPersonalizedPathQuery,
+  useGetModuleProgressQuery,
   useGetModulesQuery,
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
