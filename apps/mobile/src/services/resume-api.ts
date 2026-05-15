@@ -162,8 +162,41 @@ export const resumeApi = api.injectEndpoints({
       },
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
+
+export interface ResumeScoreSection {
+  key: string;
+  label: string;
+  score: number;
+  max: number;
+  weight: number;
+}
+
+export interface ResumeScoreResponse {
+  overall_score: number;
+  sections: ResumeScoreSection[];
+  got_right: string[];
+  improvements: string[];
+}
+
+export const resumeScoreApi = api.injectEndpoints({
+  overrideExisting: false,
+  endpoints: (builder) => ({
+    getResumeScore: builder.query<ResumeScoreResponse, string>({
+      query: (userId) => `/v1/resume/${userId}/score`,
+      providesTags: ["Resume"],
+    }),
+    enhanceResumeText: builder.mutation<
+      { enhanced_text: string },
+      { section: string; text: string }
+    >({
+      query: (body) => ({ url: "/v1/resume/enhance", method: "POST", body }),
+    }),
+  }),
+});
+
+export const { useGetResumeScoreQuery, useEnhanceResumeTextMutation } = resumeScoreApi;
 
 export const {
   useUploadResumeMutation,

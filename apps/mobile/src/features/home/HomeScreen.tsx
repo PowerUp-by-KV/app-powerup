@@ -33,14 +33,14 @@ export function HomeScreen() {
           </Pressable>
         </View>
 
-        <WeeklyStreak />
+        <WeeklyStreak days={profile?.weekly_streak} />
 
         <MyLearningCard
           streakCount={profile?.streak_count ?? 0}
-          badgesCount={0}
+          badgesCount={profile?.badges_count ?? 0}
           xpPoints={profile?.total_xp ?? 0}
-          modulesCompleted={0}
-          totalModules={13}
+          modulesCompleted={profile?.modules_completed ?? 0}
+          totalModules={profile?.total_modules ?? 13}
           onTrack={() => router.push("/(tabs)/my-learning" as never)}
         />
 
