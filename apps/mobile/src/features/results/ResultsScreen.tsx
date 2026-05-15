@@ -39,7 +39,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   } = useGetAssessmentResultQuery({ session_id: sessionId! }, { skip: !sessionId });
 
   const handleBack = () => {
-    router.replace("/dashboard");
+    router.replace("/(tabs)/my-learning" as never);
   };
 
   if (isLoading) {
@@ -108,7 +108,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
             className="bg-slate-900 py-4 rounded-2xl items-center mt-12 mb-6 shadow-sm active:opacity-90"
             onPress={handleBack}
           >
-            <Text className="text-white text-lg font-bold">Back to Dashboard</Text>
+            <Text className="text-white text-lg font-bold">Go to My Learning</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
