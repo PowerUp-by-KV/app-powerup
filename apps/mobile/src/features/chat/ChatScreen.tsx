@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import {
@@ -25,6 +26,7 @@ import {
 
 export function ChatScreen() {
   const router = useRouter();
+  const safeBack = useSafeBack();
   const params = useLocalSearchParams<{ thread_id?: string }>();
   const { data: profile } = useGetProfileQuery();
   const [threadId, setThreadId] = useState<string | null>(params.thread_id ?? null);
@@ -89,7 +91,7 @@ export function ChatScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center">
+        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
         <Text className="text-slate-900 font-extrabold text-base">AI Coach</Text>

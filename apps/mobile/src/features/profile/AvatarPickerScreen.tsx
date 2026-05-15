@@ -11,12 +11,14 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
 import { useGetAvatarsQuery } from "@/services/profile-api";
 
 export function AvatarPickerScreen() {
   const router = useRouter();
+  const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
   const { data: avatars = [], isLoading } = useGetAvatarsQuery();
   const [patch, { isLoading: isSaving }] = usePatchProfileMutation();
@@ -28,7 +30,7 @@ export function AvatarPickerScreen() {
     if (!selected) return;
     try {
       await patch({ avatar_id: selected }).unwrap();
-      router.back();
+      safeBack();
     } catch {
       Alert.alert("Save failed", "Could not save your avatar.");
     }
@@ -37,7 +39,7 @@ export function AvatarPickerScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center">
+        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
         <Text className="flex-1 text-center font-bold text-slate-900">Select Your Avatar</Text>
