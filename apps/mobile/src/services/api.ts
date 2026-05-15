@@ -60,6 +60,11 @@ export const api = createApi({
     "Resume",
     "Modules",
     "Chat",
+    "Achievements",
+    "Leaderboard",
+    "Friends",
+    "Subscription",
+    "Avatars",
   ],
   endpoints: () => ({}),
 });

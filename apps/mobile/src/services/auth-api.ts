@@ -37,6 +37,28 @@ export interface UserProfile {
   learning_frequency: string | null;
   streak_count: number;
   total_xp: number;
+  weekly_streak: boolean[];
+  current_level: number;
+  modules_completed: number;
+  total_modules: number;
+  badges_count: number;
+  nickname: string | null;
+  country: string | null;
+  gender: string | null;
+  address: string | null;
+  language: string | null;
+  avatar_id: string | null;
+}
+
+export interface UserUpdate {
+  name?: string;
+  nickname?: string;
+  phone_number?: string;
+  country?: string;
+  gender?: string;
+  address?: string;
+  language?: string;
+  avatar_id?: string;
 }
 
 export const authApi = api.injectEndpoints({
@@ -83,7 +105,17 @@ export const authApi = api.injectEndpoints({
       query: () => "/v1/auth/me",
       providesTags: ["Auth"],
     }),
+
+    patchProfile: builder.mutation<UserProfile, UserUpdate>({
+      query: (body) => ({ url: "/v1/auth/me", method: "PATCH", body }),
+      invalidatesTags: ["Auth"],
+    }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useGetProfileQuery } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useGetProfileQuery,
+  usePatchProfileMutation,
+} = authApi;
