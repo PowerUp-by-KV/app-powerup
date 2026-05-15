@@ -16,8 +16,8 @@ import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { saveAuthSession } from "@/services/auth-storage";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { clearAuthSession, saveAuthSession } from "@/services/auth-storage";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -32,9 +32,8 @@ export function LoginScreen() {
 
   const persistAuthAndNavigate = async (auth: AuthResponse) => {
     await saveAuthSession(auth);
-    setAuthToken(auth.access_token);
     if (auth.user.cefr_range) {
-      router.replace("/dashboard");
+      router.replace("/(tabs)");
     } else {
       router.replace("/dynamic-onboarding");
     }
@@ -100,7 +99,7 @@ export function LoginScreen() {
       console.error("Login error:", error);
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {
-        await clearAuthState();
+        await clearAuthSession();
         Alert.alert("Error", "Invalid credentials");
         router.replace("/login");
         return;
@@ -247,7 +246,7 @@ export function LoginScreen() {
             </View>
 
             <TouchableOpacity
-              onPress={() => router.push("/otp")}
+              onPress={() => router.push("/login-otp")}
               className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
             >
               <Text className="text-slate-800 text-base font-bold">Login with OTP</Text>

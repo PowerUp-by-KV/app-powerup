@@ -21,6 +21,7 @@ import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "@/features/pre-grammar/components/FillBlankInput";
 import { getAssessmentSessionId } from "@/services/auth-storage";
+import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -47,27 +48,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes default
-  const [isRunning, setIsRunning] = useState(false);
-
-  useEffect(() => {
-    if (sectionData) {
-      setIsRunning(true);
-    }
-  }, [sectionData]);
-
-  useEffect(() => {
-    if (!isRunning) return;
-    if (timeLeft <= 0) {
-      setIsRunning(false);
-      handleFinish();
-      return;
-    }
-
-    const timer = setTimeout(() => setTimeLeft((prev) => prev - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [isRunning, timeLeft]);
+  const [startedAt] = useState(() => Date.now());
 
   if (isLoading || !sectionData) {
     return (
@@ -97,11 +78,6 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const currentAnswer = answers[currentQuestion.id] || "";
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
   const isMCQ = currentQuestion.options && currentQuestion.options.length > 0;
-  const progressText = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  const timerLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
   const selectAnswer = (value: string) => {
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
@@ -146,6 +122,19 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <AssessmentHeader
+        section="A_READING"
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        startedAtMs={startedAt}
+        onFinish={handleFinish}
+        onSectionChange={(next) =>
+          router.replace({
+            pathname: getNextRouteForSection(next),
+            params: { session_id: sessionId },
+          })
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -157,13 +146,6 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
           keyboardShouldPersistTaps="handled"
         >
           <View className="px-4 py-4">
-            <View className="rounded-3xl bg-slate-100 p-4 mb-4">
-              <Text className="text-sm text-slate-500">{progressText}</Text>
-              <Text className="text-sm text-right text-indigo-600 font-semibold">
-                Time left: {timerLabel}
-              </Text>
-            </View>
-
             {sectionData.paragraph && (
               <ParagraphDisplay paragraph={sectionData.paragraph} topic="Reading Comprehension" />
             )}

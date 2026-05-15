@@ -1,62 +1,73 @@
-import React from "react";
-import { SymbolView } from "expo-symbols";
-import { Tabs } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { Feather } from "@expo/vector-icons";
+import { Tabs, useRouter } from "expo-router";
 
-import Colors from "@/constants/Colors";
-import { useColorScheme } from "@/components/useColorScheme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
+import { getAuthSession } from "@/services/auth-storage";
+
+const ACTIVE_COLOR = "#0f172a";
+const INACTIVE_COLOR = "#94a3b8";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const router = useRouter();
+  const headerShown = useClientOnlyValue(false, true);
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    getAuthSession().then((session) => {
+      const authed = !!session?.access_token;
+      setIsAuthed(authed);
+      if (!authed) router.replace("/login");
+    });
+  }, [router]);
+
+  if (isAuthed !== true) return null;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
+        tabBarActiveTintColor: ACTIVE_COLOR,
+        tabBarInactiveTintColor: INACTIVE_COLOR,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
+        tabBarStyle: {
+          borderTopWidth: 0,
+          elevation: 8,
+          height: 64,
+          paddingBottom: 8,
+          paddingTop: 6,
+        },
+        headerShown,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "house.fill",
-                android: "home",
-                web: "home",
-              }}
-              tintColor={color}
-              size={24}
-            />
-          ),
+          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="quiz"
+        name="my-learning"
         options={{
-          title: "Quiz Center",
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: "book.fill",
-                android: "book",
-                web: "book",
-              }}
-              tintColor={color}
-              size={24}
-            />
-          ),
+          title: "My Learning",
+          tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} />,
         }}
       />
-      {/* Hide the old 'two' tab if it still exists in the file structure */}
       <Tabs.Screen
-        name="two"
+        name="achievements"
         options={{
-          href: null,
+          title: "Achievements",
+          tabBarIcon: ({ color }) => <Feather name="award" size={22} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: "Leader Board",
+          tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen name="two" options={{ href: null }} />
     </Tabs>
   );
 }

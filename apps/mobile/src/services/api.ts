@@ -49,8 +49,22 @@ export const api = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Auth", "Grammar", "Reading", "Listening", "Results", "Onboarding", "Assessment"],
+  tagTypes: [
+    "Auth",
+    "Grammar",
+    "Reading",
+    "Listening",
+    "Results",
+    "Onboarding",
+    "Assessment",
+    "Resume",
+    "Modules",
+    "Chat",
+    "Achievements",
+    "Leaderboard",
+    "Friends",
+    "Subscription",
+    "Avatars",
+  ],
   endpoints: () => ({}),
 });
-
-export { api };

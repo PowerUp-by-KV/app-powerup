@@ -16,10 +16,9 @@ import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
 } from "@/services/onboarding-api";
-import { useStartSessionMutation } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
-import { setProfileCompletedInSession, saveAssessmentSessionId } from "@/services/auth-storage";
-import { getApiErrorMessage } from "@/services/auth-service";
+import { setProfileCompletedInSession } from "@/services/auth-storage";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 export default function DynamicOnboardingScreen() {
   const router = useRouter();
@@ -29,7 +28,7 @@ export default function DynamicOnboardingScreen() {
 
   const { data: groupedQuestions, isLoading: isFetching } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
-  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+  const isStarting = false;
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -52,23 +51,6 @@ export default function DynamicOnboardingScreen() {
     return (
       <View className="flex-1 justify-center items-center bg-white p-6">
         <Text className="text-slate-500 text-center text-lg">No more questions available.</Text>
-        <TouchableOpacity
-          onPress={async () => {
-            try {
-              const session = await startSession().unwrap();
-              router.replace({ pathname: "/read", params: { session_id: session.session_id } });
-            } catch (err) {
-              Alert.alert("Error", getApiErrorMessage(err, "Could not start assessment session"));
-            }
-          }}
-          disabled={isStarting}
-          className={`mt-6 px-8 py-3 rounded-2xl flex-row items-center justify-center ${isStarting ? "bg-indigo-400" : "bg-indigo-600"}`}
-        >
-          {isStarting && <ActivityIndicator color="white" className="mr-2" />}
-          <Text className="text-white font-bold">
-            {isStarting ? "Starting..." : "Start Reading"}
-          </Text>
-        </TouchableOpacity>
         <TouchableOpacity onPress={() => dispatch(prevStep())} className="mt-4">
           <Text className="text-indigo-600 font-medium">Go Back</Text>
         </TouchableOpacity>
@@ -125,9 +107,7 @@ export default function DynamicOnboardingScreen() {
 
         await submitOnboarding({ answers: answersPayload }).unwrap();
         await setProfileCompletedInSession(true);
-        const session = await startSession().unwrap();
-        await saveAssessmentSessionId(session.session_id);
-        router.replace({ pathname: "/read", params: { session_id: session.session_id } });
+        router.replace("/onboarding-resume" as never);
       } catch (err) {
         Alert.alert("Error", getApiErrorMessage(err, "Submission failed"));
       }

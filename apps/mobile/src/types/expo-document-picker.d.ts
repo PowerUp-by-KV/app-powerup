@@ -1,15 +1,25 @@
 declare module "expo-document-picker" {
-  export type DocumentPickerResult =
-    | { type: "cancel" }
-    | { type: "success"; uri?: string; name?: string; size?: number };
+  export interface DocumentPickerAsset {
+    uri: string;
+    name: string;
+    size?: number;
+    mimeType?: string;
+  }
+  export interface DocumentPickerSuccessResult {
+    canceled: false;
+    assets: DocumentPickerAsset[];
+  }
+  export interface DocumentPickerCanceledResult {
+    canceled: true;
+    assets: null;
+  }
+  export type DocumentPickerResult = DocumentPickerSuccessResult | DocumentPickerCanceledResult;
 
-  export function getDocumentAsync(
-    options?: Record<string, unknown>,
-  ): Promise<DocumentPickerResult>;
+  export interface DocumentPickerOptions {
+    type?: string | string[];
+    copyToCacheDirectory?: boolean;
+    multiple?: boolean;
+  }
 
-  const DocumentPicker: {
-    getDocumentAsync: (options?: Record<string, unknown>) => Promise<DocumentPickerResult>;
-  };
-
-  export default DocumentPicker;
+  export function getDocumentAsync(options?: DocumentPickerOptions): Promise<DocumentPickerResult>;
 }

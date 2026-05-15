@@ -23,6 +23,7 @@ import { Audio } from "expo-av";
 import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
 import { getAssessmentSessionId } from "@/services/auth-storage";
+import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface ListeningScreenProps {
   sessionId?: string;
@@ -50,6 +51,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [startedAt] = useState(() => Date.now());
 
   const questions =
     sectionData?.questions ||
@@ -186,6 +188,19 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <AssessmentHeader
+        section="D_LISTEN_ANSWER"
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={questions.length}
+        startedAtMs={startedAt}
+        onFinish={handleFinish}
+        onSectionChange={(next) =>
+          router.replace({
+            pathname: getNextRouteForSection(next),
+            params: { session_id: sessionId },
+          })
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
