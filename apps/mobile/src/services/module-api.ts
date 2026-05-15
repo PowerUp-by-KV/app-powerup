@@ -9,6 +9,19 @@ import type {
 
 import { api } from "./api";
 
+export interface PersonalizedModuleItem {
+  id: string;
+  module_no: number;
+  title: string;
+  variant_id: string | null;
+  is_unlocked: boolean;
+}
+
+export interface PersonalizedPathResponse {
+  cefr_band: string;
+  modules: PersonalizedModuleItem[];
+}
+
 export interface SubmitAnswerArgs {
   activity_id: string;
   answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
@@ -17,6 +30,11 @@ export interface SubmitAnswerArgs {
 export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
+    getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
+      query: () => "/v1/learning-path/personalized",
+      providesTags: ["Modules"],
+    }),
+
     getModules: builder.query<Module[], void>({
       query: () => "/v1/modules/",
       providesTags: ["Modules"],
@@ -70,6 +88,7 @@ export const moduleApi = api.injectEndpoints({
 });
 
 export const {
+  useGetPersonalizedPathQuery,
   useGetModulesQuery,
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
