@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetSubscriptionPlansQuery } from "@/services/profile-api";
 
@@ -11,6 +12,7 @@ function formatINR(paise: number): string {
 
 export function SubscriptionPlansScreen() {
   const router = useRouter();
+  const safeBack = useSafeBack();
   const { data: plans = [], isLoading } = useGetSubscriptionPlansQuery();
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -19,11 +21,11 @@ export function SubscriptionPlansScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center">
+        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
         <Text className="text-slate-900 font-extrabold text-lg">LearnPro</Text>
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center">
+        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Text className="text-slate-500 text-xs font-semibold">Skip</Text>
         </Pressable>
       </View>

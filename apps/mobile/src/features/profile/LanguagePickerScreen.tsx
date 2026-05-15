@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
 
@@ -16,6 +17,7 @@ const LANGS = [
 
 export function LanguagePickerScreen() {
   const router = useRouter();
+  const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
   const [patch] = usePatchProfileMutation();
   const [selected, setSelected] = useState(profile?.language ?? "en-GB");
@@ -28,7 +30,7 @@ export function LanguagePickerScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center px-4 py-3">
-        <Pressable onPress={() => router.back()} className="w-9 h-9 items-center justify-center">
+        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
         <Text className="flex-1 text-center font-bold text-slate-900">Language</Text>
