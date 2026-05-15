@@ -65,7 +65,7 @@ export function EditProfileScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
         {[
           { label: "Full name", value: name, set: setName },
           { label: "Nick name", value: nickname, set: setNickname },

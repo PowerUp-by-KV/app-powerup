@@ -37,7 +37,7 @@ export function LanguagePickerScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 96 }}>
         {LANGS.map((l) => {
           const isSel = l.code === selected;
           return (

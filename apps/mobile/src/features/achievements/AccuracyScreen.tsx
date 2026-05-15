@@ -28,7 +28,7 @@ export function AccuracyScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
         <View className="bg-slate-100 rounded-3xl p-6 mb-5 items-center">
           <Text className="text-slate-900 font-bold mb-1">Overall Accuracy</Text>
           <Text className="text-slate-500 text-xs mb-3">
