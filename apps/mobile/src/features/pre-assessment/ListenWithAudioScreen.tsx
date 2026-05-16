@@ -85,6 +85,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const listenData = sectionData as AListenSectionResponse | undefined;
   const questions = listenData?.items || [];
@@ -109,7 +110,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting) return;
+    if (!currentQuestion || isSubmitting || isFinished) return;
 
     if (timeLeft <= 0) {
       if (isRecording) {
@@ -128,7 +129,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isLastQuestion, isSubmitting]);
+  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished]);
 
   // Auto-stop recording if maxDuration is reached
   useEffect(() => {
@@ -235,6 +236,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }
 
   const handleFinish = async () => {
+    setIsFinished(true);
     try {
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,

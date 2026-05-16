@@ -84,6 +84,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const speakingData = sectionData as BSpeakingSectionResponse | undefined;
   const questions = speakingData?.prompts || [];
@@ -109,7 +110,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting) return;
+    if (!currentQuestion || isSubmitting || isFinished) return;
 
     if (timeLeft <= 0) {
       if (isRecording) {
@@ -129,7 +130,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isLastQuestion, isSubmitting]);
+  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished]);
 
   // Auto-stop recording if maxDuration is reached (double safety)
   useEffect(() => {
@@ -236,6 +237,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   }
 
   const handleFinish = async () => {
+    setIsFinished(true);
     try {
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,

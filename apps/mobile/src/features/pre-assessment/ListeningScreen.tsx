@@ -53,6 +53,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const listenData = sectionData as DListenAnswerSectionResponse | undefined;
   const questions = listenData?.stories || [];
@@ -72,7 +73,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting) return;
+    if (!currentQuestion || isSubmitting || isFinished) return;
 
     if (timeLeft <= 0) {
       if (isLastQuestion) {
@@ -88,7 +89,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isLastQuestion, isSubmitting]);
+  }, [timeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   const selectAnswer = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -130,6 +131,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   }
 
   const handleFinish = async () => {
+    setIsFinished(true);
     try {
       const allStoryQuestions = questions.flatMap((story) => story.questions || []);
       const formattedAnswers = allStoryQuestions.map((q) => ({

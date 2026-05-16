@@ -60,6 +60,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes total
   const [questionTimeLeft, setQuestionTimeLeft] = useState(60); // 60 seconds per question
@@ -77,7 +78,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   }, [currentQuestionIndex]);
 
   useEffect(() => {
-    if (!isRunning || isSubmitting) return;
+    if (!isRunning || isSubmitting || isFinished) return;
 
     if (timeLeft <= 0 || questionTimeLeft <= 0) {
       if (isLastQuestion) {
@@ -94,7 +95,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isRunning, timeLeft, questionTimeLeft, isLastQuestion, isSubmitting]);
+  }, [isRunning, timeLeft, questionTimeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   if (isError) {
     return (
@@ -139,6 +140,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   };
 
   const handleFinish = async () => {
+    setIsFinished(true);
     try {
       // Format answers for submission
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
