@@ -20,6 +20,7 @@ import {
 import { GrammarQuestion as GrammarQuestionComponent } from "./components/GrammarQuestion";
 import { MCQOption } from "./components/GrammarMCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
+import { AssessmentHeader } from "./components/AssessmentHeader";
 import { useEffect } from "react";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 
@@ -125,6 +126,15 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <AssessmentHeader
+            sectionName="Section C"
+            skillName="Grammar & Language Usage"
+            currentQuestion={currentQuestionIndex}
+            totalQuestions={questions.length}
+            onFinishTest={handleFinish}
+            sessionId={sessionId}
+          />
+
           <GrammarQuestionComponent
             question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
@@ -155,24 +165,30 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
             </View>
           )}
 
-          <View className="flex-row justify-between mt-8 gap-3">
+          <View className="flex-row justify-between mt-8 gap-4 mb-4">
+            {currentQuestionIndex > 0 && (
+              <TouchableOpacity
+                className="flex-1 bg-slate-200 py-4 rounded-2xl items-center shadow-sm"
+                onPress={handleBack}
+                disabled={isSubmitting}
+                activeOpacity={0.8}
+              >
+                <Text className="text-slate-700 font-bold text-base">Back</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-              onPress={handleBack}
-              disabled={isSubmitting}
-            >
-              <Text className="text-white font-semibold">Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+              className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
+                isSubmitting ? "bg-slate-400" : "bg-slate-800"
+              }`}
               onPress={handleNext}
               disabled={isSubmitting}
+              activeOpacity={0.8}
             >
               {isSubmitting ? (
                 <ActivityIndicator color="white" />
               ) : (
-                <Text className="text-white font-semibold">
-                  {isLastQuestion ? "Submit" : "Next"}
+                <Text className="text-white font-bold text-base">
+                  {isLastQuestion ? "Check Answers" : "Next Question"}
                 </Text>
               )}
             </TouchableOpacity>

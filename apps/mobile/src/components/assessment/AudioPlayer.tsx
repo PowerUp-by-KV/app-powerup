@@ -1,51 +1,162 @@
-import React, { useState } from "react";
-import { View, TouchableOpacity, Text } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
+import { Audio, AVPlaybackStatus } from "expo-av";
+import { Feather } from "@expo/vector-icons";
 
 interface AudioPlayerProps {
+  audioUrl?: string | null;
   audioText: string;
-  duration: number;
+  duration?: number;
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
 }
 
-export function AudioPlayer({ audioText, duration, onPlayStart, onPlayEnd }: AudioPlayerProps) {
+export function AudioPlayer({
+  audioUrl,
+  audioText,
+  duration = 30,
+  onPlayStart,
+  onPlayEnd,
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [actualDuration, setActualDuration] = useState(duration);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
-  const handlePlay = () => {
-    setIsPlaying(true);
-    onPlayStart?.();
+  // Clean up sound on unmount
+  useEffect(() => {
+    return () => {
+      if (sound) {
+        sound.unloadAsync().catch(() => {});
+      }
+    };
+  }, [sound]);
+
+  // Reset player when audioUrl changes
+  useEffect(() => {
+    if (sound) {
+      sound.unloadAsync().catch(() => {});
+      setSound(null);
+    }
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setActualDuration(duration);
+  }, [audioUrl, duration]);
+
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (!status.isLoaded) {
+      if (status.error) {
+        setIsPlaying(false);
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    if (status.durationMillis) {
+      setActualDuration(Math.round(status.durationMillis / 1000));
+    }
+    setCurrentTime(Math.round(status.positionMillis / 1000));
+
+    if (status.didJustFinish) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      onPlayEnd?.();
+    }
   };
 
-  const handlePause = () => {
+  const handlePlay = async () => {
+    if (!audioUrl) {
+      // Fallback timer simulation if no audio URL is provided
+      setIsPlaying(true);
+      onPlayStart?.();
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        allowsRecordingIOS: false,
+      });
+
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: audioUrl },
+        { shouldPlay: true },
+        onPlaybackStatusUpdate,
+      );
+
+      setSound(newSound);
+      setIsPlaying(true);
+      setIsLoading(false);
+      onPlayStart?.();
+    } catch {
+      setIsLoading(false);
+      setIsPlaying(false);
+    }
+  };
+
+  const handlePause = async () => {
     setIsPlaying(false);
+    if (sound) {
+      await sound.stopAsync().catch(() => {});
+      await sound.unloadAsync().catch(() => {});
+      setSound(null);
+    }
+    setCurrentTime(0);
     onPlayEnd?.();
   };
 
-  return (
-    <View className="bg-blue-50 rounded-lg p-4 mb-4">
-      <Text className="text-sm text-gray-600 mb-3 italic">{audioText}</Text>
+  // Fallback simulation timer if no audioUrl
+  useEffect(() => {
+    if (audioUrl || !isPlaying) return;
 
-      <View className="flex-row items-center justify-between">
+    if (currentTime >= actualDuration) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      onPlayEnd?.();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCurrentTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, currentTime, actualDuration, audioUrl]);
+
+  const progressPercent = actualDuration > 0 ? (currentTime / actualDuration) * 100 : 0;
+
+  return (
+    <View className="bg-slate-100 rounded-3xl p-5 mb-6 border border-slate-200/80 shadow-sm">
+      <View className="flex-row items-center">
         <TouchableOpacity
-          className={`${isPlaying ? "bg-red-500" : "bg-blue-500"} px-6 py-2 rounded-lg`}
+          className={`${isPlaying ? "bg-red-500" : "bg-slate-800"} w-14 h-14 rounded-full items-center justify-center shadow-md mr-4`}
           onPress={isPlaying ? handlePause : handlePlay}
+          disabled={isLoading}
         >
-          <Text className="text-white font-semibold">{isPlaying ? "Stop" : "Play"}</Text>
+          {isLoading ? (
+            <ActivityIndicator color="white" size="small" />
+          ) : (
+            <Feather name={isPlaying ? "square" : "volume-2"} size={22} color="white" />
+          )}
         </TouchableOpacity>
 
-        <View className="flex-1 ml-4">
-          <View className="bg-gray-300 h-2 rounded-full overflow-hidden">
-            <View
-              className="bg-blue-500 h-full"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
-          </View>
+        <View className="flex-1 justify-center">
+          <Text className="text-base font-bold text-slate-900 mb-1">
+            {isPlaying ? "Playing audio..." : "Play audio"}
+          </Text>
+          <Text className="text-xs font-medium text-slate-500" numberOfLines={2}>
+            {currentTime}s / {actualDuration}s • {audioText}
+          </Text>
         </View>
+      </View>
 
-        <Text className="text-xs text-gray-500 ml-2">
-          {currentTime}s / {duration}s
-        </Text>
+      <View className="mt-4 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+        <View
+          className="bg-slate-800 h-full rounded-full"
+          style={{ width: `${Math.min(progressPercent, 100)}%` }}
+        />
       </View>
     </View>
   );

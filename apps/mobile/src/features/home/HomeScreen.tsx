@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, SafeAreaView, TouchableOpacity } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, ScrollView } from "react-native";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { Feather } from "@expo/vector-icons";
 
@@ -8,8 +8,12 @@ export function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <View className="px-6 py-10">
-        <View className="flex-row items-center justify-between mb-8">
+      <ScrollView
+        className="flex-1 px-6 py-6"
+        contentContainerStyle={{ paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="flex-row items-center justify-between mb-8 mt-4">
           <View>
             <Text className="text-slate-500 font-medium text-sm uppercase tracking-wider">
               Welcome back,
@@ -60,7 +64,7 @@ export function HomeScreen() {
             ))}
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

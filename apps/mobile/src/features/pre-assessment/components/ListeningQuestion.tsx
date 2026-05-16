@@ -19,7 +19,7 @@ export function ListeningQuestion({
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-lg font-bold text-gray-800">
-          Question {questionIndex + 1} of {totalQuestions}
+          Story {questionIndex + 1} of {totalQuestions}
         </Text>
         <Text
           className={`px-3 py-1 rounded-full text-xs font-semibold ${
@@ -30,14 +30,14 @@ export function ListeningQuestion({
                 : "bg-red-100 text-red-700"
           }`}
         >
-          {question.complexity}
+          {question.complexity || "Medium"}
         </Text>
       </View>
 
       <View className="bg-gray-100 p-4 rounded-lg mb-3 flex-row justify-between items-center">
         <View>
           <Text className="text-sm text-gray-600 mb-1">
-            Max Recording:{" "}
+            Time Allotted:{" "}
             {question.recordingTime || (question as any).recording_time_seconds || 45}s
           </Text>
           {(question.noOfLines || (question as any).no_of_lines) && (

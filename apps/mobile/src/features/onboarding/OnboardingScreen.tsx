@@ -178,7 +178,7 @@ export default function OnboardingScreen() {
                   }
                 })
                 .catch(() => {});
-            } catch (uploadErr) {
+            } catch {
               // Ignore background spawn errors
             }
           }

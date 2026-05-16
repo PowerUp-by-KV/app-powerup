@@ -21,6 +21,7 @@ import { ReadingQuestion as ReadingQuestionComponent } from "./components/Readin
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/ReadingMCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
+import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 
 interface ReadingScreenProps {
@@ -132,11 +133,6 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
 
   const currentAnswer = answers[currentQuestion.id] || "";
   const isMCQ = currentQuestion.options && currentQuestion.options.length > 0;
-  const progressText = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
-
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  const timerLabel = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
   const selectAnswer = (value: string) => {
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
@@ -205,18 +201,14 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
           keyboardShouldPersistTaps="handled"
         >
           <View className="px-4 py-4">
-            <View className="rounded-3xl bg-slate-100 p-4 mb-4">
-              <View className="flex-row justify-between items-center mb-1">
-                <Text className="text-sm text-slate-500">{progressText}</Text>
-                <Text className="text-sm text-indigo-600 font-semibold">Section: {timerLabel}</Text>
-              </View>
-              <View className="flex-row justify-between items-center">
-                <Text className="text-xs text-slate-400">Total Progress</Text>
-                <Text className="text-xs text-red-500 font-bold">
-                  Question ends in: {questionTimeLeft}s
-                </Text>
-              </View>
-            </View>
+            <AssessmentHeader
+              sectionName="Section A"
+              skillName="Reading Skills"
+              currentQuestion={currentQuestionIndex}
+              totalQuestions={questions.length}
+              onFinishTest={handleFinish}
+              sessionId={sessionId}
+            />
 
             {readingData?.paragraph && (
               <ParagraphDisplay paragraph={readingData.paragraph} topic="Reading Comprehension" />
@@ -251,28 +243,30 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               )}
             </View>
 
-            <View className="flex-row justify-between mt-8 gap-3 mb-8">
+            <View className="flex-row justify-between mt-8 gap-4 mb-8">
               {currentQuestionIndex > 0 && (
                 <TouchableOpacity
-                  className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+                  className="flex-1 bg-slate-200 py-4 rounded-2xl items-center shadow-sm"
                   onPress={handleBack}
                   disabled={isSubmitting}
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                 >
-                  <Text className="text-white font-semibold">Back</Text>
+                  <Text className="text-slate-700 font-bold text-base">Back</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+                className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
+                  isSubmitting ? "bg-slate-400" : "bg-slate-800"
+                }`}
                 onPress={handleNext}
                 disabled={isSubmitting}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
                 {isSubmitting ? (
                   <ActivityIndicator color="white" />
                 ) : (
-                  <Text className="text-white font-semibold">
-                    {isLastQuestion ? "Submit Assessment" : "Next Question"}
+                  <Text className="text-white font-bold text-base">
+                    {isLastQuestion ? "Check Answers" : "Next Question"}
                   </Text>
                 )}
               </TouchableOpacity>

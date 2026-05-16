@@ -228,7 +228,7 @@ export function LoginScreen() {
               {/* Sign up Link */}
               <View className="items-center mt-1">
                 <Text className="text-sm text-slate-500">
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Text
                     className="text-blue-600 font-bold"
                     onPress={() => router.push("/register")}

@@ -7,7 +7,6 @@ import {
   FlatList,
   TextInput,
   SafeAreaView,
-  StyleSheet,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 

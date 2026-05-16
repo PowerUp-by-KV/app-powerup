@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { OnboardingQuestion } from "@/services/onboarding-api";
 import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
@@ -223,7 +223,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                     onInputChange(question_key, asset.uri);
                     onInputChange(`${question_key}Name`, asset.name);
                   }
-                } catch (err) {
+                } catch {
                   // silently ignore file picker errors
                 }
               }}

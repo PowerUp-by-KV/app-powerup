@@ -10,7 +10,6 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
 import {
   useGetAssessmentSectionQuery,
@@ -20,6 +19,7 @@ import {
 } from "@/services/assessment-api";
 import { SpeakingQuestion } from "./components/SpeakingQuestion";
 import { RecordingControls } from "./components/RecordingControls";
+import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 
 interface SpeakingScreenProps {
@@ -269,10 +269,9 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (isRecording) {
-      Alert.alert("Recording", "Please stop recording before proceeding.");
-      return;
+      await stopRecording();
     }
 
     if (isLastQuestion) {
@@ -301,6 +300,15 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <AssessmentHeader
+            sectionName="Section B"
+            skillName="Speaking Practice"
+            currentQuestion={currentQuestionIndex}
+            totalQuestions={questions.length}
+            onFinishTest={handleFinish}
+            sessionId={sessionId}
+          />
+
           <SpeakingQuestion
             question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
@@ -325,31 +333,35 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             </View>
           )}
 
-          <View className="flex-row justify-between mt-8 gap-3">
+          <View className="flex-row justify-between mt-8 gap-4 mb-4">
             {currentQuestionIndex > 0 && (
               <TouchableOpacity
-                className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+                className="flex-1 bg-slate-200 py-4 rounded-2xl items-center shadow-sm"
                 onPress={handleBack}
                 disabled={isSubmitting}
+                activeOpacity={0.8}
               >
-                <Text className="text-white font-semibold">Back</Text>
+                <Text className="text-slate-700 font-bold text-base">Back</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center justify-center ${isSubmitting || (isLastQuestion && isAnyUploading) ? "bg-indigo-400" : "bg-indigo-600"}`}
+              className={`flex-1 py-4 rounded-2xl items-center justify-center shadow-md ${
+                isSubmitting || (isLastQuestion && isAnyUploading) ? "bg-slate-400" : "bg-slate-800"
+              }`}
               onPress={handleNext}
               disabled={isSubmitting || (isLastQuestion && isAnyUploading)}
+              activeOpacity={0.8}
             >
               {isSubmitting || (isLastQuestion && isAnyUploading) ? (
                 <View className="flex-row items-center justify-center gap-2">
                   <ActivityIndicator color="white" size="small" />
-                  <Text className="text-white font-semibold">
+                  <Text className="text-white font-bold text-base">
                     {isAnyUploading ? "Uploading Audio..." : "Submitting..."}
                   </Text>
                 </View>
               ) : (
-                <Text className="text-white font-semibold">
-                  {isLastQuestion ? "Submit Assessment" : "Next Question"}
+                <Text className="text-white font-bold text-base">
+                  {isLastQuestion ? "Check Answers" : "Next Question"}
                 </Text>
               )}
             </TouchableOpacity>
