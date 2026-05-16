@@ -1,8 +1,20 @@
+export interface User {
+  id: string;
+  email?: string;
+  phone_number?: string;
+  name: string;
+  cefr_range?: string;
+  learning_goal?: string;
+  learning_frequency?: string;
+  streak_count?: number;
+  total_xp?: number;
+}
+
 export interface AuthResponse {
   access_token: string;
-  profile_completed: boolean;
-  email?: string;
-  [key: string]: unknown;
+  refresh_token: string;
+  user: User;
+  profile_completed?: boolean; // Maintain for internal logic
 }
 
 const STORAGE_KEY = "@powerup_auth_session";
@@ -21,13 +33,10 @@ async function trySecureStoreAvailable(): Promise<unknown | null> {
 export async function saveAuthSession(auth: AuthResponse): Promise<void> {
   const normalized: AuthResponse = {
     ...auth,
-    access_token:
-      auth.access_token ??
-      (auth as { token?: string }).token ??
-      (auth as { accessToken?: string }).accessToken ??
-      "",
-    profile_completed:
-      auth.profile_completed ?? (auth as { profileCompleted?: boolean }).profileCompleted ?? false,
+    access_token: auth.access_token || "",
+    refresh_token: auth.refresh_token || "",
+    // Only trust explicit profile_completed from server; default to false for new users
+    profile_completed: auth.profile_completed === true,
   };
 
   inMemorySession = normalized;
@@ -41,9 +50,8 @@ export async function saveAuthSession(auth: AuthResponse): Promise<void> {
       const ss = SecureStore as { setItemAsync: (k: string, v: string) => Promise<void> };
       await ss.setItemAsync(STORAGE_KEY, JSON.stringify(normalized));
       return;
-    } catch (err) {
+    } catch {
       // fallthrough to in-memory fallback
-      console.warn("SecureStore save failed, falling back to memory storage", err);
     }
   }
 
@@ -78,9 +86,7 @@ export async function getAuthSession(): Promise<AuthResponse | null> {
         inMemorySession = JSON.parse(raw) as AuthResponse;
         return inMemorySession;
       }
-    } catch (err) {
-      console.warn("SecureStore read failed", err);
-    }
+    } catch {}
   }
 
   try {
@@ -113,9 +119,7 @@ export async function clearAuthState(): Promise<void> {
       const ss = SecureStore2 as { deleteItemAsync: (k: string) => Promise<void> };
       await ss.deleteItemAsync(STORAGE_KEY);
       return;
-    } catch (err) {
-      console.warn("SecureStore delete failed", err);
-    }
+    } catch {}
   }
 
   try {
@@ -167,6 +171,11 @@ export async function getAssessmentSessionId(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+export async function getUser(): Promise<User | null> {
+  const session = await getAuthSession();
+  return session?.user || null;
 }
 
 export async function setProfileCompletedInSession(completed: boolean): Promise<void> {

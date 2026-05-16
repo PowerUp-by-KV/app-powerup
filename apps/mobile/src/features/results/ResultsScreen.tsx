@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useGetAssessmentResultQuery } from "@/services/assessment-api";
+import { useCompleteSessionMutation } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import { useState, useEffect } from "react";
@@ -32,14 +32,18 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId]);
 
-  const {
-    data: resultData,
-    isLoading,
-    error,
-  } = useGetAssessmentResultQuery({ session_id: sessionId! }, { skip: !sessionId });
+  const [completeSession, { data: resultData, isLoading, error }] = useCompleteSessionMutation();
+  const [hasTriggered, setHasTriggered] = useState(false);
+
+  useEffect(() => {
+    if (sessionId && !hasTriggered) {
+      completeSession({ session_id: sessionId });
+      setHasTriggered(true);
+    }
+  }, [sessionId, hasTriggered, completeSession]);
 
   const handleBack = () => {
-    router.replace("/dashboard");
+    router.replace("/home" as any);
   };
 
   if (isLoading) {
@@ -57,7 +61,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
           Could not load assessment results. Please try again later.
         </Text>
         <TouchableOpacity className="bg-slate-900 py-3 px-8 rounded-xl" onPress={handleBack}>
-          <Text className="text-white font-bold">Back to Dashboard</Text>
+          <Text className="text-white font-bold">Back to Home</Text>
         </TouchableOpacity>
       </View>
     );
@@ -84,31 +88,32 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               Overall Score
             </Text>
             <ScoreGauge
-              score={resultData.overall_score}
+              score={(resultData.percentage || 0) / 16.66} // Normalize 100% to 6 points
               total={6}
-              obtainedPoints={Math.round(resultData.overall_score * 20)}
-              totalPoints={120}
-              cefr={resultData.cefr_range}
+              obtainedPoints={resultData.total_score || 0}
+              totalPoints={resultData.max_score || 100}
+              cefr={resultData.cefr_range || "N/A"}
             />
           </View>
 
           <View className="flex-row flex-wrap justify-between mt-6">
-            {resultData.categories.map((cat) => (
-              <ScoreCard
-                key={cat.id}
-                title={cat.title}
-                score={cat.score}
-                total={cat.total}
-                icon={cat.icon as any}
-              />
-            ))}
+            {resultData.section_scores &&
+              Object.entries(resultData.section_scores).map(([key, score]) => (
+                <ScoreCard
+                  key={key}
+                  title={key.replace(/_/g, " ")}
+                  score={score}
+                  total={100}
+                  icon="activity"
+                />
+              ))}
           </View>
 
           <TouchableOpacity
             className="bg-slate-900 py-4 rounded-2xl items-center mt-12 mb-6 shadow-sm active:opacity-90"
             onPress={handleBack}
           >
-            <Text className="text-white text-lg font-bold">Back to Dashboard</Text>
+            <Text className="text-white text-lg font-bold">Back to Home</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,17 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
-import {
-  View,
-  Text,
-  Animated,
-  PanResponder,
-  Pressable,
-  Dimensions,
-  StyleSheet,
-} from "react-native";
+import { View, Text, Animated, PanResponder, Pressable, StyleSheet } from "react-native";
 import { QuizQuestion } from "../types/quiz.types";
 import { LinearGradient } from "expo-linear-gradient";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 interface QuizEngineProps {
   questions: QuizQuestion[];

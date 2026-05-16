@@ -7,37 +7,102 @@ export interface StartSessionResponse {
   first_section: string;
 }
 
-export interface AssessmentOption {
+export interface AssessmentQuestionOption {
   label: string;
   value: string;
 }
 
 export interface AssessmentQuestion {
   id: string;
-  question_id?: string;
   question_no?: number;
   question?: string;
-  text?: string;
-  sentence?: string;
-  prompt?: string;
-  story?: string;
-  options?: AssessmentOption[];
+  options?: AssessmentQuestionOption[];
 }
 
-export interface AssessmentSectionResponse {
+export interface ReadingSectionResponse {
   section: string;
-  paragraph?: string;
-  audio_url?: string;
-  questions?: AssessmentQuestion[];
-  sentences?: any[];
-  items?: any[];
-  prompts?: any[];
-  stories?: any[];
+  paragraph: string;
+  questions: AssessmentQuestion[];
 }
+
+export interface SpeakingSentence {
+  id: string;
+  question_no: number;
+  text: string;
+  no_of_lines?: string;
+  complexity?: string;
+  recording_time_seconds?: number;
+}
+
+export interface ASpeakingSectionResponse {
+  section: string;
+  sentences: SpeakingSentence[];
+}
+
+export interface ListenItem {
+  id: string;
+  question_no: number;
+  audio_url?: string;
+  recording_time_seconds?: number;
+  text?: string;
+  no_of_lines?: string;
+  complexity?: string;
+}
+
+export interface AListenSectionResponse {
+  section: string;
+  items: ListenItem[];
+}
+
+export interface BSpeakingPrompt {
+  id: string;
+  question_no: number;
+  topic?: string;
+  question: string;
+  time_seconds?: number;
+  complexity?: string;
+}
+
+export interface BSpeakingSectionResponse {
+  section: string;
+  prompts: BSpeakingPrompt[];
+}
+
+export interface CGrammarSectionResponse {
+  section: string;
+  questions: AssessmentQuestion[];
+}
+
+export interface StoryQuestion {
+  id: string;
+  question_no: number;
+  question: string;
+  options: AssessmentQuestionOption[];
+}
+
+export interface ListeningStory {
+  audio_no: number;
+  audio_url?: string;
+  script?: string;
+  questions: StoryQuestion[];
+}
+
+export interface DListenAnswerSectionResponse {
+  section: string;
+  stories: ListeningStory[];
+}
+
+export type AssessmentSectionResponse =
+  | ReadingSectionResponse
+  | ASpeakingSectionResponse
+  | AListenSectionResponse
+  | BSpeakingSectionResponse
+  | CGrammarSectionResponse
+  | DListenAnswerSectionResponse;
 
 export interface AssessmentAnswer {
   question_id: string;
-  answer?: string;
+  answer?: string | string[];
   audio_url?: string;
 }
 
@@ -57,6 +122,17 @@ export interface SubmitSectionResponse {
     | "C_GRAMMAR"
     | "D_LISTEN_ANSWER"
     | null;
+}
+
+export interface AssessmentSessionCompleteResponse {
+  total_score: number;
+  max_score: number;
+  percentage: number;
+  cefr_range: string;
+  cefr_level?: string | null;
+  section_scores: Record<string, number>;
+  section_percentages: Record<string, number>;
+  aggregated_scores: Record<string, number>;
 }
 
 export const assessmentApi = api.injectEndpoints({
@@ -87,30 +163,12 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
-    completeSession: builder.mutation<{ cefr_range: string }, { session_id: string }>({
+    completeSession: builder.mutation<AssessmentSessionCompleteResponse, { session_id: string }>({
       query: ({ session_id }) => ({
         url: `/v1/assessment/session/${session_id}/complete`,
         method: "POST",
       }),
       invalidatesTags: ["Assessment"],
-    }),
-
-    getAssessmentResult: builder.query<
-      {
-        overall_score: number;
-        cefr_range: string;
-        categories: {
-          id: string;
-          title: string;
-          score: number;
-          total: number;
-          icon: string;
-        }[];
-      },
-      { session_id: string }
-    >({
-      query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
-      providesTags: ["Assessment"],
     }),
   }),
 });
@@ -126,7 +184,7 @@ export const getNextRouteForSection = (section?: string | null): any => {
     case "B_SPEAKING":
       return "/speak";
     case "C_GRAMMAR":
-      return "/pre-grammer";
+      return "/grammar";
     case "D_LISTEN_ANSWER":
       return "/listen";
     default:
@@ -139,5 +197,4 @@ export const {
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
   useCompleteSessionMutation,
-  useGetAssessmentResultQuery,
 } = assessmentApi;

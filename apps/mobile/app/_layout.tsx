@@ -50,18 +50,16 @@ export default function AuthLayout() {
         <Stack.Screen name="register" />
         <Stack.Screen name="otp" />
         <Stack.Screen name="success" />
-        <Stack.Screen name="pre-profile-why" />
-        <Stack.Screen name="pre-profile-frequency" />
         <Stack.Screen name="profile" />
         <Stack.Screen name="dynamic-onboarding" />
         <Stack.Screen name="read" />
         <Stack.Screen name="speak-read" />
         <Stack.Screen name="listen-audio" />
         <Stack.Screen name="speak" />
-        <Stack.Screen name="pre-grammer" />
+        <Stack.Screen name="grammar" />
         <Stack.Screen name="listen" />
         <Stack.Screen name="results" />
-        <Stack.Screen name="dashboard" />
+        <Stack.Screen name="home" />
       </Stack>
     </Provider>
   );

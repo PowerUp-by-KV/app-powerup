@@ -40,8 +40,9 @@ export async function signupWithEmail(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
+    refresh_token: "",
+    user: { id: "", name: "", email: data.email },
     profile_completed: false,
-    email: data.email,
   } as AuthResponse;
 }
 
@@ -53,8 +54,9 @@ export async function signupWithGoogleCode(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
+    refresh_token: "",
+    user: { id: "", name: "", email: data.email },
     profile_completed: false,
-    email: data.email,
   } as AuthResponse;
 }
 
@@ -64,7 +66,8 @@ export async function signupWithGoogleIdToken(data: {
 }): Promise<AuthResponse> {
   return {
     access_token: "",
+    refresh_token: "",
+    user: { id: "", name: "", email: data.email },
     profile_completed: false,
-    email: data.email,
   } as AuthResponse;
 }

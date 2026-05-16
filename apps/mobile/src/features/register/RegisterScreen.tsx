@@ -16,11 +16,12 @@ import { useRouter } from "expo-router";
 
 import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
 import { saveAuthSession } from "@/services/auth-storage";
-import { useRegisterMutation } from "@/services/auth-api";
+import { useRegisterMutation, AuthResponse } from "@/services/auth-api";
 
 export function RegisterScreen() {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +34,7 @@ export function RegisterScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/home" as any);
       return;
     }
 
@@ -41,14 +42,17 @@ export function RegisterScreen() {
   };
 
   const handleRegister = async () => {
-    const name_value = name.trim();
+    const firstName_value = firstName.trim();
+    const lastName_value = lastName.trim();
+    const name_value = `${firstName_value} ${lastName_value}`.trim();
     const email_value = email.trim();
     const phoneNumber_value = phoneNumber.trim();
     const password_value = password.trim();
     const confirmPassword_value = confirmPassword.trim();
 
     if (
-      !name_value ||
+      !firstName_value ||
+      !lastName_value ||
       !email_value ||
       !phoneNumber_value ||
       !password_value ||
@@ -91,19 +95,31 @@ export function RegisterScreen() {
     try {
       setIsLoading(true);
 
-      const auth = await register({
+      const regResponse = await register({
         email: email_value,
         phone_number: phoneNumber_value,
         password: password_value,
         name: name_value,
       }).unwrap();
 
+      // Convert AuthRegisterResponse to AuthResponse structure for storage
+      // Since it's a new registration, we know profile is not completed
+      const auth: AuthResponse = {
+        access_token: regResponse.access_token,
+        refresh_token: regResponse.refresh_token,
+        user: {
+          id: regResponse.user_id,
+          name: name_value,
+          email: email_value,
+          phone_number: phoneNumber_value,
+        },
+      };
+
       await saveAuthSession(auth);
       setAuthToken(auth.access_token);
-      Alert.alert("Success", "Registration successful.");
-      handlePostAuthNavigation(auth.profile_completed);
+      // Alert.alert("Success", "Registration successful.");
+      handlePostAuthNavigation(false);
     } catch (error) {
-      console.error("Registration error:", error);
       const apiError = error as { status?: number; data?: { message?: string; detail?: any } };
 
       let errorMessage: string | undefined;
@@ -141,123 +157,174 @@ export function RegisterScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingBottom: 60,
+            paddingTop: Platform.OS === "android" ? 48 : 16,
+          }}
           style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="w-full max-w-sm py-8">
-            <View className="items-center mb-8">
-              <View className="w-20 h-20 rounded-2xl bg-gray-200 mb-6 shadow-md" />
-              <Text className="text-3xl font-extrabold text-slate-900">Create Account</Text>
-              <Text className="text-base text-slate-500 mt-2">
-                Join us to start your learning journey
+          <View className="w-full max-w-md py-8">
+            {/* Top Logo Placeholder */}
+            <View className="items-center mb-6">
+              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
+              <Text className="text-xl font-bold text-slate-900">Welcome to Powerup</Text>
+              <Text className="text-sm text-slate-400 mt-1">
+                Join powerup to start your learning journey
               </Text>
             </View>
 
-            <View className="space-y-6">
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="user" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Full name"
-                  className="flex-1 text-base text-slate-900"
-                  value={name}
-                  onChangeText={setName}
-                  editable={!isLoading}
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
+            {/* OAuth Buttons */}
+            <View className="flex-row justify-between w-full mt-2">
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
+                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
+                <AntDesign name="github" size={18} color="#333" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Github</Text>
+              </TouchableOpacity>
+            </View>
 
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="phone" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Enter your mobile number"
-                  keyboardType="phone-pad"
-                  className="flex-1 text-base text-slate-900"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  editable={!isLoading}
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
+            {/* Divider */}
+            <View className="flex-row items-center my-6 w-full">
+              <View className="h-px bg-slate-100 flex-1" />
+              <Text className="mx-4 text-sm text-slate-400">or</Text>
+              <View className="h-px bg-slate-100 flex-1" />
+            </View>
 
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="mail" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="your@email.com"
-                  keyboardType="email-address"
-                  className="flex-1 text-base text-slate-900"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Create a strong password"
-                  secureTextEntry={!showPassword}
-                  className="flex-1 text-base text-slate-900"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((p) => !p)}
-                  disabled={isLoading}
-                  className="ml-2"
-                >
-                  <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#94A3B8" />
-                </TouchableOpacity>
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Confirm password"
-                  secureTextEntry={!showConfirmPassword}
-                  className="flex-1 text-base text-slate-900"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword((p) => !p)}
-                  disabled={isLoading}
-                  className="ml-2"
-                >
-                  <Feather
-                    name={showConfirmPassword ? "eye-off" : "eye"}
-                    size={20}
-                    color="#94A3B8"
+            {/* Form Fields */}
+            <View className="space-y-4">
+              {/* First Name & Last Name Row */}
+              <View className="flex-row justify-between w-full">
+                <View className="flex-1 mr-2">
+                  <Text className="text-sm font-bold text-slate-700 mb-1.5">First Name</Text>
+                  <TextInput
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm"
+                    value={firstName}
+                    onChangeText={setFirstName}
+                    editable={!isLoading}
                   />
-                </TouchableOpacity>
+                </View>
+                <View className="flex-1 ml-2">
+                  <Text className="text-sm font-bold text-slate-700 mb-1.5">Last Name</Text>
+                  <TextInput
+                    className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 text-sm"
+                    value={lastName}
+                    onChangeText={setLastName}
+                    editable={!isLoading}
+                  />
+                </View>
               </View>
 
-              <View className="flex-row items-center my-6">
+              {/* Mobile Number */}
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Mobile Number</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="phone" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Enter your mobile number"
+                    keyboardType="phone-pad"
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    editable={!isLoading}
+                    placeholderTextColor="#94A3B8"
+                  />
+                </View>
+              </View>
+
+              {/* Email */}
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="mail" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="your@email.com"
+                    keyboardType="email-address"
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="lock" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Create a strong password"
+                    secureTextEntry={!showPassword}
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((p) => !p)}
+                    disabled={isLoading}
+                    className="ml-2 py-1"
+                  >
+                    <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password */}
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Confirm Password</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="lock" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Enter password"
+                    secureTextEntry={!showConfirmPassword}
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword((p) => !p)}
+                    disabled={isLoading}
+                    className="ml-2 py-1"
+                  >
+                    <Feather
+                      name={showConfirmPassword ? "eye-off" : "eye"}
+                      size={16}
+                      color="#94A3B8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Terms and Privacy Checkbox */}
+              <View className="flex-row items-center w-full mt-5 mb-2">
                 <TouchableOpacity
                   onPress={() => setAgreedToTerms(!agreedToTerms)}
-                  className={`w-6 h-6 border-2 rounded-md mr-3 flex items-center justify-center ${
-                    agreedToTerms ? "bg-indigo-600 border-indigo-600" : "border-slate-300"
+                  className={`w-5 h-5 border rounded mr-3 items-center justify-center ${
+                    agreedToTerms ? "bg-slate-700 border-slate-700" : "border-slate-300 bg-slate-50"
                   }`}
                 >
-                  {agreedToTerms && <Feather name="check" size={16} color="white" />}
+                  {agreedToTerms && <Feather name="check" size={12} color="white" />}
                 </TouchableOpacity>
                 <Text className="text-slate-600 text-sm flex-1">
-                  I agree to the{" "}
-                  <Text className="text-indigo-600 font-semibold">Terms of Service</Text> and{" "}
-                  <Text className="text-indigo-600 font-semibold">Privacy Policy</Text>
+                  I agree to the Terms of Service and Privacy Policy
                 </Text>
               </View>
 
+              {/* Submit Button */}
               <TouchableOpacity
-                className={`rounded-full py-4 items-center justify-center mb-4 bg-gray-800 ${
+                className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
                   isLoading ? "opacity-75" : ""
                 }`}
                 disabled={isLoading}
@@ -266,47 +333,19 @@ export function RegisterScreen() {
                 {isLoading ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text className="text-white text-base font-bold">Create Account</Text>
+                  <Text className="text-white text-sm font-bold">Sign up</Text>
                 )}
               </TouchableOpacity>
 
-              <View className="items-center mt-2">
+              {/* Login Link */}
+              <View className="items-center mt-1">
                 <Text className="text-sm text-slate-500">
                   Already have an account?{" "}
-                  <Text className="text-indigo-600 font-bold" onPress={() => router.push("/login")}>
-                    Sign In
+                  <Text className="text-blue-600 font-bold" onPress={() => router.push("/login")}>
+                    Log In
                   </Text>
                 </Text>
               </View>
-
-              <View className="relative flex-row justify-center items-center my-6">
-                <View className="h-px bg-slate-200 flex-1" />
-                <Text className="mx-4 text-slate-400">OR</Text>
-                <View className="h-px bg-slate-200 flex-1" />
-              </View>
-
-              <TouchableOpacity
-                onPress={() => router.push("/otp")}
-                className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
-              >
-                <Text className="text-slate-800 text-base font-bold">Sign up with OTP</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {}}
-                className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-              >
-                <AntDesign name="google" size={18} color="#DB4437" className="mr-3" />
-                <Text className="text-slate-800 text-base font-bold">Sign up with Google</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {}}
-                className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-              >
-                <AntDesign name="github" size={18} color="#333" className="mr-3" />
-                <Text className="text-slate-800 text-base font-bold">Sign up with GitHub</Text>
-              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>

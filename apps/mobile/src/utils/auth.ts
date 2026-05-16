@@ -9,9 +9,7 @@ export const useLogout = () => {
     try {
       await clearAuthState();
       router.replace("/splash");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+    } catch {}
   };
 
   return { logout };
@@ -21,8 +19,7 @@ export const getToken = async (): Promise<string | null> => {
   try {
     const session = await getAuthSession();
     return session?.access_token ?? null;
-  } catch (error) {
-    console.error("Error getting token:", error);
+  } catch {
     return null;
   }
 };
@@ -30,15 +27,11 @@ export const getToken = async (): Promise<string | null> => {
 export const clearToken = async (): Promise<void> => {
   try {
     await clearAuthState();
-  } catch (error) {
-    console.error("Error clearing token:", error);
-  }
+  } catch {}
 };
 
 export const setToken = async (token: string): Promise<void> => {
   try {
     setAuthToken(token);
-  } catch (error) {
-    console.error("Error setting token:", error);
-  }
+  } catch {}
 };

@@ -17,13 +17,11 @@ import { useRouter } from "expo-router";
 
 import { LoginRequest, useLoginMutation } from "@/services/auth-api";
 import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
+import { AuthResponse, saveAuthSession, getAuthSession } from "@/services/auth-storage";
 
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,7 +30,7 @@ export function LoginScreen() {
 
   const handlePostAuthNavigation = (profileCompleted: boolean) => {
     if (profileCompleted) {
-      router.replace("/dashboard");
+      router.replace("/home" as any);
     } else {
       router.replace("/dynamic-onboarding");
     }
@@ -41,39 +39,23 @@ export function LoginScreen() {
   const persistAuthAndNavigate = async (auth: AuthResponse) => {
     await saveAuthSession(auth);
     setAuthToken(auth.access_token);
-    handlePostAuthNavigation(auth.profile_completed);
+
+    // After saving, get the normalized session which has profile_completed set
+    const session = await getAuthSession();
+    handlePostAuthNavigation(session?.profile_completed ?? false);
   };
 
   const handleLogin = async () => {
     const email_value = email.trim();
-    const phone_value = phoneNumber.trim();
-    const identifier_value = identifier.trim();
     const password_value = password.trim();
-    const normalizedPhone = phone_value.replace(/[\s\-()]/g, "");
 
-    // Validate password is required
+    if (!email_value) {
+      Alert.alert("Error", "Email is required");
+      return;
+    }
+
     if (!password_value) {
       Alert.alert("Error", "Password is required");
-      return;
-    }
-
-    const filledIdentifiers = [email_value, phone_value, identifier_value].filter(Boolean).length;
-
-    if (filledIdentifiers === 0) {
-      Alert.alert("Error", "Please enter email, phone number, or username/ID");
-      return;
-    }
-
-    // Choose one identifier deterministically to keep requests valid for backend contract.
-    const identifierType = email_value ? "email" : phone_value ? "phone_number" : "identifier";
-
-    if (identifierType === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_value)) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    if (identifierType === "phone_number" && !/^\+?\d{7,15}$/.test(normalizedPhone)) {
-      Alert.alert("Error", "Please enter a valid phone number");
       return;
     }
 
@@ -85,28 +67,22 @@ export function LoginScreen() {
         remember_me: rememberMe,
       };
 
-      if (identifierType === "email") {
+      // Determine if the input is an email or a generic identifier/username
+      if (email_value.includes("@")) {
         payload.email = email_value.toLowerCase();
-      } else if (identifierType === "phone_number") {
-        payload.phone_number = normalizedPhone;
       } else {
-        payload.identifier = identifier_value;
+        payload.identifier = email_value;
       }
-
-      console.log("Login payload:", payload);
 
       const response = await login(payload).unwrap();
 
-      console.log("Login response:", response);
-      Alert.alert("Success", "Login successful");
+      // Alert.alert("Success", "Login successful");
       await persistAuthAndNavigate(response);
     } catch (error) {
-      console.error("Login error:", error);
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {
         await clearAuthState();
         Alert.alert("Error", "Invalid credentials");
-        router.replace("/login");
         return;
       }
 
@@ -126,152 +102,142 @@ export function LoginScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingBottom: 60,
+            paddingTop: Platform.OS === "android" ? 48 : 16,
+          }}
           style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="w-full max-w-sm py-8">
-            <View className="items-center mb-8">
-              <View className="w-20 h-20 rounded-2xl bg-gray-200 mb-6 shadow-md" />
-              <Text className="text-3xl font-extrabold text-slate-900">Welcome Back</Text>
-              <Text className="text-base text-slate-500 mt-2">
-                Sign in to continue your learning
-              </Text>
+          <View className="w-full max-w-md py-8">
+            {/* Top Logo Placeholder */}
+            <View className="items-center mb-6">
+              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
+              <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
+              <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
 
-            <View className="space-y-4">
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="mail" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="your@email.com"
-                  keyboardType="email-address"
-                  className="flex-1 text-base text-slate-900"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="phone" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Your phone number"
-                  keyboardType="phone-pad"
-                  className="flex-1 text-base text-slate-900"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="user" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Username or ID"
-                  className="flex-1 text-base text-slate-900"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  autoCapitalize="none"
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Password"
-                  secureTextEntry={!showPassword}
-                  className="flex-1 text-base text-slate-900"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((p) => !p)}
-                  disabled={isLoading}
-                  className="ml-2"
-                >
-                  <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#94A3B8" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="flex-row items-center justify-between my-6">
-              <View className="flex-row items-center">
-                <TouchableOpacity
-                  onPress={() => setRememberMe(!rememberMe)}
-                  className="w-4 h-4 border border-slate-300 rounded-sm items-center justify-center mr-2"
-                >
-                  {rememberMe && <View className="w-2 h-2 bg-indigo-600" />}
-                </TouchableOpacity>
-                <Text className="text-slate-600">Remember me</Text>
-              </View>
-              <TouchableOpacity onPress={() => {}}>
-                <Text className="text-indigo-600">Forgot password?</Text>
+            {/* OAuth Buttons */}
+            <View className="flex-row justify-between w-full mt-2">
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
+                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
+                <AntDesign name="github" size={18} color="#333" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Github</Text>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              className={`rounded-full py-4 items-center justify-center mb-4 bg-gray-800 ${
-                isLoading ? "opacity-75" : ""
-              }`}
-              disabled={isLoading}
-              onPress={handleLogin}
-            >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text className="text-white text-base font-bold">Sign In</Text>
-              )}
-            </TouchableOpacity>
-
-            <View className="items-center mt-2">
-              <Text className="text-sm text-slate-500">
-                Don&apos;t have an account?{" "}
-                <Text
-                  className="text-indigo-600 font-bold"
-                  onPress={() => router.push("/register")}
-                >
-                  Sign up
-                </Text>
-              </Text>
-            </View>
-
-            <View className="relative flex-row justify-center items-center my-6">
-              <View className="h-px bg-slate-200 flex-1" />
-              <Text className="mx-4 text-slate-400">OR</Text>
-              <View className="h-px bg-slate-200 flex-1" />
-            </View>
-
+            {/* Login with OTP Link */}
             <TouchableOpacity
               onPress={() => router.push("/otp")}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
+              className="mt-5 mb-2 items-center"
             >
-              <Text className="text-slate-800 text-base font-bold">Login with OTP</Text>
+              <Text className="text-sm font-bold text-slate-800 underline">Login with OTP</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {}}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-            >
-              <AntDesign name="google" size={18} color="#DB4437" className="mr-3" />
-              <Text className="text-slate-800 text-base font-bold">Sign in with Google</Text>
-            </TouchableOpacity>
+            {/* Divider */}
+            <View className="flex-row items-center my-4 w-full">
+              <View className="h-px bg-slate-100 flex-1" />
+              <Text className="mx-4 text-sm text-slate-400">or</Text>
+              <View className="h-px bg-slate-100 flex-1" />
+            </View>
 
-            <TouchableOpacity
-              onPress={() => {}}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-            >
-              <AntDesign name="github" size={18} color="#333" className="mr-3" />
-              <Text className="text-slate-800 text-base font-bold">Sign in with GitHub</Text>
-            </TouchableOpacity>
+            {/* Form Fields */}
+            <View className="space-y-4 w-full">
+              {/* Email */}
+              <View className="w-full">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="mail" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Your@email.com"
+                    keyboardType="email-address"
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              {/* Password */}
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <TextInput
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((p) => !p)}
+                    disabled={isLoading}
+                    className="ml-2 py-1"
+                  >
+                    <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Options row: Remember me & Forgot password? */}
+              <View className="flex-row items-center justify-between w-full mt-5 mb-2">
+                <TouchableOpacity
+                  onPress={() => setRememberMe(!rememberMe)}
+                  className="flex-row items-center"
+                >
+                  <View
+                    className={`w-5 h-5 rounded mr-3 items-center justify-center ${
+                      rememberMe ? "bg-slate-400" : "bg-slate-200"
+                    }`}
+                  >
+                    {rememberMe && <Feather name="check" size={12} color="white" />}
+                  </View>
+                  <Text className="text-sm font-bold text-slate-600">Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => {}}>
+                  <Text className="text-sm text-blue-500 font-medium">Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
+                  isLoading ? "opacity-75" : ""
+                }`}
+                disabled={isLoading}
+                onPress={handleLogin}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white text-sm font-bold">Sign in</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Sign up Link */}
+              <View className="items-center mt-1">
+                <Text className="text-sm text-slate-500">
+                  Don't have an account?{" "}
+                  <Text
+                    className="text-blue-600 font-bold"
+                    onPress={() => router.push("/register")}
+                  >
+                    Sign up
+                  </Text>
+                </Text>
+              </View>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
