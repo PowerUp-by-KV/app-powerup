@@ -9,7 +9,13 @@ import {
   Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
+import type { Href } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
+
+const SCREEN_TITLE = "Convo Coach";
+const ROUTE_FEEDBACK = "/mock-interview/feedback" as Href;
+const ROUTE_RESULT = "/mock-interview/result" as Href;
+const ROUTE_HOME = "/(tabs)" as Href;
 import { useAppSelector } from "@/store/hooks";
 import { useGetNextQuestionQuery, useSubmitAnswerMutation } from "@/services/mock-interview-api";
 import type { SubmitAnswerResponse } from "@/services/mock-interview-api";
@@ -47,8 +53,8 @@ function ScoreCircle({ pct, label }: { pct: number; label: string }) {
           position: "relative",
         }}
       >
-        {/* Filled arc approximation using a clipped colored border */}
-        <View
+        {/* Animated arc — rotates spinAnim (0→1) via interpolate */}
+        <Animated.View
           style={{
             position: "absolute",
             width: radius * 2,
@@ -59,7 +65,14 @@ function ScoreCircle({ pct, label }: { pct: number; label: string }) {
             borderRightColor: normalised > 25 ? "#3b82f6" : "transparent",
             borderTopColor: normalised > 50 ? "#3b82f6" : "transparent",
             borderLeftColor: normalised > 75 ? "#3b82f6" : "transparent",
-            transform: [{ rotate: `${(normalised / 100) * 360}deg` }],
+            transform: [
+              {
+                rotate: spinAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+            ],
           }}
         />
         <Text style={{ fontSize: 18, fontWeight: "800", color: "#1e293b" }}>{pct}%</Text>
@@ -151,6 +164,7 @@ export function MockInterviewQuestionScreen() {
 
   const [lastScore, setLastScore] = useState<SubmitAnswerResponse | null>(null);
   const [transcript, setTranscript] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const { isLoading: isLoadingQuestion, isError: questionError } = useGetNextQuestionQuery(
     sessionId ?? "",
@@ -163,7 +177,7 @@ export function MockInterviewQuestionScreen() {
 
   useEffect(() => {
     if (isComplete) {
-      router.replace("/mock-interview/result" as never);
+      router.replace(ROUTE_RESULT);
     }
   }, [isComplete, router]);
 
@@ -178,6 +192,7 @@ export function MockInterviewQuestionScreen() {
 
   const handleSubmit = useCallback(async () => {
     if (!sessionId || !currentQuestionId) return;
+    setSubmitError(null);
     try {
       const result = await submitAnswer({
         sessionId,
@@ -187,9 +202,9 @@ export function MockInterviewQuestionScreen() {
       }).unwrap();
       setLastScore(result);
       setTranscript("");
-      router.push("/mock-interview/feedback" as never);
+      router.push(ROUTE_FEEDBACK);
     } catch {
-      // swallow — retry via record again
+      setSubmitError("Submission failed. Please try again.");
     }
   }, [sessionId, currentQuestionId, audioFile, transcript, submitAnswer, router]);
 
@@ -246,7 +261,7 @@ export function MockInterviewQuestionScreen() {
       {/* ── Top header ────────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", textAlign: "center" }}>
-          Convo Coach
+          {SCREEN_TITLE}
         </Text>
       </View>
 
@@ -324,7 +339,7 @@ export function MockInterviewQuestionScreen() {
           <ControlBtn
             red
             onPress={() => {
-              router.replace("/(tabs)" as never);
+              router.replace(ROUTE_HOME);
             }}
           >
             <Ionicons
@@ -468,6 +483,20 @@ export function MockInterviewQuestionScreen() {
               </Text>
             )}
           </Pressable>
+
+          {submitError && (
+            <Text
+              style={{
+                marginTop: 10,
+                color: "#ef4444",
+                fontSize: 13,
+                textAlign: "center",
+                fontWeight: "500",
+              }}
+            >
+              {submitError}
+            </Text>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
