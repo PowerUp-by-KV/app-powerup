@@ -29,6 +29,54 @@ export interface ModuleProgressResponse {
   current_day: number;
 }
 
+export interface DayProgressResponse {
+  total_activities: number;
+  completed_activities: number;
+  progress_percentage: number;
+  estimated_minutes_remaining: number;
+}
+
+export interface ModuleCheckResult {
+  score_pct: number;
+  ready_to_advance: boolean;
+  current_cefr: string;
+  next_cefr: string | null;
+  at_ceiling: boolean;
+}
+
+export interface ActivityCompleteResponse {
+  activity_id: string;
+  user_id: string;
+  completed: boolean;
+  already_completed: boolean;
+  score: number | null;
+  passed: boolean;
+  day_completed: boolean;
+  xp_earned: number;
+  module_check_result: ModuleCheckResult | null;
+}
+
+export interface ActivityCompleteRequest {
+  score?: number | null;
+  passed?: boolean;
+  response_data?: Record<string, unknown> | null;
+}
+
+export interface ModuleEngagementSummary {
+  completed_days: number;
+  total_days: number;
+  rolling_score_pct: number;
+  xp_earned: number;
+  cefr_progress_pct: number;
+  next_cefr_band: string | null;
+  ready_to_advance: boolean;
+}
+
+export interface AdvanceCefrResponse {
+  new_cefr: string;
+  xp_earned: number;
+}
+
 export interface SubmitAnswerArgs {
   activity_id: string;
   answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
@@ -96,6 +144,48 @@ export const moduleApi = api.injectEndpoints({
         // Do NOT set Content-Type — RN sets multipart boundary automatically.
       }),
     }),
+
+    // ── Day-progression loop ─────────────────────────────────────────────
+    // Call this AFTER the skill-specific submit returns. It records the
+    // pass/score on ModuleActivity, auto-advances current_day when every
+    // activity in the day passes, and fires module-check scoring on day 12.
+    completeActivity: builder.mutation<
+      ActivityCompleteResponse,
+      { activity_id: string; body: ActivityCompleteRequest }
+    >({
+      query: ({ activity_id, body }) => ({
+        url: `/v1/modules/activities/${activity_id}/complete`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Modules"],
+    }),
+
+    getDayProgress: builder.query<DayProgressResponse, string>({
+      query: (dayId) => `/v1/modules/days/${dayId}/progress`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    getModuleEngagement: builder.query<ModuleEngagementSummary, string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/engagement`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    evaluateModuleCheck: builder.mutation<ModuleCheckResult, string>({
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/check`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules"],
+    }),
+
+    advanceCefr: builder.mutation<AdvanceCefrResponse, string>({
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/advance-cefr`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules"],
+    }),
   }),
 });
 
@@ -112,4 +202,9 @@ export const {
   useSubmitVocabularyAnswerMutation,
   useSubmitWritingAnswerMutation,
   useSubmitSpeakingAnswerMutation,
+  useCompleteActivityMutation,
+  useGetDayProgressQuery,
+  useGetModuleEngagementQuery,
+  useEvaluateModuleCheckMutation,
+  useAdvanceCefrMutation,
 } = moduleApi;
