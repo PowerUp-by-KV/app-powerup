@@ -82,11 +82,13 @@ interface AttemptCardProps {
 function AttemptCard({ attempt, onPress }: AttemptCardProps) {
   const isCompleted = attempt.status === "completed";
 
-  const formattedDate = new Date(attempt.created_at).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  const formattedDate = attempt.started_at
+    ? new Date(attempt.started_at).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "—";
 
   return (
     <Pressable
@@ -105,7 +107,9 @@ function AttemptCard({ attempt, onPress }: AttemptCardProps) {
 
       <View className="flex-1 ml-4">
         <Text className="text-sm font-semibold text-gray-900">
-          {isCompleted && attempt.score !== null ? `Score: ${attempt.score}/10` : "In Progress"}
+          {isCompleted && attempt.total_score !== null
+            ? `Score: ${attempt.total_score}/10`
+            : "In Progress"}
         </Text>
         <Text className="text-xs text-gray-400 mt-0.5">{formattedDate}</Text>
       </View>
@@ -166,7 +170,7 @@ export function MockInterviewLobbyScreen() {
         setSession({
           sessionId: result.id,
           totalQuestions: result.total_questions,
-          status: result.status,
+          status: result.status as "in_progress",
         }),
       );
 

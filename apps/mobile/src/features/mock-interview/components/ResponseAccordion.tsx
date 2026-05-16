@@ -2,37 +2,27 @@ import { useState, useCallback } from "react";
 import { View, Text, Pressable } from "react-native";
 import type { InterviewResultAnswer } from "@/services/mock-interview-api";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
 export interface ResponseAccordionProps {
-  index: number; // 0-based — displayed as Q{index + 1}
+  index: number;
   answer: InterviewResultAnswer;
 }
 
-// ---------------------------------------------------------------------------
-// Sub-component: ScoreBadge
-// ---------------------------------------------------------------------------
-
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score }: { score: number | null }) {
   return (
     <View className="bg-blue-100 rounded-full px-3 py-0.5 mr-3">
-      <Text className="text-xs font-semibold text-blue-600">{score.toFixed(2)}/10</Text>
+      <Text className="text-xs font-semibold text-blue-600">
+        {score !== null ? score.toFixed(2) : "—"}/10
+      </Text>
     </View>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Main Component
-// Local open/close state is justified — purely presentational accordion UI,
-// never shared across screens and resets on unmount.
-// ---------------------------------------------------------------------------
 
 export function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+
+  const criteriaScores = answer.score_breakdown?.criteria_scores ?? [];
 
   return (
     <Pressable
@@ -54,7 +44,7 @@ export function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
           className="flex-1 text-sm text-gray-800 font-medium"
           numberOfLines={isOpen ? undefined : 2}
         >
-          {answer.question_text}
+          Question {answer.question_order}
         </Text>
         <Text className="text-gray-300 text-base ml-2">{isOpen ? "∧" : "∨"}</Text>
       </View>
@@ -78,31 +68,23 @@ export function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
             <Text className="text-sm text-gray-700 leading-5">{answer.feedback}</Text>
           </View>
 
-          {/* Criteria mini-bars */}
-          <View className="mt-3 flex-row gap-x-3">
-            {[
-              { label: "Clarity", val: answer.criteria_breakdown?.clarity },
-              { label: "Relevance", val: answer.criteria_breakdown?.relevance },
-              {
-                label: "Confidence",
-                val: answer.criteria_breakdown?.confidence,
-              },
-            ].map(({ label, val }) =>
-              val !== undefined ? (
-                <View key={label} className="flex-1">
-                  <Text className="text-xs text-gray-400 mb-1">{label}</Text>
+          {criteriaScores.length > 0 && (
+            <View className="mt-3 flex-row gap-x-3">
+              {criteriaScores.slice(0, 3).map((c) => (
+                <View key={c.name} className="flex-1">
+                  <Text className="text-xs text-gray-400 mb-1" numberOfLines={1}>
+                    {c.name}
+                  </Text>
                   <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <View
                       className="h-full bg-blue-400 rounded-full"
-                      style={{
-                        width: `${Math.min((val / 10) * 100, 100)}%`,
-                      }}
+                      style={{ width: `${Math.min((c.score / 10) * 100, 100)}%` }}
                     />
                   </View>
                 </View>
-              ) : null,
-            )}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
     </Pressable>

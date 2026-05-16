@@ -193,16 +193,17 @@ export function MockInterviewQuestionScreen() {
     }
   }, [sessionId, currentQuestionId, audioFile, transcript, submitAnswer, router]);
 
-  const commPct = lastScore ? Math.round(Math.min(100, lastScore.score * 10)) : 0;
-  const clarityPct = lastScore
-    ? Math.round(Math.min(100, lastScore.criteria_breakdown.clarity * 10))
-    : 0;
-  const relevancePct = lastScore
-    ? Math.round(Math.min(100, lastScore.criteria_breakdown.relevance * 10))
-    : 0;
-  const confidencePct = lastScore
-    ? Math.round(Math.min(100, lastScore.criteria_breakdown.confidence * 10))
-    : 0;
+  const criteriaScores = lastScore?.score_breakdown?.criteria_scores ?? [];
+  const findByName = (keyword: string, fallbackIdx: number) => {
+    const match = criteriaScores.find((c) => c.name.toLowerCase().includes(keyword));
+    return Math.round(
+      Math.min(100, (match?.score ?? criteriaScores[fallbackIdx]?.score ?? 0) * 10),
+    );
+  };
+  const commPct = lastScore ? Math.round(Math.min(100, (lastScore.score ?? 0) * 10)) : 0;
+  const clarityPct = findByName("clarity", 0);
+  const relevancePct = findByName("relevance", 1);
+  const confidencePct = findByName("confidence", 2);
   const behaviourPct = lastScore ? Math.round((relevancePct + confidencePct) / 2) : 0;
 
   const canSubmit = !isSubmitting && (audioFile !== null || transcript.length > 0) && !isRecording;

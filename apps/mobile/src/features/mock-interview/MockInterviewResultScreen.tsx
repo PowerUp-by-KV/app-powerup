@@ -70,10 +70,12 @@ function TrophyIcon() {
 // Sub-component: ScoreBadge
 // ---------------------------------------------------------------------------
 
-function ScoreBadge({ score }: { score: number }) {
+function ScoreBadge({ score }: { score: number | null }) {
   return (
     <View className="bg-blue-100 rounded-full px-3 py-0.5 mr-3">
-      <Text className="text-xs font-semibold text-blue-600">{score.toFixed(2)}/10</Text>
+      <Text className="text-xs font-semibold text-blue-600">
+        {score !== null ? score.toFixed(2) : "—"}/10
+      </Text>
     </View>
   );
 }
@@ -114,7 +116,7 @@ function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
           className="flex-1 text-sm text-gray-800 font-medium"
           numberOfLines={isOpen ? undefined : 2}
         >
-          {answer.question_text}
+          Question {answer.question_order}
         </Text>
         <Text className="text-gray-300 text-base ml-2">{isOpen ? "∧" : "∨"}</Text>
       </View>
@@ -139,25 +141,23 @@ function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
           </View>
 
           {/* Criteria mini-bars */}
-          <View className="mt-3 flex-row gap-x-3">
-            {[
-              { label: "Clarity", val: answer.criteria_breakdown?.clarity },
-              { label: "Relevance", val: answer.criteria_breakdown?.relevance },
-              { label: "Confidence", val: answer.criteria_breakdown?.confidence },
-            ].map(({ label, val }) =>
-              val !== undefined ? (
-                <View key={label} className="flex-1">
-                  <Text className="text-xs text-gray-400 mb-1">{label}</Text>
+          {(answer.score_breakdown?.criteria_scores ?? []).length > 0 && (
+            <View className="mt-3 flex-row gap-x-3">
+              {(answer.score_breakdown?.criteria_scores ?? []).slice(0, 3).map((c) => (
+                <View key={c.name} className="flex-1">
+                  <Text className="text-xs text-gray-400 mb-1" numberOfLines={1}>
+                    {c.name}
+                  </Text>
                   <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                     <View
                       className="h-full bg-blue-400 rounded-full"
-                      style={{ width: `${Math.min((val / 10) * 100, 100)}%` }}
+                      style={{ width: `${Math.min((c.score / 10) * 100, 100)}%` }}
                     />
                   </View>
                 </View>
-              ) : null,
-            )}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
       )}
     </Pressable>
@@ -197,13 +197,13 @@ export function MockInterviewResultScreen() {
   if (data && (finalScore === null || finalGrade === null)) {
     dispatch(
       setFinalResult({
-        score: data.overall_score,
+        score: data.session.total_score ?? 0,
         grade: data.grade,
       }),
     );
   }
 
-  const score = finalScore ?? data?.overall_score ?? 0;
+  const score = finalScore ?? data?.session.total_score ?? 0;
   const grade = finalGrade ?? data?.grade ?? "";
   const answers = data?.answers ?? [];
 
