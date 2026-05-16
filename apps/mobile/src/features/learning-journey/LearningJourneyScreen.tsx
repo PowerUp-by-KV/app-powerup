@@ -1,15 +1,25 @@
-import React from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { useRouter } from "expo-router";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import {
-  useGetPersonalizedPathQuery,
   useGetModuleDaysQuery,
+  useGetModuleEngagementQuery,
   useGetModuleProgressQuery,
+  useGetPersonalizedPathQuery,
 } from "@/services/module-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 
+import { CefrProgressBar } from "./components/CefrProgressBar";
 import { TimelineRow } from "./components/TimelineRow";
 
 function GateEmptyState({
@@ -54,9 +64,24 @@ export function LearningJourneyScreen() {
     firstUnlockedModule?.id ?? "",
     { skip: !firstUnlockedModule },
   );
-  const { data: moduleProgress } = useGetModuleProgressQuery(firstUnlockedModule?.id ?? "", {
-    skip: !firstUnlockedModule,
-  });
+  const { data: moduleProgress, refetch: refetchProgress } = useGetModuleProgressQuery(
+    firstUnlockedModule?.id ?? "",
+    { skip: !firstUnlockedModule },
+  );
+  const { data: engagement, refetch: refetchEngagement } = useGetModuleEngagementQuery(
+    firstUnlockedModule?.id ?? "",
+    { skip: !firstUnlockedModule },
+  );
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refetchProgress(), refetchEngagement()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetchProgress, refetchEngagement]);
 
   if (!gate.ready) {
     return (
@@ -90,7 +115,10 @@ export function LearningJourneyScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 96 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         <View className="mb-6">
           <Text className="text-slate-500 text-sm">
             Hi{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}!
@@ -98,6 +126,28 @@ export function LearningJourneyScreen() {
           <Text className="text-slate-900 text-3xl font-extrabold mt-1">My Learning</Text>
           <Text className="text-slate-500 mt-1">Track where you&apos;re headed</Text>
         </View>
+
+        {engagement ? (
+          <View
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 24,
+              shadowColor: "#0f172a",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.04,
+              shadowRadius: 4,
+              elevation: 1,
+            }}
+          >
+            <CefrProgressBar
+              currentPct={engagement.cefr_progress_pct}
+              nextBand={engagement.next_cefr_band}
+              label="CEFR progress"
+            />
+          </View>
+        ) : null}
 
         <TimelineRow
           title="Free Content"
@@ -134,19 +184,29 @@ export function LearningJourneyScreen() {
         {days?.slice(0, 12)?.map((day, idx) => {
           const dayNumber = idx + 1;
           const isLocked = dayNumber > completedDays + 1;
+          const isCompleted = dayNumber <= completedDays;
+          const hours = day.duration_hours ?? 0.25;
+          const minutes = Math.max(1, Math.round(hours * 60));
+          const subtitle = isLocked
+            ? `~${minutes} min · locked`
+            : isCompleted
+              ? `Done · ${minutes} min`
+              : `Tap to start · ~${minutes} min`;
           return (
             <TimelineRow
               key={day.id}
               title={`Day ${dayNumber}`}
-              subtitle={isLocked ? "Complete previous stages to unlock" : "Tap to start"}
-              state={
-                isLocked ? "locked" : dayNumber === completedDays + 1 ? "available" : "completed"
-              }
+              subtitle={subtitle}
+              state={isLocked ? "locked" : isCompleted ? "completed" : "available"}
               badgeLabel={isLocked ? "Locked" : undefined}
               onPress={
                 isLocked
                   ? undefined
-                  : () => router.push(`/learning-journey/module/${day.id}` as never)
+                  : () =>
+                      router.push({
+                        pathname: `/learning-journey/module/${day.id}` as never,
+                        params: { module_id: firstUnlockedModule?.id ?? "" },
+                      })
               }
               isLast={idx === Math.min(11, totalDays - 1)}
             />

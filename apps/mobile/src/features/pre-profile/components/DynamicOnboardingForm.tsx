@@ -4,10 +4,12 @@ import { OnboardingQuestion } from "@/services/onboarding-api";
 import * as DocumentPicker from "expo-document-picker";
 import { DatePicker } from "./DatePicker";
 
+type OnboardingValue = string | string[] | boolean | null;
+
 interface Props {
   questions: OnboardingQuestion[];
-  formData: Record<string, any>;
-  onInputChange: (key: string, value: any) => void;
+  formData: Record<string, OnboardingValue>;
+  onInputChange: (key: string, value: OnboardingValue) => void;
   hideLabel?: boolean;
 }
 

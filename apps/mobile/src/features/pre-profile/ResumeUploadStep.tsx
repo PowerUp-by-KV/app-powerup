@@ -42,11 +42,10 @@ export function ResumeUploadStep() {
     try {
       const formData = new FormData();
       formData.append("file", {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         uri: picked.uri,
         name: picked.name,
         type: picked.mimeType ?? "application/pdf",
-      } as unknown as Blob);
+      } as unknown as File);
       await uploadResume(formData).unwrap();
       await goToAssessment();
     } catch (err) {

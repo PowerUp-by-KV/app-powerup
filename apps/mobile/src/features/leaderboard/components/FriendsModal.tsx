@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Modal, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import {
@@ -127,7 +136,12 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
                   <Text className="text-slate-900 font-semibold">{item.name}</Text>
                   <Text className="text-slate-500 text-xs">{item.points} pts</Text>
                 </View>
-                <Pressable className="border border-slate-300 rounded-full px-3 py-1.5">
+                <Pressable
+                  className="border border-slate-300 rounded-full px-3 py-1.5"
+                  onPress={() =>
+                    Alert.alert("Coming Soon", "Friend profiles are not available yet.")
+                  }
+                >
                   <Text className="text-slate-900 text-xs font-bold">View Profile</Text>
                 </Pressable>
               </View>

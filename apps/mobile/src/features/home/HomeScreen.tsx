@@ -40,7 +40,7 @@ export function HomeScreen() {
           badgesCount={profile?.badges_count ?? 0}
           xpPoints={profile?.total_xp ?? 0}
           modulesCompleted={profile?.modules_completed ?? 0}
-          totalModules={profile?.total_modules ?? 13}
+          totalModules={profile?.total_modules ?? null}
           onTrack={() => router.push("/(tabs)/my-learning" as never)}
         />
 
@@ -70,7 +70,7 @@ export function HomeScreen() {
             {
               title: "Interview Buddy",
               subtitle: "Practice with a buddy before it counts",
-              onPress: () => router.push("/mock-interview" as never),
+              onPress: () => router.push("/ai-interview" as never),
             },
           ]}
         />

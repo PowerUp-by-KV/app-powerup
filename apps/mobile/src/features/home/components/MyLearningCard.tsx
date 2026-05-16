@@ -6,7 +6,7 @@ interface MyLearningCardProps {
   badgesCount: number;
   xpPoints: number;
   modulesCompleted: number;
-  totalModules: number;
+  totalModules: number | null;
   onTrack: () => void;
 }
 
@@ -30,7 +30,10 @@ export function MyLearningCard({
   totalModules,
   onTrack,
 }: MyLearningCardProps) {
-  const pct = totalModules > 0 ? Math.round((modulesCompleted / totalModules) * 100) : 0;
+  const pct =
+    totalModules != null && totalModules > 0
+      ? Math.round((modulesCompleted / totalModules) * 100)
+      : 0;
   return (
     <View className="bg-white rounded-3xl p-4 border border-slate-100 mb-6">
       <Text className="text-slate-900 text-base font-bold mb-3 text-center">My Learning</Text>
@@ -42,7 +45,8 @@ export function MyLearningCard({
       <View className="mb-3">
         <View className="flex-row justify-between mb-1.5">
           <Text className="text-slate-500 text-xs">
-            {modulesCompleted} / {totalModules} modules
+            {modulesCompleted}
+            {totalModules != null ? ` / ${totalModules}` : ""} modules
           </Text>
           <Text className="text-slate-900 text-xs font-bold">{pct}%</Text>
         </View>

@@ -30,14 +30,17 @@ export interface ModuleDay {
   module_id: string;
   day_number: number;
   phase: number;
+  duration_hours?: number | null;
 }
 
 export interface Activity {
   id: string;
   day_id: string;
   activity_type: ActivityType;
+  skill_type?: string;
   title: string | null;
   order_index: number;
+  duration_hours?: number | null;
 }
 
 export interface ActivityQuestion {
