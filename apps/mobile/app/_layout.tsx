@@ -85,6 +85,7 @@ export default function AuthLayout() {
           <Stack.Screen name="listen" />
           <Stack.Screen name="results" />
           <Stack.Screen name="dashboard" />
+          <Stack.Screen name="mock-interview" />
         </Stack>
       </RouteGuard>
     </Provider>
