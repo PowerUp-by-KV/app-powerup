@@ -1,177 +1,171 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
   Text,
-  TextInput,
   Pressable,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  SafeAreaView,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setAnswerMode } from "@/store/slices/mock-interview.slice";
+import type { Href } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+
+const SCREEN_TITLE = "Convo Coach";
+const ROUTE_FEEDBACK = "/mock-interview/feedback" as Href;
+const ROUTE_RESULT = "/mock-interview/result" as Href;
+const ROUTE_HOME = "/(tabs)" as Href;
+import { useAppSelector } from "@/store/hooks";
 import { useGetNextQuestionQuery, useSubmitAnswerMutation } from "@/services/mock-interview-api";
+import type { SubmitAnswerResponse } from "@/services/mock-interview-api";
 import { useVoiceRecorder } from "./hooks/useVoiceRecorder";
 
 // ---------------------------------------------------------------------------
-// Sub-component: ProgressBar
+// Score circle — drawn purely with Views (no SVG dependency)
 // ---------------------------------------------------------------------------
 
-interface ProgressBarProps {
-  current: number;
-  total: number;
-}
+function ScoreCircle({ pct, label }: { pct: number; label: string }) {
+  const radius = 36;
+  const stroke = 5;
+  const normalised = Math.min(100, Math.max(0, pct));
+  const spinAnim = useRef(new Animated.Value(0)).current;
 
-function ProgressBar({ current, total }: ProgressBarProps) {
-  const pct = total > 0 ? Math.min((current / total) * 100, 100) : 0;
+  useEffect(() => {
+    Animated.timing(spinAnim, {
+      toValue: normalised / 100,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, [normalised]);
+
   return (
-    <View className="h-1.5 bg-gray-200 rounded-full overflow-hidden mt-2">
-      <View className="h-full bg-blue-500 rounded-full" style={{ width: `${pct}%` }} />
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-component: MicIcon  (drawn with Views, no SVG dependency)
-// ---------------------------------------------------------------------------
-
-function MicIcon({ color = "#fff" }: { color?: string }) {
-  return (
-    <View className="items-center">
-      {/* Mic capsule */}
+    <View style={{ alignItems: "center", flex: 1 }}>
       <View
         style={{
-          width: 12,
-          height: 18,
-          borderRadius: 6,
-          backgroundColor: color,
+          width: radius * 2,
+          height: radius * 2,
+          borderRadius: radius,
+          borderWidth: stroke,
+          borderColor: "#e2e8f0",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
         }}
-      />
-      {/* Mic arm */}
-      <View
+      >
+        {/* Animated arc — rotates spinAnim (0→1) via interpolate */}
+        <Animated.View
+          style={{
+            position: "absolute",
+            width: radius * 2,
+            height: radius * 2,
+            borderRadius: radius,
+            borderWidth: stroke,
+            borderColor: "#3b82f6",
+            borderRightColor: normalised > 25 ? "#3b82f6" : "transparent",
+            borderTopColor: normalised > 50 ? "#3b82f6" : "transparent",
+            borderLeftColor: normalised > 75 ? "#3b82f6" : "transparent",
+            transform: [
+              {
+                rotate: spinAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "360deg"],
+                }),
+              },
+            ],
+          }}
+        />
+        <Text style={{ fontSize: 18, fontWeight: "800", color: "#1e293b" }}>{pct}%</Text>
+      </View>
+      <Text
         style={{
-          width: 20,
-          height: 10,
-          borderLeftWidth: 2,
-          borderRightWidth: 2,
-          borderBottomWidth: 2,
-          borderColor: color,
-          borderBottomLeftRadius: 10,
-          borderBottomRightRadius: 10,
-          marginTop: -1,
+          fontSize: 11,
+          color: "#64748b",
+          marginTop: 6,
+          textAlign: "center",
+          lineHeight: 14,
         }}
-      />
-      {/* Stand */}
-      <View style={{ width: 2, height: 4, backgroundColor: color }} />
-      <View style={{ width: 12, height: 2, backgroundColor: color, borderRadius: 1 }} />
-    </View>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sub-component: VoiceRecorderCard
-// ---------------------------------------------------------------------------
-
-interface VoiceRecorderCardProps {
-  isRecording: boolean;
-  onToggle: () => void;
-}
-
-function VoiceRecorderCard({ isRecording, onToggle }: VoiceRecorderCardProps) {
-  return (
-    <View
-      className="bg-white rounded-2xl p-10 items-center"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-      }}
-    >
-      <Pressable onPress={onToggle} style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}>
-        <View
-          className={`w-16 h-16 rounded-full items-center justify-center ${
-            isRecording ? "bg-red-400" : "bg-blue-500"
-          }`}
-        >
-          {isRecording ? (
-            // Stop square
-            <View className="w-5 h-5 bg-white rounded-sm" />
-          ) : (
-            <MicIcon />
-          )}
-        </View>
-      </Pressable>
-
-      <Text className="text-sm font-semibold text-gray-800 mt-5">
-        {isRecording ? "Recording..." : "Tap to record"}
+      >
+        {label}
       </Text>
-      {isRecording && <Text className="text-xs text-gray-400 mt-1">Tap again to stop</Text>}
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Sub-component: TextAnswerCard
+// Score bar row
 // ---------------------------------------------------------------------------
 
-interface TextAnswerCardProps {
-  value: string;
-  onChange: (text: string) => void;
-}
-
-function TextAnswerCard({ value, onChange }: TextAnswerCardProps) {
+function ScoreBar({ label, pct }: { label: string; pct: number }) {
   return (
-    <View
-      className="bg-white rounded-2xl overflow-hidden border-2 border-blue-400"
-      style={{
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-      }}
-    >
-      <TextInput
-        value={value}
-        onChangeText={onChange}
-        multiline
-        placeholder="Type your answer here..."
-        placeholderTextColor="#D1D5DB"
-        className="p-4 text-sm text-gray-900"
-        style={{ minHeight: 160, textAlignVertical: "top" }}
-        autoFocus
-      />
+    <View style={{ marginBottom: 12 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+        <Text style={{ fontSize: 13, color: "#475569", fontWeight: "500" }}>{label}</Text>
+        <Text style={{ fontSize: 13, color: "#1e293b", fontWeight: "700" }}>{pct}%</Text>
+      </View>
+      <View style={{ height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, overflow: "hidden" }}>
+        <View
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            backgroundColor: "#1e293b",
+            borderRadius: 3,
+          }}
+        />
+      </View>
     </View>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Main Screen
+// Control bar icon button
+// ---------------------------------------------------------------------------
+
+function ControlBtn({
+  children,
+  onPress,
+  red,
+}: {
+  children: React.ReactNode;
+  onPress?: () => void;
+  red?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        width: red ? 52 : 40,
+        height: red ? 52 : 40,
+        borderRadius: red ? 26 : 20,
+        backgroundColor: red ? "#ef4444" : "rgba(255,255,255,0.15)",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: pressed ? 0.75 : 1,
+      })}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen
 // ---------------------------------------------------------------------------
 
 export function MockInterviewQuestionScreen() {
   const router = useRouter();
-  const dispatch = useAppDispatch();
 
-  // ── Redux ─────────────────────────────────────────────────────────────────
   const sessionId = useAppSelector((s) => s.mockInterview.sessionId);
   const currentQuestionText = useAppSelector((s) => s.mockInterview.currentQuestionText);
   const currentQuestionId = useAppSelector((s) => s.mockInterview.currentQuestionId);
   const currentQuestionOrder = useAppSelector((s) => s.mockInterview.currentQuestionOrder);
   const totalQuestions = useAppSelector((s) => s.mockInterview.totalQuestions);
-  const answerMode = useAppSelector((s) => s.mockInterview.answerMode);
   const isComplete = useAppSelector((s) => s.mockInterview.isComplete);
 
-  // ── Local state (justified: text input is single-component, resets on leave) ──
-  const [typedAnswer, setTypedAnswer] = useState("");
+  const [lastScore, setLastScore] = useState<SubmitAnswerResponse | null>(null);
+  const [transcript, setTranscript] = useState("");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // ── RTK Query ─────────────────────────────────────────────────────────────
-  // onQueryStarted in mock-interview-api.ts auto-dispatches setCurrentQuestion
-  // or markComplete into Redux — no manual dispatch needed here.
   const { isLoading: isLoadingQuestion, isError: questionError } = useGetNextQuestionQuery(
     sessionId ?? "",
     { skip: !sessionId },
@@ -179,157 +173,332 @@ export function MockInterviewQuestionScreen() {
 
   const [submitAnswer, { isLoading: isSubmitting }] = useSubmitAnswerMutation();
 
-  // ── Voice recorder ────────────────────────────────────────────────────────
   const { isRecording, audioFile, startRecording, stopRecording } = useVoiceRecorder();
 
-  // ── Navigate to result when the API signals the session is done ───────────
   useEffect(() => {
     if (isComplete) {
-      router.replace("/mock-interview/result" as any);
+      router.replace(ROUTE_RESULT);
     }
   }, [isComplete, router]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
-  const handleToggleMode = useCallback(() => {
-    dispatch(setAnswerMode(answerMode === "voice" ? "text" : "voice"));
-  }, [dispatch, answerMode]);
-
-  const handleVoiceToggle = useCallback(() => {
+  const handleRecordToggle = useCallback(() => {
     if (isRecording) {
       stopRecording();
     } else {
+      setTranscript("");
       startRecording();
     }
   }, [isRecording, startRecording, stopRecording]);
 
   const handleSubmit = useCallback(async () => {
     if (!sessionId || !currentQuestionId) return;
+    setSubmitError(null);
     try {
-      await submitAnswer({
+      const result = await submitAnswer({
         sessionId,
         questionId: currentQuestionId,
-        audioFile: answerMode === "voice" ? (audioFile ?? undefined) : undefined,
-        transcript: answerMode === "text" ? typedAnswer : undefined,
+        audioFile: audioFile ?? undefined,
+        transcript: transcript || undefined,
       }).unwrap();
-
-      // onQueryStarted in the api service dispatches addFeedback to Redux,
-      // so the Feedback screen can read it immediately without another call.
-      setTypedAnswer("");
-      router.push("/mock-interview/feedback" as any);
+      setLastScore(result);
+      setTranscript("");
+      router.push(ROUTE_FEEDBACK);
     } catch {
-      // TODO: wire up toast utility
+      setSubmitError("Submission failed. Please try again.");
     }
-  }, [sessionId, currentQuestionId, answerMode, audioFile, typedAnswer, submitAnswer, router]);
+  }, [sessionId, currentQuestionId, audioFile, transcript, submitAnswer, router]);
 
-  // ── Submit button readiness ───────────────────────────────────────────────
-  const voiceReady = answerMode === "voice" && audioFile !== null && !isRecording;
-  const textReady = answerMode === "text" && typedAnswer.trim().length > 0;
-  const canSubmit = (voiceReady || textReady) && !isSubmitting;
+  const criteriaScores = lastScore?.score_breakdown?.criteria_scores ?? [];
+  const findByName = (keyword: string, fallbackIdx: number) => {
+    const match = criteriaScores.find((c) => c.name.toLowerCase().includes(keyword));
+    return Math.round(
+      Math.min(100, (match?.score ?? criteriaScores[fallbackIdx]?.score ?? 0) * 10),
+    );
+  };
+  const commPct = lastScore ? Math.round(Math.min(100, (lastScore.score ?? 0) * 10)) : 0;
+  const clarityPct = findByName("clarity", 0);
+  const relevancePct = findByName("relevance", 1);
+  const confidencePct = findByName("confidence", 2);
+  const behaviourPct = lastScore ? Math.round((relevancePct + confidencePct) / 2) : 0;
 
-  // ── States: loading / error ───────────────────────────────────────────────
+  const canSubmit = !isSubmitting && (audioFile !== null || transcript.length > 0) && !isRecording;
 
   if (isLoadingQuestion) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#f8fafc",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#3b82f6" />
       </View>
     );
   }
 
   if (questionError) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center px-10">
-        <Text className="text-gray-500 text-sm text-center leading-6">
-          Failed to load the next question.{"\n"}Please check your connection.
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#f8fafc",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 40,
+        }}
+      >
+        <Text style={{ color: "#94a3b8", textAlign: "center", fontSize: 14, lineHeight: 22 }}>
+          Failed to load question.{"\n"}Check your connection and try again.
         </Text>
       </View>
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-gray-100"
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ padding: 20, paddingTop: 48 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Progress */}
-        <Text className="text-xs font-medium text-gray-500">
-          Question {currentQuestionOrder} of {totalQuestions}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }}>
+      {/* ── Top header ────────────────────────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+        <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", textAlign: "center" }}>
+          {SCREEN_TITLE}
         </Text>
-        <ProgressBar current={currentQuestionOrder} total={totalQuestions} />
+      </View>
 
-        {/* Question card */}
+      {/* ── Dark video area ────────────────────────────────────────────────── */}
+      <View style={{ height: 240, backgroundColor: "#111827", position: "relative" }}>
+        {/* Recording badge */}
         <View
-          className="bg-white rounded-2xl p-5 mt-6"
           style={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.06,
-            shadowRadius: 4,
-            elevation: 2,
+            position: "absolute",
+            top: 16,
+            left: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+            paddingHorizontal: 10,
+            paddingVertical: 5,
+            borderRadius: 20,
+            gap: 6,
           }}
         >
-          <Text className="text-sm text-gray-800 leading-6">{currentQuestionText}</Text>
+          <View
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: isRecording ? "#ef4444" : "#94a3b8",
+            }}
+          />
+          <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }}>
+            {isRecording ? "Recording" : "Ready"}
+          </Text>
         </View>
 
-        {/* Answer area */}
-        <View className="mt-4">
-          {answerMode === "voice" ? (
-            <VoiceRecorderCard isRecording={isRecording} onToggle={handleVoiceToggle} />
-          ) : (
-            <TextAnswerCard value={typedAnswer} onChange={setTypedAnswer} />
+        {/* Thumbnail */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 64,
+            right: 16,
+            width: 72,
+            height: 96,
+            backgroundColor: "#1e293b",
+            borderRadius: 10,
+            borderWidth: 1.5,
+            borderColor: "rgba(255,255,255,0.15)",
+          }}
+        />
+
+        {/* Control bar */}
+        <View
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 56,
+            backgroundColor: "rgba(0,0,0,0.6)",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 20,
+            paddingHorizontal: 24,
+          }}
+        >
+          <ControlBtn onPress={handleRecordToggle}>
+            <Ionicons
+              name={isRecording ? "mic" : "mic-outline"}
+              size={20}
+              color={isRecording ? "#ef4444" : "#fff"}
+            />
+          </ControlBtn>
+          <ControlBtn>
+            <Ionicons name="videocam-outline" size={20} color="#fff" />
+          </ControlBtn>
+          <ControlBtn
+            red
+            onPress={() => {
+              router.replace(ROUTE_HOME);
+            }}
+          >
+            <Ionicons
+              name="call"
+              size={22}
+              color="#fff"
+              style={{ transform: [{ rotate: "135deg" }] }}
+            />
+          </ControlBtn>
+          <ControlBtn>
+            <Ionicons name="settings-outline" size={20} color="#fff" />
+          </ControlBtn>
+          <ControlBtn>
+            <Ionicons name="person-outline" size={20} color="#fff" />
+          </ControlBtn>
+        </View>
+      </View>
+
+      {/* ── Content area ──────────────────────────────────────────────────── */}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+        }}
+      >
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Question row */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#94a3b8", letterSpacing: 0.3 }}>
+              Questions {currentQuestionOrder ?? 1} of {totalQuestions ?? 10}
+            </Text>
+            <Ionicons name="volume-medium-outline" size={18} color="#94a3b8" />
+          </View>
+
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: "600",
+              color: "#1e293b",
+              lineHeight: 24,
+              marginBottom: 16,
+            }}
+          >
+            {currentQuestionText ?? "Tell me more about yourself and why you chose this company?"}
+          </Text>
+
+          {/* Divider */}
+          <View style={{ height: 1, backgroundColor: "#f1f5f9", marginBottom: 14 }} />
+
+          {/* Transcript */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, fontWeight: "700", color: "#64748b" }}>Transcript</Text>
+            <Ionicons name="volume-medium" size={16} color="#3b82f6" />
+          </View>
+          <Text
+            style={{
+              fontSize: 13,
+              color: "#94a3b8",
+              lineHeight: 20,
+              marginBottom: 20,
+              fontStyle: "italic",
+            }}
+          >
+            {isRecording ? "Listening..." : transcript || "Tap the mic to start speaking..."}
+          </Text>
+
+          {/* Score circles — shown after first answer */}
+          {lastScore && (
+            <>
+              <View style={{ flexDirection: "row", marginBottom: 20, gap: 12 }}>
+                <ScoreCircle pct={commPct} label={"Communication\nScore"} />
+                <ScoreCircle pct={behaviourPct} label={"Behaviour\nScore"} />
+              </View>
+
+              {/* Score analysis */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 14,
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "800", color: "#1e293b" }}>
+                  Score Analysis
+                </Text>
+                <View
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    borderWidth: 1.5,
+                    borderColor: "#94a3b8",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 10, color: "#94a3b8", fontWeight: "700" }}>i</Text>
+                </View>
+              </View>
+
+              <ScoreBar label="Clarity & Articulation" pct={clarityPct} />
+              <ScoreBar label="Listening & Responsiveness" pct={relevancePct} />
+              <ScoreBar label="Verbal Fluency" pct={confidencePct} />
+            </>
           )}
-        </View>
 
-        {/* Mode toggle link */}
-        <Pressable
-          onPress={handleToggleMode}
-          className="flex-row items-center justify-center mt-5 py-1"
-          style={({ pressed }) => ({ opacity: pressed ? 0.55 : 1 })}
-        >
-          <Text className="text-xs text-gray-500 mr-1.5">
-            {answerMode === "voice" ? "⌨️" : "🎙️"}
-          </Text>
-          <Text className="text-xs text-gray-500">
-            {answerMode === "voice" ? "Type answer instead" : "Record answer instead"}
-          </Text>
-        </Pressable>
+          {/* Submit button */}
+          <Pressable
+            onPress={handleSubmit}
+            disabled={!canSubmit}
+            style={({ pressed }) => ({
+              marginTop: 16,
+              backgroundColor: canSubmit ? "#1e293b" : "#e2e8f0",
+              borderRadius: 14,
+              paddingVertical: 16,
+              alignItems: "center",
+              opacity: pressed && canSubmit ? 0.8 : 1,
+            })}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color={canSubmit ? "#fff" : "#94a3b8"} />
+            ) : (
+              <Text
+                style={{ color: canSubmit ? "#fff" : "#94a3b8", fontWeight: "700", fontSize: 15 }}
+              >
+                Submit Answer
+              </Text>
+            )}
+          </Pressable>
 
-        {/* Spacer to clear sticky footer */}
-        <View className="h-24" />
-      </ScrollView>
-
-      {/* Sticky Submit footer */}
-      <View className="px-5 pb-10 pt-4 bg-gray-100">
-        <Pressable
-          onPress={handleSubmit}
-          disabled={!canSubmit}
-          className={`rounded-2xl py-4 items-center justify-center ${
-            canSubmit ? "bg-blue-500" : "bg-gray-200"
-          }`}
-          style={({ pressed }) => ({
-            opacity: pressed && canSubmit ? 0.82 : 1,
-          })}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={canSubmit ? "#fff" : "#9CA3AF"} />
-          ) : (
+          {submitError && (
             <Text
-              className={`font-semibold text-base ${canSubmit ? "text-white" : "text-gray-400"}`}
+              style={{
+                marginTop: 10,
+                color: "#ef4444",
+                fontSize: 13,
+                textAlign: "center",
+                fontWeight: "500",
+              }}
             >
-              Submit Answer
+              {submitError}
             </Text>
           )}
-        </Pressable>
+        </ScrollView>
       </View>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

@@ -13,40 +13,50 @@ export interface StartInterviewRequest {
 }
 
 export interface StartInterviewResponse {
-  id: string; // SESSION_UUID
-  status: "in_progress";
-  cefr_level: string;
-  domain: string;
+  id: string;
+  status: string;
+  cefr_level: string | null;
+  domain: string | null;
   total_questions: number;
-  created_at: string;
+  questions_answered: number;
+  started_at: string | null;
 }
 
-// GET /next — two possible shapes
+// GET /next — backend sends the question object (no complete field) or {complete: true}
 export type NextQuestionResponse =
   | {
-      complete: false;
+      complete?: false;
       question_id: string;
       question_text: string;
       question_order: number;
+      question_type?: string;
+      follow_up_prompts?: string[];
     }
   | { complete: true };
 
 export interface SubmitAnswerRequest {
   sessionId: string;
   questionId: string;
-  audioFile?: File; // voice path — optional
-  transcript?: string; // text fallback — optional
+  audioFile?: File;
+  transcript?: string;
+}
+
+export interface CriteriaScore {
+  name: string;
+  score: number;
+  feedback: string;
 }
 
 export interface SubmitAnswerResponse {
-  score: number;
-  feedback: string;
+  answer_id: string;
+  score: number | null;
+  feedback: string | null;
+  score_breakdown: {
+    criteria_scores: CriteriaScore[];
+    cefr_alignment: string;
+  } | null;
   questions_remaining: number;
-  criteria_breakdown: {
-    clarity: number;
-    relevance: number;
-    confidence: number;
-  };
+  session_complete: boolean;
 }
 
 // Attempt shape returned by GET /mock-interview (past attempts list)
@@ -55,9 +65,10 @@ export interface SubmitAnswerResponse {
 export interface InterviewAttempt {
   id: string;
   status: "in_progress" | "completed";
-  score: number | null;
   total_questions: number;
-  created_at: string;
+  questions_answered: number;
+  total_score: number | null;
+  started_at: string | null;
 }
 
 export interface GetAttemptsResponse {
@@ -65,17 +76,18 @@ export interface GetAttemptsResponse {
 }
 
 export interface InterviewResultAnswer {
+  id: string;
   question_id: string;
-  question_text: string;
   question_order: number;
-  transcript: string;
-  score: number;
-  feedback: string;
-  criteria_breakdown: {
-    clarity: number;
-    relevance: number;
-    confidence: number;
-  };
+  transcript: string | null;
+  audio_url: string | null;
+  score: number | null;
+  feedback: string | null;
+  score_breakdown: {
+    criteria_scores: CriteriaScore[];
+    cefr_alignment: string;
+  } | null;
+  answered_at: string;
 }
 
 export interface GetInterviewResultsResponse {
@@ -83,11 +95,12 @@ export interface GetInterviewResultsResponse {
     id: string;
     status: string;
     total_questions: number;
-    created_at: string;
+    questions_answered: number;
+    total_score: number | null;
+    started_at: string | null;
   };
   answers: InterviewResultAnswer[];
-  grade: string; // e.g. "Excellent", "Very Good"
-  overall_score: number;
+  grade: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +108,7 @@ export interface GetInterviewResultsResponse {
 // ---------------------------------------------------------------------------
 
 const mockInterviewApi = api.injectEndpoints({
+  overrideExisting: false,
   endpoints: (builder) => ({
     // ── 1. Start a new session ─────────────────────────────────────────────
     startInterview: builder.mutation<StartInterviewResponse, StartInterviewRequest>({
@@ -158,22 +172,27 @@ const mockInterviewApi = api.injectEndpoints({
       async onQueryStarted(arg, { dispatch, queryFulfilled, getState }) {
         try {
           const { data } = await queryFulfilled;
-
-          // We need the current question's text to store alongside the feedback.
-          // Pull it from Redux state.
           const state = getState() as any;
+
+          // Map the criteria_scores array to the fixed-key shape the slice expects.
+          // The AI returns dynamic criterion names — match by substring or fall back by index.
+          const criteriaScores = data.score_breakdown?.criteria_scores ?? [];
+          const findByName = (keyword: string, fallbackIdx: number) => {
+            const match = criteriaScores.find((c) => c.name.toLowerCase().includes(keyword));
+            return match?.score ?? criteriaScores[fallbackIdx]?.score ?? 0;
+          };
 
           const feedback: PerQuestionFeedback = {
             questionId: arg.questionId,
             questionText: state.mockInterview.currentQuestionText ?? "",
             questionOrder: state.mockInterview.currentQuestionOrder,
-            score: data.score,
-            feedback: data.feedback,
+            score: data.score ?? 0,
+            feedback: data.feedback ?? "",
             transcript: arg.transcript ?? "",
             criteriaBreakdown: {
-              clarity: data.criteria_breakdown?.clarity ?? 0,
-              relevance: data.criteria_breakdown?.relevance ?? 0,
-              confidence: data.criteria_breakdown?.confidence ?? 0,
+              clarity: findByName("clarity", 0),
+              relevance: findByName("relevance", 1),
+              confidence: findByName("confidence", 2),
             },
           };
 
@@ -195,7 +214,6 @@ const mockInterviewApi = api.injectEndpoints({
       query: () => "/mock-interview/attempts",
     }),
   }),
-  overrideExisting: false,
 });
 
 export const {
