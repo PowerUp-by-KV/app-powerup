@@ -70,7 +70,7 @@ export function HomeScreen() {
             {
               title: "Interview Buddy",
               subtitle: "Practice with a buddy before it counts",
-              onPress: () => router.push("/mock-interview" as never),
+              onPress: () => router.push("/ai-interview" as never),
             },
           ]}
         />

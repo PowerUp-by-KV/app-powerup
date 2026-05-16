@@ -19,7 +19,12 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as SecureStore from "expo-secure-store";
-import { useUploadResumeMutation, useDeleteResumeMutation } from "@/services/resume-api";
+import {
+  useUploadResumeMutation,
+  useDeleteResumeMutation,
+  useGetResumeQuery,
+} from "@/services/resume-api";
+import { useGetProfileQuery } from "@/services/auth-api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setCurrentStep,
@@ -89,6 +94,10 @@ const getPickedDocument = (result: unknown): PickedResumeFile | undefined => {
 export function ResumeHomeScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { data: profile } = useGetProfileQuery();
+  const userId = (profile as { id?: string } | undefined)?.id ?? "";
+  const { data: existingResume } = useGetResumeQuery(userId, { skip: !userId });
+
   const hasExistingResume = useAppSelector(selectHasExistingResume);
   const error = useAppSelector(selectError);
   const formData = useAppSelector(selectFormData);
@@ -105,17 +114,13 @@ export function ResumeHomeScreen() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isSubmittingRef = useRef(false);
 
+  // Pre-load existing resume into Redux store when the user already uploaded one.
   useEffect(() => {
-    const initializeResume = async () => {
-      try {
-        // Reset state on mount if needed
-      } catch (error) {
-        console.log("Failed to initialize:", error);
-      }
-    };
-
-    initializeResume();
-  }, []);
+    if (existingResume && existingResume.parse_status === "completed") {
+      dispatch(loadResumeData(existingResume));
+      dispatch(setHasExistingResume(true));
+    }
+  }, [existingResume, dispatch]);
 
   const handleFileSelect = async (file: PickedResumeFile) => {
     if (!file) return;
