@@ -3,9 +3,54 @@
  * RTK Query endpoints for resume management with comprehensive error handling
  */
 
-import type { ResumeParsedData, ResumeUploadResponse } from "@app-powerup/shared";
 import { api } from "./api";
 import { ApiErrorHandler } from "./error-handler";
+
+export interface ResumeRead {
+  id: string;
+  user_id: string;
+  filename: string | null;
+  file_url: string | null;
+  parse_status: "processing" | "completed" | "failed";
+  parse_error: string | null;
+  skills: string[];
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  summary: string | null;
+}
+
+interface ResumeParsedData {
+  contact: {
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    linkedin?: string;
+    location?: string;
+  };
+  summary?: { text?: string };
+  education?: {
+    school?: string;
+    degree?: string;
+    field?: string;
+    graduationDate?: string;
+    details?: string;
+  }[];
+  experience?: {
+    company?: string;
+    position?: string;
+    startDate?: string;
+    endDate?: string | null;
+    description?: string;
+  }[];
+  skills?: (string | { name?: string })[];
+  projects?: { name?: string; description?: string; technologies?: string[] }[];
+  certifications?: (string | { name?: string })[];
+  achievements?: (string | { name?: string })[];
+  languages?: (string | { name?: string })[];
+  extracurricular?: (string | { name?: string })[];
+}
 
 type NamedResumeValue = string | { name?: string };
 
@@ -21,7 +66,7 @@ const getResumeValueName = (value: NamedResumeValue) =>
 export const resumeApi = api.injectEndpoints({
   endpoints: (builder) => ({
     // POST /v1/resume/upload - Upload PDF and parse
-    uploadResume: builder.mutation<ResumeUploadResponse, FormData>({
+    uploadResume: builder.mutation<ResumeRead, FormData>({
       query: (formData) => ({
         url: "/v1/resume/upload",
         method: "POST",
@@ -47,7 +92,7 @@ export const resumeApi = api.injectEndpoints({
     }),
 
     // GET /v1/resume/{user_id} - Fetch user's resume
-    getResume: builder.query<ResumeUploadResponse, string>({
+    getResume: builder.query<ResumeRead, string>({
       query: (userId) => ({
         url: `/v1/resume/${userId}`,
         method: "GET",
@@ -70,10 +115,7 @@ export const resumeApi = api.injectEndpoints({
     }),
 
     // PUT /v1/resume/{user_id} - Update resume
-    updateResume: builder.mutation<
-      ResumeUploadResponse,
-      { userId: string; data: ResumeParsedData }
-    >({
+    updateResume: builder.mutation<ResumeRead, { userId: string; data: ResumeParsedData }>({
       query: ({ userId, data }) => {
         // Reverse map frontend state back to backend schema
         const mappedData = {

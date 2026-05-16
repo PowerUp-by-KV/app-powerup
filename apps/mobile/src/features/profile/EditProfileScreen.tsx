@@ -131,18 +131,12 @@ export function EditProfileScreen() {
                 <Feather name="file-text" size={16} color="#4f46e5" />
                 <Text className="text-indigo-600 font-semibold text-sm">Resume uploaded</Text>
               </View>
-              {Array.isArray((resume as Record<string, unknown>).skills) &&
-                ((resume as Record<string, unknown>).skills as string[]).length > 0 && (
-                  <Text className="text-slate-500 text-xs" numberOfLines={2}>
-                    Skills:{" "}
-                    {((resume as Record<string, unknown>).skills as string[])
-                      .slice(0, 6)
-                      .join(", ")}
-                    {((resume as Record<string, unknown>).skills as string[]).length > 6
-                      ? ` +${((resume as Record<string, unknown>).skills as string[]).length - 6} more`
-                      : ""}
-                  </Text>
-                )}
+              {(resume.skills?.length ?? 0) > 0 && (
+                <Text className="text-slate-500 text-xs" numberOfLines={2}>
+                  Skills: {resume.skills.slice(0, 6).join(", ")}
+                  {resume.skills.length > 6 ? ` +${resume.skills.length - 6} more` : ""}
+                </Text>
+              )}
               <Pressable
                 onPress={handleResumeUpload}
                 disabled={uploading}

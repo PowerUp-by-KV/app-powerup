@@ -94,10 +94,7 @@ export default function AiInterviewScreen() {
   const [lastAnswer, setLastAnswer] = useState<AiAnswerResult | null>(null);
   const [transcript, setTranscript] = useState("");
 
-  const hasSkills =
-    resume?.parse_status === "completed" &&
-    Array.isArray((resume as Record<string, unknown>).skills) &&
-    ((resume as Record<string, unknown>).skills as unknown[]).length > 0;
+  const hasSkills = resume?.parse_status === "completed" && (resume.skills?.length ?? 0) > 0;
 
   const [createSession, { isLoading: creating }] = useCreateAiSessionMutation();
   const [fetchQuestion, { isFetching: fetchingQ }] = useLazyGetAiSessionQuestionQuery();
@@ -208,15 +205,9 @@ export default function AiInterviewScreen() {
           <View style={styles.card}>
             <Text style={styles.label}>Resume skills loaded</Text>
             <Text style={styles.cefrBadge}>
-              {((resume as Record<string, unknown>).skills as string[] | undefined)
-                ?.slice(0, 5)
-                .join(", ") ?? "—"}
-              {(((resume as Record<string, unknown>).skills as string[] | undefined)?.length ??
-              0 > 5)
-                ? " +" +
-                  (((resume as Record<string, unknown>).skills as string[] | undefined)?.length ??
-                    0 - 5) +
-                  " more"
+              {resume?.skills?.slice(0, 5).join(", ") ?? "—"}
+              {(resume?.skills?.length ?? 0) > 5
+                ? ` +${(resume?.skills?.length ?? 0) - 5} more`
                 : ""}
             </Text>
           </View>
