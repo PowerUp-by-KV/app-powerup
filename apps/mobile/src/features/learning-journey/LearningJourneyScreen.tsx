@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -55,33 +55,41 @@ function GateEmptyState({
 export function LearningJourneyScreen() {
   const router = useRouter();
   const gate = useLearningJourneyGate();
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const { data: profile } = useGetProfileQuery();
   const { data: personalizedPath } = useGetPersonalizedPathQuery(undefined, {
     skip: !gate.canEnter,
   });
-  const firstUnlockedModule = personalizedPath?.modules.find((m) => m.is_unlocked);
-  const { data: days, isLoading: daysLoading } = useGetModuleDaysQuery(
-    firstUnlockedModule?.id ?? "",
-    { skip: !firstUnlockedModule },
-  );
+  const selectedModule = useMemo(() => {
+    if (!personalizedPath?.modules.length) return null;
+    if (selectedModuleId) {
+      return personalizedPath.modules.find((m) => m.id === selectedModuleId) ?? null;
+    }
+    return null;
+  }, [personalizedPath?.modules, selectedModuleId]);
+  const { data: days, isLoading: daysLoading } = useGetModuleDaysQuery(selectedModule?.id ?? "", {
+    skip: !selectedModule,
+  });
   const { data: moduleProgress, refetch: refetchProgress } = useGetModuleProgressQuery(
-    firstUnlockedModule?.id ?? "",
-    { skip: !firstUnlockedModule },
+    selectedModule?.id ?? "",
+    { skip: !selectedModule },
   );
   const { data: engagement, refetch: refetchEngagement } = useGetModuleEngagementQuery(
-    firstUnlockedModule?.id ?? "",
-    { skip: !firstUnlockedModule },
+    selectedModule?.id ?? "",
+    { skip: !selectedModule },
   );
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchProgress(), refetchEngagement()]);
+      if (selectedModule) {
+        await Promise.all([refetchProgress(), refetchEngagement()]);
+      }
     } finally {
       setRefreshing(false);
     }
-  }, [refetchProgress, refetchEngagement]);
+  }, [refetchProgress, refetchEngagement, selectedModule]);
 
   if (!gate.ready) {
     return (
@@ -127,7 +135,16 @@ export function LearningJourneyScreen() {
           <Text className="text-slate-500 mt-1">Track where you&apos;re headed</Text>
         </View>
 
-        {engagement ? (
+        {selectedModule ? (
+          <Pressable
+            onPress={() => setSelectedModuleId(null)}
+            className="self-start bg-white border border-slate-200 px-4 py-2 rounded-xl mb-4 active:opacity-70"
+          >
+            <Text className="text-slate-700 font-bold">Back to modules</Text>
+          </Pressable>
+        ) : null}
+
+        {selectedModule && engagement ? (
           <View
             style={{
               backgroundColor: "#ffffff",
@@ -149,71 +166,71 @@ export function LearningJourneyScreen() {
           </View>
         ) : null}
 
-        <TimelineRow
-          title="Free Content"
-          subtitle="The Fundamentals of Communication"
-          state="completed"
-          badgeLabel="Completed"
-          progressPercent={100}
-          progressLabel="8 lessons completed · 350 XP"
-        />
-        <TimelineRow
-          title="Trial Content"
-          subtitle="Behaviour in Workplace"
-          state="completed"
-          badgeLabel="Completed"
-          progressPercent={100}
-          progressLabel="7 lessons completed · 250 XP"
-        />
-        <TimelineRow
-          title="Diagnostic Assessment"
-          subtitle="Assessing your skills"
-          state={personalizedPath?.cefr_band ? "completed" : "in_progress"}
-          badgeLabel={personalizedPath?.cefr_band ?? "In Progress"}
-          progressPercent={personalizedPath?.cefr_band ? 100 : 70}
-          progressLabel={personalizedPath?.cefr_band ? "Complete" : "3 lessons completed"}
-          onPress={() => router.push("/read")}
-        />
+        {!selectedModule &&
+          personalizedPath?.modules.map((module, idx) => (
+            <TimelineRow
+              key={module.id}
+              title={`Module ${module.module_no}: ${module.title}`}
+              subtitle={
+                module.is_unlocked
+                  ? "Tap to view days and activities"
+                  : "Locked until previous module is complete"
+              }
+              state={module.is_unlocked ? "available" : "locked"}
+              badgeLabel={module.is_unlocked ? personalizedPath.cefr_band : "Locked"}
+              onPress={module.is_unlocked ? () => setSelectedModuleId(module.id) : undefined}
+              isLast={idx === personalizedPath.modules.length - 1}
+            />
+          ))}
 
-        {daysLoading && (
+        {!selectedModule && personalizedPath && personalizedPath.modules.length === 0 ? (
+          <View className="bg-amber-50 rounded-2xl p-4 mt-2">
+            <Text className="text-amber-800 text-sm">
+              No modules are available yet. Pull to refresh once content is published.
+            </Text>
+          </View>
+        ) : null}
+
+        {selectedModule && daysLoading && (
           <View className="py-6 items-center">
             <ActivityIndicator color="#6366f1" />
           </View>
         )}
 
-        {days?.slice(0, 12)?.map((day, idx) => {
-          const dayNumber = idx + 1;
-          const isLocked = dayNumber > completedDays + 1;
-          const isCompleted = dayNumber <= completedDays;
-          const hours = day.duration_hours ?? 0.25;
-          const minutes = Math.max(1, Math.round(hours * 60));
-          const subtitle = isLocked
-            ? `~${minutes} min · locked`
-            : isCompleted
-              ? `Done · ${minutes} min`
-              : `Tap to start · ~${minutes} min`;
-          return (
-            <TimelineRow
-              key={day.id}
-              title={`Day ${dayNumber}`}
-              subtitle={subtitle}
-              state={isLocked ? "locked" : isCompleted ? "completed" : "available"}
-              badgeLabel={isLocked ? "Locked" : undefined}
-              onPress={
-                isLocked
-                  ? undefined
-                  : () =>
-                      router.push({
-                        pathname: `/learning-journey/module/${day.id}` as never,
-                        params: { module_id: firstUnlockedModule?.id ?? "" },
-                      })
-              }
-              isLast={idx === Math.min(11, totalDays - 1)}
-            />
-          );
-        })}
+        {selectedModule &&
+          days?.slice(0, 12)?.map((day, idx) => {
+            const dayNumber = idx + 1;
+            const isLocked = dayNumber > completedDays + 1;
+            const isCompleted = dayNumber <= completedDays;
+            const hours = day.duration_hours ?? 0.25;
+            const minutes = Math.max(1, Math.round(hours * 60));
+            const subtitle = isLocked
+              ? `~${minutes} min · locked`
+              : isCompleted
+                ? `Done · ${minutes} min`
+                : `Tap to start · ~${minutes} min`;
+            return (
+              <TimelineRow
+                key={day.id}
+                title={`Day ${dayNumber}`}
+                subtitle={subtitle}
+                state={isLocked ? "locked" : isCompleted ? "completed" : "available"}
+                badgeLabel={isLocked ? "Locked" : undefined}
+                onPress={
+                  isLocked
+                    ? undefined
+                    : () =>
+                        router.push({
+                          pathname: `/learning-journey/module/${day.id}` as never,
+                          params: { module_id: selectedModule?.id ?? "" },
+                        })
+                }
+                isLast={idx === Math.min(11, totalDays - 1)}
+              />
+            );
+          })}
 
-        {!daysLoading && totalDays === 0 && (
+        {selectedModule && !daysLoading && totalDays === 0 && (
           <View className="bg-amber-50 rounded-2xl p-4 mt-2">
             <Text className="text-amber-800 text-sm">
               No daily lessons available yet. Pull to refresh once content is published.

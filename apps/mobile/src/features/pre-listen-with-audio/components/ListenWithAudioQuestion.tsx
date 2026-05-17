@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { ListenWithAudioQuestion as IListenWithAudioQuestion } from "../types";
+import type { AssessmentQuestion } from "@/services/assessment-api";
 
 interface ListenWithAudioQuestionProps {
-  question: IListenWithAudioQuestion;
+  question: AssessmentQuestion;
   questionIndex: number;
   totalQuestions: number;
 }
@@ -33,13 +33,13 @@ export function ListenWithAudioQuestion({
       </View>
 
       <View className="bg-gray-100 p-4 rounded-lg mb-3">
-        {question.audioDuration && (
+        {question.recording_time_seconds && (
           <Text className="text-sm text-gray-600 mb-2">
-            Audio Duration: {question.audioDuration}s
+            Recording Time: {question.recording_time_seconds}s
           </Text>
         )}
-        {question.noOfLines && (
-          <Text className="text-sm text-gray-600">Content Lines: {question.noOfLines}</Text>
+        {question.no_of_lines && (
+          <Text className="text-sm text-gray-600">Content Lines: {question.no_of_lines}</Text>
         )}
       </View>
     </View>

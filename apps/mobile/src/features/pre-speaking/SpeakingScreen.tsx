@@ -53,13 +53,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
-  const questions =
-    sectionData?.questions ||
-    sectionData?.sentences ||
-    sectionData?.items ||
-    sectionData?.prompts ||
-    sectionData?.stories ||
-    [];
+  const questions = (sectionData?.prompts ?? []) as AssessmentQuestion[];
   const currentQuestion = questions[currentQuestionIndex];
 
   const [isRecording, setIsRecording] = useState(false);
@@ -67,11 +61,13 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRecording) {
       interval = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isRecording]);
 
   async function startRecording() {
@@ -95,16 +91,16 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }
   }
 
-  async function stopRecording(questionId?: string): Promise<boolean> {
-    if (!recording) return true;
+  async function stopRecording(questionId?: string): Promise<string | null> {
+    const targetId = questionId ?? currentQuestion?.id;
+    if (!recording) return targetId ? (answers[String(targetId)] ?? null) : null;
 
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     setRecording(null);
 
-    const targetId = questionId ?? currentQuestion?.id;
-    if (!uri || !targetId) return true;
+    if (!uri || !targetId) return null;
 
     setIsUploadingAudio(true);
     try {
@@ -117,11 +113,11 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
       const result = await uploadAudio(formData).unwrap();
       setAnswers((prev) => ({ ...prev, [targetId]: result.audio_url }));
-      return true;
+      return result.audio_url;
     } catch (err) {
       console.error("Audio upload failed", err);
       Alert.alert("Upload Failed", "Failed to upload your recording. Please try again.");
-      return false;
+      return null;
     } finally {
       setIsUploadingAudio(false);
     }
@@ -146,15 +142,22 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const handleFinish = async () => {
+    let nextAnswers = answers;
     if (isRecording) {
-      const success = await stopRecording();
-      if (!success) return;
+      const uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+      nextAnswers = { ...answers, [String(currentQuestion?.id)]: uploadedUrl };
+    }
+    const missingAnswer = questions.some((q: AssessmentQuestion) => !nextAnswers[String(q.id)]);
+    if (missingAnswer) {
+      Alert.alert("Recording required", "Please record every answer before submitting.");
+      return;
     }
     try {
       const formattedAnswers = questions.map((q: AssessmentQuestion) => ({
         question_id: q.id,
         answer: "",
-        audio_url: answers[q.id] ?? undefined,
+        audio_url: nextAnswers[String(q.id)] ?? undefined,
       }));
 
       const response = await submitSection({
@@ -167,14 +170,20 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {
+      console.error("Open speaking assessment submit failed", err);
       Alert.alert("Error", "Could not submit answers.");
     }
   };
 
   const handleNext = async () => {
+    let uploadedUrl: string | null = null;
     if (isRecording) {
-      const success = await stopRecording(currentQuestion?.id);
-      if (!success) return;
+      uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+    }
+    if (!uploadedUrl && !answers[String(currentQuestion.id)]) {
+      Alert.alert("Recording required", "Please record your response before moving on.");
+      return;
     }
     if (isLastQuestion) {
       await handleFinish();
@@ -218,7 +227,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           keyboardShouldPersistTaps="handled"
         >
           <SpeakingQuestion
-            question={currentQuestion as any}
+            question={currentQuestion}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
           />

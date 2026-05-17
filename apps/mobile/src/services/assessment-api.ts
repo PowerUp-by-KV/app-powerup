@@ -21,7 +21,22 @@ export interface AssessmentQuestion {
   sentence?: string;
   prompt?: string;
   story?: string;
+  topic?: string | null;
   options?: AssessmentOption[];
+  audio_url?: string | null;
+  recording_time_seconds?: number | null;
+  no_of_lines?: string | null;
+  complexity?: string | null;
+  audio_no?: number;
+  script?: string | null;
+  questions?: AssessmentQuestion[];
+}
+
+export interface ListeningStory {
+  audio_no: number;
+  audio_url?: string | null;
+  script?: string | null;
+  questions: AssessmentQuestion[];
 }
 
 export interface AssessmentSectionResponse {
@@ -29,10 +44,10 @@ export interface AssessmentSectionResponse {
   paragraph?: string;
   audio_url?: string;
   questions?: AssessmentQuestion[];
-  sentences?: any[];
-  items?: any[];
-  prompts?: any[];
-  stories?: any[];
+  sentences?: AssessmentQuestion[];
+  items?: AssessmentQuestion[];
+  prompts?: AssessmentQuestion[];
+  stories?: ListeningStory[];
 }
 
 export interface AssessmentAnswer {
@@ -61,6 +76,24 @@ export interface SubmitSectionResponse {
     | "C_GRAMMAR"
     | "D_LISTEN_ANSWER"
     | null;
+}
+
+export interface AssessmentScoringStatusResponse {
+  total_answers: number;
+  completed_answers: number;
+  pending_answers: number;
+  failed_answers: number;
+}
+
+export interface AssessmentResultResponse {
+  total_score: number;
+  max_score: number;
+  percentage: number;
+  cefr_range: string;
+  cefr_level?: string | null;
+  section_scores: Record<string, number>;
+  section_percentages: Record<string, number>;
+  aggregated_scores: Record<string, number>;
 }
 
 export const assessmentApi = api.injectEndpoints({
@@ -99,7 +132,10 @@ export const assessmentApi = api.injectEndpoints({
       }),
     }),
 
-    completeSession: builder.mutation<{ cefr_range: string }, { session_id: string }>({
+    completeSession: builder.mutation<
+      AssessmentResultResponse | AssessmentScoringStatusResponse,
+      { session_id: string }
+    >({
       query: ({ session_id }) => ({
         url: `/v1/assessment/session/${session_id}/complete`,
         method: "POST",
@@ -107,27 +143,28 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
-    getAssessmentResult: builder.query<
-      {
-        overall_score: number;
-        cefr_range: string;
-        categories: {
-          id: string;
-          title: string;
-          score: number;
-          total: number;
-          icon: string;
-        }[];
-      },
-      { session_id: string }
-    >({
+    getAssessmentStatus: builder.query<AssessmentScoringStatusResponse, { session_id: string }>({
+      query: ({ session_id }) => `/v1/assessment/session/${session_id}/status`,
+      providesTags: ["Assessment"],
+    }),
+
+    getAssessmentResult: builder.query<AssessmentResultResponse, { session_id: string }>({
       query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
       providesTags: ["Assessment"],
     }),
   }),
 });
 
-export const getNextRouteForSection = (section?: string | null): any => {
+export type AssessmentRoute =
+  | "/read"
+  | "/speak-read"
+  | "/listen-audio"
+  | "/speak"
+  | "/pre-grammer"
+  | "/listen"
+  | "/results";
+
+export const getNextRouteForSection = (section?: string | null): AssessmentRoute => {
   switch (section) {
     case "A_READING":
       return "/read";
@@ -152,5 +189,7 @@ export const {
   useSubmitAssessmentSectionMutation,
   useUploadAssessmentAudioMutation,
   useCompleteSessionMutation,
+  useGetAssessmentStatusQuery,
+  useLazyGetAssessmentStatusQuery,
   useGetAssessmentResultQuery,
 } = assessmentApi;

@@ -15,6 +15,7 @@ import {
   useSubmitAssessmentSectionMutation,
   useUploadAssessmentAudioMutation,
   getNextRouteForSection,
+  type AssessmentQuestion,
 } from "@/services/assessment-api";
 import { SentenceDisplay } from "./components/SentenceDisplay";
 import { Recorder } from "./components/Recorder";
@@ -50,7 +51,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
-  const questions = (sectionData?.sentences ?? []) as any[];
+  const questions = (sectionData?.sentences ?? []) as AssessmentQuestion[];
   const currentQuestion = questions[currentQuestionIndex];
 
   const [isRecording, setIsRecording] = useState(false);
@@ -81,16 +82,16 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
     }
   }
 
-  async function stopRecording(questionId?: string): Promise<boolean> {
-    if (!recording) return true;
+  async function stopRecording(questionId?: string): Promise<string | null> {
+    const targetId = questionId ?? currentQuestion?.id;
+    if (!recording) return targetId ? (answers[String(targetId)] ?? null) : null;
 
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     setRecording(null);
 
-    const targetId = questionId ?? currentQuestion?.id;
-    if (!uri || !targetId) return true;
+    if (!uri || !targetId) return null;
 
     setIsUploadingAudio(true);
     try {
@@ -98,11 +99,11 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       formData.append("file", { uri, name: "recording.m4a", type: "audio/m4a" } as unknown as Blob);
       const result = await uploadAudio(formData).unwrap();
       setAnswers((prev) => ({ ...prev, [String(targetId)]: result.audio_url }));
-      return true;
+      return result.audio_url;
     } catch (err) {
       console.error("Audio upload failed", err);
       Alert.alert("Upload Failed", "Failed to upload your recording. Please try again.");
-      return false;
+      return null;
     } finally {
       setIsUploadingAudio(false);
     }
@@ -127,15 +128,22 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const handleFinish = async () => {
+    let nextAnswers = answers;
     if (isRecording) {
-      const ok = await stopRecording();
-      if (!ok) return;
+      const uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+      nextAnswers = { ...answers, [String(currentQuestion?.id)]: uploadedUrl };
+    }
+    const missingAnswer = questions.some((q) => !nextAnswers[String(q.id)]);
+    if (missingAnswer) {
+      Alert.alert("Recording required", "Please record every sentence before submitting.");
+      return;
     }
     try {
-      const formattedAnswers = questions.map((q: any) => ({
+      const formattedAnswers = questions.map((q) => ({
         question_id: q.id,
         answer: "",
-        audio_url: answers[String(q.id)] ?? undefined,
+        audio_url: nextAnswers[String(q.id)] ?? undefined,
       }));
 
       const response = await submitSection({
@@ -148,14 +156,20 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {
+      console.error("Speak-by-reading assessment submit failed", err);
       Alert.alert("Error", "Could not submit answers.");
     }
   };
 
   const handleNext = async () => {
+    let uploadedUrl: string | null = null;
     if (isRecording) {
-      const ok = await stopRecording(String(currentQuestion?.id));
-      if (!ok) return;
+      uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+    }
+    if (!uploadedUrl && !answers[String(currentQuestion.id)]) {
+      Alert.alert("Recording required", "Please record your response before moving on.");
+      return;
     }
     if (isLastQuestion) {
       await handleFinish();
@@ -206,7 +220,9 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
           recordingDuration={recordingDuration}
           maxDuration={maxDuration}
           onStartRecording={startRecording}
-          onStopRecording={() => stopRecording()}
+          onStopRecording={() => {
+            void stopRecording(String(currentQuestion.id));
+          }}
         />
 
         {answers[String(currentQuestion.id)] && (

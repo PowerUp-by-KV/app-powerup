@@ -1,39 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  Text,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { useRouter } from "expo-router";
+
 import {
-  useGetAssessmentSectionQuery,
-  useSubmitAssessmentSectionMutation,
-  useCompleteSessionMutation,
   getNextRouteForSection,
+  type ListeningStory,
+  useCompleteSessionMutation,
+  useGetAssessmentSectionQuery,
+  useLazyGetAssessmentStatusQuery,
+  useSubmitAssessmentSectionMutation,
 } from "@/services/assessment-api";
-import { AudioPlayer } from "./components/AudioPlayer";
-import { RecordingButton } from "./components/RecordingButton";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
-import { Platform } from "react-native";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
+
+import { AudioPlayer } from "./components/AudioPlayer";
 
 interface ListeningScreenProps {
   sessionId?: string;
 }
 
-interface FlatQuestion {
-  id: string;
-  question_no: number;
-  question: string;
-  options: { label: string; value: string }[];
-  audio_url: string | null | undefined;
-  story_no: number;
+function optionKey(option: { label?: string; value?: string }, index: number) {
+  return option.label ?? String.fromCharCode(65 + index);
 }
 
 export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenProps) {
@@ -55,25 +50,109 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
   const [completeSession] = useCompleteSessionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [scoringMessage, setScoringMessage] = useState<string | null>(null);
   const [startedAt] = useState(() => Date.now());
 
-  // D_LISTEN_ANSWER returns stories:[{audio_url, questions:[{id,question,options}]}]
-  // Flatten to a single list while keeping audio_url per question
-  const flatQuestions: FlatQuestion[] = (sectionData?.stories ?? []).flatMap((story: any) =>
-    (story.questions ?? []).map((q: any) => ({
-      id: String(q.id),
-      question_no: q.question_no,
-      question: q.question,
-      options: q.options ?? [],
-      audio_url: story.audio_url,
-      story_no: story.audio_no,
-    })),
-  );
+  const stories = sectionData?.stories ?? [];
+  const currentStory = stories[currentStoryIndex];
+  const totalQuestions = stories.reduce((sum, story) => sum + story.questions.length, 0);
+  const answeredCount = Object.keys(answers).length;
+  const isLastStory = currentStoryIndex === stories.length - 1;
 
-  const currentQuestion = flatQuestions[currentQuestionIndex];
+  const pollUntilScoringComplete = async () => {
+    if (!sessionId) return;
+
+    for (let attempt = 0; attempt < 30; attempt += 1) {
+      const status = await getAssessmentStatus({ session_id: sessionId }).unwrap();
+      if (status.pending_answers === 0) return;
+      setScoringMessage(
+        `Scoring your speaking answers (${status.completed_answers}/${status.total_answers} done)...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    throw new Error("Assessment scoring is still pending.");
+  };
+
+  const finishAssessment = async () => {
+    if (!sessionId) return;
+    if (answeredCount < totalQuestions) {
+      Alert.alert("Complete all questions", "Please answer every listening question first.");
+      return;
+    }
+
+    setIsCompleting(true);
+    setScoringMessage(null);
+    try {
+      const formattedAnswers = stories.flatMap((story) =>
+        story.questions.map((question) => ({
+          question_id: question.id,
+          answer: answers[String(question.id)],
+        })),
+      );
+
+      const response = await submitSection({
+        session_id: sessionId,
+        section: "D_LISTEN_ANSWER",
+        data: { answers: formattedAnswers },
+      }).unwrap();
+
+      await saveCompletedSection("D_LISTEN_ANSWER");
+
+      if (!response.next_section) {
+        const completion = await completeSession({ session_id: sessionId }).unwrap();
+        if ("pending_answers" in completion && completion.pending_answers > 0) {
+          setScoringMessage("Scoring your speaking answers...");
+          await pollUntilScoringComplete();
+          await completeSession({ session_id: sessionId }).unwrap();
+        }
+      }
+
+      router.push({
+        pathname: getNextRouteForSection(response.next_section),
+        params: { session_id: sessionId },
+      });
+    } catch (err) {
+      console.error("Listening assessment submit failed", err);
+      Alert.alert(
+        "Assessment still processing",
+        "Could not finish the assessment yet. Please try again in a moment.",
+      );
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  const handleNext = async () => {
+    if (!currentStory) return;
+    const missingForStory = currentStory.questions.some((q) => !answers[String(q.id)]);
+    if (missingForStory) {
+      Alert.alert(
+        "Answer required",
+        "Please answer all questions for this audio before moving on.",
+      );
+      return;
+    }
+
+    if (isLastStory) {
+      await finishAssessment();
+      return;
+    }
+    setCurrentStoryIndex((prev) => prev + 1);
+  };
+
+  const handleBack = () => {
+    if (currentStoryIndex > 0) {
+      setCurrentStoryIndex((prev) => prev - 1);
+      return;
+    }
+    router.back();
+  };
 
   if (isLoading || !sectionData) {
     return (
@@ -83,75 +162,22 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     );
   }
 
-  if (!currentQuestion) {
+  if (!currentStory) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
-        <Text>No questions found for this section.</Text>
+        <Text>No listening stories found for this section.</Text>
       </View>
     );
   }
-
-  const isLastQuestion = currentQuestionIndex === flatQuestions.length - 1;
-
-  const handleSelect = (value: string) => {
-    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
-  };
-
-  const handleFinish = async () => {
-    try {
-      const formattedAnswers = flatQuestions.map((q) => ({
-        question_id: q.id,
-        answer: answers[q.id] ?? "",
-      }));
-
-      const response = await submitSection({
-        session_id: sessionId!,
-        section: "D_LISTEN_ANSWER",
-        data: { answers: formattedAnswers },
-      }).unwrap();
-
-      await saveCompletedSection("D_LISTEN_ANSWER");
-      if (!response.next_section) {
-        await completeSession({ session_id: sessionId! }).unwrap();
-      }
-
-      const nextRoute = getNextRouteForSection(response.next_section);
-      router.push({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch (err) {
-      Alert.alert("Error", "Could not submit answers.");
-    }
-  };
-
-  const handleNext = () => {
-    if (!answers[currentQuestion.id]) {
-      Alert.alert("Answer required", "Please select an answer before continuing.");
-      return;
-    }
-    if (isLastQuestion) {
-      handleFinish();
-      return;
-    }
-    setCurrentQuestionIndex((prev) => prev + 1);
-  };
-
-  const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    } else {
-      router.back();
-    }
-  };
-
-  const selectedAnswer = answers[currentQuestion.id];
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <AssessmentHeader
         section="D_LISTEN_ANSWER"
-        currentQuestionIndex={currentQuestionIndex}
-        totalQuestions={flatQuestions.length}
+        currentQuestionIndex={answeredCount}
+        totalQuestions={totalQuestions}
         startedAtMs={startedAt}
-        onFinish={handleFinish}
+        onFinish={finishAssessment}
         onSectionChange={(next) =>
           router.replace({
             pathname: getNextRouteForSection(next),
@@ -163,66 +189,86 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         className="flex-1 px-4 py-4"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-xs text-gray-400 mb-1 uppercase tracking-wide font-medium">
-          Audio {currentQuestion.story_no}
-        </Text>
-        <Text className="text-base font-semibold text-gray-800 mb-4">
-          Question {currentQuestionIndex + 1} of {flatQuestions.length}
-        </Text>
-
-        {/* Play the story audio — shared per story group */}
-        <AudioPlayer audioUrl={currentQuestion.audio_url} />
-
-        {/* MCQ question */}
-        <View className="bg-gray-50 rounded-lg p-4 mb-4">
-          <Text className="text-base font-medium text-gray-800">{currentQuestion.question}</Text>
+        <View className="mb-5">
+          <Text className="text-lg font-bold text-gray-800">
+            Audio {currentStoryIndex + 1} of {stories.length}
+          </Text>
+          <Text className="text-sm text-gray-500 mt-1">
+            Listen to the story, then answer the questions below.
+          </Text>
         </View>
 
-        {/* Options */}
-        {currentQuestion.options.map((opt) => {
-          const isSelected = selectedAnswer === opt.value || selectedAnswer === opt.label;
-          return (
-            <TouchableOpacity
-              key={opt.label}
-              className={`border rounded-lg p-4 mb-3 flex-row items-center ${
-                isSelected ? "border-indigo-500 bg-indigo-50" : "border-gray-200 bg-white"
-              }`}
-              onPress={() => handleSelect(opt.value || opt.label)}
-            >
-              <View
-                className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-                  isSelected ? "border-indigo-500" : "border-gray-300"
-                }`}
-              >
-                {isSelected && <View className="w-2.5 h-2.5 rounded-full bg-indigo-500" />}
-              </View>
-              <Text
-                className={`flex-1 text-sm ${isSelected ? "text-indigo-700 font-medium" : "text-gray-700"}`}
-              >
-                {opt.label}: {opt.value}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        <AudioPlayer
+          audioUrl={currentStory.audio_url}
+          audioText={currentStory.script || "Listen carefully before answering."}
+          duration={60}
+        />
 
-        <View className="flex-row justify-between mt-6 gap-3">
+        <View className="gap-5">
+          {currentStory.questions.map((question, questionIndex) => (
+            <View key={question.id} className="bg-gray-50 p-4 rounded-xl">
+              <Text className="text-xs uppercase tracking-wide text-gray-500 mb-2">
+                Question {questionIndex + 1}
+              </Text>
+              <Text className="text-base font-semibold text-gray-900 mb-3">
+                {question.question}
+              </Text>
+              <View className="gap-2">
+                {(question.options ?? []).map((option, index) => {
+                  const key = optionKey(option, index);
+                  const selected = answers[String(question.id)] === key;
+                  return (
+                    <TouchableOpacity
+                      key={`${question.id}-${key}`}
+                      className={`p-3 rounded-lg border ${
+                        selected ? "bg-indigo-50 border-indigo-500" : "bg-white border-gray-200"
+                      }`}
+                      onPress={() =>
+                        setAnswers((prev) => ({ ...prev, [String(question.id)]: key }))
+                      }
+                    >
+                      <Text
+                        className={selected ? "text-indigo-700 font-semibold" : "text-gray-700"}
+                      >
+                        {key}. {option.value}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {scoringMessage ? (
+          <View className="bg-indigo-50 p-3 rounded-xl mt-5">
+            <Text className="text-indigo-700 text-center">{scoringMessage}</Text>
+          </View>
+        ) : null}
+
+        <View className="flex-row justify-between mt-8 gap-3">
           <TouchableOpacity
             className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
             onPress={handleBack}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isCompleting}
           >
             <Text className="text-white font-semibold">Back</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+            className={`flex-1 py-3 rounded-lg items-center ${
+              isSubmitting || isCompleting ? "bg-indigo-400" : "bg-indigo-600"
+            }`}
             onPress={handleNext}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isCompleting}
           >
-            {isSubmitting ? (
+            {isSubmitting || isCompleting ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-semibold">{isLastQuestion ? "Finish" : "Next"}</Text>
+              <Text className="text-white font-semibold">
+                {isLastStory ? "Finish" : "Next Audio"}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

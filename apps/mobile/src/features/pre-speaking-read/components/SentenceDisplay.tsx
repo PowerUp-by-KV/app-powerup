@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { SpeakingReadQuestion as ISpeakingReadQuestion } from "../types";
+import type { AssessmentQuestion } from "@/services/assessment-api";
 
 interface SentenceDisplayProps {
-  question: ISpeakingReadQuestion;
+  question: AssessmentQuestion;
   questionIndex: number;
   totalQuestions: number;
 }
@@ -32,24 +32,23 @@ export function SentenceDisplay({ question, questionIndex, totalQuestions }: Sen
         <Text className="text-sm text-blue-600 font-semibold mb-2">Read the sentence:</Text>
         <Text className="text-lg text-gray-800 leading-relaxed font-medium">
           {question.sentence ||
-            (question as any).question ||
-            (question as any).text ||
-            (question as any).prompt ||
-            (question as any).story ||
-            (question as any).item ||
+            question.question ||
+            question.text ||
+            question.prompt ||
+            question.story ||
             "No sentence text found."}
         </Text>
       </View>
 
       <View className="flex-row justify-between items-center bg-gray-100 p-3 rounded-lg">
         <Text className="text-xs text-gray-600">
-          <Text className="font-bold">{question.noOfLines || 1}</Text> line
-          {(question.noOfLines || 1) !== 1 ? "s" : ""}
+          <Text className="font-bold">{question.no_of_lines || 1}</Text> line
+          {(question.no_of_lines || 1) !== 1 ? "s" : ""}
         </Text>
         <Text className="text-xs text-gray-600">
           Time:{" "}
           <Text className="font-bold">
-            {question.recordingTime ||
+            {question.recording_time_seconds ||
               (question.complexity === "Advanced" || question.complexity === "Difficult" ? 30 : 15)}
             s
           </Text>

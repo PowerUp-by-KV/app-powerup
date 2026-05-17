@@ -31,6 +31,21 @@ if (!BASE_URL) {
   );
 }
 
+export const API_BASE_URL = BASE_URL as string;
+
+export function resolveApiAssetUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+
+  try {
+    const parsed = new URL(API_BASE_URL);
+    const origin = `${parsed.protocol}//${parsed.host}`;
+    return `${origin}${url.startsWith("/") ? url : `/${url}`}`;
+  } catch {
+    return url;
+  }
+}
+
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({

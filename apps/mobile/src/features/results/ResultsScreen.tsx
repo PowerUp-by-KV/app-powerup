@@ -42,6 +42,35 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     router.replace("/(tabs)/my-learning" as never);
   };
 
+  const sectionCards = resultData
+    ? [
+        { id: "reading", title: "Reading", key: "A_READING", icon: "book-open" as const },
+        { id: "speak-read", title: "Speak by Reading", key: "A_SPEAKING", icon: "mic" as const },
+        {
+          id: "listen-repeat",
+          title: "Listen & Repeat",
+          key: "A_LISTEN",
+          icon: "volume-2" as const,
+        },
+        {
+          id: "open-speaking",
+          title: "Open Speaking",
+          key: "B_SPEAKING",
+          icon: "message-circle" as const,
+        },
+        { id: "grammar", title: "Grammar", key: "C_GRAMMAR", icon: "edit-3" as const },
+        {
+          id: "listening",
+          title: "Listening",
+          key: "D_LISTEN_ANSWER",
+          icon: "headphones" as const,
+        },
+      ].map((item) => ({
+        ...item,
+        score: resultData.section_percentages[item.key] ?? 0,
+      }))
+    : [];
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -84,22 +113,22 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               Overall Score
             </Text>
             <ScoreGauge
-              score={resultData.overall_score}
-              total={6}
-              obtainedPoints={Math.round(resultData.overall_score * 20)}
-              totalPoints={120}
-              cefr={resultData.cefr_range}
+              score={resultData.percentage}
+              total={100}
+              obtainedPoints={Math.round(resultData.total_score)}
+              totalPoints={Math.round(resultData.max_score)}
+              cefr={resultData.cefr_level ?? resultData.cefr_range}
             />
           </View>
 
           <View className="flex-row flex-wrap justify-between mt-6">
-            {resultData.categories.map((cat) => (
+            {sectionCards.map((cat) => (
               <ScoreCard
                 key={cat.id}
                 title={cat.title}
                 score={cat.score}
-                total={cat.total}
-                icon={cat.icon as any}
+                total={100}
+                icon={cat.icon}
               />
             ))}
           </View>

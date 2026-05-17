@@ -1,23 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, View, TouchableOpacity, Text } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
+import { resolveApiAssetUrl } from "@/services/api";
 
 interface AudioPlayerProps {
-  audioUrl: string | null | undefined;
+  audioUrl?: string | null;
+  audioText?: string | null;
+  duration?: number | null;
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
 }
 
-export function AudioPlayer({ audioUrl, onPlayStart, onPlayEnd }: AudioPlayerProps) {
+export function AudioPlayer({
+  audioUrl,
+  audioText,
+  duration,
+  onPlayStart,
+  onPlayEnd,
+}: AudioPlayerProps) {
   const soundRef = useRef<Audio.Sound | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const resolvedAudioUrl = resolveApiAssetUrl(audioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const [position, setPosition] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [durationSeconds, setDurationSeconds] = useState(duration ?? 0);
 
   useEffect(() => {
     return () => {
       soundRef.current?.unloadAsync();
+      soundRef.current = null;
     };
   }, []);
 
@@ -25,69 +37,83 @@ export function AudioPlayer({ audioUrl, onPlayStart, onPlayEnd }: AudioPlayerPro
     soundRef.current?.unloadAsync();
     soundRef.current = null;
     setIsPlaying(false);
-    setPosition(0);
-    setDuration(0);
-  }, [audioUrl]);
+    setCurrentTime(0);
+    setDurationSeconds(duration ?? 0);
+    setError(null);
+  }, [resolvedAudioUrl, duration]);
 
-  const handlePlayback = async () => {
-    if (!audioUrl) return;
+  const onStatus = (status: AVPlaybackStatus) => {
+    if (!status.isLoaded) {
+      if (status.error) setError("Audio could not be played.");
+      return;
+    }
 
-    if (isPlaying) {
-      await soundRef.current?.pauseAsync();
+    setIsPlaying(status.isPlaying);
+    setCurrentTime(Math.floor((status.positionMillis ?? 0) / 1000));
+    if (status.durationMillis) setDurationSeconds(Math.ceil(status.durationMillis / 1000));
+    if (status.didJustFinish) {
       setIsPlaying(false);
+      onPlayEnd?.();
+    }
+  };
+
+  const togglePlay = async () => {
+    if (!resolvedAudioUrl) {
+      setError("Audio is not available for this question.");
       return;
     }
 
     try {
-      setIsLoading(true);
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false });
-
-      if (!soundRef.current) {
+      setError(null);
+      if (soundRef.current === null) {
+        setIsLoading(true);
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+        });
         const { sound } = await Audio.Sound.createAsync(
-          { uri: audioUrl },
+          { uri: resolvedAudioUrl },
           { shouldPlay: true },
-          (status: AVPlaybackStatus) => {
-            if (!status.isLoaded) return;
-            setPosition(status.positionMillis ?? 0);
-            setDuration(status.durationMillis ?? 0);
-            if (status.didJustFinish) {
-              setIsPlaying(false);
-              setPosition(0);
-              onPlayEnd?.();
-            }
-          },
+          onStatus,
         );
         soundRef.current = sound;
-      } else {
-        await soundRef.current.playAsync();
+        onPlayStart?.();
+        return;
       }
 
-      setIsPlaying(true);
-      onPlayStart?.();
+      const status = await soundRef.current.getStatusAsync();
+      if (!status.isLoaded) return;
+      if (status.isPlaying) {
+        await soundRef.current.pauseAsync();
+        setIsPlaying(false);
+        onPlayEnd?.();
+      } else {
+        await soundRef.current.playAsync();
+        setIsPlaying(true);
+        onPlayStart?.();
+      }
     } catch (err) {
-      console.error("Audio playback error", err);
+      console.error("Audio playback failed", err);
+      setError("Audio could not be played. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const progressPct = duration > 0 ? (position / duration) * 100 : 0;
-  const fmtTime = (ms: number) => `${Math.floor(ms / 1000)}s`;
+  const progressPct = durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
 
   return (
     <View className="bg-blue-50 rounded-lg p-4 mb-4">
-      <Text className="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">
-        Listen to the audio
-      </Text>
+      {audioText ? <Text className="text-sm text-gray-600 mb-3 italic">{audioText}</Text> : null}
 
       <View className="flex-row items-center gap-3">
         <TouchableOpacity
-          className={`px-5 py-2 rounded-lg ${isLoading ? "bg-gray-400" : isPlaying ? "bg-red-500" : "bg-blue-500"}`}
-          onPress={handlePlayback}
-          disabled={isLoading || !audioUrl}
+          className={`${isPlaying ? "bg-red-500" : "bg-blue-500"} px-6 py-2 rounded-lg`}
+          onPress={togglePlay}
+          disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="white" size="small" />
+            <ActivityIndicator color="white" />
           ) : (
             <Text className="text-white font-semibold">{isPlaying ? "Pause" : "Play"}</Text>
           )}
@@ -96,18 +122,17 @@ export function AudioPlayer({ audioUrl, onPlayStart, onPlayEnd }: AudioPlayerPro
         <View className="flex-1">
           <View className="bg-gray-200 h-2 rounded-full overflow-hidden">
             <View
-              className="bg-blue-500 h-full rounded-full"
-              style={{ width: `${progressPct}%` }}
+              className="bg-blue-500 h-full"
+              style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
             />
           </View>
         </View>
 
-        <Text className="text-xs text-gray-500">
-          {fmtTime(position)} / {fmtTime(duration)}
+        <Text className="text-xs text-gray-500 ml-2">
+          {currentTime}s / {durationSeconds || "--"}s
         </Text>
       </View>
-
-      {!audioUrl && <Text className="text-xs text-red-400 mt-2">Audio not available.</Text>}
+      {error ? <Text className="text-xs text-red-600 mt-2">{error}</Text> : null}
     </View>
   );
 }
