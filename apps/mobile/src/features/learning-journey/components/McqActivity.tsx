@@ -45,9 +45,11 @@ export function McqActivity({ questions, onComplete }: McqActivityProps) {
 
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
-  const [lastResult, setLastResult] = useState<{ correct: boolean; correctAnswer: string } | null>(
-    null,
-  );
+  const [lastResult, setLastResult] = useState<{
+    correct: boolean;
+    correctAnswer: string;
+    totalCorrect: number;
+  } | null>(null);
   const [correctCount, setCorrectCount] = useState(0);
 
   const current = mcqs[idx];
@@ -65,18 +67,26 @@ export function McqActivity({ questions, onComplete }: McqActivityProps) {
   const handleSubmit = () => {
     if (selected === null) return;
     const correct = selected.trim() === (current.correct_answer ?? "").trim();
-    if (correct) setCorrectCount((c) => c + 1);
-    setLastResult({ correct, correctAnswer: current.correct_answer ?? "" });
+    const nextCorrectCount = correct ? correctCount + 1 : correctCount;
+    if (correct) setCorrectCount(nextCorrectCount);
+    setLastResult({
+      correct,
+      correctAnswer: current.correct_answer ?? "",
+      totalCorrect: nextCorrectCount,
+    });
   };
 
   const handleContinue = () => {
+    const result = lastResult;
+    if (!result) return;
+
     setLastResult(null);
     setSelected(null);
     if (idx + 1 < mcqs.length) {
       setIdx(idx + 1);
       return;
     }
-    const totalCorrect = correctCount; // already includes the final one
+    const totalCorrect = result.totalCorrect;
     const score = Math.round((totalCorrect / mcqs.length) * 100);
     onComplete({ passed: score >= 70, score });
   };

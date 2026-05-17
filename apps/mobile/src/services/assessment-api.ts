@@ -1,4 +1,5 @@
-import { api } from "./api";
+import { api, API_BASE_URL } from "./api";
+import { getAuthSession } from "./auth-storage";
 
 export interface StartSessionResponse {
   session_id: string;
@@ -21,7 +22,22 @@ export interface AssessmentQuestion {
   sentence?: string;
   prompt?: string;
   story?: string;
+  topic?: string | null;
   options?: AssessmentOption[];
+  audio_url?: string | null;
+  recording_time_seconds?: number | null;
+  no_of_lines?: string | null;
+  complexity?: string | null;
+  audio_no?: number;
+  script?: string | null;
+  questions?: AssessmentQuestion[];
+}
+
+export interface ListeningStory {
+  audio_no: number;
+  audio_url?: string | null;
+  script?: string | null;
+  questions: AssessmentQuestion[];
 }
 
 export interface AssessmentSectionResponse {
@@ -29,10 +45,10 @@ export interface AssessmentSectionResponse {
   paragraph?: string;
   audio_url?: string;
   questions?: AssessmentQuestion[];
-  sentences?: any[];
-  items?: any[];
-  prompts?: any[];
-  stories?: any[];
+  sentences?: AssessmentQuestion[];
+  items?: AssessmentQuestion[];
+  prompts?: AssessmentQuestion[];
+  stories?: ListeningStory[];
 }
 
 export interface AssessmentAnswer {
@@ -63,6 +79,24 @@ export interface SubmitSectionResponse {
     | null;
 }
 
+export interface AssessmentScoringStatusResponse {
+  total_answers: number;
+  completed_answers: number;
+  pending_answers: number;
+  failed_answers: number;
+}
+
+export interface AssessmentResultResponse {
+  total_score: number;
+  max_score: number;
+  percentage: number;
+  cefr_range: string;
+  cefr_level?: string | null;
+  section_scores: Record<string, number>;
+  section_percentages: Record<string, number>;
+  aggregated_scores: Record<string, number>;
+}
+
 export const assessmentApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -91,15 +125,38 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
+    // Use queryFn + native fetch so React Native's networking layer handles the
+    // {uri, name, type} FormData entry as a real file upload — fetchBaseQuery
+    // serialises unknown object values to "[object Object]".
     uploadAssessmentAudio: builder.mutation<AssessmentAudioUploadResponse, FormData>({
-      query: (formData) => ({
-        url: "/v1/assessment/audio",
-        method: "POST",
-        body: formData,
-      }),
+      queryFn: async (formData) => {
+        try {
+          const session = await getAuthSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+            method: "POST",
+            headers,
+            body: formData,
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: "Upload failed" }));
+            return { error: { status: response.status, data: err } };
+          }
+          const data = (await response.json()) as AssessmentAudioUploadResponse;
+          return { data };
+        } catch (err) {
+          return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
+        }
+      },
     }),
 
-    completeSession: builder.mutation<{ cefr_range: string }, { session_id: string }>({
+    completeSession: builder.mutation<
+      AssessmentResultResponse | AssessmentScoringStatusResponse,
+      { session_id: string }
+    >({
       query: ({ session_id }) => ({
         url: `/v1/assessment/session/${session_id}/complete`,
         method: "POST",
@@ -107,27 +164,28 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
-    getAssessmentResult: builder.query<
-      {
-        overall_score: number;
-        cefr_range: string;
-        categories: {
-          id: string;
-          title: string;
-          score: number;
-          total: number;
-          icon: string;
-        }[];
-      },
-      { session_id: string }
-    >({
+    getAssessmentStatus: builder.query<AssessmentScoringStatusResponse, { session_id: string }>({
+      query: ({ session_id }) => `/v1/assessment/session/${session_id}/status`,
+      providesTags: ["Assessment"],
+    }),
+
+    getAssessmentResult: builder.query<AssessmentResultResponse, { session_id: string }>({
       query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
       providesTags: ["Assessment"],
     }),
   }),
 });
 
-export const getNextRouteForSection = (section?: string | null): any => {
+export type AssessmentRoute =
+  | "/read"
+  | "/speak-read"
+  | "/listen-audio"
+  | "/speak"
+  | "/pre-grammer"
+  | "/listen"
+  | "/results";
+
+export const getNextRouteForSection = (section?: string | null): AssessmentRoute => {
   switch (section) {
     case "A_READING":
       return "/read";
@@ -152,5 +210,7 @@ export const {
   useSubmitAssessmentSectionMutation,
   useUploadAssessmentAudioMutation,
   useCompleteSessionMutation,
+  useGetAssessmentStatusQuery,
+  useLazyGetAssessmentStatusQuery,
   useGetAssessmentResultQuery,
 } = assessmentApi;

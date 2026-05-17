@@ -7,7 +7,8 @@ import type {
   ModuleVariant,
 } from "@powerup/shared";
 
-import { api } from "./api";
+import { api, API_BASE_URL } from "./api";
+import { getAuthSession } from "./auth-storage";
 
 export interface PersonalizedModuleItem {
   id: string;
@@ -82,6 +83,19 @@ export interface SubmitAnswerArgs {
   answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
 }
 
+export interface WritingSubmitArgs {
+  question_id: string;
+  response_text: string;
+}
+
+export interface WritingResultRead {
+  score: number;
+  cefr_level: string;
+  feedback: string;
+  grammar_errors: string[];
+  passed: boolean;
+}
+
 export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
@@ -132,17 +146,35 @@ export const moduleApi = api.injectEndpoints({
       query: (body) => ({ url: "/v1/activity/vocabulary/submit", method: "POST", body }),
     }),
 
-    submitWritingAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+    submitWritingAnswer: builder.mutation<WritingResultRead, WritingSubmitArgs>({
       query: (body) => ({ url: "/v1/activity/writing/submit", method: "POST", body }),
     }),
 
+    // queryFn + native fetch: same reason as assessment audio upload — fetchBaseQuery
+    // serialises {uri,name,type} to "[object Object]"; native fetch handles it correctly.
     submitSpeakingAnswer: builder.mutation<ActivitySubmitResponse, FormData>({
-      query: (formData) => ({
-        url: "/v1/activity/speaking/submit",
-        method: "POST",
-        body: formData,
-        // Do NOT set Content-Type — RN sets multipart boundary automatically.
-      }),
+      queryFn: async (formData) => {
+        try {
+          const session = await getAuthSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+          const response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
+            method: "POST",
+            headers,
+            body: formData,
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: "Submit failed" }));
+            return { error: { status: response.status, data: err } };
+          }
+          const data = (await response.json()) as ActivitySubmitResponse;
+          return { data };
+        } catch (err) {
+          return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
+        }
+      },
     }),
 
     // ── Day-progression loop ─────────────────────────────────────────────

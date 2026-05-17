@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { SpeakingQuestion as ISpeakingQuestion } from "../types";
+import type { AssessmentQuestion } from "@/services/assessment-api";
 
 interface SpeakingQuestionProps {
-  question: ISpeakingQuestion;
+  question: AssessmentQuestion;
   questionIndex: number;
   totalQuestions: number;
 }
@@ -41,7 +41,7 @@ export function SpeakingQuestion({
 
       <View className="bg-gray-100 p-3 rounded-lg">
         <Text className="text-xs text-gray-600">
-          Recording Time: {question.recordingTime} seconds
+          Recording Time: {question.recording_time_seconds ?? 30} seconds
         </Text>
       </View>
     </View>

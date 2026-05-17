@@ -7,7 +7,6 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Audio } from "expo-av";
@@ -21,7 +20,7 @@ import {
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { RecordingButton } from "./components/RecordingButton";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface PreListenWithAudioScreenProps {
@@ -55,8 +54,7 @@ export function PreListenWithAudioScreen({
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
-  // A_LISTEN returns items: [ListenItemRead] where each item has audio_url
-  const questions = (sectionData?.items ?? []) as any[];
+  const questions = (sectionData?.items ?? []) as AssessmentQuestion[];
   const currentQuestion = questions[currentQuestionIndex];
 
   const [isRecording, setIsRecording] = useState(false);
@@ -64,11 +62,13 @@ export function PreListenWithAudioScreen({
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
+    let interval: ReturnType<typeof setInterval> | undefined;
     if (isRecording) {
       interval = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isRecording]);
 
   async function startRecording() {
@@ -88,28 +88,32 @@ export function PreListenWithAudioScreen({
     }
   }
 
-  async function stopRecording(questionId?: string): Promise<boolean> {
-    if (!recording) return true;
+  async function stopRecording(questionId?: string): Promise<string | null> {
+    const targetId = questionId ?? currentQuestion?.id;
+    if (!recording) return targetId ? (answers[String(targetId)] ?? null) : null;
 
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     setRecording(null);
 
-    const targetId = questionId ?? currentQuestion?.id;
-    if (!uri || !targetId) return true;
+    if (!uri || !targetId) return null;
 
     setIsUploadingAudio(true);
     try {
       const formData = new FormData();
-      formData.append("file", { uri, name: "recording.m4a", type: "audio/m4a" } as unknown as Blob);
+      formData.append("file", {
+        uri,
+        name: "listen-repeat.m4a",
+        type: "audio/m4a",
+      } as unknown as Blob);
       const result = await uploadAudio(formData).unwrap();
-      setAnswers((prev) => ({ ...prev, [targetId]: result.audio_url }));
-      return true;
+      setAnswers((prev) => ({ ...prev, [String(targetId)]: result.audio_url }));
+      return result.audio_url;
     } catch (err) {
       console.error("Audio upload failed", err);
       Alert.alert("Upload Failed", "Failed to upload your recording. Please try again.");
-      return false;
+      return null;
     } finally {
       setIsUploadingAudio(false);
     }
@@ -134,15 +138,22 @@ export function PreListenWithAudioScreen({
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const handleFinish = async () => {
+    let nextAnswers = answers;
     if (isRecording) {
-      const success = await stopRecording();
-      if (!success) return;
+      const uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+      nextAnswers = { ...answers, [String(currentQuestion?.id)]: uploadedUrl };
+    }
+    const missingAnswer = questions.some((q) => !nextAnswers[String(q.id)]);
+    if (missingAnswer) {
+      Alert.alert("Recording required", "Please record your response for every sentence first.");
+      return;
     }
     try {
-      const formattedAnswers = questions.map((q: any) => ({
+      const formattedAnswers = questions.map((q) => ({
         question_id: q.id,
         answer: "",
-        audio_url: answers[q.id] ?? undefined,
+        audio_url: nextAnswers[String(q.id)] ?? undefined,
       }));
 
       const response = await submitSection({
@@ -151,17 +162,24 @@ export function PreListenWithAudioScreen({
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("A_LISTEN");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {
+      console.error("Listen-repeat assessment submit failed", err);
       Alert.alert("Error", "Could not submit answers.");
     }
   };
 
   const handleNext = async () => {
+    let uploadedUrl: string | null = null;
     if (isRecording) {
-      const success = await stopRecording(currentQuestion?.id);
-      if (!success) return;
+      uploadedUrl = await stopRecording(String(currentQuestion?.id));
+      if (!uploadedUrl) return;
+    }
+    if (!uploadedUrl && !answers[String(currentQuestion.id)]) {
+      Alert.alert("Recording required", "Please record your response before moving on.");
+      return;
     }
     if (isLastQuestion) {
       await handleFinish();
@@ -198,6 +216,7 @@ export function PreListenWithAudioScreen({
         className="flex-1 px-4 py-4"
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <ListenWithAudioQuestion
           question={currentQuestion}
@@ -205,22 +224,27 @@ export function PreListenWithAudioScreen({
           totalQuestions={questions.length}
         />
 
-        {/* Audio player uses the per-question audio_url from A_LISTEN items */}
-        <AudioPlayer audioUrl={currentQuestion.audio_url} />
+        <AudioPlayer
+          audioUrl={currentQuestion.audio_url}
+          audioText={currentQuestion.text || "Listen carefully, then repeat the sentence."}
+          duration={currentQuestion.recording_time_seconds ?? 30}
+        />
 
         <RecordingButton
           isRecording={isRecording}
           recordingDuration={recordingDuration}
-          maxDuration={currentQuestion.recording_time_seconds ?? 30}
+          maxDuration={30}
           onStartRecording={startRecording}
-          onStopRecording={() => stopRecording()}
+          onStopRecording={() => {
+            void stopRecording(String(currentQuestion.id));
+          }}
         />
 
-        {answers[currentQuestion.id] && (
+        {answers[String(currentQuestion.id)] ? (
           <Text className="text-xs text-green-600 text-center mt-1">Recording saved ✓</Text>
-        )}
+        ) : null}
 
-        <View className="flex-row justify-between mt-6 gap-3">
+        <View className="flex-row justify-between mt-8 gap-3">
           <TouchableOpacity
             className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
             onPress={handleBack}
@@ -236,7 +260,9 @@ export function PreListenWithAudioScreen({
             {isSubmitting || isUploadingAudio ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white font-semibold">{isLastQuestion ? "Submit" : "Next"}</Text>
+              <Text className="text-white font-semibold">
+                {isLastQuestion ? "Submit" : "Next"}
+              </Text>
             )}
           </TouchableOpacity>
         </View>

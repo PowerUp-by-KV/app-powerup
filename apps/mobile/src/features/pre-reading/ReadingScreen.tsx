@@ -20,7 +20,7 @@ import { ReadingQuestion as ReadingQuestionComponent } from "./components/Readin
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/MCQOption";
 import { FillBlankInput } from "@/features/pre-grammar/components/FillBlankInput";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface ReadingScreenProps {
@@ -97,6 +97,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("A_READING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {

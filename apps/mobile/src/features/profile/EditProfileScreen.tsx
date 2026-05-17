@@ -33,6 +33,8 @@ export function EditProfileScreen() {
   const [country, setCountry] = useState("");
   const [gender, setGender] = useState("");
   const [address, setAddress] = useState("");
+  const [learningGoal, setLearningGoal] = useState("");
+  const [learningFrequency, setLearningFrequency] = useState("");
 
   useEffect(() => {
     if (!profile) return;
@@ -42,7 +44,25 @@ export function EditProfileScreen() {
     setCountry(profile.country ?? "");
     setGender(profile.gender ?? "");
     setAddress(profile.address ?? "");
+    setLearningGoal(profile.learning_goal ?? "");
+    setLearningFrequency(profile.learning_frequency ?? "");
   }, [profile]);
+
+  const GOAL_CHIPS = [
+    "Job interview",
+    "Business communication",
+    "Everyday English",
+    "Academic English",
+    "Travel",
+    "Other",
+  ];
+  const FREQUENCY_CHIPS = [
+    "Daily · 15 min",
+    "Daily · 30 min",
+    "3×/week · 30 min",
+    "Weekends only",
+    "As needed",
+  ];
 
   const handleResumeUpload = async () => {
     try {
@@ -70,6 +90,8 @@ export function EditProfileScreen() {
         country: country || undefined,
         gender: gender || undefined,
         address: address || undefined,
+        learning_goal: learningGoal || undefined,
+        learning_frequency: learningFrequency || undefined,
       }).unwrap();
       safeBack();
     } catch (err) {
@@ -118,6 +140,46 @@ export function EditProfileScreen() {
             numberOfLines={3}
             className="text-slate-900 text-base py-1"
           />
+        </View>
+
+        {/* Learning Goal */}
+        <View className="mb-5">
+          <Text className="text-slate-700 font-semibold text-sm mb-2">Learning Goal</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {GOAL_CHIPS.map((chip) => (
+              <Pressable
+                key={chip}
+                onPress={() => setLearningGoal(chip === learningGoal ? "" : chip)}
+                className={`px-4 py-2 rounded-full border ${chip === learningGoal ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-200"}`}
+              >
+                <Text
+                  className={`text-sm font-medium ${chip === learningGoal ? "text-white" : "text-slate-700"}`}
+                >
+                  {chip}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* Learning Frequency */}
+        <View className="mb-5">
+          <Text className="text-slate-700 font-semibold text-sm mb-2">Study Frequency</Text>
+          <View className="flex-row flex-wrap gap-2">
+            {FREQUENCY_CHIPS.map((chip) => (
+              <Pressable
+                key={chip}
+                onPress={() => setLearningFrequency(chip === learningFrequency ? "" : chip)}
+                className={`px-4 py-2 rounded-full border ${chip === learningFrequency ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-200"}`}
+              >
+                <Text
+                  className={`text-sm font-medium ${chip === learningFrequency ? "text-white" : "text-slate-700"}`}
+                >
+                  {chip}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         {/* Resume section */}
