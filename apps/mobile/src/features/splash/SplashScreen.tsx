@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { View, Text, Animated, TouchableOpacity, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { restoreSession } from "@/services/auth-service";
+import { getAuthSession, getProfileCompletedInSession } from "@/services/auth-storage";
 
 const slides = [
   {
@@ -56,13 +56,13 @@ export function SplashScreen() {
 
   const handleStart = async () => {
     try {
-      const session = await restoreSession();
-
-      if (session?.profile_completed) {
-        router.replace("/(tabs)");
-      } else {
+      const session = await getAuthSession();
+      if (!session?.access_token) {
         router.replace("/login");
+        return;
       }
+      const profileDone = await getProfileCompletedInSession();
+      router.replace(profileDone ? "/(tabs)" : "/dynamic-onboarding");
     } catch {
       router.replace("/login");
     }

@@ -1,0 +1,210 @@
+import type {
+  Activity,
+  ActivityQuestion,
+  ActivitySubmitResponse,
+  Module,
+  ModuleDay,
+  ModuleVariant,
+} from "@powerup/shared";
+
+import { api } from "./api";
+
+export interface PersonalizedModuleItem {
+  id: string;
+  module_no: number;
+  title: string;
+  variant_id: string | null;
+  is_unlocked: boolean;
+}
+
+export interface PersonalizedPathResponse {
+  cefr_band: string;
+  modules: PersonalizedModuleItem[];
+}
+
+export interface ModuleProgressResponse {
+  total_activities: number;
+  completed_activities: number;
+  progress_percentage: number;
+  current_day: number;
+}
+
+export interface DayProgressResponse {
+  total_activities: number;
+  completed_activities: number;
+  progress_percentage: number;
+  estimated_minutes_remaining: number;
+}
+
+export interface ModuleCheckResult {
+  score_pct: number;
+  ready_to_advance: boolean;
+  current_cefr: string;
+  next_cefr: string | null;
+  at_ceiling: boolean;
+}
+
+export interface ActivityCompleteResponse {
+  activity_id: string;
+  user_id: string;
+  completed: boolean;
+  already_completed: boolean;
+  score: number | null;
+  passed: boolean;
+  day_completed: boolean;
+  xp_earned: number;
+  module_check_result: ModuleCheckResult | null;
+}
+
+export interface ActivityCompleteRequest {
+  score?: number | null;
+  passed?: boolean;
+  response_data?: Record<string, unknown> | null;
+}
+
+export interface ModuleEngagementSummary {
+  completed_days: number;
+  total_days: number;
+  rolling_score_pct: number;
+  xp_earned: number;
+  cefr_progress_pct: number;
+  next_cefr_band: string | null;
+  ready_to_advance: boolean;
+}
+
+export interface AdvanceCefrResponse {
+  new_cefr: string;
+  xp_earned: number;
+}
+
+export interface SubmitAnswerArgs {
+  activity_id: string;
+  answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
+}
+
+export const moduleApi = api.injectEndpoints({
+  overrideExisting: false,
+  endpoints: (builder) => ({
+    getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
+      query: () => "/v1/learning-path/personalized",
+      providesTags: ["Modules"],
+    }),
+
+    getModuleProgress: builder.query<ModuleProgressResponse, string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/progress`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    getModules: builder.query<Module[], void>({
+      query: () => "/v1/modules/",
+      providesTags: ["Modules"],
+    }),
+
+    getModuleVariants: builder.query<ModuleVariant[], string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/variants`,
+      providesTags: ["Modules"],
+    }),
+
+    getModuleDays: builder.query<ModuleDay[], string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/days`,
+      providesTags: ["Modules"],
+    }),
+
+    getDayActivities: builder.query<Activity[], string>({
+      query: (dayId) => `/v1/modules/days/${dayId}/activities`,
+      providesTags: ["Modules"],
+    }),
+
+    getActivityQuestions: builder.query<ActivityQuestion[], string>({
+      query: (activityId) => `/v1/modules/activities/${activityId}/questions`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    submitReadingAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+      query: (body) => ({ url: "/v1/activity/reading/submit", method: "POST", body }),
+    }),
+
+    submitListeningAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+      query: (body) => ({ url: "/v1/activity/listening/submit", method: "POST", body }),
+    }),
+
+    submitVocabularyAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+      query: (body) => ({ url: "/v1/activity/vocabulary/submit", method: "POST", body }),
+    }),
+
+    submitWritingAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+      query: (body) => ({ url: "/v1/activity/writing/submit", method: "POST", body }),
+    }),
+
+    submitSpeakingAnswer: builder.mutation<ActivitySubmitResponse, FormData>({
+      query: (formData) => ({
+        url: "/v1/activity/speaking/submit",
+        method: "POST",
+        body: formData,
+        // Do NOT set Content-Type — RN sets multipart boundary automatically.
+      }),
+    }),
+
+    // ── Day-progression loop ─────────────────────────────────────────────
+    // Call this AFTER the skill-specific submit returns. It records the
+    // pass/score on ModuleActivity, auto-advances current_day when every
+    // activity in the day passes, and fires module-check scoring on day 12.
+    completeActivity: builder.mutation<
+      ActivityCompleteResponse,
+      { activity_id: string; body: ActivityCompleteRequest }
+    >({
+      query: ({ activity_id, body }) => ({
+        url: `/v1/modules/activities/${activity_id}/complete`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Modules"],
+    }),
+
+    getDayProgress: builder.query<DayProgressResponse, string>({
+      query: (dayId) => `/v1/modules/days/${dayId}/progress`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    getModuleEngagement: builder.query<ModuleEngagementSummary, string>({
+      query: (moduleId) => `/v1/modules/${moduleId}/engagement`,
+      providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
+    }),
+
+    evaluateModuleCheck: builder.mutation<ModuleCheckResult, string>({
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/check`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules"],
+    }),
+
+    advanceCefr: builder.mutation<AdvanceCefrResponse, string>({
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/advance-cefr`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules"],
+    }),
+  }),
+});
+
+export const {
+  useGetPersonalizedPathQuery,
+  useGetModuleProgressQuery,
+  useGetModulesQuery,
+  useGetModuleVariantsQuery,
+  useGetModuleDaysQuery,
+  useGetDayActivitiesQuery,
+  useGetActivityQuestionsQuery,
+  useSubmitReadingAnswerMutation,
+  useSubmitListeningAnswerMutation,
+  useSubmitVocabularyAnswerMutation,
+  useSubmitWritingAnswerMutation,
+  useSubmitSpeakingAnswerMutation,
+  useCompleteActivityMutation,
+  useGetDayProgressQuery,
+  useGetModuleEngagementQuery,
+  useEvaluateModuleCheckMutation,
+  useAdvanceCefrMutation,
+} = moduleApi;

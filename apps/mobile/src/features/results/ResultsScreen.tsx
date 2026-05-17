@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import { useRouter } from "expo-router";
 import { useCompleteSessionMutation } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
-import { useState, useEffect } from "react";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 
 interface ResultsScreenProps {
@@ -43,7 +42,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }, [sessionId, hasTriggered, completeSession]);
 
   const handleBack = () => {
-    router.replace("/home" as any);
+    router.replace("/(tabs)/my-learning" as never);
   };
 
   if (isLoading) {
@@ -113,7 +112,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
             className="bg-slate-900 py-4 rounded-2xl items-center mt-12 mb-6 shadow-sm active:opacity-90"
             onPress={handleBack}
           >
-            <Text className="text-white text-lg font-bold">Back to Home</Text>
+            <Text className="text-white text-lg font-bold">Go to My Learning</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

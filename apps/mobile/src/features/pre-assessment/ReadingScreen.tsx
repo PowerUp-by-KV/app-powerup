@@ -187,7 +187,6 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex((prev) => prev - 1);
     }
-    // Disallow going back to previous sections (router.back())
   };
 
   return (
@@ -210,6 +209,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               totalQuestions={questions.length}
               onFinishTest={handleFinish}
               sessionId={sessionId}
+              stopTimer={isSubmitting || isFinished}
             />
 
             {readingData?.paragraph && (

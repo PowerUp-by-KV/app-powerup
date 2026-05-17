@@ -197,6 +197,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
             totalQuestions={questions.length}
             onFinishTest={handleFinish}
             sessionId={sessionId}
+            stopTimer={isSubmitting || isFinished}
           />
 
           <ListeningQuestion

@@ -14,9 +14,9 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { getApiErrorMessage, setAuthToken } from "@/services/auth-service";
+import { getApiErrorMessage } from "@/utils/error-message";
 import { saveAuthSession } from "@/services/auth-storage";
-import { useRegisterMutation, AuthResponse } from "@/services/auth-api";
+import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 
 export function RegisterScreen() {
   const router = useRouter();
@@ -32,13 +32,9 @@ export function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
-      router.replace("/home" as any);
-      return;
-    }
-
-    router.replace("/dynamic-onboarding");
+  const handlePostAuthNavigation = (auth: AuthResponse, fallbackEmail: string) => {
+    router.replace({ pathname: "/verify-email", params: { email: fallbackEmail } });
+    void auth;
   };
 
   const handleRegister = async () => {
@@ -102,8 +98,6 @@ export function RegisterScreen() {
         name: name_value,
       }).unwrap();
 
-      // Convert AuthRegisterResponse to AuthResponse structure for storage
-      // Since it's a new registration, we know profile is not completed
       const auth: AuthResponse = {
         access_token: regResponse.access_token,
         refresh_token: regResponse.refresh_token,
@@ -116,15 +110,13 @@ export function RegisterScreen() {
       };
 
       await saveAuthSession(auth);
-      setAuthToken(auth.access_token);
-      // Alert.alert("Success", "Registration successful.");
-      handlePostAuthNavigation(false);
+      Alert.alert("Success", "Registration successful.");
+      handlePostAuthNavigation(auth, email_value);
     } catch (error) {
       const apiError = error as { status?: number; data?: { message?: string; detail?: any } };
 
       let errorMessage: string | undefined;
 
-      // Handle FastAPI validation error format (array of details)
       if (Array.isArray(apiError?.data?.detail)) {
         errorMessage = apiError.data.detail.map((err: any) => err.msg).join("\n");
       } else if (typeof apiError?.data?.detail === "string") {
@@ -168,7 +160,6 @@ export function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="w-full max-w-md py-8">
-            {/* Top Logo Placeholder */}
             <View className="items-center mb-6">
               <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
               <Text className="text-xl font-bold text-slate-900">Welcome to Powerup</Text>
@@ -177,7 +168,6 @@ export function RegisterScreen() {
               </Text>
             </View>
 
-            {/* OAuth Buttons */}
             <View className="flex-row justify-between w-full mt-2">
               <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
                 <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
@@ -189,16 +179,20 @@ export function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Divider */}
-            <View className="flex-row items-center my-6 w-full">
+            <TouchableOpacity
+              onPress={() => router.push("/login-otp")}
+              className="mt-5 mb-2 rounded-full py-4 items-center justify-center border-2 border-slate-300"
+            >
+              <Text className="text-sm font-bold text-slate-800">Login with OTP</Text>
+            </TouchableOpacity>
+
+            <View className="flex-row items-center my-4 w-full">
               <View className="h-px bg-slate-100 flex-1" />
               <Text className="mx-4 text-sm text-slate-400">or</Text>
               <View className="h-px bg-slate-100 flex-1" />
             </View>
 
-            {/* Form Fields */}
             <View className="space-y-4">
-              {/* First Name & Last Name Row */}
               <View className="flex-row justify-between w-full">
                 <View className="flex-1 mr-2">
                   <Text className="text-sm font-bold text-slate-700 mb-1.5">First Name</Text>
@@ -220,7 +214,6 @@ export function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Mobile Number */}
               <View className="w-full mt-3">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Mobile Number</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -237,7 +230,6 @@ export function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Email */}
               <View className="w-full mt-3">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -255,7 +247,6 @@ export function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Password */}
               <View className="w-full mt-3">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -279,7 +270,6 @@ export function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Confirm Password */}
               <View className="w-full mt-3">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Confirm Password</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -307,7 +297,6 @@ export function RegisterScreen() {
                 </View>
               </View>
 
-              {/* Terms and Privacy Checkbox */}
               <View className="flex-row items-center w-full mt-5 mb-2">
                 <TouchableOpacity
                   onPress={() => setAgreedToTerms(!agreedToTerms)}
@@ -322,7 +311,6 @@ export function RegisterScreen() {
                 </Text>
               </View>
 
-              {/* Submit Button */}
               <TouchableOpacity
                 className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
                   isLoading ? "opacity-75" : ""
@@ -337,7 +325,6 @@ export function RegisterScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Login Link */}
               <View className="items-center mt-1">
                 <Text className="text-sm text-slate-500">
                   Already have an account?{" "}

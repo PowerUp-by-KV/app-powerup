@@ -93,6 +93,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const [isRecording, setIsRecording] = useState(false);
+  const [hasStartedRecording, setHasStartedRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recording, setRecording] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(45); // Default 45s
@@ -105,12 +106,16 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   useEffect(() => {
     if (currentQuestion) {
       setTimeLeft(maxDuration + 10);
+      setRecordingDuration(0);
+      setIsRecording(false);
+      setRecording(null);
+      setHasStartedRecording(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished) return;
+    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording) return;
 
     if (timeLeft <= 0) {
       if (isRecording) {
@@ -129,7 +134,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished]);
+  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached
   useEffect(() => {
@@ -308,6 +313,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             totalQuestions={questions.length}
             onFinishTest={handleFinish}
             sessionId={sessionId}
+            stopTimer={isSubmitting || isFinished}
           />
 
           <ListenWithAudioQuestion

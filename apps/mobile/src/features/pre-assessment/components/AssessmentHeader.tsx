@@ -10,6 +10,7 @@ interface AssessmentHeaderProps {
   totalQuestions: number;
   onFinishTest: () => void;
   sessionId?: string;
+  stopTimer?: boolean;
 }
 
 const SKILLS_MAP = [
@@ -28,17 +29,19 @@ export function AssessmentHeader({
   totalQuestions,
   onFinishTest,
   sessionId,
+  stopTimer,
 }: AssessmentHeaderProps) {
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
 
   useEffect(() => {
+    if (stopTimer) return;
     const timer = setInterval(() => {
       setSecondsElapsed((prev) => prev + 1);
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [stopTimer]);
 
   const formatTime = (totalSeconds: number) => {
     const hrs = Math.floor(totalSeconds / 3600);
@@ -70,7 +73,6 @@ export function AssessmentHeader({
 
   return (
     <View className="mb-6 pt-2">
-      {/* Top Row: Timer and Finish Button */}
       <View className="flex-row justify-between items-center mb-4">
         <View className="bg-slate-100 px-4 py-2.5 rounded-full border border-slate-200 flex-row items-center shadow-sm">
           <Feather name="clock" size={14} color="#64748B" className="mr-2" />
@@ -87,7 +89,6 @@ export function AssessmentHeader({
         </TouchableOpacity>
       </View>
 
-      {/* Second Row: Section & Skill Selector */}
       <View className="flex-row justify-between items-center mb-3">
         <View className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
           <Text className="text-xs font-bold text-slate-700">{sectionName}</Text>
@@ -102,7 +103,6 @@ export function AssessmentHeader({
         </TouchableOpacity>
       </View>
 
-      {/* Progress Bar */}
       <View className="mb-1">
         <View className="h-2.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
           <View
@@ -115,7 +115,6 @@ export function AssessmentHeader({
         </Text>
       </View>
 
-      {/* Skills Dropdown Modal */}
       <Modal
         animationType="fade"
         transparent={true}

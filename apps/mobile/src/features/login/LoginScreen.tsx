@@ -15,9 +15,9 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { LoginRequest, useLoginMutation } from "@/services/auth-api";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { AuthResponse, saveAuthSession, getAuthSession } from "@/services/auth-storage";
+import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { clearAuthSession, saveAuthSession } from "@/services/auth-storage";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -28,21 +28,13 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
-      router.replace("/home" as any);
+  const persistAuthAndNavigate = async (auth: AuthResponse) => {
+    await saveAuthSession(auth);
+    if (auth.user.cefr_range) {
+      router.replace("/(tabs)");
     } else {
       router.replace("/dynamic-onboarding");
     }
-  };
-
-  const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    setAuthToken(auth.access_token);
-
-    // After saving, get the normalized session which has profile_completed set
-    const session = await getAuthSession();
-    handlePostAuthNavigation(session?.profile_completed ?? false);
   };
 
   const handleLogin = async () => {
@@ -67,7 +59,6 @@ export function LoginScreen() {
         remember_me: rememberMe,
       };
 
-      // Determine if the input is an email or a generic identifier/username
       if (email_value.includes("@")) {
         payload.email = email_value.toLowerCase();
       } else {
@@ -75,13 +66,11 @@ export function LoginScreen() {
       }
 
       const response = await login(payload).unwrap();
-
-      // Alert.alert("Success", "Login successful");
       await persistAuthAndNavigate(response);
     } catch (error) {
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {
-        await clearAuthState();
+        await clearAuthSession();
         Alert.alert("Error", "Invalid credentials");
         return;
       }
@@ -113,14 +102,12 @@ export function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View className="w-full max-w-md py-8">
-            {/* Top Logo Placeholder */}
             <View className="items-center mb-6">
               <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
               <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
               <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
 
-            {/* OAuth Buttons */}
             <View className="flex-row justify-between w-full mt-2">
               <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
                 <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
@@ -132,24 +119,20 @@ export function LoginScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Login with OTP Link */}
             <TouchableOpacity
-              onPress={() => router.push("/otp")}
-              className="mt-5 mb-2 items-center"
+              onPress={() => router.push("/login-otp")}
+              className="mt-5 mb-2 rounded-full py-4 items-center justify-center border-2 border-slate-300"
             >
-              <Text className="text-sm font-bold text-slate-800 underline">Login with OTP</Text>
+              <Text className="text-sm font-bold text-slate-800">Login with OTP</Text>
             </TouchableOpacity>
 
-            {/* Divider */}
             <View className="flex-row items-center my-4 w-full">
               <View className="h-px bg-slate-100 flex-1" />
               <Text className="mx-4 text-sm text-slate-400">or</Text>
               <View className="h-px bg-slate-100 flex-1" />
             </View>
 
-            {/* Form Fields */}
             <View className="space-y-4 w-full">
-              {/* Email */}
               <View className="w-full">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -167,7 +150,6 @@ export function LoginScreen() {
                 </View>
               </View>
 
-              {/* Password */}
               <View className="w-full mt-3">
                 <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
                 <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
@@ -190,7 +172,6 @@ export function LoginScreen() {
                 </View>
               </View>
 
-              {/* Options row: Remember me & Forgot password? */}
               <View className="flex-row items-center justify-between w-full mt-5 mb-2">
                 <TouchableOpacity
                   onPress={() => setRememberMe(!rememberMe)}
@@ -210,7 +191,6 @@ export function LoginScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Submit Button */}
               <TouchableOpacity
                 className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
                   isLoading ? "opacity-75" : ""
@@ -225,7 +205,6 @@ export function LoginScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Sign up Link */}
               <View className="items-center mt-1">
                 <Text className="text-sm text-slate-500">
                   Don&apos;t have an account?{" "}

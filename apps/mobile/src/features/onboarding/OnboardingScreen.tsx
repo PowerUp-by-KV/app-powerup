@@ -20,7 +20,7 @@ import {
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import { setProfileCompletedInSession, saveAssessmentSessionId } from "@/services/auth-storage";
-import { getApiErrorMessage } from "@/services/auth-service";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 export default function OnboardingScreen() {
   const router = useRouter();

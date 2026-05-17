@@ -77,36 +77,39 @@ export const Dropdown: React.FC<DropdownProps> = ({
               />
             </View>
 
-            <FlatList
-              data={filteredOptions}
-              keyExtractor={(item) => item.key}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    onSelect(item.key);
-                    setModalVisible(false);
-                    setSearchQuery("");
-                  }}
-                  className={`py-4 border-b border-slate-50 flex-row justify-between items-center ${
-                    selectedValue === item.key ? "bg-indigo-50/50 -mx-6 px-6" : ""
-                  }`}
-                >
-                  <Text
-                    className={`text-base ${
-                      selectedValue === item.key ? "text-indigo-600 font-bold" : "text-slate-700"
+            {filteredOptions.length === 0 ? (
+              <View className="items-center mt-10">
+                <Text className="text-slate-400 italic">No results found</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredOptions}
+                keyExtractor={(item: Option) => item.key}
+                renderItem={({ item }: { item: Option }) => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      onSelect(item.key);
+                      setModalVisible(false);
+                      setSearchQuery("");
+                    }}
+                    className={`py-4 border-b border-slate-50 flex-row justify-between items-center ${
+                      selectedValue === item.key ? "bg-indigo-50/50 -mx-6 px-6" : ""
                     }`}
                   >
-                    {item.label}
-                  </Text>
-                  {selectedValue === item.key && <Feather name="check" size={18} color="#4F46E5" />}
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <View className="items-center mt-10">
-                  <Text className="text-slate-400 italic">No results found</Text>
-                </View>
-              }
-            />
+                    <Text
+                      className={`text-base ${
+                        selectedValue === item.key ? "text-indigo-600 font-bold" : "text-slate-700"
+                      }`}
+                    >
+                      {item.label}
+                    </Text>
+                    {selectedValue === item.key && (
+                      <Feather name="check" size={18} color="#4F46E5" />
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
           </View>
         </SafeAreaView>
       </Modal>

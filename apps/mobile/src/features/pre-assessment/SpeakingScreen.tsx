@@ -92,6 +92,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const [isRecording, setIsRecording] = useState(false);
+  const [hasStartedRecording, setHasStartedRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recording, setRecording] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(0);
@@ -105,12 +106,16 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     if (currentQuestion) {
       // Add a small buffer for preparation
       setTimeLeft(maxDuration + 5);
+      setRecordingDuration(0);
+      setIsRecording(false);
+      setRecording(null);
+      setHasStartedRecording(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished) return;
+    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording) return;
 
     if (timeLeft <= 0) {
       if (isRecording) {
@@ -130,7 +135,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished]);
+  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached (double safety)
   useEffect(() => {
@@ -166,6 +171,10 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       setRecording(newRecording);
       setIsRecording(true);
       setRecordingDuration(0);
+      if (!hasStartedRecording) {
+        setHasStartedRecording(true);
+        setTimeLeft(maxDuration + 5);
+      }
     } catch (err) {
       Alert.alert("Failed to start recording", (err as Error).message);
     }
@@ -309,6 +318,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             totalQuestions={questions.length}
             onFinishTest={handleFinish}
             sessionId={sessionId}
+            stopTimer={isSubmitting || isFinished}
           />
 
           <SpeakingQuestion

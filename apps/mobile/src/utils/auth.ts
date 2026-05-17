@@ -1,17 +1,22 @@
-import { clearAuthState, setAuthToken } from "@/services/auth-service";
-import { getAuthSession } from "@/services/auth-storage";
 import { useRouter } from "expo-router";
+
+import {
+  clearAssessmentSessionId,
+  clearAuthSession,
+  clearProfileCompletedInSession,
+  getAuthSession,
+} from "@/services/auth-storage";
 
 export const useLogout = () => {
   const router = useRouter();
-
   const logout = async () => {
     try {
-      await clearAuthState();
-      router.replace("/splash");
+      await clearAuthSession();
+      await clearAssessmentSessionId();
+      await clearProfileCompletedInSession();
+      router.replace("/login");
     } catch {}
   };
-
   return { logout };
 };
 
@@ -26,12 +31,6 @@ export const getToken = async (): Promise<string | null> => {
 
 export const clearToken = async (): Promise<void> => {
   try {
-    await clearAuthState();
-  } catch {}
-};
-
-export const setToken = async (token: string): Promise<void> => {
-  try {
-    setAuthToken(token);
+    await clearAuthSession();
   } catch {}
 };

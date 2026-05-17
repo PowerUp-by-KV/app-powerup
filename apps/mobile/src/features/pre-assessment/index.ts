@@ -6,6 +6,9 @@ export { ReadingScreen } from "./ReadingScreen";
 export { SpeakingScreen } from "./SpeakingScreen";
 export { SpeakingReadScreen } from "./SpeakingReadScreen";
 
+// Components
+export { AssessmentHeader } from "./components/AssessmentHeader";
+
 // Hooks
 export * from "./hooks/useGrammarState";
 export * from "./hooks/useListenWithAudioState";

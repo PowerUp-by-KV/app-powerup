@@ -1,4 +1,7 @@
 import { api } from "./api";
+import type { StoredSession } from "./auth-storage";
+
+export type AuthResponse = StoredSession;
 
 export interface LoginRequest {
   email?: string;
@@ -20,29 +23,44 @@ export interface RegisterRequest {
   remember_me?: boolean;
 }
 
-export interface User {
-  id: string;
-  email?: string;
-  phone_number?: string;
-  name: string;
-  cefr_range?: string;
-  learning_goal?: string;
-  learning_frequency?: string;
-  streak_count?: number;
-  total_xp?: number;
-}
-
-export interface AuthResponse {
-  access_token: string;
-  refresh_token: string;
-  user: User;
-  profile_completed?: boolean;
-}
-
 export interface AuthRegisterResponse {
   user_id: string;
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string | null;
+  phone_number: string | null;
+  name: string;
+  cefr_range: string | null;
+  learning_goal: string | null;
+  learning_frequency: string | null;
+  streak_count: number;
+  total_xp: number;
+  weekly_streak: boolean[];
+  current_level: number;
+  modules_completed: number;
+  total_modules: number;
+  badges_count: number;
+  nickname: string | null;
+  country: string | null;
+  gender: string | null;
+  address: string | null;
+  language: string | null;
+  avatar_id: string | null;
+}
+
+export interface UserUpdate {
+  name?: string;
+  nickname?: string;
+  phone_number?: string;
+  country?: string;
+  gender?: string;
+  address?: string;
+  language?: string;
+  avatar_id?: string;
 }
 
 export const authApi = api.injectEndpoints({
@@ -69,7 +87,6 @@ export const authApi = api.injectEndpoints({
 
     register: builder.mutation<AuthRegisterResponse, RegisterRequest>({
       query: (userData) => {
-        // Filter out undefined values from the payload
         const body = Object.fromEntries(
           Object.entries(userData).filter(([_, value]) => value !== undefined),
         );
@@ -82,11 +99,21 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
-    getProfile: builder.query<User, void>({
+    getProfile: builder.query<UserProfile, void>({
       query: () => "/v1/auth/me",
       providesTags: ["Auth"],
+    }),
+
+    patchProfile: builder.mutation<UserProfile, UserUpdate>({
+      query: (body) => ({ url: "/v1/auth/me", method: "PATCH", body }),
+      invalidatesTags: ["Auth"],
     }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useGetProfileQuery } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useGetProfileQuery,
+  usePatchProfileMutation,
+} = authApi;

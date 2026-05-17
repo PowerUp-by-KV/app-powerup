@@ -49,6 +49,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isFinished, setIsFinished] = useState(false);
 
   const grammarData = sectionData as CGrammarSectionResponse | undefined;
   const questions = grammarData?.questions || [];
@@ -79,6 +80,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
   };
 
   const handleFinish = async () => {
+    setIsFinished(true);
     try {
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,
@@ -133,6 +135,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
             totalQuestions={questions.length}
             onFinishTest={handleFinish}
             sessionId={sessionId}
+            stopTimer={isSubmitting || isFinished}
           />
 
           <GrammarQuestionComponent
