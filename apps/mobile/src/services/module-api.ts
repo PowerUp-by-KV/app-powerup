@@ -83,6 +83,19 @@ export interface SubmitAnswerArgs {
   answers: Array<{ question_id: string; answer: string; audio_url?: string }>;
 }
 
+export interface WritingSubmitArgs {
+  question_id: string;
+  response_text: string;
+}
+
+export interface WritingResultRead {
+  score: number;
+  cefr_level: string;
+  feedback: string;
+  grammar_errors: string[];
+  passed: boolean;
+}
+
 export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
@@ -133,7 +146,7 @@ export const moduleApi = api.injectEndpoints({
       query: (body) => ({ url: "/v1/activity/vocabulary/submit", method: "POST", body }),
     }),
 
-    submitWritingAnswer: builder.mutation<ActivitySubmitResponse, SubmitAnswerArgs>({
+    submitWritingAnswer: builder.mutation<WritingResultRead, WritingSubmitArgs>({
       query: (body) => ({ url: "/v1/activity/writing/submit", method: "POST", body }),
     }),
 

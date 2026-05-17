@@ -113,7 +113,7 @@ const mockInterviewApi = api.injectEndpoints({
     // ── 1. Start a new session ─────────────────────────────────────────────
     startInterview: builder.mutation<StartInterviewResponse, StartInterviewRequest>({
       query: (body) => ({
-        url: "/mock-interview/start",
+        url: "/v1/mock-interview/start",
         method: "POST",
         body,
       }),
@@ -124,7 +124,7 @@ const mockInterviewApi = api.injectEndpoints({
     // When the response has complete: true, dispatch markComplete() in the
     // Question screen via onQueryStarted.
     getNextQuestion: builder.query<NextQuestionResponse, string>({
-      query: (sessionId) => `/mock-interview/${sessionId}/next`,
+      query: (sessionId) => `/v1/mock-interview/${sessionId}/next`,
       async onQueryStarted(_sessionId, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -160,7 +160,7 @@ const mockInterviewApi = api.injectEndpoints({
           form.append("transcript", transcript);
         }
         return {
-          url: `/mock-interview/${sessionId}/answers`,
+          url: `/v1/mock-interview/${sessionId}/answers`,
           method: "POST",
           body: form,
           // Do NOT set Content-Type — browser sets it with the correct boundary
@@ -205,13 +205,13 @@ const mockInterviewApi = api.injectEndpoints({
 
     // ── 4. Get final results ───────────────────────────────────────────────
     getInterviewResults: builder.query<GetInterviewResultsResponse, string>({
-      query: (sessionId) => `/mock-interview/${sessionId}/results`,
+      query: (sessionId) => `/v1/mock-interview/${sessionId}/results`,
     }),
 
     // ── 5. Get past attempts (STUBBED — endpoint not in v1 docs) ──────────
     // TODO: Update URL + response shape once Ilakiya adds the endpoint.
     getPastAttempts: builder.query<GetAttemptsResponse, void>({
-      query: () => "/mock-interview/attempts",
+      query: () => "/v1/mock-interview/attempts",
     }),
   }),
 });
