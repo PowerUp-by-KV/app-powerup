@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 
 export interface StoredSession {
   access_token: string;
+  refresh_token?: string;
   token_type: string;
   user: {
     id: string;
