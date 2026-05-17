@@ -16,7 +16,11 @@ import {
   getNextRouteForSection,
 } from "@/services/assessment-api";
 import { AudioPlayer } from "./components/AudioPlayer";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { RecordingButton } from "./components/RecordingButton";
+import { Audio } from "expo-av";
+import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface ListeningScreenProps {
@@ -106,6 +110,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("D_LISTEN_ANSWER");
       if (!response.next_section) {
         await completeSession({ session_id: sessionId! }).unwrap();
       }

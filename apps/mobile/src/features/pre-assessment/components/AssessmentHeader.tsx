@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { getCompletedSections } from "@/services/auth-storage";
 
 export type SectionCode =
   | "A_READING"
@@ -56,6 +57,11 @@ export function AssessmentHeader({
 }: AssessmentHeaderProps) {
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  useEffect(() => {
+    getCompletedSections().then(setCompletedSections);
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000);
@@ -127,6 +133,7 @@ export function AssessmentHeader({
           >
             {SECTION_ORDER.map((code) => {
               const isCurrent = code === section;
+              const isDone = completedSections.includes(code);
               return (
                 <Pressable
                   key={code}
@@ -134,13 +141,14 @@ export function AssessmentHeader({
                     setDropdownOpen(false);
                     if (!isCurrent) onSectionChange?.(code);
                   }}
-                  className={`px-3 py-2.5 rounded-xl ${isCurrent ? "bg-slate-100" : ""}`}
+                  className={`px-3 py-2.5 rounded-xl flex-row items-center justify-between ${isCurrent ? "bg-slate-100" : ""}`}
                 >
                   <Text
                     className={`text-sm ${isCurrent ? "text-slate-900 font-bold" : "text-slate-700"}`}
                   >
                     {SECTION_LABELS[code]}
                   </Text>
+                  {isDone && <Feather name="check-circle" size={15} color="#22c55e" />}
                 </Pressable>
               );
             })}

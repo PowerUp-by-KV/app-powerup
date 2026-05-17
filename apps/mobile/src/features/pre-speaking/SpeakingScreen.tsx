@@ -21,7 +21,7 @@ import {
 } from "@/services/assessment-api";
 import { SpeakingQuestion } from "./components/SpeakingQuestion";
 import { RecordingControls } from "./components/RecordingControls";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface SpeakingScreenProps {
@@ -163,6 +163,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("B_SPEAKING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {

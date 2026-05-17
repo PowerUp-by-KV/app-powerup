@@ -21,7 +21,10 @@ import {
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { RecordingButton } from "./components/RecordingButton";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { Audio } from "expo-av";
+import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface PreListenWithAudioScreenProps {
@@ -151,6 +154,7 @@ export function PreListenWithAudioScreen({
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("A_LISTEN");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {

@@ -7,7 +7,6 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Audio } from "expo-av";
@@ -19,7 +18,7 @@ import {
 } from "@/services/assessment-api";
 import { SentenceDisplay } from "./components/SentenceDisplay";
 import { Recorder } from "./components/Recorder";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface SpeakingReadScreenProps {
@@ -51,7 +50,6 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
-  // A_SPEAKING returns sentences: [SpeakingSentenceRead]
   const questions = (sectionData?.sentences ?? []) as any[];
   const currentQuestion = questions[currentQuestionIndex];
 
@@ -71,7 +69,6 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") return;
-
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY,
@@ -131,8 +128,8 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
   const handleFinish = async () => {
     if (isRecording) {
-      const success = await stopRecording();
-      if (!success) return;
+      const ok = await stopRecording();
+      if (!ok) return;
     }
     try {
       const formattedAnswers = questions.map((q: any) => ({
@@ -147,6 +144,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("A_SPEAKING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.push({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err) {
@@ -156,8 +154,8 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
   const handleNext = async () => {
     if (isRecording) {
-      const success = await stopRecording(String(currentQuestion?.id));
-      if (!success) return;
+      const ok = await stopRecording(String(currentQuestion?.id));
+      if (!ok) return;
     }
     if (isLastQuestion) {
       await handleFinish();
