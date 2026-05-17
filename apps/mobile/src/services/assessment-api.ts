@@ -41,6 +41,10 @@ export interface AssessmentAnswer {
   audio_url?: string;
 }
 
+export interface AssessmentAudioUploadResponse {
+  audio_url: string;
+}
+
 export interface SubmitSectionRequest {
   session_id: string;
   section: string;
@@ -85,6 +89,14 @@ export const assessmentApi = api.injectEndpoints({
         body: data,
       }),
       invalidatesTags: ["Assessment"],
+    }),
+
+    uploadAssessmentAudio: builder.mutation<AssessmentAudioUploadResponse, FormData>({
+      query: (formData) => ({
+        url: "/v1/assessment/audio",
+        method: "POST",
+        body: formData,
+      }),
     }),
 
     completeSession: builder.mutation<{ cefr_range: string }, { session_id: string }>({
@@ -138,6 +150,7 @@ export const {
   useStartSessionMutation,
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
+  useUploadAssessmentAudioMutation,
   useCompleteSessionMutation,
   useGetAssessmentResultQuery,
 } = assessmentApi;

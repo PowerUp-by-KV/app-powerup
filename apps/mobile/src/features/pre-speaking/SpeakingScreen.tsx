@@ -8,15 +8,16 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
-import { Platform } from "react-native";
 import {
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
+  useUploadAssessmentAudioMutation,
   getNextRouteForSection,
+  type AssessmentQuestion,
 } from "@/services/assessment-api";
 import { SpeakingQuestion } from "./components/SpeakingQuestion";
 import { RecordingControls } from "./components/RecordingControls";
@@ -45,9 +46,11 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [uploadAudio] = useUploadAssessmentAudioMutation();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
   const questions =
@@ -92,36 +95,35 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }
   }
 
-  async function stopRecording() {
-    if (!recording) return;
+  async function stopRecording(questionId?: string): Promise<boolean> {
+    if (!recording) return true;
 
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     setRecording(null);
 
-    if (uri && currentQuestion) {
-      try {
-        let base64String = "";
-        if (Platform.OS === "web") {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          base64String = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          base64String = await FileSystem.readAsStringAsync(uri, {
-            encoding: "base64",
-          });
-          base64String = `data:audio/m4a;base64,${base64String}`;
-        }
+    const targetId = questionId ?? currentQuestion?.id;
+    if (!uri || !targetId) return true;
 
-        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: base64String }));
-      } catch (err) {
-        console.error("Failed to convert audio to base64", err);
-      }
+    setIsUploadingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", {
+        uri,
+        name: "recording.m4a",
+        type: "audio/m4a",
+      } as unknown as Blob);
+
+      const result = await uploadAudio(formData).unwrap();
+      setAnswers((prev) => ({ ...prev, [targetId]: result.audio_url }));
+      return true;
+    } catch (err) {
+      console.error("Audio upload failed", err);
+      Alert.alert("Upload Failed", "Failed to upload your recording. Please try again.");
+      return false;
+    } finally {
+      setIsUploadingAudio(false);
     }
   }
 
@@ -144,11 +146,15 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const handleFinish = async () => {
+    if (isRecording) {
+      const success = await stopRecording();
+      if (!success) return;
+    }
     try {
-      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
-        question_id: qId,
-        answer: val,
-        audio_url: val,
+      const formattedAnswers = questions.map((q: AssessmentQuestion) => ({
+        question_id: q.id,
+        answer: "",
+        audio_url: answers[q.id] ?? undefined,
       }));
 
       const response = await submitSection({
@@ -164,12 +170,17 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (isRecording) {
+      const success = await stopRecording(currentQuestion?.id);
+      if (!success) return;
+    }
     if (isLastQuestion) {
-      handleFinish();
+      await handleFinish();
       return;
     }
     setCurrentQuestionIndex((prev) => prev + 1);
+    setRecordingDuration(0);
   };
 
   const handleBack = () => {
@@ -228,11 +239,11 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
               <Text className="text-white font-semibold">Back</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting || isUploadingAudio ? "bg-indigo-400" : "bg-indigo-600"}`}
               onPress={handleNext}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingAudio}
             >
-              {isSubmitting ? (
+              {isSubmitting || isUploadingAudio ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <Text className="text-white font-semibold">
