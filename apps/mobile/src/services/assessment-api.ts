@@ -1,4 +1,5 @@
-import { api } from "./api";
+import { api, API_BASE_URL } from "./api";
+import { getAuthSession } from "./auth-storage";
 
 export interface StartSessionResponse {
   session_id: string;
@@ -124,12 +125,32 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
+    // Use queryFn + native fetch so React Native's networking layer handles the
+    // {uri, name, type} FormData entry as a real file upload — fetchBaseQuery
+    // serialises unknown object values to "[object Object]".
     uploadAssessmentAudio: builder.mutation<AssessmentAudioUploadResponse, FormData>({
-      query: (formData) => ({
-        url: "/v1/assessment/audio",
-        method: "POST",
-        body: formData,
-      }),
+      queryFn: async (formData) => {
+        try {
+          const session = await getAuthSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+            method: "POST",
+            headers,
+            body: formData,
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: "Upload failed" }));
+            return { error: { status: response.status, data: err } };
+          }
+          const data = (await response.json()) as AssessmentAudioUploadResponse;
+          return { data };
+        } catch (err) {
+          return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
+        }
+      },
     }),
 
     completeSession: builder.mutation<
