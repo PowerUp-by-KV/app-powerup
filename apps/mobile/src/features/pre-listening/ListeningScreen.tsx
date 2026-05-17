@@ -7,7 +7,6 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -16,17 +15,21 @@ import {
   useCompleteSessionMutation,
   getNextRouteForSection,
 } from "@/services/assessment-api";
-import { ListeningQuestion } from "./components/ListeningQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
-import { RecordingButton } from "./components/RecordingButton";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
-import { Platform } from "react-native";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
 interface ListeningScreenProps {
   sessionId?: string;
+}
+
+interface FlatQuestion {
+  id: string;
+  question_no: number;
+  question: string;
+  options: { label: string; value: string }[];
+  audio_url: string | null | undefined;
+  story_no: number;
 }
 
 export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenProps) {
@@ -53,80 +56,20 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [startedAt] = useState(() => Date.now());
 
-  const questions =
-    sectionData?.questions ||
-    sectionData?.sentences ||
-    sectionData?.items ||
-    sectionData?.prompts ||
-    sectionData?.stories ||
-    [];
-  const currentQuestion = questions[currentQuestionIndex];
+  // D_LISTEN_ANSWER returns stories:[{audio_url, questions:[{id,question,options}]}]
+  // Flatten to a single list while keeping audio_url per question
+  const flatQuestions: FlatQuestion[] = (sectionData?.stories ?? []).flatMap((story: any) =>
+    (story.questions ?? []).map((q: any) => ({
+      id: String(q.id),
+      question_no: q.question_no,
+      question: q.question,
+      options: q.options ?? [],
+      audio_url: story.audio_url,
+      story_no: story.audio_no,
+    })),
+  );
 
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingDuration, setRecordingDuration] = useState(0);
-  const [recording, setRecording] = useState<Audio.Recording | null>(null);
-
-  useEffect(() => {
-    let interval: any;
-    if (isRecording) {
-      interval = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
-  async function startRecording() {
-    try {
-      const permission = await Audio.requestPermissionsAsync();
-      if (permission.status !== "granted") return;
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      );
-      setRecording(newRecording);
-      setIsRecording(true);
-      setRecordingDuration(0);
-    } catch (err) {
-      console.error("Failed to start recording", err);
-    }
-  }
-
-  async function stopRecording() {
-    if (!recording) return;
-
-    setIsRecording(false);
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    setRecording(null);
-
-    if (uri && currentQuestion) {
-      try {
-        let base64String = "";
-        if (Platform.OS === "web") {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          base64String = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          base64String = await FileSystem.readAsStringAsync(uri, {
-            encoding: "base64",
-          });
-          base64String = `data:audio/m4a;base64,${base64String}`;
-        }
-
-        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: base64String }));
-      } catch (err) {
-        console.error("Failed to convert audio to base64", err);
-      }
-    }
-  }
+  const currentQuestion = flatQuestions[currentQuestionIndex];
 
   if (isLoading || !sectionData) {
     return (
@@ -135,6 +78,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       </View>
     );
   }
+
   if (!currentQuestion) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -143,14 +87,17 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     );
   }
 
-  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+  const isLastQuestion = currentQuestionIndex === flatQuestions.length - 1;
+
+  const handleSelect = (value: string) => {
+    setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
+  };
 
   const handleFinish = async () => {
     try {
-      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
-        question_id: qId,
-        answer: val,
-        audio_url: val,
+      const formattedAnswers = flatQuestions.map((q) => ({
+        question_id: q.id,
+        answer: answers[q.id] ?? "",
       }));
 
       const response = await submitSection({
@@ -171,6 +118,10 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   };
 
   const handleNext = () => {
+    if (!answers[currentQuestion.id]) {
+      Alert.alert("Answer required", "Please select an answer before continuing.");
+      return;
+    }
     if (isLastQuestion) {
       handleFinish();
       return;
@@ -186,12 +137,14 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     }
   };
 
+  const selectedAnswer = answers[currentQuestion.id];
+
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <AssessmentHeader
         section="D_LISTEN_ANSWER"
         currentQuestionIndex={currentQuestionIndex}
-        totalQuestions={questions.length}
+        totalQuestions={flatQuestions.length}
         startedAtMs={startedAt}
         onFinish={handleFinish}
         onSectionChange={(next) =>
@@ -201,59 +154,74 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
           })
         }
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
+      <ScrollView
+        className="flex-1 px-4 py-4"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ListeningQuestion
-            question={currentQuestion as any}
-            questionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-          />
+        <Text className="text-xs text-gray-400 mb-1 uppercase tracking-wide font-medium">
+          Audio {currentQuestion.story_no}
+        </Text>
+        <Text className="text-base font-semibold text-gray-800 mb-4">
+          Question {currentQuestionIndex + 1} of {flatQuestions.length}
+        </Text>
 
-          <AudioPlayer
-            audioText={sectionData.paragraph || "Please listen to the audio carefully."}
-            duration={30}
-          />
+        {/* Play the story audio — shared per story group */}
+        <AudioPlayer audioUrl={currentQuestion.audio_url} />
 
-          <RecordingButton
-            isRecording={isRecording}
-            recordingDuration={recordingDuration}
-            maxDuration={30}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-          />
+        {/* MCQ question */}
+        <View className="bg-gray-50 rounded-lg p-4 mb-4">
+          <Text className="text-base font-medium text-gray-800">{currentQuestion.question}</Text>
+        </View>
 
-          <View className="flex-row justify-between mt-8 gap-3">
+        {/* Options */}
+        {currentQuestion.options.map((opt) => {
+          const isSelected = selectedAnswer === opt.value || selectedAnswer === opt.label;
+          return (
             <TouchableOpacity
-              className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-              onPress={handleBack}
-              disabled={isSubmitting}
+              key={opt.label}
+              className={`border rounded-lg p-4 mb-3 flex-row items-center ${
+                isSelected ? "border-indigo-500 bg-indigo-50" : "border-gray-200 bg-white"
+              }`}
+              onPress={() => handleSelect(opt.value || opt.label)}
             >
-              <Text className="text-white font-semibold">Back</Text>
+              <View
+                className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+                  isSelected ? "border-indigo-500" : "border-gray-300"
+                }`}
+              >
+                {isSelected && <View className="w-2.5 h-2.5 rounded-full bg-indigo-500" />}
+              </View>
+              <Text
+                className={`flex-1 text-sm ${isSelected ? "text-indigo-700 font-medium" : "text-gray-700"}`}
+              >
+                {opt.label}: {opt.value}
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
-              onPress={handleNext}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-semibold">
-                  {isLastQuestion ? "Finish" : "Next"}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          );
+        })}
+
+        <View className="flex-row justify-between mt-6 gap-3">
+          <TouchableOpacity
+            className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+            onPress={handleBack}
+            disabled={isSubmitting}
+          >
+            <Text className="text-white font-semibold">Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
+            onPress={handleNext}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-semibold">{isLastQuestion ? "Finish" : "Next"}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

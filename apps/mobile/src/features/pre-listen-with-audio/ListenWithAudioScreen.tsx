@@ -7,20 +7,20 @@ import {
   Text,
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Audio } from "expo-av";
 import {
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
+  useUploadAssessmentAudioMutation,
   getNextRouteForSection,
+  type AssessmentQuestion,
 } from "@/services/assessment-api";
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { RecordingButton } from "./components/RecordingButton";
-import { Audio } from "expo-av";
-import * as FileSystem from "expo-file-system";
-import { Platform } from "react-native";
 import { getAssessmentSessionId } from "@/services/auth-storage";
 import { AssessmentHeader } from "@/features/pre-assessment";
 
@@ -48,18 +48,15 @@ export function PreListenWithAudioScreen({
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [uploadAudio] = useUploadAssessmentAudioMutation();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [startedAt] = useState(() => Date.now());
 
-  const questions =
-    sectionData?.questions ||
-    sectionData?.sentences ||
-    sectionData?.items ||
-    sectionData?.prompts ||
-    sectionData?.stories ||
-    [];
+  // A_LISTEN returns items: [ListenItemRead] where each item has audio_url
+  const questions = (sectionData?.items ?? []) as any[];
   const currentQuestion = questions[currentQuestionIndex];
 
   const [isRecording, setIsRecording] = useState(false);
@@ -67,7 +64,7 @@ export function PreListenWithAudioScreen({
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   useEffect(() => {
-    let interval: any;
+    let interval: ReturnType<typeof setInterval>;
     if (isRecording) {
       interval = setInterval(() => setRecordingDuration((prev) => prev + 1), 1000);
     }
@@ -79,11 +76,7 @@ export function PreListenWithAudioScreen({
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") return;
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording: newRecording } = await Audio.Recording.createAsync(
         Audio.RecordingOptionsPresets.HIGH_QUALITY,
       );
@@ -95,36 +88,30 @@ export function PreListenWithAudioScreen({
     }
   }
 
-  async function stopRecording() {
-    if (!recording) return;
+  async function stopRecording(questionId?: string): Promise<boolean> {
+    if (!recording) return true;
 
     setIsRecording(false);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     setRecording(null);
 
-    if (uri && currentQuestion) {
-      try {
-        let base64String = "";
-        if (Platform.OS === "web") {
-          const response = await fetch(uri);
-          const blob = await response.blob();
-          base64String = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        } else {
-          base64String = await FileSystem.readAsStringAsync(uri, {
-            encoding: "base64",
-          });
-          base64String = `data:audio/m4a;base64,${base64String}`;
-        }
+    const targetId = questionId ?? currentQuestion?.id;
+    if (!uri || !targetId) return true;
 
-        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: base64String }));
-      } catch (err) {
-        console.error("Failed to convert audio to base64", err);
-      }
+    setIsUploadingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", { uri, name: "recording.m4a", type: "audio/m4a" } as unknown as Blob);
+      const result = await uploadAudio(formData).unwrap();
+      setAnswers((prev) => ({ ...prev, [targetId]: result.audio_url }));
+      return true;
+    } catch (err) {
+      console.error("Audio upload failed", err);
+      Alert.alert("Upload Failed", "Failed to upload your recording. Please try again.");
+      return false;
+    } finally {
+      setIsUploadingAudio(false);
     }
   }
 
@@ -147,11 +134,15 @@ export function PreListenWithAudioScreen({
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   const handleFinish = async () => {
+    if (isRecording) {
+      const success = await stopRecording();
+      if (!success) return;
+    }
     try {
-      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
-        question_id: qId,
-        answer: val,
-        audio_url: val,
+      const formattedAnswers = questions.map((q: any) => ({
+        question_id: q.id,
+        answer: "",
+        audio_url: answers[q.id] ?? undefined,
       }));
 
       const response = await submitSection({
@@ -167,12 +158,17 @@ export function PreListenWithAudioScreen({
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (isRecording) {
+      const success = await stopRecording(currentQuestion?.id);
+      if (!success) return;
+    }
     if (isLastQuestion) {
-      handleFinish();
+      await handleFinish();
       return;
     }
     setCurrentQuestionIndex((prev) => prev + 1);
+    setRecordingDuration(0);
   };
 
   const handleBack = () => {
@@ -198,59 +194,53 @@ export function PreListenWithAudioScreen({
           })
         }
       />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
+      <ScrollView
+        className="flex-1 px-4 py-4"
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <ListenWithAudioQuestion
-            question={currentQuestion as any}
-            questionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-          />
+        <ListenWithAudioQuestion
+          question={currentQuestion}
+          questionIndex={currentQuestionIndex}
+          totalQuestions={questions.length}
+        />
 
-          <AudioPlayer
-            audioText={sectionData.paragraph || "Please listen to the audio carefully."}
-            duration={30}
-          />
+        {/* Audio player uses the per-question audio_url from A_LISTEN items */}
+        <AudioPlayer audioUrl={currentQuestion.audio_url} />
 
-          <RecordingButton
-            isRecording={isRecording}
-            recordingDuration={recordingDuration}
-            maxDuration={30}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-          />
+        <RecordingButton
+          isRecording={isRecording}
+          recordingDuration={recordingDuration}
+          maxDuration={currentQuestion.recording_time_seconds ?? 30}
+          onStartRecording={startRecording}
+          onStopRecording={() => stopRecording()}
+        />
 
-          <View className="flex-row justify-between mt-8 gap-3">
-            <TouchableOpacity
-              className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
-              onPress={handleBack}
-              disabled={isSubmitting}
-            >
-              <Text className="text-white font-semibold">Back</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`flex-1 py-3 rounded-lg items-center ${isSubmitting ? "bg-indigo-400" : "bg-indigo-600"}`}
-              onPress={handleNext}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-semibold">
-                  {isLastQuestion ? "Submit" : "Next"}
-                </Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        {answers[currentQuestion.id] && (
+          <Text className="text-xs text-green-600 text-center mt-1">Recording saved ✓</Text>
+        )}
+
+        <View className="flex-row justify-between mt-6 gap-3">
+          <TouchableOpacity
+            className="flex-1 bg-gray-500 py-3 rounded-lg items-center"
+            onPress={handleBack}
+            disabled={isSubmitting || isUploadingAudio}
+          >
+            <Text className="text-white font-semibold">Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className={`flex-1 py-3 rounded-lg items-center ${isSubmitting || isUploadingAudio ? "bg-indigo-400" : "bg-indigo-600"}`}
+            onPress={handleNext}
+            disabled={isSubmitting || isUploadingAudio}
+          >
+            {isSubmitting || isUploadingAudio ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-semibold">{isLastQuestion ? "Submit" : "Next"}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
