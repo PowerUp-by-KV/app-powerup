@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -17,6 +18,8 @@ import {
   useGetModuleProgressQuery,
   useGetPersonalizedPathQuery,
 } from "@/services/module-api";
+import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { saveAssessmentSessionId } from "@/services/auth-storage";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 
 import { CefrProgressBar } from "./components/CefrProgressBar";
@@ -25,9 +28,11 @@ import { TimelineRow } from "./components/TimelineRow";
 function GateEmptyState({
   reason,
   onPrimary,
+  isLoading = false,
 }: {
   reason: "onboarding" | "assessment";
   onPrimary: () => void;
+  isLoading?: boolean;
 }) {
   const isOnboarding = reason === "onboarding";
   return (
@@ -43,10 +48,18 @@ function GateEmptyState({
           ? "Answer a few questions so we can build a learning path that fits you."
           : "We need to assess your skills before we can unlock your daily lessons."}
       </Text>
-      <Pressable onPress={onPrimary} className="bg-slate-900 px-8 py-4 rounded-2xl active:scale-95">
-        <Text className="text-white font-bold text-base">
-          {isOnboarding ? "Start onboarding" : "Start assessment"}
-        </Text>
+      <Pressable
+        onPress={onPrimary}
+        disabled={isLoading}
+        className={`px-8 py-4 rounded-2xl active:scale-95 ${isLoading ? "bg-slate-400" : "bg-slate-900"}`}
+      >
+        {isLoading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text className="text-white font-bold text-base">
+            {isOnboarding ? "Start onboarding" : "Start assessment"}
+          </Text>
+        )}
       </Pressable>
     </View>
   );
@@ -56,6 +69,8 @@ export function LearningJourneyScreen() {
   const router = useRouter();
   const gate = useLearningJourneyGate();
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [isStartingSession, setIsStartingSession] = useState(false);
+  const [startSession] = useStartSessionMutation();
   const { data: profile } = useGetProfileQuery();
   const { data: personalizedPath } = useGetPersonalizedPathQuery(undefined, {
     skip: !gate.canEnter,
@@ -110,9 +125,24 @@ export function LearningJourneyScreen() {
         </View>
         <GateEmptyState
           reason={gate.blockedReason}
-          onPrimary={() =>
-            router.push(gate.blockedReason === "onboarding" ? "/dynamic-onboarding" : "/read")
-          }
+          onPrimary={async () => {
+            if (gate.blockedReason === "onboarding") {
+              router.push("/dynamic-onboarding");
+              return;
+            }
+            setIsStartingSession(true);
+            try {
+              const session = await startSession().unwrap();
+              await saveAssessmentSessionId(session.session_id);
+              const firstRoute = getNextRouteForSection(session.first_section);
+              router.push({ pathname: firstRoute, params: { session_id: session.session_id } });
+            } catch {
+              Alert.alert("Error", "Could not start assessment. Please try again.");
+            } finally {
+              setIsStartingSession(false);
+            }
+          }}
+          isLoading={isStartingSession}
         />
       </SafeAreaView>
     );
