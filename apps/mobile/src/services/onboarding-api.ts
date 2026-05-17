@@ -52,16 +52,7 @@ export const onboardingApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Onboarding"],
     }),
-    uploadResume: builder.mutation<string, FormData>({
-      query: (formData) => ({
-        url: "/v1/onboarding/resume",
-        method: "POST",
-        body: formData,
-        // Content-Type is intentionally omitted so the browser/fetch automatically sets the boundary for multipart/form-data
-      }),
-    }),
   }),
 });
 
-export const { useGetGroupedQuestionsQuery, useSubmitOnboardingMutation, useUploadResumeMutation } =
-  onboardingApi;
+export const { useGetGroupedQuestionsQuery, useSubmitOnboardingMutation } = onboardingApi;
