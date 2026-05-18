@@ -55,17 +55,7 @@ export function SplashScreen() {
   };
 
   const handleStart = async () => {
-    try {
-      const session = await getAuthSession();
-      if (!session?.access_token) {
-        router.replace("/login");
-        return;
-      }
-      const profileDone = await getProfileCompletedInSession();
-      router.replace(profileDone ? "/(tabs)" : "/dynamic-onboarding");
-    } catch {
-      router.replace("/login");
-    }
+    router.replace("/login");
   };
 
   const currentSlide = slides[step];

@@ -18,8 +18,13 @@ export function HomeScreen() {
   const firstName = profile?.name?.split(" ")[0] ?? "there";
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 120 }}>
+    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="flex-row items-center justify-between mb-6">
           <View>
             <Text className="text-slate-900 text-xl font-extrabold">Hi, {firstName}!</Text>

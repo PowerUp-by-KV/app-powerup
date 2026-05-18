@@ -5,7 +5,7 @@ import { getAuthSession } from "./auth-storage";
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
 
-function normalizeBaseUrlForRuntime(url: string): string {
+export function normalizeBaseUrlForRuntime(url: string): string {
   if (Platform.OS !== "android") {
     return url;
   }

@@ -1,5 +1,6 @@
 import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
+import { normalizeBaseUrlForRuntime } from "./api";
 
 interface AudioUploadResponse {
   blob_path: string;
@@ -19,11 +20,12 @@ export async function uploadAudioFile(
   fileName: string = "recording.webm",
 ): Promise<string> {
   const session = await getAuthSession();
-  const baseUrl = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api").replace(
+  const rawBase = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api").replace(
     /\/$/,
     "",
   );
-  const uploadUrl = `${baseUrl}/v1/audio/upload?module_id=00000000-0000-0000-0000-000000000000&activity_id=00000000-0000-0000-0000-000000000000`;
+  const baseUrl = normalizeBaseUrlForRuntime(rawBase);
+  const uploadUrl = `${baseUrl}/v1/audio/upload`;
 
   const fd = new FormData();
 

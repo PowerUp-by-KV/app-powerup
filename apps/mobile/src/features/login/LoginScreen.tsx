@@ -33,7 +33,7 @@ export function LoginScreen() {
     if (auth.user.cefr_range) {
       router.replace("/(tabs)");
     } else {
-      router.replace("/dynamic-onboarding");
+      router.replace("/onboarding");
     }
   };
 

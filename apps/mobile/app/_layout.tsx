@@ -74,7 +74,7 @@ export default function AuthLayout() {
           <Stack.Screen name="otp" />
           <Stack.Screen name="success" />
           <Stack.Screen name="profile" />
-          <Stack.Screen name="dynamic-onboarding" />
+          <Stack.Screen name="onboarding" />
           <Stack.Screen name="read" />
           <Stack.Screen name="speak-read" />
           <Stack.Screen name="listen-audio" />

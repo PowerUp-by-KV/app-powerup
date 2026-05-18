@@ -31,7 +31,17 @@ function GateEmptyState({
 }) {
   const isOnboarding = reason === "onboarding";
   return (
-    <View className="flex-1 items-center justify-center px-8 py-16">
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 32,
+        paddingVertical: 64,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
       <View className="w-16 h-16 rounded-3xl bg-indigo-100 items-center justify-center mb-4">
         <Text className="text-3xl">{isOnboarding ? "📝" : "🎯"}</Text>
       </View>
@@ -48,7 +58,7 @@ function GateEmptyState({
           {isOnboarding ? "Start onboarding" : "Start assessment"}
         </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -85,7 +95,7 @@ export function LearningJourneyScreen() {
 
   if (!gate.ready) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50 items-center justify-center">
+      <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50 items-center justify-center">
         <ActivityIndicator size="large" color="#4f46e5" />
       </SafeAreaView>
     );
@@ -93,8 +103,8 @@ export function LearningJourneyScreen() {
 
   if (!gate.canEnter && gate.blockedReason) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
-        <View className="px-6 pt-12">
+      <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+        <View className="px-6 pt-12 mb-4">
           <Text className="text-slate-500 text-sm">
             Hi{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}!
           </Text>
@@ -103,7 +113,7 @@ export function LearningJourneyScreen() {
         <GateEmptyState
           reason={gate.blockedReason}
           onPrimary={() =>
-            router.push(gate.blockedReason === "onboarding" ? "/dynamic-onboarding" : "/read")
+            router.push(gate.blockedReason === "onboarding" ? "/onboarding" : "/read")
           }
         />
       </SafeAreaView>
@@ -114,9 +124,12 @@ export function LearningJourneyScreen() {
   const completedDays = moduleProgress ? moduleProgress.current_day - 1 : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
       <ScrollView
-        contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View className="mb-6">

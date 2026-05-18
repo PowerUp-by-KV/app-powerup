@@ -20,6 +20,7 @@ import {
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import { setProfileCompletedInSession, saveAssessmentSessionId } from "@/services/auth-storage";
+import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
 
 export default function OnboardingScreen() {
@@ -148,9 +149,10 @@ export default function OnboardingScreen() {
               import("@/services/auth-storage")
                 .then(async ({ getAuthSession: getSession }) => {
                   const authSession = await getSession();
-                  const baseUrl = (
+                  const rawBase = (
                     process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api"
                   ).replace(/\/$/, "");
+                  const baseUrl = normalizeBaseUrlForRuntime(rawBase);
                   const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
 
                   const xhr = new XMLHttpRequest();
