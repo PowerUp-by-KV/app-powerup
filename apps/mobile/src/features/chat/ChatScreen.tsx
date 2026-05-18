@@ -132,46 +132,48 @@ export function ChatScreen() {
             </View>
           </View>
         ) : (
-          <FlatList
-            ref={listRef}
-            data={sortedMessages}
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
-            ListEmptyComponent={
-              messagesLoading ? (
-                <View className="py-12 items-center">
-                  <ActivityIndicator color="#6366f1" />
-                </View>
-              ) : null
-            }
-            renderItem={({ item }) => {
-              const isUser = item.role === "user";
-              return (
-                <View className={`mb-3 max-w-[85%] ${isUser ? "self-end" : "self-start"}`}>
-                  <View
-                    className={`rounded-2xl px-4 py-3 ${isUser ? "bg-slate-900" : "bg-slate-100"}`}
-                  >
-                    <Text className={isUser ? "text-white" : "text-slate-900"}>{item.content}</Text>
-                  </View>
-                  {!isUser && (
-                    <Pressable
-                      onPress={() => toggleBookmark(item.id)}
-                      className="mt-1 flex-row items-center"
-                    >
-                      <Feather
-                        name="bookmark"
-                        size={14}
-                        color={item.bookmarked ? "#4f46e5" : "#94a3b8"}
-                      />
-                      <Text className="text-slate-400 text-xs ml-1">
-                        {item.bookmarked ? "Saved" : "Bookmark"}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              );
-            }}
-          />
+          <View style={{ padding: 16, paddingBottom: 24, flex: 1 }}>
+            {messagesLoading && sortedMessages.length === 0 ? (
+              <View className="py-12 items-center">
+                <ActivityIndicator color="#6366f1" />
+              </View>
+            ) : (
+              <FlatList
+                ref={listRef}
+                data={sortedMessages}
+                keyExtractor={(m: ChatMessage) => m.id}
+                renderItem={({ item }: { item: ChatMessage }) => {
+                  const isUser = item.role === "user";
+                  return (
+                    <View className={`mb-3 max-w-[85%] ${isUser ? "self-end" : "self-start"}`}>
+                      <View
+                        className={`rounded-2xl px-4 py-3 ${isUser ? "bg-slate-900" : "bg-slate-100"}`}
+                      >
+                        <Text className={isUser ? "text-white" : "text-slate-900"}>
+                          {item.content}
+                        </Text>
+                      </View>
+                      {!isUser && (
+                        <Pressable
+                          onPress={() => toggleBookmark(item.id)}
+                          className="mt-1 flex-row items-center"
+                        >
+                          <Feather
+                            name="bookmark"
+                            size={14}
+                            color={item.bookmarked ? "#4f46e5" : "#94a3b8"}
+                          />
+                          <Text className="text-slate-400 text-xs ml-1">
+                            {item.bookmarked ? "Saved" : "Bookmark"}
+                          </Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  );
+                }}
+              />
+            )}
+          </View>
         )}
 
         <View className="border-t border-slate-100 px-3 py-2 flex-row items-center">

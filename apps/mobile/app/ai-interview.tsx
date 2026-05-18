@@ -97,7 +97,7 @@ export default function AiInterviewScreen() {
   const hasSkills = resume?.parse_status === "completed" && (resume.skills?.length ?? 0) > 0;
 
   const [createSession, { isLoading: creating }] = useCreateAiSessionMutation();
-  const [fetchQuestion, { isFetching: fetchingQ }] = useLazyGetAiSessionQuestionQuery();
+  const [fetchQuestion] = useLazyGetAiSessionQuestionQuery();
   const [submitAnswer, { isLoading: submitting }] = useSubmitAiAnswerMutation();
 
   const { data: results } = useGetAiResultsQuery(session?.id ?? "", {

@@ -1,4 +1,4 @@
-import { ResumeUploadStep } from "@/features/pre-profile/ResumeUploadStep";
+import { ResumeUploadStep } from "@/features/onboarding/ResumeUploadStep";
 
 export default function OnboardingResumeRoute() {
   return <ResumeUploadStep />;

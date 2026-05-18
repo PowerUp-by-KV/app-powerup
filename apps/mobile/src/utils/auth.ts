@@ -10,15 +10,27 @@ import {
 export const useLogout = () => {
   const router = useRouter();
   const logout = async () => {
-    await clearAuthSession();
-    await clearAssessmentSessionId();
-    await clearProfileCompletedInSession();
-    router.replace("/login");
+    try {
+      await clearAuthSession();
+      await clearAssessmentSessionId();
+      await clearProfileCompletedInSession();
+      router.replace("/login");
+    } catch {}
   };
   return { logout };
 };
 
 export const getToken = async (): Promise<string | null> => {
-  const session = await getAuthSession();
-  return session?.access_token ?? null;
+  try {
+    const session = await getAuthSession();
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const clearToken = async (): Promise<void> => {
+  try {
+    await clearAuthSession();
+  } catch {}
 };

@@ -1,16 +1,23 @@
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
+export interface User {
+  id: string;
+  email?: string;
+  phone_number?: string;
+  name: string;
+  cefr_range?: string | null;
+  learning_goal?: string;
+  learning_frequency?: string;
+  streak_count?: number;
+  total_xp?: number;
+}
+
 export interface StoredSession {
   access_token: string;
   refresh_token?: string;
-  token_type: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    cefr_range: string | null;
-  };
+  token_type?: string;
+  user: User;
 }
 
 const AUTH_KEY = "powerup_auth_session";
@@ -70,6 +77,11 @@ export async function getAssessmentSessionId(): Promise<string | null> {
 
 export async function clearAssessmentSessionId(): Promise<void> {
   await deleteItem(ASSESSMENT_SESSION_KEY);
+}
+
+export async function getUser(): Promise<User | null> {
+  const session = await getAuthSession();
+  return session?.user || null;
 }
 
 export async function setProfileCompletedInSession(completed: boolean): Promise<void> {

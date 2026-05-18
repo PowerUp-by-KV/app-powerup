@@ -36,7 +36,7 @@ import {
 } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectFormData } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize, type FileInfo } from "@/services/pdf-validation";
-import type { ResumeUploadResponse } from "@app-powerup/shared";
+import type { ResumeRead } from "@/services/resume-api";
 
 type SelectedResumeFile = Omit<FileInfo, "uri"> & {
   uri: string | Blob;
@@ -110,7 +110,7 @@ export function ResumeHomeScreen() {
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [parsedResume, setParsedResume] = useState<ResumeUploadResponse | null>(null);
+  const [parsedResume, setParsedResume] = useState<ResumeRead | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isSubmittingRef = useRef(false);
 
@@ -242,7 +242,7 @@ export function ResumeHomeScreen() {
         {
           text: "Continue to Builder",
           onPress: () => {
-            router.push("/(tabs)/two/builder");
+            router.push("/resume/builder" as never);
           },
         },
       ]);
@@ -297,12 +297,12 @@ export function ResumeHomeScreen() {
   const handleBuildFromScratch = () => {
     dispatch(resetResume());
     dispatch(setCurrentStep(1));
-    router.push("/(tabs)/two/builder");
+    router.push("/resume/builder" as never);
   };
 
   const handleEditResume = () => {
     dispatch(setCurrentStep(1));
-    router.push("/(tabs)/two/builder");
+    router.push("/resume/builder" as never);
   };
 
   const executeDelete = async () => {
@@ -725,18 +725,27 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.certifications?.map((cert, index) => (
-                    <View key={index} style={styles.experienceItem}>
-                      <Text style={styles.expTitle}>{cert.name}</Text>
-                      <Text style={styles.expCompany}>
-                        {cert.issuer}
-                        {cert.issueDate ? ` • ${cert.issueDate}` : ""}
-                      </Text>
-                      {cert.expiryDate && (
-                        <Text style={styles.expDescription}>Expires: {cert.expiryDate}</Text>
-                      )}
-                    </View>
-                  ))}
+                  {formData.certifications?.map((cert, index) => {
+                    if (typeof cert === "string") {
+                      return (
+                        <View key={index} style={styles.experienceItem}>
+                          <Text style={styles.expTitle}>{cert}</Text>
+                        </View>
+                      );
+                    }
+                    return (
+                      <View key={index} style={styles.experienceItem}>
+                        <Text style={styles.expTitle}>{cert.name}</Text>
+                        <Text style={styles.expCompany}>
+                          {cert.issuer}
+                          {cert.issueDate ? ` • ${cert.issueDate}` : ""}
+                        </Text>
+                        {cert.expiryDate && (
+                          <Text style={styles.expDescription}>Expires: {cert.expiryDate}</Text>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             )}
@@ -752,8 +761,9 @@ export function ResumeHomeScreen() {
                   {formData.languages?.map((lang, index) => (
                     <View key={index} style={styles.languageBadge}>
                       <Text style={styles.languageText}>
-                        {typeof lang === "string" ? lang : lang.name}
-                        {lang.proficiency ? ` - ${lang.proficiency}` : ""}
+                        {typeof lang === "string"
+                          ? lang
+                          : `${lang.name || ""}${lang.proficiency ? ` - ${lang.proficiency}` : ""}`}
                       </Text>
                     </View>
                   ))}

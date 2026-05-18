@@ -190,7 +190,7 @@ export function SpeakingActivity({ activityId, questions, onComplete }: Speaking
           }}
         >
           <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">
-            You'll be scored on
+            You&apos;ll be scored on
           </Text>
           {(prompt?.criteria ?? []).map((c, i) => (
             <Text key={i} style={{ color: "#475569", marginBottom: 4 }}>

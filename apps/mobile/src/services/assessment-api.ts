@@ -13,6 +13,8 @@ export interface AssessmentOption {
   value: string;
 }
 
+export type AssessmentQuestionOption = AssessmentOption;
+
 export interface AssessmentQuestion {
   id: string;
   question_id?: string;
@@ -40,7 +42,7 @@ export interface ListeningStory {
   questions: AssessmentQuestion[];
 }
 
-export interface AssessmentSectionResponse {
+export interface ReadingSectionResponse {
   section: string;
   paragraph?: string;
   audio_url?: string;
@@ -51,9 +53,77 @@ export interface AssessmentSectionResponse {
   stories?: ListeningStory[];
 }
 
+export interface SpeakingSentence {
+  id: string;
+  question_no: number;
+  text: string;
+  no_of_lines?: string;
+  complexity?: string;
+  recording_time_seconds?: number;
+}
+
+export interface ASpeakingSectionResponse {
+  section: string;
+  sentences: SpeakingSentence[];
+}
+
+export interface ListenItem {
+  id: string;
+  question_no: number;
+  audio_url?: string;
+  recording_time_seconds?: number;
+  text?: string;
+  no_of_lines?: string;
+  complexity?: string;
+}
+
+export interface AListenSectionResponse {
+  section: string;
+  items: ListenItem[];
+}
+
+export interface BSpeakingPrompt {
+  id: string;
+  question_no: number;
+  topic?: string;
+  question: string;
+  time_seconds?: number;
+  complexity?: string;
+}
+
+export interface BSpeakingSectionResponse {
+  section: string;
+  prompts: BSpeakingPrompt[];
+}
+
+export interface CGrammarSectionResponse {
+  section: string;
+  questions: AssessmentQuestion[];
+}
+
+export interface StoryQuestion {
+  id: string;
+  question_no: number;
+  question: string;
+  options: AssessmentQuestionOption[];
+}
+
+export interface DListenAnswerSectionResponse {
+  section: string;
+  stories: ListeningStory[];
+}
+
+export type AssessmentSectionResponse =
+  | ReadingSectionResponse
+  | ASpeakingSectionResponse
+  | AListenSectionResponse
+  | BSpeakingSectionResponse
+  | CGrammarSectionResponse
+  | DListenAnswerSectionResponse;
+
 export interface AssessmentAnswer {
   question_id: string;
-  answer?: string;
+  answer?: string | string[];
   audio_url?: string;
 }
 
@@ -125,18 +195,17 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
-    // Use queryFn + native fetch so React Native's networking layer handles the
-    // {uri, name, type} FormData entry as a real file upload — fetchBaseQuery
-    // serialises unknown object values to "[object Object]".
     uploadAssessmentAudio: builder.mutation<AssessmentAudioUploadResponse, FormData>({
       queryFn: async (formData) => {
         try {
           const session = await getAuthSession();
-          const headers: Record<string, string> = {};
+          const headers: Record<string, string> = {
+            "X-Tunnel-Skip-AntiPhishing-Page": "true",
+          };
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio/upload`, {
             method: "POST",
             headers,
             body: formData,
@@ -181,7 +250,7 @@ export type AssessmentRoute =
   | "/speak-read"
   | "/listen-audio"
   | "/speak"
-  | "/pre-grammer"
+  | "/grammar"
   | "/listen"
   | "/results";
 
@@ -196,7 +265,7 @@ export const getNextRouteForSection = (section?: string | null): AssessmentRoute
     case "B_SPEAKING":
       return "/speak";
     case "C_GRAMMAR":
-      return "/pre-grammer";
+      return "/grammar";
     case "D_LISTEN_ANSWER":
       return "/listen";
     default:

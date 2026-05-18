@@ -10,14 +10,12 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
 import { useGetAvatarsQuery } from "@/services/profile-api";
 
 export function AvatarPickerScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
   const { data: avatars = [], isLoading } = useGetAvatarsQuery();

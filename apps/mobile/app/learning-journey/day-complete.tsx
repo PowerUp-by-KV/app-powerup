@@ -85,7 +85,7 @@ export default function DayCompleteScreen() {
 
           {atCeiling ? (
             <Text className="text-slate-500 mt-8 text-center">
-              You're at the top — C2 mastered. No further bands to unlock.
+              You&apos;re at the top — C2 mastered. No further bands to unlock.
             </Text>
           ) : advanced ? (
             <View style={{ marginTop: 32, alignItems: "center" }}>

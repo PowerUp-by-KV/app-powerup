@@ -72,7 +72,7 @@ const quizScreenContent = `import { View, Text } from "react-native";
 export function QuizScreen() {
   return (
     <View className="flex-1 items-center justify-center bg-white p-4">
-      <Text className="text-2xl font-bold text-gray-900 mb-2">Quiz Dashboard</Text>
+      <Text className="text-2xl font-bold text-gray-900 mb-2">Quiz Home</Text>
       <Text className="text-gray-600">Select a quiz feature from the menu to get started.</Text>
     </View>
   );

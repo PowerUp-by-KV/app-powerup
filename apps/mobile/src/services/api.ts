@@ -6,7 +6,7 @@ import { getAuthSession, saveAuthSession } from "./auth-storage";
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
 
-function normalizeBaseUrlForRuntime(url: string): string {
+export function normalizeBaseUrlForRuntime(url: string): string {
   if (Platform.OS !== "android") {
     return url;
   }
@@ -51,6 +51,7 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: async (headers) => {
     try {
+      headers.set("X-Tunnel-Skip-AntiPhishing-Page", "true");
       const session = await getAuthSession();
       if (session?.access_token) {
         headers.set("Authorization", `Bearer ${session.access_token}`);
@@ -118,6 +119,6 @@ export const api = createApi({
     "Friends",
     "Subscription",
     "Avatars",
-  ],
+  ] as const,
   endpoints: () => ({}),
 });

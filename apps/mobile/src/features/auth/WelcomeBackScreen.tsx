@@ -16,7 +16,7 @@ export function WelcomeBackScreen() {
       cta="Get Started"
       onCta={() => {
         if (profile?.cefr_range) router.replace("/(tabs)");
-        else router.replace("/dynamic-onboarding");
+        else router.replace("/onboarding");
       }}
     />
   );

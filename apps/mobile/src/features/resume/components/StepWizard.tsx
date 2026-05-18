@@ -6,7 +6,20 @@
 import { View, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { Button } from "./Button";
-import { STEP_LABELS, RESUME_STEPS } from "@app-powerup/shared";
+
+export const RESUME_STEPS = {
+  1: "CONTACT",
+  2: "EXPERIENCE",
+  3: "SKILLS",
+  4: "PREVIEW",
+} as const;
+
+export const STEP_LABELS = {
+  CONTACT: "Contact & Summary",
+  EXPERIENCE: "Work & Education",
+  SKILLS: "Skills & Projects",
+  PREVIEW: "Review & Export",
+} as const;
 
 interface StepWizardProps {
   currentStep: number;
@@ -29,21 +42,18 @@ export function StepWizard({
 }: StepWizardProps) {
   return (
     <View className="space-y-4">
-      {/* Step Dots & Labels */}
       <View className="mb-6">
         <View className="flex-row items-center justify-between px-4">
           {Array.from({ length: totalSteps }).map((_, index) => {
             const stepNumber = index + 1;
             const stepKey = stepNumber as keyof typeof RESUME_STEPS;
-            const stepLabel = RESUME_STEPS[stepKey]
-              ? STEP_LABELS[RESUME_STEPS[stepKey]]
-              : "Unknown";
+            const stepName = RESUME_STEPS[stepKey];
+            const stepLabel = stepName ? STEP_LABELS[stepName] : "Unknown";
             const isActive = stepNumber === currentStep;
             const isCompleted = stepNumber < currentStep;
 
             return (
               <View key={stepNumber} className="flex-1 items-center">
-                {/* Dot */}
                 <Pressable
                   onPress={() => onStepChange?.(stepNumber)}
                   disabled={stepNumber > currentStep}
@@ -60,7 +70,6 @@ export function StepWizard({
                   </Text>
                 </Pressable>
 
-                {/* Label */}
                 {showLabels && (
                   <Text
                     className={`text-center text-xs font-medium ${
@@ -71,7 +80,6 @@ export function StepWizard({
                   </Text>
                 )}
 
-                {/* Line Connector */}
                 {stepNumber < totalSteps && (
                   <View
                     className={`absolute top-5 h-1 w-full ${
@@ -86,7 +94,6 @@ export function StepWizard({
         </View>
       </View>
 
-      {/* Navigation Buttons */}
       <View className="flex-row gap-3">
         <View className="flex-1">
           <Button
@@ -111,7 +118,6 @@ export function StepWizard({
         </View>
       </View>
 
-      {/* Step Counter */}
       <View className="items-center">
         <Text className="text-xs text-gray-600">
           Step {currentStep} of {totalSteps}

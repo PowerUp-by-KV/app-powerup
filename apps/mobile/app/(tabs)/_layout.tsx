@@ -43,28 +43,36 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <Feather name="home" size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Feather name="home" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="my-learning"
         options={{
           title: "My Learning",
-          tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Feather name="book-open" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="achievements"
         options={{
           title: "Achievements",
-          tabBarIcon: ({ color }) => <Feather name="award" size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Feather name="award" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="leaderboard"
         options={{
           title: "Leader Board",
-          tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} />,
+          tabBarIcon: ({ color }: { color: string }) => (
+            <Feather name="bar-chart-2" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen name="two" options={{ href: null }} />

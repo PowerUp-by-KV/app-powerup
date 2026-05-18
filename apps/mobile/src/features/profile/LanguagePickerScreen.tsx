@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
@@ -16,7 +15,6 @@ const LANGS = [
 ];
 
 export function LanguagePickerScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
   const [patch] = usePatchProfileMutation();

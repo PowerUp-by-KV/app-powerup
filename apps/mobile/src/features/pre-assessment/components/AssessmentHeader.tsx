@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { getCompletedSections } from "@/services/auth-storage";
 
 export type SectionCode =
@@ -11,152 +12,172 @@ export type SectionCode =
   | "C_GRAMMAR"
   | "D_LISTEN_ANSWER";
 
-const SECTION_LABELS: Record<SectionCode, string> = {
-  A_READING: "Reading Skills",
-  A_SPEAKING: "Speaking Skills",
-  A_LISTEN: "Listening Comprehension",
-  B_SPEAKING: "Expressive Speaking",
-  C_GRAMMAR: "Grammar & Language Usage",
-  D_LISTEN_ANSWER: "Listen & Answer",
-};
+interface AssessmentHeaderProps {
+  sectionName?: string;
+  skillName: string;
+  currentQuestion: number; // 0-indexed
+  totalQuestions: number;
+  onFinishTest: () => void;
+  sessionId?: string;
+  stopTimer?: boolean;
+}
 
-const SECTION_ORDER: SectionCode[] = [
-  "A_READING",
-  "A_SPEAKING",
-  "A_LISTEN",
-  "B_SPEAKING",
-  "C_GRAMMAR",
-  "D_LISTEN_ANSWER",
+const SKILLS_MAP = [
+  { label: "Reading Skills", route: "/read", code: "A_READING" as const },
+  { label: "Speaking Skills", route: "/speak-read", code: "A_SPEAKING" as const },
+  { label: "Expressive Speaking", route: "/listen-audio", code: "A_LISTEN" as const },
+  { label: "Speaking Practice", route: "/speak", code: "B_SPEAKING" as const },
+  { label: "Grammar & Language Usage", route: "/grammar", code: "C_GRAMMAR" as const },
+  { label: "Listening Comprehension", route: "/listen", code: "D_LISTEN_ANSWER" as const },
 ];
 
-interface AssessmentHeaderProps {
-  section: SectionCode;
-  currentQuestionIndex: number;
-  totalQuestions: number;
-  startedAtMs: number;
-  onFinish: () => void;
-  onSectionChange?: (next: SectionCode) => void;
-}
-
-function formatElapsed(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
-}
-
 export function AssessmentHeader({
-  section,
-  currentQuestionIndex,
+  sectionName = "Section A",
+  skillName,
+  currentQuestion,
   totalQuestions,
-  startedAtMs,
-  onFinish,
-  onSectionChange,
+  onFinishTest,
+  sessionId,
+  stopTimer,
 }: AssessmentHeaderProps) {
-  const [nowMs, setNowMs] = useState(() => Date.now());
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const router = useRouter();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
 
   useEffect(() => {
-    getCompletedSections().then(setCompletedSections);
-  }, [dropdownOpen]);
+    if (modalVisible) {
+      getCompletedSections().then(setCompletedSections);
+    }
+  }, [modalVisible]);
 
   useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+    if (stopTimer) return;
+    const timer = setInterval(() => {
+      setSecondsElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [stopTimer]);
 
-  const elapsed = useMemo(
-    () => formatElapsed(Math.max(0, nowMs - startedAtMs)),
-    [nowMs, startedAtMs],
-  );
-  const progressPct =
-    totalQuestions > 0 ? Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100) : 0;
-  const sectionLetter = section.startsWith("A_")
-    ? "A"
-    : section.startsWith("B_")
-      ? "B"
-      : section.startsWith("C_")
-        ? "C"
-        : "D";
+  const formatTime = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const handleFinishPress = () => {
+    Alert.alert(
+      "Finish Test",
+      "Are you sure you want to submit your assessment and finish the test?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Finish", style: "destructive", onPress: onFinishTest },
+      ],
+    );
+  };
+
+  const handleSkillSelect = (route: string) => {
+    setModalVisible(false);
+    router.replace({
+      pathname: route as any,
+      params: sessionId ? { session_id: sessionId } : undefined,
+    });
+  };
+
+  const progressPercent = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
 
   return (
-    <View className="px-4 pt-4 pb-3 bg-white border-b border-slate-100">
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="bg-slate-100 rounded-full px-3 py-1.5">
-          <Text className="text-slate-700 text-xs font-semibold">Test Time: {elapsed}</Text>
-        </View>
-        <Pressable
-          onPress={onFinish}
-          className="bg-slate-900 rounded-full px-3 py-1.5 active:opacity-85"
-        >
-          <Text className="text-white text-xs font-bold">Finish Test</Text>
-        </Pressable>
-      </View>
-
-      <View className="flex-row items-center justify-between mb-2">
-        <View className="bg-slate-100 rounded-full px-3 py-1.5">
-          <Text className="text-slate-700 text-xs font-semibold">Section {sectionLetter}</Text>
-        </View>
-        <Pressable
-          onPress={() => setDropdownOpen(true)}
-          className="bg-slate-100 rounded-full px-3 py-1.5 flex-row items-center active:opacity-85"
-        >
-          <Text className="text-slate-700 text-xs font-semibold mr-1">
-            {SECTION_LABELS[section]}
+    <View className="mb-6 pt-2">
+      <View className="flex-row justify-between items-center mb-4">
+        <View className="bg-slate-100 px-4 py-2.5 rounded-full border border-slate-200 flex-row items-center shadow-sm">
+          <Feather name="clock" size={14} color="#64748B" className="mr-2" />
+          <Text className="text-xs font-bold text-slate-700">
+            Test Time: {formatTime(secondsElapsed)}
           </Text>
-          <Feather name="chevron-down" size={14} color="#475569" />
-        </Pressable>
+        </View>
+
+        <TouchableOpacity
+          onPress={handleFinishPress}
+          className="bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm"
+        >
+          <Text className="text-xs font-bold text-slate-800">Finish Test</Text>
+        </TouchableOpacity>
       </View>
 
-      <View className="flex-row items-center" style={{ gap: 10 }}>
-        <View className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-          <View className="h-full bg-slate-900" style={{ width: `${progressPct}%` }} />
+      <View className="flex-row justify-between items-center mb-3">
+        <View className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
+          <Text className="text-xs font-bold text-slate-700">{sectionName}</Text>
         </View>
-        <Text className="text-slate-500 text-xs font-semibold">
-          {currentQuestionIndex + 1}/{totalQuestions}
+
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200 flex-row items-center shadow-sm"
+        >
+          <Text className="text-xs font-bold text-slate-900 mr-1.5">{skillName}</Text>
+          <Feather name="chevron-down" size={14} color="#0F172A" />
+        </TouchableOpacity>
+      </View>
+
+      <View className="mb-1">
+        <View className="h-2.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
+          <View
+            className="h-full bg-slate-800 rounded-full shadow-sm"
+            style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+          />
+        </View>
+        <Text className="text-xs font-bold text-slate-400 text-right">
+          {currentQuestion + 1}/{totalQuestions}
         </Text>
       </View>
 
       <Modal
-        transparent
-        visible={dropdownOpen}
         animationType="fade"
-        onRequestClose={() => setDropdownOpen(false)}
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable onPress={() => setDropdownOpen(false)} className="flex-1 bg-black/30">
-          <View
-            className="absolute top-32 right-4 bg-white rounded-2xl p-2"
-            style={{ minWidth: 220 }}
-          >
-            {SECTION_ORDER.map((code) => {
-              const isCurrent = code === section;
-              const isDone = completedSections.includes(code);
-              return (
-                <Pressable
-                  key={code}
-                  onPress={() => {
-                    setDropdownOpen(false);
-                    if (!isCurrent) onSectionChange?.(code);
-                  }}
-                  className={`px-3 py-2.5 rounded-xl flex-row items-center justify-between ${isCurrent ? "bg-slate-100" : ""}`}
-                >
-                  <Text
-                    className={`text-sm ${isCurrent ? "text-slate-900 font-bold" : "text-slate-700"}`}
+        <View className="flex-1 bg-black/50 justify-center items-center px-6">
+          <SafeAreaView className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-lg font-bold text-slate-900">Select Skill Section</Text>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                className="p-2 bg-slate-100 rounded-full"
+              >
+                <Feather name="x" size={18} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="gap-3">
+              {SKILLS_MAP.map((skill, index) => {
+                const isSelected = skill.label === skillName;
+                const isDone = completedSections.includes(skill.code);
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => handleSkillSelect(skill.route)}
+                    className={`py-4 px-5 rounded-2xl flex-row justify-between items-center border ${
+                      isSelected ? "bg-indigo-50 border-indigo-200" : "bg-slate-50 border-slate-100"
+                    }`}
                   >
-                    {SECTION_LABELS[code]}
-                  </Text>
-                  {isDone && <Feather name="check-circle" size={15} color="#22c55e" />}
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
+                    <Text
+                      className={`text-sm font-bold ${isSelected ? "text-indigo-600" : "text-slate-700"}`}
+                    >
+                      {skill.label}
+                    </Text>
+                    {isDone ? (
+                      <Feather name="check-circle" size={18} color="#22C55E" />
+                    ) : isSelected ? (
+                      <Feather name="check-circle" size={18} color="#4F46E5" />
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </SafeAreaView>
+        </View>
       </Modal>
     </View>
   );
 }
-
-export { SECTION_LABELS, SECTION_ORDER };

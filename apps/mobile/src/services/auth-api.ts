@@ -21,10 +21,12 @@ export interface RegisterRequest {
   password: string;
   name: string;
   remember_me?: boolean;
-  oauth_id_token?: string;
-  oauth_code?: string;
-  oauth_redirect_uri?: string;
-  oauth_code_verifier?: string;
+}
+
+export interface AuthRegisterResponse {
+  user_id: string;
+  access_token: string;
+  refresh_token?: string;
 }
 
 export interface UserProfile {
@@ -73,9 +75,6 @@ export const authApi = api.injectEndpoints({
           Object.entries(credentials).filter(([_, value]) => value !== undefined && value !== ""),
         ) as LoginRequest;
         const url = "/v1/auth/login";
-        console.log("Making login request to:", url);
-        console.log("Full URL would be:", process.env.EXPO_PUBLIC_API_URL + url);
-        console.log("Login request body:", body);
         return {
           url,
           method: "POST",
@@ -89,9 +88,8 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
-    register: builder.mutation<AuthResponse, RegisterRequest>({
+    register: builder.mutation<AuthRegisterResponse, RegisterRequest>({
       query: (userData) => {
-        // Filter out undefined values from the payload
         const body = Object.fromEntries(
           Object.entries(userData).filter(([_, value]) => value !== undefined),
         );

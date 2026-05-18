@@ -29,14 +29,21 @@ import {
   validatePhoneDigits,
   getCountryCodesList,
   getExpectedDigitCount,
+  type CountryCodeItem,
 } from "@/utils/phoneValidation";
 import { getLocationSuggestions, type LocationSuggestion } from "@/utils/locationAutocomplete";
 
 export function ContactSummaryScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const contact = useAppSelector(selectContact);
-  const summary = useAppSelector(selectSummary);
+  const contact = useAppSelector(selectContact) || {
+    fullName: "",
+    email: "",
+    phone: "",
+    linkedin: "",
+    location: "",
+  };
+  const summary = useAppSelector(selectSummary) || { text: "" };
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedCountryCode, setSelectedCountryCode] = useState("+91"); // Default to India
   const [phoneValidation, setPhoneValidation] = useState<{
@@ -250,8 +257,8 @@ export function ContactSummaryScreen() {
 
                   <FlatList
                     data={getFilteredCountryCodes()}
-                    keyExtractor={(item) => item.code}
-                    renderItem={({ item }) => (
+                    keyExtractor={(item: CountryCodeItem) => item.code}
+                    renderItem={({ item }: { item: CountryCodeItem }) => (
                       <Pressable
                         style={styles.countryCodeOption}
                         onPress={() => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import * as DocumentPicker from "expo-document-picker";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
@@ -19,7 +18,6 @@ import { useGetResumeQuery, useUploadResumeMutation } from "@/services/resume-ap
 import { getApiErrorMessage } from "@/utils/error-message";
 
 export function EditProfileScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
   const userId = (profile as { id?: string } | undefined)?.id ?? "";

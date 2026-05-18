@@ -10,7 +10,7 @@ interface ScoreGaugeProps {
 }
 
 export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: ScoreGaugeProps) {
-  const percentage = (score / total) * 100;
+  const percentage = total > 0 ? ((score || 0) / total) * 100 : 0;
 
   // Rotation for the progress arc:
   // 0% -> -90deg, 100% -> 90deg (for a 180 degree gauge)
@@ -43,10 +43,10 @@ export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: 
         {/* Center Content */}
         <View className="absolute bottom-0 w-full items-center">
           <Text className="text-3xl font-extrabold text-slate-900">
-            {score.toFixed(1)} of {total}
+            {(score || 0).toFixed(1)} of {total}
           </Text>
           <Text className="text-slate-500 font-bold text-sm mt-1">
-            {obtainedPoints} of {totalPoints}
+            {(obtainedPoints || 0).toFixed(0)} of {(totalPoints || 0).toFixed(0)}
           </Text>
         </View>
       </View>

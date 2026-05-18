@@ -19,7 +19,7 @@ export function ScoreCard({ title, score, total, icon }: ScoreCardProps) {
 
       <View className="bg-[#EEF2FF] py-5 rounded-xl items-center">
         <Text className="text-lg font-extrabold text-slate-800">
-          {score.toFixed(1)} of {total}
+          {(score || 0).toFixed(1)} of {(total || 100).toFixed(0)}
         </Text>
       </View>
     </View>

@@ -23,7 +23,7 @@ import {
 import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { Project } from "@app-powerup/shared";
+import type { Project } from "@/services/resume-api";
 import { getSkillSuggestions, type SkillSuggestion } from "@/utils/skillsAutocomplete";
 
 const createResumeItemId = () => {
@@ -67,7 +67,7 @@ export function SkillsScreen() {
     }
 
     // Check if skill already exists
-    if (skills.some((s) => s.name.toLowerCase() === skillInput.toLowerCase())) {
+    if (skills.some((s) => (s.name || "").toLowerCase() === skillInput.toLowerCase())) {
       setSkillErrors("This skill already exists");
       return;
     }
@@ -88,7 +88,7 @@ export function SkillsScreen() {
     const skillName = suggestion.name;
 
     // Check if skill already exists
-    if (skills.some((s) => s.name.toLowerCase() === skillName.toLowerCase())) {
+    if (skills.some((s) => (s.name || "").toLowerCase() === skillName.toLowerCase())) {
       setSkillErrors("This skill already exists");
       return;
     }
@@ -132,7 +132,7 @@ export function SkillsScreen() {
   const handleEditProject = (proj: Project) => {
     setProjectForm(proj);
     setProjectTechs(proj.technologies || []);
-    setEditingProjectId(proj.id || proj.name);
+    setEditingProjectId(proj.id || proj.name || null);
     setShowProjectForm(true);
   };
 
@@ -189,7 +189,7 @@ export function SkillsScreen() {
                         styles.skillTagRemove,
                         pressed && styles.buttonPressed,
                       ]}
-                      onPress={() => handleRemoveSkill(skill.id)}
+                      onPress={() => handleRemoveSkill(skill.id || skill.name || "")}
                     >
                       <MaterialIcons name="close" size={16} color="white" />
                     </Pressable>
@@ -286,7 +286,9 @@ export function SkillsScreen() {
                       <Pressable onPress={() => handleEditProject(proj)}>
                         <MaterialIcons name="edit" size={16} color="white" />
                       </Pressable>
-                      <Pressable onPress={() => dispatch(removeProject(proj.id || proj.name))}>
+                      <Pressable
+                        onPress={() => dispatch(removeProject(proj.id || proj.name || ""))}
+                      >
                         <MaterialIcons name="close" size={16} color="#fca5a5" />
                       </Pressable>
                     </View>
@@ -439,7 +441,7 @@ export function SkillsScreen() {
                         styles.skillTagRemove,
                         pressed && styles.buttonPressed,
                       ]}
-                      onPress={() => dispatch(removeCertification(cert.id || cert.name))}
+                      onPress={() => dispatch(removeCertification(cert.id || cert.name || ""))}
                     >
                       <MaterialIcons name="close" size={16} color="white" />
                     </Pressable>

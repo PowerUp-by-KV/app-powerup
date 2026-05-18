@@ -10,7 +10,7 @@ export function ThankYouScreen() {
       title="Thank You!"
       subtitle="Your account has been successfully created"
       cta="Continue"
-      onCta={() => router.replace("/dynamic-onboarding")}
+      onCta={() => router.replace("/onboarding")}
     />
   );
 }

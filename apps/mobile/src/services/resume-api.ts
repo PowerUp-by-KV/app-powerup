@@ -6,50 +6,85 @@
 import { api } from "./api";
 import { ApiErrorHandler } from "./error-handler";
 
-export interface ResumeRead {
-  id: string;
-  user_id: string;
-  filename: string | null;
-  file_url: string | null;
-  parse_status: "processing" | "completed" | "failed";
-  parse_error: string | null;
-  skills: string[];
-  full_name: string | null;
-  email: string | null;
-  phone: string | null;
-  location: string | null;
-  summary: string | null;
+export interface Contact {
+  fullName?: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  location?: string;
 }
 
-interface ResumeParsedData {
-  contact: {
-    fullName?: string;
-    email?: string;
-    phone?: string;
-    linkedin?: string;
-    location?: string;
-  };
-  summary?: { text?: string };
-  education?: {
-    school?: string;
-    degree?: string;
-    field?: string;
-    graduationDate?: string;
-    details?: string;
-  }[];
-  experience?: {
-    company?: string;
-    position?: string;
-    startDate?: string;
-    endDate?: string | null;
-    description?: string;
-  }[];
-  skills?: (string | { name?: string })[];
-  projects?: { name?: string; description?: string; technologies?: string[] }[];
-  certifications?: (string | { name?: string })[];
-  achievements?: (string | { name?: string })[];
-  languages?: (string | { name?: string })[];
-  extracurricular?: (string | { name?: string })[];
+export interface Summary {
+  text?: string;
+}
+
+export interface Education {
+  id: string;
+  school: string;
+  degree: string;
+  field: string;
+  graduationDate: string;
+  details?: string;
+}
+
+export interface Experience {
+  id: string;
+  company: string;
+  position: string;
+  startDate: string;
+  endDate: string | null;
+  currentlyWorking?: boolean;
+  description: string;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  level?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  link?: string;
+  technologies?: string[];
+}
+
+export interface Certification {
+  id: string;
+  name: string;
+  issuer?: string;
+  issueDate?: string;
+  expiryDate?: string;
+}
+
+export interface ResumeParsedData {
+  contact: Contact;
+  summary?: Summary;
+  education: Education[];
+  experience: Experience[];
+  skills: (string | Skill)[];
+  projects: Project[];
+  certifications: (string | Certification)[];
+  achievements?: string[];
+  languages?: (string | { name?: string; proficiency?: string })[];
+  extracurricular?: string[];
+}
+
+export interface ResumeRead extends ResumeParsedData {
+  id: string;
+  user_id: string;
+  filename?: string | null;
+  file_name?: string | null;
+  file_url?: string | null;
+  parse_status?: "processing" | "completed" | "failed" | string;
+  parse_error?: string | null;
+  created_at?: string;
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  location?: string | null;
 }
 
 type NamedResumeValue = string | { name?: string };
@@ -65,15 +100,12 @@ const getResumeValueName = (value: NamedResumeValue) =>
 
 export const resumeApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // POST /v1/resume/upload - Upload PDF and parse
     uploadResume: builder.mutation<ResumeRead, FormData>({
       query: (formData) => ({
         url: "/v1/resume/upload",
         method: "POST",
         body: formData,
-        headers: {
-          // Remove Content-Type header for FormData to set boundary
-        },
+        headers: {},
       }),
       invalidatesTags: ["Resume"],
       async onQueryStarted(_arg, { queryFulfilled }) {
@@ -91,7 +123,6 @@ export const resumeApi = api.injectEndpoints({
       },
     }),
 
-    // GET /v1/resume/{user_id} - Fetch user's resume
     getResume: builder.query<ResumeRead, string>({
       query: (userId) => ({
         url: `/v1/resume/${userId}`,
@@ -114,10 +145,8 @@ export const resumeApi = api.injectEndpoints({
       },
     }),
 
-    // PUT /v1/resume/{user_id} - Update resume
     updateResume: builder.mutation<ResumeRead, { userId: string; data: ResumeParsedData }>({
       query: ({ userId, data }) => {
-        // Reverse map frontend state back to backend schema
         const mappedData = {
           contact: {
             name: data.contact.fullName || "",
@@ -145,7 +174,7 @@ export const resumeApi = api.injectEndpoints({
             description: exp.description || "",
             highlights: [],
           })),
-          skills: (data.skills || []).map(getResumeValueName),
+          skills: (data.skills || []).map((s) => (typeof s === "string" ? s : s.name || "")),
           projects: (data.projects || []).map((p) => ({
             name: p.name || "",
             description: p.description || "",
@@ -180,7 +209,6 @@ export const resumeApi = api.injectEndpoints({
       },
     }),
 
-    // DELETE /v1/resume/{user_id} - Delete resume
     deleteResume: builder.mutation<{ message: string }, string>({
       query: (userId) => ({
         url: `/v1/resume/${userId}`,

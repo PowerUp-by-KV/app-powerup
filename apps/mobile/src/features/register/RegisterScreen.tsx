@@ -18,8 +18,6 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import { saveAuthSession } from "@/services/auth-storage";
 import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 
-// ── Validation helpers ──────────────────────────────────────────────────────
-
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
 
@@ -35,8 +33,6 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
   return { score, label: labels[score - 1] ?? "Weak", color: colors[score - 1] ?? "#ef4444" };
 }
 
-// ── Component ───────────────────────────────────────────────────────────────
-
 export function RegisterScreen() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -49,8 +45,6 @@ export function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-
-  // Inline field errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const strength = passwordStrength(password);
@@ -92,14 +86,26 @@ export function RegisterScreen() {
 
     try {
       setIsLoading(true);
-      const auth = await register({
+      const regResponse = await register({
         email: email.trim(),
-        phone_number: phone.trim() || undefined,
+        phone_number: phone.trim() || "",
         password,
         name: name.trim(),
       }).unwrap();
 
+      const auth: AuthResponse = {
+        access_token: regResponse.access_token,
+        refresh_token: regResponse.refresh_token,
+        user: {
+          id: regResponse.user_id,
+          name: name.trim(),
+          email: email.trim(),
+          phone_number: phone.trim(),
+        },
+      };
+
       await saveAuthSession(auth);
+      Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
     } catch (error: any) {
       const status = error?.status;
@@ -171,7 +177,11 @@ export function RegisterScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingBottom: 60,
+            paddingTop: Platform.OS === "android" ? 48 : 16,
+          }}
           style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
@@ -312,9 +322,7 @@ export function RegisterScreen() {
                   {agreedToTerms && <Feather name="check" size={16} color="white" />}
                 </View>
                 <Text className="text-slate-600 text-sm flex-1">
-                  I agree to the{" "}
-                  <Text className="text-indigo-600 font-semibold">Terms of Service</Text> and{" "}
-                  <Text className="text-indigo-600 font-semibold">Privacy Policy</Text>
+                  I agree to the Terms of Service and Privacy Policy
                 </Text>
               </TouchableOpacity>
               {!!errors.terms && (
@@ -363,3 +371,5 @@ export function RegisterScreen() {
     </SafeAreaView>
   );
 }
+
+export default RegisterScreen;

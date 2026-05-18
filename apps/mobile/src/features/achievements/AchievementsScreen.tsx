@@ -61,8 +61,13 @@ export function AchievementsScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
+    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 96 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text className="text-slate-900 text-2xl font-extrabold mb-4">Your Achievements!</Text>
 
         <View className="bg-slate-200 rounded-3xl p-6 items-center mb-5">

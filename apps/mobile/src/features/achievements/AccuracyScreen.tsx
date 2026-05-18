@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetAccuracyQuery, type AccuracyScope } from "@/services/gamification-api";
@@ -13,13 +12,12 @@ const SCOPES: { key: AccuracyScope; label: string }[] = [
 ];
 
 export function AccuracyScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const [scope, setScope] = useState<AccuracyScope>("learning");
   const { data, isLoading } = useGetAccuracyQuery(scope);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-white">
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
@@ -28,7 +26,12 @@ export function AccuracyScreen() {
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 96 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View className="bg-slate-100 rounded-3xl p-6 mb-5 items-center">
           <Text className="text-slate-900 font-bold mb-1">Overall Accuracy</Text>
           <Text className="text-slate-500 text-xs mb-3">

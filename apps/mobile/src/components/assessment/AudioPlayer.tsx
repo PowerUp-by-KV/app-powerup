@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, View, TouchableOpacity, Text } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
+import { Feather } from "@expo/vector-icons";
 import { resolveApiAssetUrl } from "@/services/api";
 
 interface AudioPlayerProps {
@@ -14,125 +15,151 @@ interface AudioPlayerProps {
 export function AudioPlayer({
   audioUrl,
   audioText,
-  duration,
+  duration = 30,
   onPlayStart,
   onPlayEnd,
 }: AudioPlayerProps) {
-  const soundRef = useRef<Audio.Sound | null>(null);
   const resolvedAudioUrl = resolveApiAssetUrl(audioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
-  const [durationSeconds, setDurationSeconds] = useState(duration ?? 0);
+  const [actualDuration, setActualDuration] = useState(duration ?? 30);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
 
+  // Clean up sound on unmount
   useEffect(() => {
     return () => {
-      soundRef.current?.unloadAsync();
-      soundRef.current = null;
+      if (sound) {
+        sound.unloadAsync().catch(() => {});
+      }
     };
-  }, []);
+  }, [sound]);
 
+  // Reset player when audioUrl changes
   useEffect(() => {
-    soundRef.current?.unloadAsync();
-    soundRef.current = null;
+    if (sound) {
+      sound.unloadAsync().catch(() => {});
+      setSound(null);
+    }
     setIsPlaying(false);
     setCurrentTime(0);
-    setDurationSeconds(duration ?? 0);
-    setError(null);
+    setActualDuration(duration ?? 30);
   }, [resolvedAudioUrl, duration]);
 
-  const onStatus = (status: AVPlaybackStatus) => {
+  const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) {
-      if (status.error) setError("Audio could not be played.");
+      if (status.error) {
+        setIsPlaying(false);
+        setIsLoading(false);
+      }
       return;
     }
 
-    setIsPlaying(status.isPlaying);
-    setCurrentTime(Math.floor((status.positionMillis ?? 0) / 1000));
-    if (status.durationMillis) setDurationSeconds(Math.ceil(status.durationMillis / 1000));
+    if (status.durationMillis) {
+      setActualDuration(Math.round(status.durationMillis / 1000));
+    }
+    setCurrentTime(Math.round(status.positionMillis / 1000));
+
     if (status.didJustFinish) {
       setIsPlaying(false);
+      setCurrentTime(0);
       onPlayEnd?.();
     }
   };
 
-  const togglePlay = async () => {
+  const handlePlay = async () => {
     if (!resolvedAudioUrl) {
-      setError("Audio is not available for this question.");
+      // Fallback timer simulation if no audio URL is provided
+      setIsPlaying(true);
+      onPlayStart?.();
       return;
     }
 
     try {
-      setError(null);
-      if (soundRef.current === null) {
-        setIsLoading(true);
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          playsInSilentModeIOS: true,
-        });
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: resolvedAudioUrl },
-          { shouldPlay: true },
-          onStatus,
-        );
-        soundRef.current = sound;
-        onPlayStart?.();
-        return;
-      }
+      setIsLoading(true);
+      await Audio.setAudioModeAsync({
+        playsInSilentModeIOS: true,
+        allowsRecordingIOS: false,
+      });
 
-      const status = await soundRef.current.getStatusAsync();
-      if (!status.isLoaded) return;
-      if (status.isPlaying) {
-        await soundRef.current.pauseAsync();
-        setIsPlaying(false);
-        onPlayEnd?.();
-      } else {
-        await soundRef.current.playAsync();
-        setIsPlaying(true);
-        onPlayStart?.();
-      }
-    } catch (err) {
-      console.error("Audio playback failed", err);
-      setError("Audio could not be played. Please try again.");
-    } finally {
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: resolvedAudioUrl },
+        { shouldPlay: true },
+        onPlaybackStatusUpdate,
+      );
+
+      setSound(newSound);
+      setIsPlaying(true);
       setIsLoading(false);
+      onPlayStart?.();
+    } catch {
+      setIsLoading(false);
+      setIsPlaying(false);
     }
   };
 
-  const progressPct = durationSeconds > 0 ? (currentTime / durationSeconds) * 100 : 0;
+  const handlePause = async () => {
+    setIsPlaying(false);
+    if (sound) {
+      await sound.stopAsync().catch(() => {});
+      await sound.unloadAsync().catch(() => {});
+      setSound(null);
+    }
+    setCurrentTime(0);
+    onPlayEnd?.();
+  };
+
+  // Fallback simulation timer if no resolvedAudioUrl
+  useEffect(() => {
+    if (resolvedAudioUrl || !isPlaying) return;
+
+    if (currentTime >= actualDuration) {
+      setIsPlaying(false);
+      setCurrentTime(0);
+      onPlayEnd?.();
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCurrentTime((prev) => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, currentTime, actualDuration, resolvedAudioUrl]);
+
+  const progressPercent = actualDuration > 0 ? (currentTime / actualDuration) * 100 : 0;
 
   return (
-    <View className="bg-blue-50 rounded-lg p-4 mb-4">
-      {audioText ? <Text className="text-sm text-gray-600 mb-3 italic">{audioText}</Text> : null}
-
-      <View className="flex-row items-center gap-3">
+    <View className="bg-slate-100 rounded-3xl p-5 mb-6 border border-slate-200/80 shadow-sm">
+      <View className="flex-row items-center">
         <TouchableOpacity
-          className={`${isPlaying ? "bg-red-500" : "bg-blue-500"} px-6 py-2 rounded-lg`}
-          onPress={togglePlay}
+          className={`${isPlaying ? "bg-red-500" : "bg-slate-800"} w-14 h-14 rounded-full items-center justify-center shadow-md mr-4`}
+          onPress={isPlaying ? handlePause : handlePlay}
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="white" />
+            <ActivityIndicator color="white" size="small" />
           ) : (
-            <Text className="text-white font-semibold">{isPlaying ? "Pause" : "Play"}</Text>
+            <Feather name={isPlaying ? "square" : "volume-2"} size={22} color="white" />
           )}
         </TouchableOpacity>
 
-        <View className="flex-1">
-          <View className="bg-gray-200 h-2 rounded-full overflow-hidden">
-            <View
-              className="bg-blue-500 h-full"
-              style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
-            />
-          </View>
+        <View className="flex-1 justify-center">
+          <Text className="text-base font-bold text-slate-900 mb-1">
+            {isPlaying ? "Playing audio..." : "Play audio"}
+          </Text>
+          <Text className="text-xs font-medium text-slate-500" numberOfLines={2}>
+            {currentTime}s / {actualDuration}s {audioText ? `• ${audioText}` : ""}
+          </Text>
         </View>
-
-        <Text className="text-xs text-gray-500 ml-2">
-          {currentTime}s / {durationSeconds || "--"}s
-        </Text>
       </View>
-      {error ? <Text className="text-xs text-red-600 mt-2">{error}</Text> : null}
+
+      <View className="mt-4 bg-slate-200 h-1.5 rounded-full overflow-hidden">
+        <View
+          className="bg-slate-800 h-full rounded-full"
+          style={{ width: `${Math.min(progressPercent, 100)}%` }}
+        />
+      </View>
     </View>
   );
 }

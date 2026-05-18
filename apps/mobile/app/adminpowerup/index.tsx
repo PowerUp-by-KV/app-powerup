@@ -26,16 +26,6 @@ interface ContentVersion {
  * - Session lives in localStorage; mobile bundle never renders this route.
  */
 export default function AdminPowerupPage() {
-  if (Platform.OS !== "web") {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ fontSize: 16, color: "#475569", textAlign: "center" }}>
-          The admin panel is only available on the web build.
-        </Text>
-      </View>
-    );
-  }
-
   const [authed, setAuthed] = useState(false);
   const [pw, setPw] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +35,16 @@ export default function AdminPowerupPage() {
       setAuthed(true);
     }
   }, []);
+
+  if (Platform.OS !== "web") {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ fontSize: 16, color: "#475569", textAlign: "center" }}>
+          The admin panel is only available on the web build.
+        </Text>
+      </View>
+    );
+  }
 
   const onLogin = () => {
     if (!ADMIN_PASSWORD) {
