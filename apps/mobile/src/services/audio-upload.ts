@@ -43,6 +43,7 @@ export async function uploadAudioFile(
     return new Promise<string>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", uploadUrl);
+      xhr.setRequestHeader("X-Tunnel-Skip-AntiPhishing-Page", "true");
       if (session?.access_token) {
         xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
       }

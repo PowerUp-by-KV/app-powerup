@@ -51,6 +51,7 @@ const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: async (headers) => {
     try {
+      headers.set("X-Tunnel-Skip-AntiPhishing-Page", "true");
       const session = await getAuthSession();
       if (session?.access_token) {
         headers.set("Authorization", `Bearer ${session.access_token}`);

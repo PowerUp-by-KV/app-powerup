@@ -156,7 +156,9 @@ export const moduleApi = api.injectEndpoints({
       queryFn: async (formData) => {
         try {
           const session = await getAuthSession();
-          const headers: Record<string, string> = {};
+          const headers: Record<string, string> = {
+            "X-Tunnel-Skip-AntiPhishing-Page": "true",
+          };
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
