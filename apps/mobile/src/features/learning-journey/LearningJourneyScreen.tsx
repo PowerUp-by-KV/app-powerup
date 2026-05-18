@@ -183,24 +183,12 @@ export function LearningJourneyScreen() {
             onPress={() => setSelectedModuleId(null)}
             className="self-start bg-white border border-slate-200 px-4 py-2 rounded-xl mb-4 active:opacity-70"
           >
-            <Text className="text-slate-700 font-bold">Back to modules</Text>
+            <Text className="text-slate-700 font-bold">Back to roadmap</Text>
           </Pressable>
         ) : null}
 
         {selectedModule && engagement ? (
-          <View
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 24,
-              shadowColor: "#0f172a",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}
-          >
+          <View className="bg-white rounded-2xl p-4 mb-6 shadow-sm border border-slate-100">
             <CefrProgressBar
               currentPct={engagement.cefr_progress_pct}
               nextBand={engagement.next_cefr_band}
@@ -209,30 +197,74 @@ export function LearningJourneyScreen() {
           </View>
         ) : null}
 
-        {!selectedModule &&
-          personalizedPath?.modules.map((module, idx) => (
+        {!selectedModule && (
+          <View className="mt-2">
             <TimelineRow
-              key={module.id}
-              title={`Module ${module.module_no}: ${module.title}`}
-              subtitle={
-                module.is_unlocked
-                  ? "Tap to view days and activities"
-                  : "Locked until previous module is complete"
-              }
-              state={module.is_unlocked ? "available" : "locked"}
-              badgeLabel={module.is_unlocked ? personalizedPath.cefr_band : "Locked"}
-              onPress={module.is_unlocked ? () => setSelectedModuleId(module.id) : undefined}
-              isLast={idx === personalizedPath.modules.length - 1}
+              title="Pre Assesment"
+              subtitle="Master the fundamentals"
+              state="completed"
+              iconOverride="check"
+              badgeLabel="Completed"
+              progressPercent={100}
+              progressLabel="8 lessons completed"
+              xpLabel="350 XP earned"
+              onPress={() => {
+                Alert.alert(
+                  "Diagnostic Assessment Completed",
+                  `Your evaluated CEFR Level is: ${personalizedPath?.cefr_band || profile?.cefr_range || "B1-B2"}\nKeep learning to advance your English mastery!`,
+                  [{ text: "Awesome!" }],
+                );
+              }}
             />
-          ))}
 
-        {!selectedModule && personalizedPath && personalizedPath.modules.length === 0 ? (
-          <View className="bg-amber-50 rounded-2xl p-4 mt-2">
-            <Text className="text-amber-800 text-sm">
-              No modules are available yet. Pull to refresh once content is published.
-            </Text>
+            <TimelineRow
+              title="CEFR Score"
+              subtitle="Challenge yourself"
+              state="in_progress"
+              iconOverride="edit-2"
+              badgeLabel="In Progress"
+              progressPercent={70}
+              progressLabel="5 lessons completed"
+              xpLabel="210 XP earned"
+              buttonLabel="Continue Learning"
+              onButtonPress={() => {
+                const firstModule = personalizedPath?.modules?.[0];
+                if (firstModule) {
+                  setSelectedModuleId(firstModule.id);
+                } else {
+                  setSelectedModuleId("1f79a741-1ca8-48da-84a7-9dc6d7e88f98");
+                }
+              }}
+              onPress={() => {
+                const firstModule = personalizedPath?.modules?.[0];
+                if (firstModule) {
+                  setSelectedModuleId(firstModule.id);
+                } else {
+                  setSelectedModuleId("1f79a741-1ca8-48da-84a7-9dc6d7e88f98");
+                }
+              }}
+            />
+
+            <TimelineRow
+              title="Post Assesment"
+              subtitle="Craft effective messages"
+              state="locked"
+              iconOverride="edit-2"
+              badgeLabel="Locked"
+              progressLabel="Complete previous stages to unlock"
+            />
+
+            <TimelineRow
+              title="Resume option"
+              subtitle="Optimize your Resume"
+              state="locked"
+              iconOverride="lock"
+              badgeLabel="Locked"
+              progressLabel="Complete previous stages to unlock"
+              isLast={true}
+            />
           </View>
-        ) : null}
+        )}
 
         {selectedModule && daysLoading && (
           <View className="py-6 items-center">

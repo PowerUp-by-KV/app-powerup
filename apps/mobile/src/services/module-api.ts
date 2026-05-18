@@ -253,18 +253,10 @@ export const moduleApi = api.injectEndpoints({
           url: `/v1/modules/${moduleId}/check`,
           method: "POST",
         });
-        if (!res.error && res.data) {
-          return { data: res.data as ModuleCheckResult };
+        if (res.error) {
+          return { error: res.error };
         }
-        return {
-          data: {
-            score_pct: 85,
-            ready_to_advance: true,
-            current_cefr: "B1",
-            next_cefr: "B2",
-            at_ceiling: false,
-          },
-        };
+        return { data: res.data as ModuleCheckResult };
       },
       invalidatesTags: ["Modules"],
     }),
@@ -275,15 +267,10 @@ export const moduleApi = api.injectEndpoints({
           url: `/v1/modules/${moduleId}/advance-cefr`,
           method: "POST",
         });
-        if (!res.error && res.data) {
-          return { data: res.data as AdvanceCefrResponse };
+        if (res.error) {
+          return { error: res.error };
         }
-        return {
-          data: {
-            new_cefr: "B2",
-            xp_earned: 100,
-          },
-        };
+        return { data: res.data as AdvanceCefrResponse };
       },
       invalidatesTags: ["Modules"],
     }),

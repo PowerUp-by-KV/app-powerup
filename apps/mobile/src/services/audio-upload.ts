@@ -18,16 +18,17 @@ interface AudioUploadResponse {
 export async function uploadAudioFile(
   audioUri: string,
   fileName: string = "recording.webm",
+  moduleId?: string,
+  activityId?: string,
 ): Promise<string> {
   const session = await getAuthSession();
-  const rawBase = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api").replace(
-    /\/$/,
-    "",
-  );
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+  if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
+  const rawBase = apiUrl.replace(/\/$/, "");
   const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-  const dummyModuleId = "1f79a741-1ca8-48da-84a7-9dc6d7e88f98";
-  const dummyActivityId = "a246be9e-1fce-4a78-b5bf-6092db19ad78";
-  const uploadUrl = `${baseUrl}/v1/audio/upload?module_id=${dummyModuleId}&activity_id=${dummyActivityId}`;
+  const targetModuleId = moduleId || "1f79a741-1ca8-48da-84a7-9dc6d7e88f98";
+  const targetActivityId = activityId || "a246be9e-1fce-4a78-b5bf-6092db19ad78";
+  const uploadUrl = `${baseUrl}/v1/audio/upload?module_id=${targetModuleId}&activity_id=${targetActivityId}`;
 
   const fd = new FormData();
 

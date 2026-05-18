@@ -140,17 +140,19 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       }));
 
       let response: any = null;
-      try {
-        response = await submitSection({
-          session_id: sessionId!,
-          section: "D_LISTEN_ANSWER",
-          data: { answers: formattedAnswers },
-        }).unwrap();
-      } catch (err: any) {
-        if (err?.status === 504 || err?.status === 400 || err?.status === 500) {
-          response = { section_completed: true, next_section: null };
-        } else {
-          throw err;
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          response = await submitSection({
+            session_id: sessionId!,
+            section: "D_LISTEN_ANSWER",
+            data: { answers: formattedAnswers },
+          }).unwrap();
+          break;
+        } catch (err) {
+          retries--;
+          if (retries === 0) throw err;
+          await new Promise((res) => setTimeout(res, 1000));
         }
       }
 

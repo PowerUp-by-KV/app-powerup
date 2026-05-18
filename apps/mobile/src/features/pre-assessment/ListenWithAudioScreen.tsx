@@ -118,14 +118,17 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording) return;
 
     if (timeLeft <= 0) {
-      if (isRecording) {
-        stopRecording();
-      }
-      if (isLastQuestion) {
-        handleFinish();
-      } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-      }
+      const processTimerExpiry = async () => {
+        if (isRecording) {
+          await stopRecording();
+        }
+        if (isLastQuestion) {
+          handleFinish();
+        } else {
+          setCurrentQuestionIndex((prev) => prev + 1);
+        }
+      };
+      processTimerExpiry();
       return;
     }
 
@@ -188,10 +191,11 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         const qId = currentQuestion.id;
         setUploadingQuestions((prev) => ({ ...prev, [qId]: true }));
 
-        // Asynchronous, non-blocking upload so user can instantly advance to attend other questions
-        uploadAudioFile(uri, "recording.m4a")
+        // Asynchronous upload that returns a promise so callers can await it before submitting
+        return uploadAudioFile(uri, "recording.m4a")
           .then((sasUrl) => {
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
+            return sasUrl;
           })
           .catch(() => {
             // Background upload failure handler

@@ -19,7 +19,11 @@ import {
 } from "@/services/onboarding-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
-import { setProfileCompletedInSession, saveAssessmentSessionId } from "@/services/auth-storage";
+import {
+  setProfileCompletedInSession,
+  saveAssessmentSessionId,
+  getAuthSession,
+} from "@/services/auth-storage";
 import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
 
@@ -130,7 +134,13 @@ export default function OnboardingScreen() {
     if (isSubmitting || isStarting) return;
 
     try {
-      // 1. Upload resume file if selected (truly non-blocking background upload)
+      // 1. Upload resume file if selected (await upload before proceeding)
+      const authSession = await getAuthSession();
+      const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+      if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
+      const rawBase = apiUrl.replace(/\/$/, "");
+      const baseUrl = normalizeBaseUrlForRuntime(rawBase);
+
       for (const q of flattenedQuestions) {
         if (q.input_type === "file") {
           const fileUri = formData[q.question_key as keyof typeof formData];
@@ -142,47 +152,39 @@ export default function OnboardingScreen() {
               fileUri.startsWith("content:") ||
               fileUri.startsWith("/"))
           ) {
-            try {
-              const fileName = (formData[`${q.question_key}Name` as keyof typeof formData] ||
-                "resume.pdf") as string;
+            const fileName = (formData[`${q.question_key}Name` as keyof typeof formData] ||
+              "resume.pdf") as string;
 
-              import("@/services/auth-storage")
-                .then(async ({ getAuthSession: getSession }) => {
-                  const authSession = await getSession();
-                  const rawBase = (
-                    process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000/api"
-                  ).replace(/\/$/, "");
-                  const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-                  const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
+            await new Promise<void>((resolve, reject) => {
+              const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
+              const xhr = new XMLHttpRequest();
+              xhr.open("POST", uploadUrl);
+              if (authSession?.access_token) {
+                xhr.setRequestHeader("Authorization", `Bearer ${authSession.access_token}`);
+              }
+              xhr.onload = () => resolve();
+              xhr.onerror = () => reject(new Error("Resume upload failed"));
 
-                  const xhr = new XMLHttpRequest();
-                  xhr.open("POST", uploadUrl);
-                  if (authSession?.access_token) {
-                    xhr.setRequestHeader("Authorization", `Bearer ${authSession.access_token}`);
-                  }
-
-                  const fd = new FormData();
-                  if (Platform.OS === "web") {
-                    fetch(fileUri)
-                      .then((r) => r.blob())
-                      .then((blob) => {
-                        fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
-                        xhr.send(fd);
-                      })
-                      .catch(() => {});
-                  } else {
-                    fd.append("file", {
-                      uri: fileUri,
-                      name: fileName,
-                      type: "application/pdf",
-                    } as any);
+              const fd = new FormData();
+              if (Platform.OS === "web") {
+                fetch(fileUri)
+                  .then((r) => r.blob())
+                  .then((blob) => {
+                    fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
                     xhr.send(fd);
-                  }
-                })
-                .catch(() => {});
-            } catch {
-              // Ignore background spawn errors
-            }
+                  })
+                  .catch(() => resolve());
+              } else {
+                fd.append("file", {
+                  uri: fileUri,
+                  name: fileName,
+                  type: "application/pdf",
+                } as any);
+                xhr.send(fd);
+              }
+            }).catch(() => {
+              // Non-fatal if resume upload fails, but awaited properly
+            });
           }
         }
       }
