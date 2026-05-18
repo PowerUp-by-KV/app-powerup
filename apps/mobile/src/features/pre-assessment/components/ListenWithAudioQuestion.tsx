@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { ListenWithAudioQuestion as IListenWithAudioQuestion } from "../types";
+import type { AssessmentQuestion } from "@/services/assessment-api";
 
 interface ListenWithAudioQuestionProps {
-  question: IListenWithAudioQuestion;
+  question: AssessmentQuestion;
   questionIndex: number;
   totalQuestions: number;
   timeLeft?: number;
@@ -15,6 +15,9 @@ export function ListenWithAudioQuestion({
   totalQuestions,
   timeLeft,
 }: ListenWithAudioQuestionProps) {
+  const recordingTime = (question as any).recordingTime || question.recording_time_seconds || 30;
+  const noOfLines = (question as any).noOfLines || question.no_of_lines;
+
   return (
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
@@ -30,27 +33,22 @@ export function ListenWithAudioQuestion({
                 : "bg-red-100 text-red-700"
           }`}
         >
-          {question.complexity}
+          {question.complexity || "Standard"}
         </Text>
       </View>
 
       <View className="bg-gray-100 p-4 rounded-lg mb-3 flex-row justify-between items-center">
         <View>
-          <Text className="text-sm text-gray-600 mb-1">
-            Max Recording:{" "}
-            {question.recordingTime || (question as any).recording_time_seconds || 30}s
-          </Text>
-          {(question.noOfLines || (question as any).no_of_lines) && (
-            <Text className="text-sm text-gray-600">
-              Content Lines: {question.noOfLines || (question as any).no_of_lines}
-            </Text>
-          )}
+          <Text className="text-sm text-gray-600 mb-1">Max Recording: {recordingTime}s</Text>
+          {noOfLines ? (
+            <Text className="text-sm text-gray-600">Content Lines: {noOfLines}</Text>
+          ) : null}
         </View>
-        {timeLeft !== undefined && (
+        {timeLeft !== undefined ? (
           <View className="bg-red-50 px-3 py-1 rounded-lg">
             <Text className="text-xs text-red-600 font-bold">Ends in: {timeLeft}s</Text>
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );

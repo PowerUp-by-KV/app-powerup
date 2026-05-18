@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useCompleteSessionMutation } from "@/services/assessment-api";
+import { useCompleteSessionMutation, AssessmentResultResponse } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import { getAssessmentSessionId } from "@/services/auth-storage";
@@ -31,7 +31,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId]);
 
-  const [completeSession, { data: resultData, isLoading, error }] = useCompleteSessionMutation();
+  const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
   const [hasTriggered, setHasTriggered] = useState(false);
 
   useEffect(() => {
@@ -45,6 +45,37 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     router.replace("/(tabs)/my-learning" as never);
   };
 
+  const resultData = rawResultData as AssessmentResultResponse | undefined;
+
+  const sectionCards = resultData?.section_percentages
+    ? [
+        { id: "reading", title: "Reading", key: "A_READING", icon: "book-open" as const },
+        { id: "speak-read", title: "Speak by Reading", key: "A_SPEAKING", icon: "mic" as const },
+        {
+          id: "listen-repeat",
+          title: "Listen & Repeat",
+          key: "A_LISTEN",
+          icon: "volume-2" as const,
+        },
+        {
+          id: "open-speaking",
+          title: "Open Speaking",
+          key: "B_SPEAKING",
+          icon: "message-circle" as const,
+        },
+        { id: "grammar", title: "Grammar", key: "C_GRAMMAR", icon: "edit-3" as const },
+        {
+          id: "listening",
+          title: "Listening",
+          key: "D_LISTEN_ANSWER",
+          icon: "headphones" as const,
+        },
+      ].map((item) => ({
+        ...item,
+        score: resultData.section_percentages[item.key] ?? 0,
+      }))
+    : [];
+
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -53,11 +84,11 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     );
   }
 
-  if (error || !resultData) {
+  if (error || !resultData || !("percentage" in resultData)) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-6">
         <Text className="text-lg text-slate-600 text-center mb-6">
-          Could not load assessment results. Please try again later.
+          Scoring in progress or could not load assessment results. Please check back shortly.
         </Text>
         <TouchableOpacity className="bg-slate-900 py-3 px-8 rounded-xl" onPress={handleBack}>
           <Text className="text-white font-bold">Back to Home</Text>
@@ -87,25 +118,24 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               Overall Score
             </Text>
             <ScoreGauge
-              score={(resultData.percentage || 0) / 16.66} // Normalize 100% to 6 points
-              total={6}
-              obtainedPoints={resultData.total_score || 0}
-              totalPoints={resultData.max_score || 100}
-              cefr={resultData.cefr_range || "N/A"}
+              score={resultData.percentage || 0}
+              total={100}
+              obtainedPoints={Math.round(resultData.total_score || 0)}
+              totalPoints={Math.round(resultData.max_score || 100)}
+              cefr={resultData.cefr_level ?? resultData.cefr_range ?? "N/A"}
             />
           </View>
 
           <View className="flex-row flex-wrap justify-between mt-6">
-            {resultData.section_scores &&
-              Object.entries(resultData.section_scores).map(([key, score]) => (
-                <ScoreCard
-                  key={key}
-                  title={key.replace(/_/g, " ")}
-                  score={score}
-                  total={100}
-                  icon="activity"
-                />
-              ))}
+            {sectionCards.map((cat) => (
+              <ScoreCard
+                key={cat.id}
+                title={cat.title}
+                score={cat.score}
+                total={100}
+                icon={cat.icon as any}
+              />
+            ))}
           </View>
 
           <TouchableOpacity
@@ -119,3 +149,5 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     </SafeAreaView>
   );
 }
+
+export default ResultsScreen;

@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import type { ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitWritingAnswerMutation } from "@/services/module-api";
+import type { WritingResultRead } from "@/services/module-api";
 
 export interface WritingActivityResult {
   passed: boolean;
@@ -16,28 +17,12 @@ interface WritingActivityProps {
   onComplete: (result: WritingActivityResult) => void;
 }
 
-interface Breakdown {
-  grammar?: number;
-  coherence?: number;
-  vocab?: number;
-  feedback?: string;
-}
-
-/**
- * Prompt + multi-line text input → POST writing/submit → AI feedback.
- * The feedback panel reuses the `score_breakdown` shape the speaking pipeline
- * returns, so the same backend changes light up here too.
- */
 export function WritingActivity({ activityId, questions, onComplete }: WritingActivityProps) {
   const prompt = questions[0];
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scoreView, setScoreView] = useState<{
-    score: number;
-    passed: boolean;
-    breakdown: Breakdown;
-  } | null>(null);
+  const [scoreView, setScoreView] = useState<WritingResultRead | null>(null);
 
   const [submitWriting] = useSubmitWritingAnswerMutation();
 
@@ -47,14 +32,10 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
     setError(null);
     try {
       const res = await submitWriting({
-        activity_id: activityId,
-        answers: [{ question_id: prompt?.id ?? "", answer: text.trim() }],
+        question_id: prompt?.id ?? "",
+        response_text: text.trim(),
       }).unwrap();
-      const score = Number(res?.score ?? 0);
-      const passed = score >= 70;
-      const breakdown: Breakdown =
-        (res as unknown as { score_breakdown?: Breakdown }).score_breakdown ?? {};
-      setScoreView({ score, passed, breakdown });
+      setScoreView(res);
     } catch {
       setError("Submission failed. Tap retry.");
     } finally {
@@ -73,30 +54,28 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
             color: scoreView.passed ? "#16a34a" : "#dc2626",
           }}
         >
-          {scoreView.score}
+          {Math.round(scoreView.score)}
         </Text>
-        <Text className="text-slate-500 mb-6">
+        <Text className="text-slate-500 mb-2">
           {scoreView.passed ? "Nicely written." : "Try once more — aim for clearer structure."}
         </Text>
-        {Object.entries(scoreView.breakdown).map(([k, v]) =>
-          k === "feedback" ? (
-            <Text key={k} style={{ marginTop: 8, color: "#475569" }}>
-              {String(v)}
+        <Text style={{ color: "#475569", marginBottom: 12 }}>{scoreView.feedback}</Text>
+        {scoreView.grammar_errors.length > 0 && (
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: "#334155", fontWeight: "600", marginBottom: 6 }}>
+              Grammar notes
             </Text>
-          ) : typeof v === "number" ? (
-            <View
-              key={k}
-              style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6 }}
-            >
-              <Text style={{ color: "#334155", textTransform: "capitalize" }}>{k}</Text>
-              <Text style={{ color: "#0f172a", fontWeight: "600" }}>{v}</Text>
-            </View>
-          ) : null,
+            {scoreView.grammar_errors.map((err, i) => (
+              <Text key={i} style={{ color: "#64748b", marginBottom: 4 }}>
+                • {err}
+              </Text>
+            ))}
+          </View>
         )}
         <Pressable
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
           style={{
-            marginTop: 24,
+            marginTop: 8,
             backgroundColor: "#0f172a",
             paddingVertical: 14,
             borderRadius: 10,

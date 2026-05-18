@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 
@@ -99,14 +99,21 @@ export function SpeakingActivity({ activityId, questions, onComplete }: Speaking
     setSubmitting(true);
     try {
       const form = new FormData();
-      form.append("activity_id", activityId);
       form.append("question_id", prompt?.id ?? "");
-      // RN multipart file shape — DO NOT set Content-Type manually anywhere.
-      form.append("file", {
-        uri,
-        name: "speaking.m4a",
-        type: "audio/m4a",
-      } as unknown as Blob);
+
+      if (Platform.OS === "web") {
+        // On web, uri is a blob: URL — fetch it to get a real Blob object.
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        form.append("audio_file", blob, "speaking.webm");
+      } else {
+        // React Native native: use the {uri, name, type} shape.
+        form.append("audio_file", {
+          uri,
+          name: "speaking.m4a",
+          type: "audio/m4a",
+        } as unknown as Blob);
+      }
 
       const res = await submitSpeaking(form).unwrap();
       const score = Number(res?.score ?? 0);

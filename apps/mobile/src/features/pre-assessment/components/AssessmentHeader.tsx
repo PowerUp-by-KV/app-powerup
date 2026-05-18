@@ -2,6 +2,15 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { getCompletedSections } from "@/services/auth-storage";
+
+export type SectionCode =
+  | "A_READING"
+  | "A_SPEAKING"
+  | "A_LISTEN"
+  | "B_SPEAKING"
+  | "C_GRAMMAR"
+  | "D_LISTEN_ANSWER";
 
 interface AssessmentHeaderProps {
   sectionName?: string;
@@ -14,12 +23,12 @@ interface AssessmentHeaderProps {
 }
 
 const SKILLS_MAP = [
-  { label: "Reading Skills", route: "/read" },
-  { label: "Speaking Skills", route: "/speak-read" },
-  { label: "Expressive Speaking", route: "/listen-audio" },
-  { label: "Speaking Practice", route: "/speak" },
-  { label: "Grammar & Language Usage", route: "/grammar" },
-  { label: "Listening Comprehension", route: "/listen" },
+  { label: "Reading Skills", route: "/read", code: "A_READING" as const },
+  { label: "Speaking Skills", route: "/speak-read", code: "A_SPEAKING" as const },
+  { label: "Expressive Speaking", route: "/listen-audio", code: "A_LISTEN" as const },
+  { label: "Speaking Practice", route: "/speak", code: "B_SPEAKING" as const },
+  { label: "Grammar & Language Usage", route: "/grammar", code: "C_GRAMMAR" as const },
+  { label: "Listening Comprehension", route: "/listen", code: "D_LISTEN_ANSWER" as const },
 ];
 
 export function AssessmentHeader({
@@ -34,6 +43,13 @@ export function AssessmentHeader({
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (modalVisible) {
+      getCompletedSections().then(setCompletedSections);
+    }
+  }, [modalVisible]);
 
   useEffect(() => {
     if (stopTimer) return;
@@ -77,7 +93,7 @@ export function AssessmentHeader({
         <View className="bg-slate-100 px-4 py-2.5 rounded-full border border-slate-200 flex-row items-center shadow-sm">
           <Feather name="clock" size={14} color="#64748B" className="mr-2" />
           <Text className="text-xs font-bold text-slate-700">
-            Test Time:{formatTime(secondsElapsed)}
+            Test Time: {formatTime(secondsElapsed)}
           </Text>
         </View>
 
@@ -136,6 +152,7 @@ export function AssessmentHeader({
             <View className="gap-3">
               {SKILLS_MAP.map((skill, index) => {
                 const isSelected = skill.label === skillName;
+                const isDone = completedSections.includes(skill.code);
                 return (
                   <TouchableOpacity
                     key={index}
@@ -149,7 +166,11 @@ export function AssessmentHeader({
                     >
                       {skill.label}
                     </Text>
-                    {isSelected && <Feather name="check-circle" size={18} color="#4F46E5" />}
+                    {isDone ? (
+                      <Feather name="check-circle" size={18} color="#22C55E" />
+                    ) : isSelected ? (
+                      <Feather name="check-circle" size={18} color="#4F46E5" />
+                    ) : null}
                   </TouchableOpacity>
                 );
               })}

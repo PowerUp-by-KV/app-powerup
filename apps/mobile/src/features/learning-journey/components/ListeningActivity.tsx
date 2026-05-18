@@ -5,6 +5,7 @@ import { Audio, AVPlaybackStatus } from "expo-av";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
+import { resolveApiAssetUrl } from "@/services/api";
 import { McqActivity, McqActivityResult } from "./McqActivity";
 
 interface ListeningActivityProps {
@@ -20,7 +21,7 @@ interface ListeningActivityProps {
 export function ListeningActivity({ questions, onComplete }: ListeningActivityProps) {
   const passage = questions.find((q) => !!q.audio_url);
   const mcqs = questions.filter((q) => q !== passage);
-  const audioUrl = passage?.audio_url ?? null;
+  const audioUrl = resolveApiAssetUrl(passage?.audio_url);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);

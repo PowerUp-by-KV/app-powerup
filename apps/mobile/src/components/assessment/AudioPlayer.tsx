@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
 import { Feather } from "@expo/vector-icons";
+import { resolveApiAssetUrl } from "@/services/api";
 
 interface AudioPlayerProps {
   audioUrl?: string | null;
-  audioText: string;
-  duration?: number;
+  audioText?: string | null;
+  duration?: number | null;
   onPlayStart?: () => void;
   onPlayEnd?: () => void;
 }
@@ -18,10 +19,11 @@ export function AudioPlayer({
   onPlayStart,
   onPlayEnd,
 }: AudioPlayerProps) {
+  const resolvedAudioUrl = resolveApiAssetUrl(audioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [actualDuration, setActualDuration] = useState(duration);
+  const [actualDuration, setActualDuration] = useState(duration ?? 30);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   // Clean up sound on unmount
@@ -41,8 +43,8 @@ export function AudioPlayer({
     }
     setIsPlaying(false);
     setCurrentTime(0);
-    setActualDuration(duration);
-  }, [audioUrl, duration]);
+    setActualDuration(duration ?? 30);
+  }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) {
@@ -66,7 +68,7 @@ export function AudioPlayer({
   };
 
   const handlePlay = async () => {
-    if (!audioUrl) {
+    if (!resolvedAudioUrl) {
       // Fallback timer simulation if no audio URL is provided
       setIsPlaying(true);
       onPlayStart?.();
@@ -81,7 +83,7 @@ export function AudioPlayer({
       });
 
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: audioUrl },
+        { uri: resolvedAudioUrl },
         { shouldPlay: true },
         onPlaybackStatusUpdate,
       );
@@ -107,9 +109,9 @@ export function AudioPlayer({
     onPlayEnd?.();
   };
 
-  // Fallback simulation timer if no audioUrl
+  // Fallback simulation timer if no resolvedAudioUrl
   useEffect(() => {
-    if (audioUrl || !isPlaying) return;
+    if (resolvedAudioUrl || !isPlaying) return;
 
     if (currentTime >= actualDuration) {
       setIsPlaying(false);
@@ -123,7 +125,7 @@ export function AudioPlayer({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isPlaying, currentTime, actualDuration, audioUrl]);
+  }, [isPlaying, currentTime, actualDuration, resolvedAudioUrl]);
 
   const progressPercent = actualDuration > 0 ? (currentTime / actualDuration) * 100 : 0;
 
@@ -147,7 +149,7 @@ export function AudioPlayer({
             {isPlaying ? "Playing audio..." : "Play audio"}
           </Text>
           <Text className="text-xs font-medium text-slate-500" numberOfLines={2}>
-            {currentTime}s / {actualDuration}s • {audioText}
+            {currentTime}s / {actualDuration}s {audioText ? `• ${audioText}` : ""}
           </Text>
         </View>
       </View>

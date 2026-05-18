@@ -37,6 +37,7 @@ export interface UserProfile {
   cefr_range: string | null;
   learning_goal: string | null;
   learning_frequency: string | null;
+  profile_completed: boolean;
   streak_count: number;
   total_xp: number;
   weekly_streak: boolean[];
@@ -61,6 +62,8 @@ export interface UserUpdate {
   address?: string;
   language?: string;
   avatar_id?: string;
+  learning_goal?: string;
+  learning_frequency?: string;
 }
 
 export const authApi = api.injectEndpoints({

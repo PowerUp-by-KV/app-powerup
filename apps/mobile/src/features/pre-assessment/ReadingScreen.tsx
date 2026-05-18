@@ -22,7 +22,7 @@ import { ParagraphDisplay } from "./components/ParagraphDisplay";
 import { MCQOption } from "./components/ReadingMCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
 import { AssessmentHeader } from "./components/AssessmentHeader";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -168,6 +168,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       // Brief delay to allow dev tunnel proxy socket to clean up before loading next route
       await new Promise((res) => setTimeout(res, 600));
 
+      await saveCompletedSection("A_READING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch {
@@ -279,3 +280,5 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     </SafeAreaView>
   );
 }
+
+export default ReadingScreen;

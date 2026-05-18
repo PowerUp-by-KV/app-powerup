@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
@@ -21,8 +21,7 @@ import { GrammarQuestion as GrammarQuestionComponent } from "./components/Gramma
 import { MCQOption } from "./components/GrammarMCQOption";
 import { FillBlankInput } from "./components/FillBlankInput";
 import { AssessmentHeader } from "./components/AssessmentHeader";
-import { useEffect } from "react";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 
 interface GrammarScreenProps {
   sessionId?: string;
@@ -93,6 +92,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      await saveCompletedSection("C_GRAMMAR");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch {

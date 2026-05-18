@@ -13,22 +13,24 @@ export interface LearningJourneyGate {
 
 export function useLearningJourneyGate(): LearningJourneyGate {
   const { data: profile, isLoading } = useGetProfileQuery();
-  const [profileDone, setProfileDone] = useState<boolean | null>(null);
+  const [localDone, setLocalDone] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;
     getProfileCompletedInSession().then((done) => {
-      if (mounted) setProfileDone(done);
+      if (mounted) setLocalDone(done);
     });
     return () => {
       mounted = false;
     };
   }, []);
 
-  if (isLoading || profileDone === null) {
+  if (isLoading || localDone === null) {
     return { ready: false, canEnter: false, blockedReason: null };
   }
 
+  // API flag is authoritative; SecureStore flag covers offline / existing sessions
+  const profileDone = profile?.profile_completed ?? localDone;
   const hasCefr = !!profile?.cefr_range;
   const canEnter = profileDone && hasCefr;
   const blockedReason: GateReason = !profileDone ? "onboarding" : !hasCefr ? "assessment" : null;

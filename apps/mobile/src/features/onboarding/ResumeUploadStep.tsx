@@ -1,11 +1,19 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, SafeAreaView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  Text,
+  View,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 
 import { useStartSessionMutation } from "@/services/assessment-api";
-import { useUploadResumeMutation } from "@/services/onboarding-api";
+import { useUploadResumeMutation } from "@/services/resume-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 
 export function ResumeUploadStep() {
@@ -13,6 +21,7 @@ export function ResumeUploadStep() {
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploadResume, { isLoading }] = useUploadResumeMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   const handlePick = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -41,13 +50,28 @@ export function ResumeUploadStep() {
     if (!picked) return;
     try {
       const formData = new FormData();
-      formData.append("file", {
-        uri: picked.uri,
-        name: picked.name,
-        type: picked.mimeType ?? "application/pdf",
-      } as unknown as File);
+      if (Platform.OS === "web" && (picked as any).file) {
+        // On web, use the actual File object from the document picker
+        formData.append("file", (picked as any).file, picked.name);
+      } else {
+        // On mobile (React Native), use the {uri, name, type} format
+        formData.append("file", {
+          uri: picked.uri,
+          name: picked.name,
+          type: picked.mimeType ?? "application/pdf",
+        } as unknown as File);
+      }
       await uploadResume(formData).unwrap();
-      await goToAssessment();
+      // Show success screen for 2 seconds, then navigate
+      setUploadSuccess(true);
+      setTimeout(async () => {
+        try {
+          const session = await startSession().unwrap();
+          router.replace(`/read?session_id=${session.session_id}` as never);
+        } catch {
+          router.replace("/(tabs)" as never);
+        }
+      }, 2000);
     } catch (err) {
       Alert.alert("Upload failed", getApiErrorMessage(err, "Could not upload your resume."));
     }
@@ -56,6 +80,39 @@ export function ResumeUploadStep() {
   const handleSkip = async () => {
     await goToAssessment();
   };
+
+  // Success overlay
+  if (uploadSuccess) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 50,
+              backgroundColor: "#22c55e",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 24,
+            }}
+          >
+            <Feather name="check" size={52} color="#fff" />
+          </View>
+          <Text style={{ fontSize: 22, fontWeight: "800", color: "#15803d", marginBottom: 8 }}>
+            Upload Successful!
+          </Text>
+          <Text style={{ fontSize: 15, color: "#6b7280" }}>Redirecting...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">

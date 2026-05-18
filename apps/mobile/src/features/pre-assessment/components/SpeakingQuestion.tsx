@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text } from "react-native";
-import { SpeakingQuestion as ISpeakingQuestion } from "../types";
+import type { AssessmentQuestion } from "@/services/assessment-api";
 
 interface SpeakingQuestionProps {
-  question: ISpeakingQuestion;
+  question: AssessmentQuestion;
   questionIndex: number;
   totalQuestions: number;
   timeLeft?: number;
@@ -15,6 +15,12 @@ export function SpeakingQuestion({
   totalQuestions,
   timeLeft,
 }: SpeakingQuestionProps) {
+  const recordingTime =
+    (question as any).recordingTime ||
+    question.recording_time_seconds ||
+    (question as any).time_seconds ||
+    30;
+
   return (
     <View className="mb-6">
       <View className="flex-row justify-between items-center mb-4">
@@ -30,26 +36,30 @@ export function SpeakingQuestion({
                 : "bg-red-100 text-red-700"
           }`}
         >
-          {question.complexity}
+          {question.complexity || "Standard"}
         </Text>
       </View>
 
-      <View className="bg-blue-50 p-4 rounded-lg mb-4">
-        {question.topic && (
-          <Text className="text-sm font-semibold text-blue-900 mb-2">Topic: {question.topic}</Text>
-        )}
-        <Text className="text-base text-gray-800 leading-relaxed">{question.question}</Text>
+      {question.topic ? (
+        <View className="bg-indigo-50 px-3 py-1.5 rounded-full self-start mb-3">
+          <Text className="text-xs font-semibold text-indigo-700">{question.topic}</Text>
+        </View>
+      ) : null}
+
+      <View className="bg-white p-4 rounded-xl border border-gray-200 mb-4 shadow-sm">
+        <Text className="text-sm text-gray-500 font-semibold mb-1">Prompt / Question:</Text>
+        <Text className="text-base text-gray-800 leading-relaxed">
+          {question.question || question.prompt || question.text}
+        </Text>
       </View>
 
       <View className="flex-row justify-between items-center bg-gray-100 p-3 rounded-lg">
-        <Text className="text-xs text-gray-600">
-          Recording Time: {question.recordingTime || (question as any).time_seconds || 30} seconds
-        </Text>
-        {timeLeft !== undefined && (
+        <Text className="text-xs text-gray-600">Recording Time: {recordingTime} seconds</Text>
+        {timeLeft !== undefined ? (
           <View className="bg-indigo-100 px-2 py-0.5 rounded">
             <Text className="text-xs text-indigo-700 font-bold">Remaining: {timeLeft}s</Text>
           </View>
-        )}
+        ) : null}
       </View>
     </View>
   );

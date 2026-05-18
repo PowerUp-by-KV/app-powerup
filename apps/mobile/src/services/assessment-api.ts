@@ -1,4 +1,5 @@
-import { api } from "./api";
+import { api, API_BASE_URL } from "./api";
+import { getAuthSession } from "./auth-storage";
 
 export interface StartSessionResponse {
   session_id: string;
@@ -7,22 +8,49 @@ export interface StartSessionResponse {
   first_section: string;
 }
 
-export interface AssessmentQuestionOption {
+export interface AssessmentOption {
   label: string;
   value: string;
 }
 
+export type AssessmentQuestionOption = AssessmentOption;
+
 export interface AssessmentQuestion {
   id: string;
+  question_id?: string;
   question_no?: number;
   question?: string;
-  options?: AssessmentQuestionOption[];
+  text?: string;
+  sentence?: string;
+  prompt?: string;
+  story?: string;
+  topic?: string | null;
+  options?: AssessmentOption[];
+  audio_url?: string | null;
+  recording_time_seconds?: number | null;
+  no_of_lines?: string | null;
+  complexity?: string | null;
+  audio_no?: number;
+  script?: string | null;
+  questions?: AssessmentQuestion[];
+}
+
+export interface ListeningStory {
+  audio_no: number;
+  audio_url?: string | null;
+  script?: string | null;
+  questions: AssessmentQuestion[];
 }
 
 export interface ReadingSectionResponse {
   section: string;
-  paragraph: string;
-  questions: AssessmentQuestion[];
+  paragraph?: string;
+  audio_url?: string;
+  questions?: AssessmentQuestion[];
+  sentences?: AssessmentQuestion[];
+  items?: AssessmentQuestion[];
+  prompts?: AssessmentQuestion[];
+  stories?: ListeningStory[];
 }
 
 export interface SpeakingSentence {
@@ -80,13 +108,6 @@ export interface StoryQuestion {
   options: AssessmentQuestionOption[];
 }
 
-export interface ListeningStory {
-  audio_no: number;
-  audio_url?: string;
-  script?: string;
-  questions: StoryQuestion[];
-}
-
 export interface DListenAnswerSectionResponse {
   section: string;
   stories: ListeningStory[];
@@ -104,6 +125,10 @@ export interface AssessmentAnswer {
   question_id: string;
   answer?: string | string[];
   audio_url?: string;
+}
+
+export interface AssessmentAudioUploadResponse {
+  audio_url: string;
 }
 
 export interface SubmitSectionRequest {
@@ -124,7 +149,14 @@ export interface SubmitSectionResponse {
     | null;
 }
 
-export interface AssessmentSessionCompleteResponse {
+export interface AssessmentScoringStatusResponse {
+  total_answers: number;
+  completed_answers: number;
+  pending_answers: number;
+  failed_answers: number;
+}
+
+export interface AssessmentResultResponse {
   total_score: number;
   max_score: number;
   percentage: number;
@@ -163,17 +195,64 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
-    completeSession: builder.mutation<AssessmentSessionCompleteResponse, { session_id: string }>({
+    uploadAssessmentAudio: builder.mutation<AssessmentAudioUploadResponse, FormData>({
+      queryFn: async (formData) => {
+        try {
+          const session = await getAuthSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+            method: "POST",
+            headers,
+            body: formData,
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: "Upload failed" }));
+            return { error: { status: response.status, data: err } };
+          }
+          const data = (await response.json()) as AssessmentAudioUploadResponse;
+          return { data };
+        } catch (err) {
+          return { error: { status: "FETCH_ERROR" as const, error: String(err) } };
+        }
+      },
+    }),
+
+    completeSession: builder.mutation<
+      AssessmentResultResponse | AssessmentScoringStatusResponse,
+      { session_id: string }
+    >({
       query: ({ session_id }) => ({
         url: `/v1/assessment/session/${session_id}/complete`,
         method: "POST",
       }),
       invalidatesTags: ["Assessment"],
     }),
+
+    getAssessmentStatus: builder.query<AssessmentScoringStatusResponse, { session_id: string }>({
+      query: ({ session_id }) => `/v1/assessment/session/${session_id}/status`,
+      providesTags: ["Assessment"],
+    }),
+
+    getAssessmentResult: builder.query<AssessmentResultResponse, { session_id: string }>({
+      query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
+      providesTags: ["Assessment"],
+    }),
   }),
 });
 
-export const getNextRouteForSection = (section?: string | null): any => {
+export type AssessmentRoute =
+  | "/read"
+  | "/speak-read"
+  | "/listen-audio"
+  | "/speak"
+  | "/grammar"
+  | "/listen"
+  | "/results";
+
+export const getNextRouteForSection = (section?: string | null): AssessmentRoute => {
   switch (section) {
     case "A_READING":
       return "/read";
@@ -196,5 +275,9 @@ export const {
   useStartSessionMutation,
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
+  useUploadAssessmentAudioMutation,
   useCompleteSessionMutation,
+  useGetAssessmentStatusQuery,
+  useLazyGetAssessmentStatusQuery,
+  useGetAssessmentResultQuery,
 } = assessmentApi;

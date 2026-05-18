@@ -96,3 +96,23 @@ export async function getProfileCompletedInSession(): Promise<boolean> {
 export async function clearProfileCompletedInSession(): Promise<void> {
   await deleteItem(PROFILE_COMPLETED_KEY);
 }
+
+const COMPLETED_SECTIONS_KEY = "powerup.completed_sections";
+
+export async function saveCompletedSection(section: string): Promise<void> {
+  const raw = await getItem(COMPLETED_SECTIONS_KEY);
+  const existing: string[] = raw ? JSON.parse(raw) : [];
+  if (!existing.includes(section)) {
+    existing.push(section);
+    await setItem(COMPLETED_SECTIONS_KEY, JSON.stringify(existing));
+  }
+}
+
+export async function getCompletedSections(): Promise<string[]> {
+  const raw = await getItem(COMPLETED_SECTIONS_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export async function clearCompletedSections(): Promise<void> {
+  await deleteItem(COMPLETED_SECTIONS_KEY);
+}
