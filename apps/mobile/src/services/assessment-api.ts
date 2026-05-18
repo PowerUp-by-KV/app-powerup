@@ -205,7 +205,7 @@ export const assessmentApi = api.injectEndpoints({
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio/upload`, {
             method: "POST",
             headers,
             body: formData,

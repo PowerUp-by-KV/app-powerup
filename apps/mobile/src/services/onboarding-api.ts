@@ -104,6 +104,7 @@ export const onboardingApi = api.injectEndpoints({
         url: "/v1/onboarding/resume",
         method: "POST",
         body: formData,
+        formData: true,
       }),
     }),
   }),

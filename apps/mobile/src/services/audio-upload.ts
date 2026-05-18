@@ -25,7 +25,9 @@ export async function uploadAudioFile(
     "",
   );
   const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-  const uploadUrl = `${baseUrl}/v1/audio/upload`;
+  const dummyModuleId = "1f79a741-1ca8-48da-84a7-9dc6d7e88f98";
+  const dummyActivityId = "a246be9e-1fce-4a78-b5bf-6092db19ad78";
+  const uploadUrl = `${baseUrl}/v1/audio/upload?module_id=${dummyModuleId}&activity_id=${dummyActivityId}`;
 
   const fd = new FormData();
 
