@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 export interface TapToBuildResult {
@@ -67,13 +67,14 @@ export function TapToBuild({
   };
 
   return (
-    <View>
+    <View style={{ ...Platform.select({ web: { userSelect: "none" } as any }) }}>
       <Text className="text-slate-900 text-lg font-bold mb-4">{promptText}</Text>
 
       {audioUrl && (
         <Pressable
           onPress={onPlayAudio}
           className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-4 mb-6 active:opacity-80"
+          style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
         >
           <View className="w-10 h-10 rounded-full bg-slate-900 items-center justify-center mr-3">
             <Feather name="volume-2" size={18} color="#fff" />
@@ -101,6 +102,7 @@ export function TapToBuild({
                   key={idx}
                   onPress={() => handleSlotTap(idx)}
                   className="bg-white border border-slate-300 rounded-lg px-3 py-2"
+                  style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
                 >
                   <Text className="text-slate-900 font-semibold">{token}</Text>
                 </Pressable>
@@ -119,6 +121,9 @@ export function TapToBuild({
               onPress={() => handleTokenTap(token, idx)}
               disabled={used}
               className={`px-4 py-2 rounded-lg border ${used ? "bg-slate-100 border-slate-200" : "bg-white border-slate-300"}`}
+              style={{
+                ...Platform.select({ web: { cursor: used ? "default" : "pointer" } as any }),
+              }}
             >
               <Text className={`font-semibold ${used ? "text-slate-300" : "text-slate-900"}`}>
                 {token}
@@ -132,6 +137,7 @@ export function TapToBuild({
         onPress={handleCheck}
         disabled={!canCheck}
         className={`rounded-2xl py-4 items-center ${canCheck ? "bg-slate-900" : "bg-slate-300"}`}
+        style={{ ...Platform.select({ web: { cursor: canCheck ? "pointer" : "default" } as any }) }}
       >
         <Text className="text-white font-bold text-base">Check Answers</Text>
       </Pressable>

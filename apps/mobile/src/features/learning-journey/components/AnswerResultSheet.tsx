@@ -23,9 +23,9 @@ export function AnswerResultSheet({
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onDismiss}>
       <View className="flex-1 justify-end">
         <View
-          style={{ backgroundColor: bg, paddingTop: 20, paddingHorizontal: 24, paddingBottom: 36 }}
+          style={{ backgroundColor: bg, paddingTop: 14, paddingHorizontal: 24, paddingBottom: 16 }}
         >
-          <View className="flex-row items-center justify-between mb-4">
+          <View className="flex-row items-center justify-between mb-2.5">
             <View className="flex-row items-center">
               <View
                 className="w-8 h-8 rounded-full items-center justify-center mr-3"
@@ -33,25 +33,25 @@ export function AnswerResultSheet({
               >
                 <Feather name={isCorrect ? "check" : "x"} size={18} color="#fff" />
               </View>
-              <Text className="text-white text-xl font-extrabold">
+              <Text className="text-white text-lg font-extrabold">
                 {isCorrect ? "Correct!" : "Wrong!"}
               </Text>
             </View>
             <Pressable onPress={onDismiss}>
-              <Feather name="x" size={22} color="#94a3b8" />
+              <Feather name="x" size={20} color="#94a3b8" />
             </Pressable>
           </View>
           {!isCorrect && correctSentence && (
-            <View className="mb-4">
-              <Text className="text-slate-300 text-sm">Correct answer:</Text>
-              <Text className="text-white text-base font-semibold mt-1">{correctSentence}</Text>
+            <View className="mb-3">
+              <Text className="text-slate-300 text-xs font-semibold">Correct answer:</Text>
+              <Text className="text-white text-sm font-bold mt-0.5">{correctSentence}</Text>
             </View>
           )}
           <Pressable
             onPress={onContinue}
-            className="bg-white rounded-2xl py-3.5 items-center active:opacity-80"
+            className="bg-white rounded-xl py-2.5 items-center active:opacity-80"
           >
-            <Text className="text-slate-900 font-bold text-base">
+            <Text className="text-slate-900 font-extrabold text-sm">
               {isCorrect ? "Continue" : "OK"}
             </Text>
           </Pressable>

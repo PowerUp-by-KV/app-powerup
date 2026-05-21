@@ -60,7 +60,7 @@ export function GamifiedMascotLoader({
 
         {/* Floating pulse status text */}
         <Text className="text-indigo-600 font-extrabold text-xs uppercase tracking-widest mb-8">
-          Connecting to AI Coach...
+          Connecting.......
         </Text>
 
         {/* Beautiful Floating glassmorphic Pro Tip Box */}

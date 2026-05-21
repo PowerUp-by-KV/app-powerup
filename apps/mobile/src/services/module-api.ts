@@ -100,26 +100,7 @@ export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
     getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
-      queryFn: async (_arg, _queryApi, _extraOptions, fetchWithBaseQuery) => {
-        const result = await fetchWithBaseQuery("/v1/progression");
-        if (result.error) {
-          return { error: result.error };
-        }
-        const data = result.data as any;
-        const modules = (data?.unlocked_modules || []).map((m: any) => ({
-          id: m.module_id,
-          module_no: m.module_no,
-          title: m.title,
-          variant_id: null,
-          is_unlocked: !m.locked,
-        }));
-        return {
-          data: {
-            cefr_band: data?.cefr_level || "B1-B2",
-            modules,
-          },
-        };
-      },
+      query: () => "/v1/learning-path/personalized",
       providesTags: ["Modules"],
     }),
 
@@ -175,9 +156,7 @@ export const moduleApi = api.injectEndpoints({
       queryFn: async (formData) => {
         try {
           const session = await getAuthSession();
-          const headers: Record<string, string> = {
-            "X-Tunnel-Skip-AntiPhishing-Page": "true",
-          };
+          const headers: Record<string, string> = {};
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
@@ -220,58 +199,23 @@ export const moduleApi = api.injectEndpoints({
     }),
 
     getModuleEngagement: builder.query<ModuleEngagementSummary, string>({
-      queryFn: async (moduleId, _queryApi, _extraOptions, fetchWithBaseQuery) => {
-        const res = await fetchWithBaseQuery(`/v1/modules/${moduleId}/engagement`);
-        if (!res.error && res.data) {
-          return { data: res.data as ModuleEngagementSummary };
-        }
-        const progRes = await fetchWithBaseQuery(`/v1/modules/${moduleId}/progress`);
-        const prog = (progRes.data || {
-          completed_activities: 0,
-          total_activities: 10,
-          progress_percentage: 0,
-          current_day: 1,
-        }) as any;
-        return {
-          data: {
-            completed_days: prog.current_day ? prog.current_day - 1 : 0,
-            total_days: 12,
-            rolling_score_pct: prog.progress_percentage || 0,
-            xp_earned: prog.completed_activities * 10,
-            cefr_progress_pct: prog.progress_percentage || 0,
-            next_cefr_band: null,
-            ready_to_advance: false,
-          },
-        };
-      },
+      query: (moduleId) => `/v1/modules/${moduleId}/engagement`,
       providesTags: (_result, _error, id) => [{ type: "Modules" as const, id }],
     }),
 
     evaluateModuleCheck: builder.mutation<ModuleCheckResult, string>({
-      queryFn: async (moduleId, _queryApi, _extraOptions, fetchWithBaseQuery) => {
-        const res = await fetchWithBaseQuery({
-          url: `/v1/modules/${moduleId}/check`,
-          method: "POST",
-        });
-        if (res.error) {
-          return { error: res.error };
-        }
-        return { data: res.data as ModuleCheckResult };
-      },
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/check`,
+        method: "POST",
+      }),
       invalidatesTags: ["Modules"],
     }),
 
     advanceCefr: builder.mutation<AdvanceCefrResponse, string>({
-      queryFn: async (moduleId, _queryApi, _extraOptions, fetchWithBaseQuery) => {
-        const res = await fetchWithBaseQuery({
-          url: `/v1/modules/${moduleId}/advance-cefr`,
-          method: "POST",
-        });
-        if (res.error) {
-          return { error: res.error };
-        }
-        return { data: res.data as AdvanceCefrResponse };
-      },
+      query: (moduleId) => ({
+        url: `/v1/modules/${moduleId}/advance-cefr`,
+        method: "POST",
+      }),
       invalidatesTags: ["Modules"],
     }),
   }),
