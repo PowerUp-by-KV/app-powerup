@@ -34,9 +34,10 @@ import { TimelineRow } from "./components/TimelineRow";
 interface PreAssessmentModalProps {
   visible: boolean;
   onClose: () => void;
+  cefrRange?: string | null;
 }
 
-function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
+function PreAssessmentModal({ visible, onClose, cefrRange }: PreAssessmentModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -100,7 +101,7 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
           </View>
         </View>
 
-        <Text style={scoreStyles.cefrTitle}>CEFR: C1</Text>
+        <Text style={scoreStyles.cefrTitle}>CEFR: {cefrRange || "N/A"}</Text>
 
         {/* 2. Grid breakdown (2x2) */}
         <View style={scoreStyles.gridContainer}>
@@ -394,6 +395,7 @@ export function LearningJourneyScreen() {
       <PreAssessmentModal
         visible={showPreAssessmentModal}
         onClose={() => setShowPreAssessmentModal(false)}
+        cefrRange={profile?.cefr_range}
       />
 
       <ScrollView
@@ -471,12 +473,18 @@ export function LearningJourneyScreen() {
               {/* Right Content */}
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={timelineStyles.stageTitle}>Pre Assesment</Text>
+                  <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
                   <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                    <Text style={timelineStyles.badgeText}>Completed</Text>
+                    <Text style={timelineStyles.badgeText}>
+                      {profile?.cefr_range ? `Level ${profile.cefr_range}` : "Completed"}
+                    </Text>
                   </View>
                 </View>
-                <Text style={timelineStyles.stageSubtitle}>Master the fundamentals</Text>
+                <Text style={timelineStyles.stageSubtitle}>
+                  {profile?.cefr_range
+                    ? `Assessed proficiency: Band ${profile.cefr_range}`
+                    : "Master the fundamentals"}
+                </Text>
 
                 {/* Thick Progress Bar */}
                 <View style={timelineStyles.progressBarBg}>
