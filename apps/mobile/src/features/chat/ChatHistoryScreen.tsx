@@ -7,9 +7,11 @@ import { useSafeBack } from "@/hooks/useSafeBack";
 import {
   useListBookmarksQuery,
   useListChatThreadsQuery,
-  type ChatThread,
   type ChatMessage,
+  type ChatThread,
 } from "@/services/chat-api";
+
+const TypedFlatList = FlatList as any;
 
 export function ChatHistoryScreen() {
   const router = useRouter();
@@ -44,63 +46,63 @@ export function ChatHistoryScreen() {
         ))}
       </View>
 
-      <View style={{ padding: 16, flex: 1 }}>
-        {tab === "recent" ? (
-          !threads || threads.length === 0 ? (
+      {tab === "recent" ? (
+        <TypedFlatList
+          data={threads ?? []}
+          keyExtractor={(t: ChatThread) => t.id}
+          contentContainerStyle={{ padding: 16 }}
+          ListEmptyComponent={
             threadsLoading ? (
               <ActivityIndicator color="#6366f1" />
             ) : (
               <Text className="text-slate-400 text-center mt-12">No conversations yet</Text>
             )
-          ) : (
-            <FlatList
-              data={threads ?? []}
-              keyExtractor={(t: ChatThread) => t.id}
-              renderItem={({ item }: { item: ChatThread }) => (
-                <Pressable
-                  onPress={() =>
-                    router.replace({ pathname: "/chat", params: { thread_id: item.id } } as never)
-                  }
-                  className="flex-row items-center bg-slate-50 rounded-2xl p-4 mb-2"
-                >
-                  <Feather name="message-circle" size={18} color="#475569" />
-                  <View className="flex-1 ml-3">
-                    <Text className="text-slate-900 font-semibold" numberOfLines={1}>
-                      {item.title}
-                    </Text>
-                    <Text className="text-slate-400 text-xs mt-0.5">
-                      {new Date(item.last_message_at).toLocaleString()}
-                    </Text>
-                  </View>
-                  <Feather name="chevron-right" size={18} color="#94a3b8" />
-                </Pressable>
-              )}
-            />
-          )
-        ) : !bookmarks || bookmarks.length === 0 ? (
-          bookmarksLoading ? (
-            <ActivityIndicator color="#6366f1" />
-          ) : (
-            <Text className="text-slate-400 text-center mt-12">
-              No bookmarks yet. Bookmark replies from the coach to save them here.
-            </Text>
-          )
-        ) : (
-          <FlatList
-            data={bookmarks ?? []}
-            keyExtractor={(m: ChatMessage) => m.id}
-            renderItem={({ item }: { item: ChatMessage }) => (
-              <View className="bg-indigo-50 rounded-2xl p-4 mb-2">
-                <Feather name="bookmark" size={14} color="#4f46e5" />
-                <Text className="text-slate-900 mt-2">{item.content}</Text>
-                <Text className="text-slate-400 text-xs mt-2">
-                  {new Date(item.created_at).toLocaleString()}
+          }
+          renderItem={({ item }: { item: ChatThread }) => (
+            <Pressable
+              onPress={() =>
+                router.replace({ pathname: "/chat", params: { thread_id: item.id } } as never)
+              }
+              className="flex-row items-center bg-slate-50 rounded-2xl p-4 mb-2"
+            >
+              <Feather name="message-circle" size={18} color="#475569" />
+              <View className="flex-1 ml-3">
+                <Text className="text-slate-900 font-semibold" numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text className="text-slate-400 text-xs mt-0.5">
+                  {new Date(item.last_message_at).toLocaleString()}
                 </Text>
               </View>
-            )}
-          />
-        )}
-      </View>
+              <Feather name="chevron-right" size={18} color="#94a3b8" />
+            </Pressable>
+          )}
+        />
+      ) : (
+        <TypedFlatList
+          data={bookmarks ?? []}
+          keyExtractor={(m: ChatMessage) => m.id}
+          contentContainerStyle={{ padding: 16 }}
+          ListEmptyComponent={
+            bookmarksLoading ? (
+              <ActivityIndicator color="#6366f1" />
+            ) : (
+              <Text className="text-slate-400 text-center mt-12">
+                No bookmarks yet. Bookmark replies from the coach to save them here.
+              </Text>
+            )
+          }
+          renderItem={({ item }: { item: ChatMessage }) => (
+            <View className="bg-indigo-50 rounded-2xl p-4 mb-2">
+              <Feather name="bookmark" size={14} color="#4f46e5" />
+              <Text className="text-slate-900 mt-2">{item.content}</Text>
+              <Text className="text-slate-400 text-xs mt-2">
+                {new Date(item.created_at).toLocaleString()}
+              </Text>
+            </View>
+          )}
+        />
+      )}
     </SafeAreaView>
   );
 }

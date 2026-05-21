@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -21,11 +22,9 @@ import { AudioPlayer } from "./components/AudioPlayer";
 import { RecordingButton } from "./components/RecordingButton";
 import { AssessmentHeader } from "./components/AssessmentHeader";
 import { Platform } from "react-native";
-import { getAssessmentSessionId } from "@/services/auth-storage";
-
-interface ListenWithAudioScreenProps {
-  sessionId?: string;
-}
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
@@ -85,6 +84,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [hasRecorded, setHasRecorded] = useState<Record<string, boolean>>({});
   const [isFinished, setIsFinished] = useState(false);
 
   const listenData = sectionData as AListenSectionResponse | undefined;
@@ -100,6 +100,9 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [uploadingQuestions, setUploadingQuestions] = useState<Record<string, boolean>>({});
   const isAnyUploading = Object.values(uploadingQuestions).some(Boolean);
 
+  const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
+  const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
+
   const maxDuration = currentQuestion?.recording_time_seconds || 30;
 
   // Reset timer on question change
@@ -110,22 +113,20 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       setIsRecording(false);
       setRecording(null);
       setHasStartedRecording(false);
+      setCurrentLocalUri(null);
+      setCurrentLocalDuration(0);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording) return;
+    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording || !isRecording)
+      return;
 
     if (timeLeft <= 0) {
       const processTimerExpiry = async () => {
         if (isRecording) {
           await stopRecording();
-        }
-        if (isLastQuestion) {
-          handleFinish();
-        } else {
-          setCurrentQuestionIndex((prev) => prev + 1);
         }
       };
       processTimerExpiry();
@@ -137,7 +138,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isLastQuestion, isSubmitting, isFinished, hasStartedRecording]);
+  }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached
   useEffect(() => {
@@ -173,6 +174,9 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       setRecording(newRecording);
       setIsRecording(true);
       setRecordingDuration(0);
+      if (!hasStartedRecording) {
+        setHasStartedRecording(true);
+      }
     } catch (err) {
       Alert.alert("Failed to start recording", (err as Error).message);
     }
@@ -189,6 +193,9 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
       if (uri && currentQuestion) {
         const qId = currentQuestion.id;
+        setCurrentLocalUri(uri);
+        setCurrentLocalDuration(recordingDuration);
+        setHasRecorded((prev) => ({ ...prev, [qId]: true }));
         setUploadingQuestions((prev) => ({ ...prev, [qId]: true }));
 
         // Asynchronous upload that returns a promise so callers can await it before submitting
@@ -208,6 +215,24 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       // Ignore stop errors
     }
   }
+
+  const handleRetake = () => {
+    if (currentQuestion) {
+      const qId = currentQuestion.id;
+      setCurrentLocalUri(null);
+      setCurrentLocalDuration(0);
+      setRecordingDuration(0);
+      setIsRecording(false);
+      setRecording(null);
+      setHasStartedRecording(false);
+      setHasRecorded((prev) => ({ ...prev, [qId]: false }));
+      setAnswers((prev) => {
+        const next = { ...prev };
+        delete next[qId];
+        return next;
+      });
+    }
+  };
 
   if (isError) {
     return (
@@ -229,11 +254,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }
 
   if (isLoading || !sectionData) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
-    );
+    return <GamifiedMascotLoader title="Preparing Listening Assessment..." />;
   }
 
   if (!currentQuestion) {
@@ -269,6 +290,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         }
       }
 
+      await saveCompletedSection("A_LISTEN");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response.next_section);
@@ -284,18 +306,24 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       await stopRecording();
     }
 
+    if (!hasRecorded[currentQuestion?.id]) {
+      Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      return;
+    }
+
     if (isLastQuestion) {
       handleFinish();
       return;
     }
-    setCurrentQuestionIndex((prev) => prev + 1);
-  };
 
-  const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    }
-    // Disallow going back to previous sections (router.back())
+    // Reset state synchronously to prevent race conditions on last question
+    setHasStartedRecording(false);
+    setTimeLeft(maxDuration + 10);
+    setRecordingDuration(0);
+    setIsRecording(false);
+    setRecording(null);
+
+    setCurrentQuestionIndex((prev) => prev + 1);
   };
 
   return (
@@ -333,58 +361,85 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             duration={currentQuestion?.recording_time_seconds || 30}
           />
 
-          <RecordingButton
-            isRecording={isRecording}
-            recordingDuration={recordingDuration}
-            maxDuration={maxDuration}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-          />
+          {currentLocalUri ? (
+            <SpeakingFeedbackPlayback
+              localUri={currentLocalUri}
+              recordedDuration={currentLocalDuration}
+              onRetake={handleRetake}
+              onSubmit={handleNext}
+              submitButtonText={isLastQuestion ? "Check Answers" : "Next Question"}
+              isSubmitting={isSubmitting || (isLastQuestion && isAnyUploading)}
+            />
+          ) : (
+            <>
+              <RecordingButton
+                isRecording={isRecording}
+                recordingDuration={recordingDuration}
+                maxDuration={maxDuration}
+                onStartRecording={startRecording}
+                onStopRecording={stopRecording}
+              />
 
-          {uploadingQuestions[currentQuestion?.id] && (
-            <View className="flex-row items-center justify-center bg-amber-50 py-2 px-4 rounded-xl mt-3 border border-amber-200">
-              <ActivityIndicator size="small" color="#d97706" className="mr-2" />
-              <Text className="text-xs text-amber-700 font-medium">
-                Uploading audio in background...
-              </Text>
-            </View>
-          )}
-
-          <View className="flex-row justify-between mt-8 gap-4 mb-4">
-            {currentQuestionIndex > 0 && (
-              <TouchableOpacity
-                className="flex-1 bg-slate-200 py-4 rounded-2xl items-center shadow-sm"
-                onPress={handleBack}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                <Text className="text-slate-700 font-bold text-base">Back</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              className={`flex-1 py-4 rounded-2xl items-center justify-center shadow-md ${
-                isSubmitting || (isLastQuestion && isAnyUploading) ? "bg-slate-400" : "bg-slate-800"
-              }`}
-              onPress={handleNext}
-              disabled={isSubmitting || (isLastQuestion && isAnyUploading)}
-              activeOpacity={0.8}
-            >
-              {isSubmitting || (isLastQuestion && isAnyUploading) ? (
-                <View className="flex-row items-center justify-center gap-2">
-                  <ActivityIndicator color="white" size="small" />
-                  <Text className="text-white font-bold text-base">
-                    {isAnyUploading ? "Uploading Audio..." : "Submitting..."}
+              {uploadingQuestions[currentQuestion?.id] && (
+                <View className="flex-row items-center justify-center bg-amber-50 py-2 px-4 rounded-xl mt-3 border border-amber-200">
+                  <ActivityIndicator size="small" color="#d97706" className="mr-2" />
+                  <Text className="text-xs text-amber-700 font-medium">
+                    Uploading audio in background...
                   </Text>
                 </View>
-              ) : (
-                <Text className="text-white font-bold text-base">
-                  {isLastQuestion ? "Check Answers" : "Next Question"}
-                </Text>
               )}
-            </TouchableOpacity>
-          </View>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Full-screen lock overlay — blocks all interaction during submission */}
+      {(isFinished || isSubmitting) && (
+        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+          <View style={styles.card}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.title}>Submitting Answers…</Text>
+            <Text style={styles.subtitle}>Please wait, do not close the app</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingVertical: 36,
+    paddingHorizontal: 40,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    minWidth: 240,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginTop: 18,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#64748b",
+    marginTop: 6,
+    textAlign: "center",
+  },
+});
+
+interface ListenWithAudioScreenProps {
+  sessionId?: string;
 }

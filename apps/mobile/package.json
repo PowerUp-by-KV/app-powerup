@@ -4,7 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "expo start",
+    "start": "node --max-old-space-size=8192 node_modules/expo/AppEntry.js",
+    "start:clean": "node --max-old-space-size=8192 node_modules/expo/AppEntry.js --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
@@ -29,6 +30,7 @@
     "@react-native-community/datetimepicker": "8.6.0",
     "@react-navigation/native": "^7.1.33",
     "@reduxjs/toolkit": "^2",
+    "@rive-app/react-canvas": "^4.28.5",
     "expo": "~55.0.17",
     "expo-auth-session": "~55.0.15",
     "expo-av": "^16.0.8",
@@ -56,7 +58,8 @@
     "react-native-screens": "~4.23.0",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.7.4",
-    "react-redux": "^9"
+    "react-redux": "^9",
+    "rive-react-native": "^9.8.3"
   },
   "devDependencies": {
     "@powerup/eslint-config": "workspace:*",

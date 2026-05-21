@@ -23,6 +23,7 @@ export interface StoredSession {
 const AUTH_KEY = "powerup_auth_session";
 const ASSESSMENT_SESSION_KEY = "powerup_assessment_session_id";
 const PROFILE_COMPLETED_KEY = "powerup.profile_completed";
+const LAST_LOGGED_IN_EMAIL_KEY = "powerup.last_logged_in_email";
 
 const isWeb = Platform.OS === "web";
 
@@ -69,6 +70,7 @@ export async function clearAuthSession(): Promise<void> {
 
 export async function saveAssessmentSessionId(sessionId: string): Promise<void> {
   await setItem(ASSESSMENT_SESSION_KEY, sessionId);
+  await saveAssessmentStartTime(Date.now());
 }
 
 export async function getAssessmentSessionId(): Promise<string | null> {
@@ -97,6 +99,38 @@ export async function clearProfileCompletedInSession(): Promise<void> {
   await deleteItem(PROFILE_COMPLETED_KEY);
 }
 
+/**
+ * Saves the email of the currently logged-in user.
+ * On next login, if a different email is detected, stale local flags are cleared.
+ */
+export async function saveLastLoggedInEmail(email: string): Promise<void> {
+  await setItem(LAST_LOGGED_IN_EMAIL_KEY, email.toLowerCase().trim());
+}
+
+export async function getLastLoggedInEmail(): Promise<string | null> {
+  return getItem(LAST_LOGGED_IN_EMAIL_KEY);
+}
+
+/**
+ * Call at login time: if the email has changed since the last login,
+ * clears all device-local completion flags so they don't bleed across users.
+ * Returns true if a user switch was detected (flags were cleared).
+ */
+export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promise<boolean> {
+  const lastEmail = await getLastLoggedInEmail();
+  const normalized = newEmail.toLowerCase().trim();
+  if (lastEmail && lastEmail !== normalized) {
+    // Different user — wipe all device-local state
+    await deleteItem(PROFILE_COMPLETED_KEY);
+    await deleteItem(COMPLETED_SECTIONS_KEY);
+    await deleteItem(ASSESSMENT_SESSION_KEY);
+    await deleteItem(ASSESSMENT_START_TIME_KEY);
+    return true;
+  }
+  await setItem(LAST_LOGGED_IN_EMAIL_KEY, normalized);
+  return false;
+}
+
 const COMPLETED_SECTIONS_KEY = "powerup.completed_sections";
 
 export async function saveCompletedSection(section: string): Promise<void> {
@@ -115,4 +149,22 @@ export async function getCompletedSections(): Promise<string[]> {
 
 export async function clearCompletedSections(): Promise<void> {
   await deleteItem(COMPLETED_SECTIONS_KEY);
+}
+
+const ASSESSMENT_START_TIME_KEY = "powerup.assessment_start_time";
+
+export async function saveAssessmentStartTime(time: number): Promise<void> {
+  const existing = await getItem(ASSESSMENT_START_TIME_KEY);
+  if (!existing) {
+    await setItem(ASSESSMENT_START_TIME_KEY, String(time));
+  }
+}
+
+export async function getAssessmentStartTime(): Promise<number | null> {
+  const raw = await getItem(ASSESSMENT_START_TIME_KEY);
+  return raw ? Number(raw) : null;
+}
+
+export async function clearAssessmentStartTime(): Promise<void> {
+  await deleteItem(ASSESSMENT_START_TIME_KEY);
 }

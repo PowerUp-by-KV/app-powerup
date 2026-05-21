@@ -154,6 +154,8 @@ export interface AssessmentScoringStatusResponse {
   completed_answers: number;
   pending_answers: number;
   failed_answers: number;
+  completed_sections?: string[];
+  completedSections?: string[];
 }
 
 export interface AssessmentResultResponse {
@@ -205,7 +207,7 @@ export const assessmentApi = api.injectEndpoints({
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio/upload`, {
+          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
             method: "POST",
             headers,
             body: formData,

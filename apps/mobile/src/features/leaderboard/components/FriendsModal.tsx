@@ -23,6 +23,8 @@ import {
   type SearchResult,
 } from "@/services/social-api";
 
+const TypedFlatList = FlatList as any;
+
 interface FriendsModalProps {
   visible: boolean;
   onClose: () => void;
@@ -86,100 +88,100 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
           ))}
         </View>
 
-        <View style={{ padding: 16, flex: 1 }}>
-          {tab === "requests" ? (
-            requests.length === 0 ? (
+        {tab === "requests" ? (
+          <TypedFlatList
+            data={requests}
+            keyExtractor={(r: FriendRequest) => r.request_id}
+            contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={
               reqLoading ? (
                 <ActivityIndicator color="#6366f1" />
               ) : (
                 <Text className="text-slate-400 text-center mt-12">No pending requests</Text>
               )
-            ) : (
-              <FlatList
-                data={requests}
-                keyExtractor={(r: FriendRequest) => r.request_id}
-                renderItem={({ item }: { item: FriendRequest }) => (
-                  <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
-                    <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
-                    <View className="flex-1">
-                      <Text className="text-slate-900 font-semibold">{item.name}</Text>
-                      <Text className="text-slate-500 text-xs">{item.points} pts</Text>
-                    </View>
-                    <Pressable
-                      onPress={() => accept(item.user_id)}
-                      className="bg-slate-900 rounded-full px-3 py-1.5 mr-2"
-                    >
-                      <Text className="text-white text-xs font-bold">Accept</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => reject(item.user_id)}
-                      className="w-8 h-8 items-center justify-center"
-                    >
-                      <Feather name="x" size={18} color="#94a3b8" />
-                    </Pressable>
-                  </View>
-                )}
-              />
-            )
-          ) : tab === "friends" ? (
-            friends.length === 0 ? (
+            }
+            renderItem={({ item }: { item: FriendRequest }) => (
+              <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
+                <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-semibold">{item.name}</Text>
+                  <Text className="text-slate-500 text-xs">{item.points} pts</Text>
+                </View>
+                <Pressable
+                  onPress={() => accept(item.user_id)}
+                  className="bg-slate-900 rounded-full px-3 py-1.5 mr-2"
+                >
+                  <Text className="text-white text-xs font-bold">Accept</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => reject(item.user_id)}
+                  className="w-8 h-8 items-center justify-center"
+                >
+                  <Feather name="x" size={18} color="#94a3b8" />
+                </Pressable>
+              </View>
+            )}
+          />
+        ) : tab === "friends" ? (
+          <TypedFlatList
+            data={friends}
+            keyExtractor={(f: FriendRow) => f.user_id}
+            contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={
               friendsLoading ? (
                 <ActivityIndicator color="#6366f1" />
               ) : (
                 <Text className="text-slate-400 text-center mt-12">No friends yet</Text>
               )
-            ) : (
-              <FlatList
-                data={friends}
-                keyExtractor={(f: FriendRow) => f.user_id}
-                renderItem={({ item }: { item: FriendRow }) => (
-                  <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
-                    <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
-                    <View className="flex-1">
-                      <Text className="text-slate-900 font-semibold">{item.name}</Text>
-                      <Text className="text-slate-500 text-xs">{item.points} pts</Text>
-                    </View>
-                    <Pressable
-                      className="border border-slate-300 rounded-full px-3 py-1.5"
-                      onPress={() =>
-                        Alert.alert("Coming Soon", "Friend profiles are not available yet.")
-                      }
-                    >
-                      <Text className="text-slate-900 text-xs font-bold">View Profile</Text>
-                    </Pressable>
-                  </View>
-                )}
-              />
-            )
-          ) : results.length === 0 ? (
-            query.length < 2 ? (
-              <Text className="text-slate-400 text-center mt-12">Type at least 2 characters</Text>
-            ) : searchLoading ? (
-              <ActivityIndicator color="#6366f1" />
-            ) : (
-              <Text className="text-slate-400 text-center mt-12">No matches</Text>
-            )
-          ) : (
-            <FlatList
-              data={results}
-              keyExtractor={(r: SearchResult) => r.user_id}
-              renderItem={({ item }: { item: SearchResult }) => (
-                <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
-                  <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
-                  <View className="flex-1">
-                    <Text className="text-slate-900 font-semibold">{item.name}</Text>
-                  </View>
-                  <Pressable
-                    onPress={() => send({ user_id: item.user_id })}
-                    className="bg-slate-900 rounded-full px-3 py-1.5"
-                  >
-                    <Text className="text-white text-xs font-bold">Add</Text>
-                  </Pressable>
+            }
+            renderItem={({ item }: { item: FriendRow }) => (
+              <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
+                <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-semibold">{item.name}</Text>
+                  <Text className="text-slate-500 text-xs">{item.points} pts</Text>
                 </View>
-              )}
-            />
-          )}
-        </View>
+                <Pressable
+                  className="border border-slate-300 rounded-full px-3 py-1.5"
+                  onPress={() =>
+                    Alert.alert("Coming Soon", "Friend profiles are not available yet.")
+                  }
+                >
+                  <Text className="text-slate-900 text-xs font-bold">View Profile</Text>
+                </Pressable>
+              </View>
+            )}
+          />
+        ) : (
+          <TypedFlatList
+            data={results}
+            keyExtractor={(r: SearchResult) => r.user_id}
+            contentContainerStyle={{ padding: 16 }}
+            ListEmptyComponent={
+              query.length < 2 ? (
+                <Text className="text-slate-400 text-center mt-12">Type at least 2 characters</Text>
+              ) : searchLoading ? (
+                <ActivityIndicator color="#6366f1" />
+              ) : (
+                <Text className="text-slate-400 text-center mt-12">No matches</Text>
+              )
+            }
+            renderItem={({ item }: { item: SearchResult }) => (
+              <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
+                <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-semibold">{item.name}</Text>
+                </View>
+                <Pressable
+                  onPress={() => send({ user_id: item.user_id })}
+                  className="bg-slate-900 rounded-full px-3 py-1.5"
+                >
+                  <Text className="text-white text-xs font-bold">Add</Text>
+                </Pressable>
+              </View>
+            )}
+          />
+        )}
       </View>
     </Modal>
   );

@@ -15,9 +15,23 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import {
+  AuthResponse,
+  LoginRequest,
+  useLoginMutation,
+  useLazyGetProfileQuery,
+} from "@/services/auth-api";
 import { getApiErrorMessage } from "@/utils/error-message";
-import { clearAuthSession, saveAuthSession } from "@/services/auth-storage";
+import {
+  clearAuthSession,
+  saveAuthSession,
+  saveAssessmentSessionId,
+  getProfileCompletedInSession,
+  clearStaleLocalFlagsIfUserChanged,
+  saveLastLoggedInEmail,
+} from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
+import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -27,12 +41,83 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
+  const [getProfile] = useLazyGetProfileQuery();
+  const [startSession] = useStartSessionMutation();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
-  const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    if (auth.user.cefr_range) {
-      router.replace("/(tabs)");
-    } else {
+  // Prefetch onboarding questions in the background during the authentication handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
+
+  const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
+    try {
+      await saveAuthSession(auth);
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
+      // If a different email has logged in on this device, wipe stale local flags
+      // so they don't mistakenly mark the new user's onboarding/assessment as done.
+      await clearStaleLocalFlagsIfUserChanged(loginEmail);
+      // Persist the current email for future login comparisons
+      await saveLastLoggedInEmail(loginEmail);
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      // Fetch the latest full profile details from the backend
+      const profile = await getProfile().unwrap();
+
+      // ─── ONBOARDING CHECK ─────────────────────────────────────────────────
+      // Primary truth  : backend `profile_completed` field (works across devices).
+      // Secondary truth: local session flag (covers same-session race conditions
+      //                  where the backend flag may not have propagated yet).
+      const localOnboardingDone = await getProfileCompletedInSession();
+      const isOnboardingComplete = profile.profile_completed || localOnboardingDone;
+
+      if (!isOnboardingComplete) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      // ─── PRE-ASSESSMENT CHECK ──────────────────────────────────────────────
+      // Primary truth: `cefr_range` from the backend profile.
+      // A non-null cefr_range means the full pre-assessment is complete.
+      if (profile.cefr_range) {
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // ─── RESUME INCOMPLETE PRE-ASSESSMENT ─────────────────────────────────
+      // Onboarding is done but pre-assessment is not yet complete.
+      // startSession returns:
+      //   • first_section = next section the user needs to answer (resume point)
+      //   • first_section = null/empty → all sections submitted, go to results
+      try {
+        const session = await startSession().unwrap();
+        if (session?.session_id) {
+          await saveAssessmentSessionId(session.session_id);
+
+          if (session.first_section) {
+            const nextRoute = getNextRouteForSection(session.first_section);
+            const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
+            router.replace(
+              `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
+            );
+          } else {
+            // All sections answered but cefr_range not yet set → show results
+            router.replace(`/results?session_id=${encodeURIComponent(session.session_id)}` as any);
+          }
+        } else {
+          router.replace("/(tabs)");
+        }
+      } catch {
+        // startSession failed (network error, etc.) → safe fallback to home
+        router.replace("/(tabs)");
+      }
+    } catch {
+      // getProfile failed → cannot determine status, send to onboarding as safest fallback
       router.replace("/onboarding");
     }
   };
@@ -66,7 +151,9 @@ export function LoginScreen() {
       }
 
       const response = await login(payload).unwrap();
-      await persistAuthAndNavigate(response);
+      // Pass the email so we can detect if a different user has logged in on this device
+      const resolvedEmail = payload.email ?? payload.identifier ?? "";
+      await persistAuthAndNavigate(response, resolvedEmail);
     } catch (error) {
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {

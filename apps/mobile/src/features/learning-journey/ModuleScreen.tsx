@@ -1,9 +1,12 @@
-import React, { useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { OfflineGameView } from "@/components/OfflineGameView";
+import { Ionicons } from "@expo/vector-icons";
 
 import {
   useCompleteActivityMutation,
@@ -20,21 +23,53 @@ export function ModuleScreen() {
   const dayId = params.day_id ?? "";
   const moduleId = params.module_id ?? "";
 
-  const { data: activities = [], isLoading: actsLoading } = useGetDayActivitiesQuery(dayId, {
+  const {
+    data: activities = [],
+    isLoading: actsLoading,
+    isFetching: actsFetching,
+    isError: actsError,
+    refetch: refetchActivities,
+  } = useGetDayActivitiesQuery(dayId, {
     skip: !dayId,
   });
   const [activityIdx, setActivityIdx] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    if (activities.length > 0 && !isInitialized) {
+      const firstIncompleteIdx = activities.findIndex((act) => !act.passed);
+      if (firstIncompleteIdx !== -1) {
+        setActivityIdx(firstIncompleteIdx);
+      }
+      setIsInitialized(true);
+    }
+  }, [activities, isInitialized]);
+
   const currentActivity = activities[activityIdx];
 
-  const { data: questions = [], isLoading: qLoading } = useGetActivityQuestionsQuery(
-    currentActivity?.id ?? "",
-    { skip: !currentActivity },
-  );
+  const {
+    data: questions = [],
+    isLoading: qLoading,
+    isFetching: qFetching,
+    isError: qError,
+    refetch: refetchQuestions,
+  } = useGetActivityQuestionsQuery(currentActivity?.id ?? "", {
+    skip: !currentActivity,
+  });
+
+  const handleRetry = () => {
+    refetchActivities();
+    if (currentActivity) {
+      refetchQuestions();
+    }
+  };
 
   const [completeActivity] = useCompleteActivityMutation();
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const handleActivityComplete = async (result: ActivityResult) => {
-    if (!currentActivity) return;
+    if (!currentActivity || isCompleting) return;
+    setIsCompleting(true);
     try {
       const res = await completeActivity({
         activity_id: currentActivity.id,
@@ -62,14 +97,21 @@ export function ModuleScreen() {
         });
         return;
       }
+
+      if (activityIdx + 1 < activities.length) {
+        setActivityIdx(activityIdx + 1);
+      } else {
+        safeBack();
+      }
     } catch {
       // Soft-fail: still advance the local UX so the user isn't stuck.
-    }
-
-    if (activityIdx + 1 < activities.length) {
-      setActivityIdx(activityIdx + 1);
-    } else {
-      safeBack();
+      if (activityIdx + 1 < activities.length) {
+        setActivityIdx(activityIdx + 1);
+      } else {
+        safeBack();
+      }
+    } finally {
+      setIsCompleting(false);
     }
   };
 
@@ -81,12 +123,65 @@ export function ModuleScreen() {
     );
   }
 
-  if (actsLoading || qLoading || !currentActivity) {
+  const isError = (actsError || qError) && !actsFetching && !qFetching;
+
+  if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
+      <SafeAreaView
+        style={{
+          flex: 1,
+          backgroundColor: "#f8fafc",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+        className="p-6"
+      >
+        <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-16 h-16 rounded-2xl bg-rose-50 items-center justify-center mb-6">
+            <Feather name="wifi-off" size={28} color="#e11d48" />
+          </View>
+
+          <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            Server Connection Lost
+          </Text>
+          <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+            We couldn't connect to the learning server. Please ensure the backend service is running
+            and try again.
+          </Text>
+
+          {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+          <OfflineGameView />
+
+          <View className="w-full gap-3">
+            <Pressable
+              onPress={handleRetry}
+              className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+            >
+              <Text className="text-white font-extrabold text-sm">Try Again</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => safeBack()}
+              className="w-full bg-slate-100 active:bg-slate-200 py-4 rounded-xl items-center justify-center"
+            >
+              <Text className="text-slate-700 font-extrabold text-sm">Go Back</Text>
+            </Pressable>
+          </View>
+        </View>
       </SafeAreaView>
     );
+  }
+
+  if (
+    actsLoading ||
+    qLoading ||
+    actsFetching ||
+    qFetching ||
+    isCompleting ||
+    !currentActivity ||
+    (activities.length > 0 && !isInitialized)
+  ) {
+    return <GamifiedMascotLoader title="Loading Activities..." />;
   }
 
   const totalSteps = activities.length;
@@ -94,7 +189,7 @@ export function ModuleScreen() {
   const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="x" size={22} color="#0f172a" />
@@ -109,7 +204,7 @@ export function ModuleScreen() {
         </Text>
       </View>
 
-      <View className="flex-1">
+      <View style={{ flex: 1 }}>
         <ActivityRenderer
           activity={currentActivity}
           questions={questions}

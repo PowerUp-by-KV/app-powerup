@@ -1,5 +1,5 @@
-import React from "react";
-import { View, TouchableOpacity, Text } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { View, TouchableOpacity, Text, Animated, Easing } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 interface BaseRecorderProps {
@@ -8,6 +8,107 @@ interface BaseRecorderProps {
   maxDuration: number;
   onStartRecording: () => void;
   onStopRecording: (url: string) => void;
+}
+
+/**
+ * Shared pulsing background halo for active recording feedback
+ */
+function PulsingHalo({ isRecording, size }: { isRecording: boolean; size: number }) {
+  const pulseAnim1 = useRef(new Animated.Value(1)).current;
+  const pulseAnim2 = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isRecording) {
+      // Loop pulse animation 1
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim1, {
+            toValue: 1.45,
+            duration: 1200,
+            easing: Easing.out(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseAnim1, {
+            toValue: 1,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ]),
+      ).start();
+
+      // Loop pulse animation 2 (staggered delay)
+      const timer = setTimeout(() => {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseAnim2, {
+              toValue: 1.45,
+              duration: 1200,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim2, {
+              toValue: 1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+        ).start();
+      }, 600);
+
+      return () => clearTimeout(timer);
+    } else {
+      pulseAnim1.setValue(1);
+      pulseAnim2.setValue(1);
+    }
+  }, [isRecording]);
+
+  if (!isRecording) return null;
+
+  const opacity1 = pulseAnim1.interpolate({
+    inputRange: [1, 1.45],
+    outputRange: [0.45, 0],
+  });
+
+  const opacity2 = pulseAnim2.interpolate({
+    inputRange: [1, 1.45],
+    outputRange: [0.45, 0],
+  });
+
+  return (
+    <View
+      style={{
+        position: "absolute",
+        width: size,
+        height: size,
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: -1,
+      }}
+    >
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: "#ef4444",
+          opacity: opacity1,
+          transform: [{ scale: pulseAnim1 }],
+        }}
+      />
+      <Animated.View
+        style={{
+          position: "absolute",
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: "#ef4444",
+          opacity: opacity2,
+          transform: [{ scale: pulseAnim2 }],
+        }}
+      />
+    </View>
+  );
 }
 
 export function RecordingControls({
@@ -19,21 +120,24 @@ export function RecordingControls({
 }: BaseRecorderProps) {
   return (
     <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-      <TouchableOpacity
-        className={`${
-          isRecording ? "bg-rose-500 shadow-rose-200" : "bg-slate-800 shadow-slate-300"
-        } rounded-full w-24 h-24 items-center justify-center shadow-lg mb-4`}
-        activeOpacity={0.8}
-        onPress={() => {
-          if (isRecording) {
-            onStopRecording("speaking-recording-url");
-          } else {
-            onStartRecording();
-          }
-        }}
-      >
-        <Feather name={isRecording ? "square" : "mic"} size={36} color="white" />
-      </TouchableOpacity>
+      <View className="relative items-center justify-center mb-4">
+        <PulsingHalo isRecording={isRecording} size={96} />
+        <TouchableOpacity
+          className={`${
+            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-slate-800 shadow-slate-300"
+          } rounded-full w-24 h-24 items-center justify-center shadow-lg`}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (isRecording) {
+              onStopRecording("speaking-recording-url");
+            } else {
+              onStartRecording();
+            }
+          }}
+        >
+          <Feather name={isRecording ? "square" : "mic"} size={36} color="white" />
+        </TouchableOpacity>
+      </View>
 
       {isRecording ? (
         <View className="items-center">
@@ -73,21 +177,24 @@ export function Recorder({
 }: BaseRecorderProps) {
   return (
     <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-      <TouchableOpacity
-        className={`${
-          isRecording ? "bg-rose-500 shadow-rose-200" : "bg-indigo-600 shadow-indigo-200"
-        } rounded-full w-20 h-20 items-center justify-center shadow-lg mb-3`}
-        activeOpacity={0.8}
-        onPress={() => {
-          if (isRecording) {
-            onStopRecording("speaking-read-recording");
-          } else {
-            onStartRecording();
-          }
-        }}
-      >
-        <Feather name={isRecording ? "square" : "mic"} size={32} color="white" />
-      </TouchableOpacity>
+      <View className="relative items-center justify-center mb-3">
+        <PulsingHalo isRecording={isRecording} size={80} />
+        <TouchableOpacity
+          className={`${
+            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-indigo-600 shadow-indigo-200"
+          } rounded-full w-20 h-20 items-center justify-center shadow-lg`}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (isRecording) {
+              onStopRecording("speaking-read-recording");
+            } else {
+              onStartRecording();
+            }
+          }}
+        >
+          <Feather name={isRecording ? "square" : "mic"} size={32} color="white" />
+        </TouchableOpacity>
+      </View>
 
       {isRecording ? (
         <View className="items-center">
@@ -95,7 +202,7 @@ export function Recorder({
             {recordingDuration}s / {maxDuration}s
           </Text>
           <View className="flex-row items-center">
-            <View className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
+            <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2" />
             <Text className="text-rose-700 font-bold text-xs">Recording...</Text>
           </View>
         </View>
@@ -124,21 +231,24 @@ export function RecordingButton({
 }: BaseRecorderProps) {
   return (
     <View className="items-center py-5 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
-      <TouchableOpacity
-        className={`${
-          isRecording ? "bg-rose-500 shadow-rose-200" : "bg-slate-800 shadow-slate-200"
-        } rounded-full w-20 h-20 items-center justify-center shadow-md mb-3`}
-        activeOpacity={0.8}
-        onPress={() => {
-          if (isRecording) {
-            onStopRecording("recording-url");
-          } else {
-            onStartRecording();
-          }
-        }}
-      >
-        <Feather name={isRecording ? "square" : "mic"} size={30} color="white" />
-      </TouchableOpacity>
+      <View className="relative items-center justify-center mb-3">
+        <PulsingHalo isRecording={isRecording} size={80} />
+        <TouchableOpacity
+          className={`${
+            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-slate-800 shadow-slate-200"
+          } rounded-full w-20 h-20 items-center justify-center shadow-md`}
+          activeOpacity={0.8}
+          onPress={() => {
+            if (isRecording) {
+              onStopRecording("recording-url");
+            } else {
+              onStartRecording();
+            }
+          }}
+        >
+          <Feather name={isRecording ? "square" : "mic"} size={30} color="white" />
+        </TouchableOpacity>
+      </View>
 
       {isRecording ? (
         <View className="items-center">

@@ -53,6 +53,9 @@ importers:
       '@reduxjs/toolkit':
         specifier: ^2
         version: 2.11.2(react-redux@9.2.0(@types/react@19.2.14)(react@19.2.0)(redux@5.0.1))(react@19.2.0)
+      '@rive-app/react-canvas':
+        specifier: ^4.28.5
+        version: 4.28.5(react@19.2.0)
       expo:
         specifier: ~55.0.17
         version: 55.0.17(@babel/core@7.29.0)(@expo/dom-webview@55.0.5)(@expo/metro-runtime@55.0.10)(expo-router@55.0.13)(react-dom@19.2.0(react@19.2.0))(react-native-worklets@0.7.4(@babel/core@7.29.0)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
@@ -137,6 +140,9 @@ importers:
       react-redux:
         specifier: ^9
         version: 9.2.0(@types/react@19.2.14)(react@19.2.0)(redux@5.0.1)
+      rive-react-native:
+        specifier: ^9.8.3
+        version: 9.8.3(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
     devDependencies:
       '@powerup/eslint-config':
         specifier: workspace:*
@@ -1473,6 +1479,14 @@ packages:
         optional: true
       react-redux:
         optional: true
+
+  '@rive-app/canvas@2.37.7':
+    resolution: {integrity: sha512-dS2W4igbETc3zxWhDO8x8wyB8HrtZCG48ofODBijHbV5lINYTz8Xx3P1mHtK/ywzKWhaSSAI95QTz9FqJG1ghQ==}
+
+  '@rive-app/react-canvas@4.28.5':
+    resolution: {integrity: sha512-gOucxDd0X9JX++TUW8SunvJ7743ejf+R/8Oj1/XXocZKfPHT5/tgI8C8STWmor1AbXEnx8oZ0kH2V7EvA9QFLA==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0
 
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
@@ -4420,6 +4434,13 @@ packages:
     deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
+  rive-react-native@9.8.3:
+    resolution: {integrity: sha512-QhLZWNzWUzPiRAPo6wWvtdYxPROAvmUprTsbN7UINjS6LTvgNHsuEYSwRf2hcA+44xVQD2Jv7dSMjqvzc/xqcQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
@@ -6900,6 +6921,13 @@ snapshots:
     optionalDependencies:
       react: 19.2.0
       react-redux: 9.2.0(@types/react@19.2.14)(react@19.2.0)(redux@5.0.1)
+
+  '@rive-app/canvas@2.37.7': {}
+
+  '@rive-app/react-canvas@4.28.5(react@19.2.0)':
+    dependencies:
+      '@rive-app/canvas': 2.37.7
+      react: 19.2.0
 
   '@sinclair/typebox@0.27.10': {}
 
@@ -10413,6 +10441,11 @@ snapshots:
   rimraf@3.0.2:
     dependencies:
       glob: 7.2.3
+
+  rive-react-native@9.8.3(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+      react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
 
   run-parallel@1.2.0:
     dependencies:

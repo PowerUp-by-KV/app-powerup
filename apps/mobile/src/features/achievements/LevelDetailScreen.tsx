@@ -10,18 +10,16 @@ export function LevelDetailScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
-
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white">
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-slate-900">Current Level</Text>
+        <Text className="flex-1 text-center font-bold text-slate-900">Level</Text>
         <View className="w-9" />
       </View>
       <ScrollView
-        style={{ flex: 1 }}
         contentContainerStyle={{
           flexGrow: 1,
           alignItems: "center",
@@ -30,14 +28,13 @@ export function LevelDetailScreen() {
           paddingVertical: 40,
           paddingBottom: 96,
         }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
+        <Text className="text-slate-500 mb-2">Keep going, you&apos;re in level</Text>
         <Text className="text-slate-900 text-7xl font-extrabold">
-          LVL {profile?.current_level ?? 1}
+          {profile?.current_level ?? 1}
         </Text>
         <Text className="text-slate-500 text-center mt-4 mb-8">
-          Complete daily lessons and maintain your streak to level up and unlock new skills!
+          Practice every day to level up your skills.
         </Text>
         <Pressable
           onPress={() => router.replace("/(tabs)/my-learning" as never)}

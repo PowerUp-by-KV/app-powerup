@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
@@ -45,7 +53,13 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
 
   if (scoreView) {
     return (
-      <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
+      <ScrollView
+        style={{
+          flex: 1,
+          ...Platform.select({ web: { userSelect: "none" } as any }),
+        }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+      >
         <Text className="text-slate-900 text-xl font-bold mb-2">Your writing score</Text>
         <Text
           style={{
@@ -80,6 +94,7 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
+            ...Platform.select({ web: { cursor: "pointer" } as any }),
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
@@ -89,7 +104,13 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 120 }}>
+    <ScrollView
+      style={{
+        flex: 1,
+        ...Platform.select({ web: { userSelect: "none" } as any }),
+      }}
+      contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+    >
       <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
       <Text className="text-slate-900 text-lg font-bold mb-4">{prompt?.question_text ?? ""}</Text>
 
@@ -123,6 +144,9 @@ export function WritingActivity({ activityId, questions, onComplete }: WritingAc
           paddingVertical: 14,
           borderRadius: 10,
           alignItems: "center",
+          ...Platform.select({
+            web: { cursor: submitting || text.trim().length === 0 ? "default" : "pointer" } as any,
+          }),
         }}
       >
         {submitting ? (
