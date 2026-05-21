@@ -10,18 +10,45 @@ import {
   Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { useCompleteSessionMutation, AssessmentResultResponse } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import {
+  getAssessmentSessionId,
+  getAssessmentStartTime,
+  clearAssessmentStartTime,
+} from "@/services/auth-storage";
 
 interface ResultsScreenProps {
   sessionId?: string;
 }
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+}
+
 export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) {
   const router = useRouter();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
+  const [timeTaken, setTimeTaken] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAssessmentStartTime().then((startTime) => {
+      if (startTime) {
+        const elapsed = Date.now() - startTime;
+        setTimeTaken(formatDuration(elapsed));
+        clearAssessmentStartTime();
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!sessionId) {
@@ -124,6 +151,14 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               totalPoints={Math.round(resultData.max_score || 100)}
               cefr={resultData.cefr_level ?? resultData.cefr_range ?? "N/A"}
             />
+            {timeTaken && (
+              <View className="flex-row items-center bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-2.5 mt-5">
+                <Feather name="clock" size={18} color="#4f46e5" className="mr-2" />
+                <Text className="text-indigo-900 font-bold text-sm">
+                  Total Time Taken: <Text className="text-indigo-600">{timeTaken}</Text>
+                </Text>
+              </View>
+            )}
           </View>
 
           <View className="flex-row flex-wrap justify-between mt-6">

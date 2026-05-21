@@ -26,9 +26,12 @@ export async function uploadAudioFile(
   if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
   const rawBase = apiUrl.replace(/\/$/, "");
   const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-  const targetModuleId = moduleId || "1f79a741-1ca8-48da-84a7-9dc6d7e88f98";
-  const targetActivityId = activityId || "a246be9e-1fce-4a78-b5bf-6092db19ad78";
-  const uploadUrl = `${baseUrl}/v1/audio/upload?module_id=${targetModuleId}&activity_id=${targetActivityId}`;
+
+  // If no moduleId/activityId are provided, this is a pre-assessment speaking upload
+  const isAssessment = !moduleId && !activityId;
+  const uploadUrl = isAssessment
+    ? `${baseUrl}/v1/assessment/audio`
+    : `${baseUrl}/v1/audio/upload?module_id=${moduleId || "1f79a741-1ca8-48da-84a7-9dc6d7e88f98"}&activity_id=${activityId || "a246be9e-1fce-4a78-b5bf-6092db19ad78"}`;
 
   const fd = new FormData();
 
@@ -53,8 +56,12 @@ export async function uploadAudioFile(
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
-            const data: AudioUploadResponse = JSON.parse(xhr.responseText);
-            resolve(data.sas_url);
+            const data = JSON.parse(xhr.responseText);
+            if (isAssessment) {
+              resolve(data.audio_url);
+            } else {
+              resolve(data.sas_url);
+            }
           } catch {
             reject(new Error("Invalid response from audio upload"));
           }

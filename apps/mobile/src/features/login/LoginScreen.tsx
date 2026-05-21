@@ -15,9 +15,21 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import {
+  AuthResponse,
+  LoginRequest,
+  useLoginMutation,
+  useLazyGetProfileQuery,
+} from "@/services/auth-api";
 import { getApiErrorMessage } from "@/utils/error-message";
-import { clearAuthSession, saveAuthSession } from "@/services/auth-storage";
+import {
+  clearAuthSession,
+  saveAuthSession,
+  saveAssessmentSessionId,
+  getProfileCompletedInSession,
+} from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
+import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -27,12 +39,67 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
+  const [getProfile] = useLazyGetProfileQuery();
+  const [startSession] = useStartSessionMutation();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
+
+  // Prefetch onboarding questions in the background during the authentication handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
 
   const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    if (auth.user.cefr_range) {
-      router.replace("/(tabs)");
-    } else {
+    try {
+      await saveAuthSession(auth);
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      // Fetch the latest full profile details from the backend
+      const profile = await getProfile().unwrap();
+
+      // Check hybrid onboarding status (both backend profile and local storage flag)
+      const localOnboardingDone = await getProfileCompletedInSession();
+      const isOnboardingComplete = profile.profile_completed || localOnboardingDone;
+
+      // Rule 1: If onboarding is not completed, go to onboarding
+      if (!isOnboardingComplete) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      // Rule 2: If onboarding is completed and pre-assessment (CEFR) is also completed, go to home
+      if (profile.cefr_range) {
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // Rule 3: Onboarding is complete but pre-assessment is incomplete. Go to the next incomplete section.
+      try {
+        const session = await startSession().unwrap();
+        if (session?.session_id) {
+          await saveAssessmentSessionId(session.session_id);
+
+          if (session.first_section) {
+            const nextRoute = getNextRouteForSection(session.first_section);
+            const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
+            router.replace(
+              `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
+            );
+          } else {
+            router.replace(`/results?session_id=${encodeURIComponent(session.session_id)}` as any);
+          }
+        } else {
+          router.replace("/(tabs)");
+        }
+      } catch (err) {
+        // Fallback to home if start session fails
+        router.replace("/(tabs)");
+      }
+    } catch (err) {
+      // General fallback to onboarding if fetching profile fails
       router.replace("/onboarding");
     }
   };

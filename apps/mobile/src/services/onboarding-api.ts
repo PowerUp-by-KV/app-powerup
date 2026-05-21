@@ -107,6 +107,18 @@ export const onboardingApi = api.injectEndpoints({
         formData: true,
       }),
     }),
+    getProfileOnboardingAnswers: builder.query<any, void>({
+      query: () => "/v1/users/profile",
+      providesTags: ["Onboarding"],
+    }),
+    updateProfileOnboardingAnswers: builder.mutation<any, any>({
+      query: (data) => ({
+        url: "/v1/users/profile",
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Onboarding", "Auth"],
+    }),
   }),
 });
 
@@ -115,4 +127,6 @@ export const {
   useSubmitOnboardingMutation,
   useUploadResumeMutation,
   useCompleteProfileMutation,
+  useGetProfileOnboardingAnswersQuery,
+  useUpdateProfileOnboardingAnswersMutation,
 } = onboardingApi;

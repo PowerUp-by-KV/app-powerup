@@ -69,6 +69,7 @@ export async function clearAuthSession(): Promise<void> {
 
 export async function saveAssessmentSessionId(sessionId: string): Promise<void> {
   await setItem(ASSESSMENT_SESSION_KEY, sessionId);
+  await saveAssessmentStartTime(Date.now());
 }
 
 export async function getAssessmentSessionId(): Promise<string | null> {
@@ -115,4 +116,22 @@ export async function getCompletedSections(): Promise<string[]> {
 
 export async function clearCompletedSections(): Promise<void> {
   await deleteItem(COMPLETED_SECTIONS_KEY);
+}
+
+const ASSESSMENT_START_TIME_KEY = "powerup.assessment_start_time";
+
+export async function saveAssessmentStartTime(time: number): Promise<void> {
+  const existing = await getItem(ASSESSMENT_START_TIME_KEY);
+  if (!existing) {
+    await setItem(ASSESSMENT_START_TIME_KEY, String(time));
+  }
+}
+
+export async function getAssessmentStartTime(): Promise<number | null> {
+  const raw = await getItem(ASSESSMENT_START_TIME_KEY);
+  return raw ? Number(raw) : null;
+}
+
+export async function clearAssessmentStartTime(): Promise<void> {
+  await deleteItem(ASSESSMENT_START_TIME_KEY);
 }

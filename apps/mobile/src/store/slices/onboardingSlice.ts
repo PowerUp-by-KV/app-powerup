@@ -26,6 +26,7 @@ export interface OnboardingState {
   dailyLearningGoal: string;
   currentStep: number;
   showDatePicker: string | boolean;
+  [key: string]: any;
 }
 
 const initialState: OnboardingState = {
@@ -60,9 +61,9 @@ const onboardingSlice = createSlice({
   name: "onboarding",
   initialState,
   reducers: {
-    updateField: (state, action: PayloadAction<{ field: keyof OnboardingState; value: any }>) => {
+    updateField: (state, action: PayloadAction<{ field: string; value: any }>) => {
       const { field, value } = action.payload;
-      (state as any)[field] = value;
+      state[field] = value;
     },
     nextStep: (state) => {
       if (state.currentStep < 22) {

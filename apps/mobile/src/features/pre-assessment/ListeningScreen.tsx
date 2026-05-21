@@ -9,6 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -21,7 +22,8 @@ import { ListeningQuestion } from "./components/ListeningQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
 import { MCQOption } from "./components/ReadingMCQOption";
 import { AssessmentHeader } from "./components/AssessmentHeader";
-import { getAssessmentSessionId } from "@/services/auth-storage";
+import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 
 interface ListeningScreenProps {
   sessionId?: string;
@@ -115,11 +117,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   }
 
   if (isLoading || !sectionData) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
-    );
+    return <GamifiedMascotLoader title="Preparing Listening Comprehension..." />;
   }
 
   if (!currentQuestion) {
@@ -156,6 +154,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         }
       }
 
+      await saveCompletedSection("D_LISTEN_ANSWER");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response?.next_section);
@@ -165,19 +164,23 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       Alert.alert("Submission Failed", msg);
     }
   };
-
   const handleNext = async () => {
+    const currentStoryQuestions = currentQuestion?.questions || [];
+    const allAnswered = currentStoryQuestions.every((q: any) => !!answers[q.id]);
+
+    if (currentStoryQuestions.length > 0 && !allAnswered) {
+      Alert.alert(
+        "Answers Required",
+        "Please answer all questions for this story before proceeding.",
+      );
+      return;
+    }
+
     if (isLastQuestion) {
       handleFinish();
       return;
     }
     setCurrentQuestionIndex((prev) => prev + 1);
-  };
-
-  const handleBack = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex((prev) => prev - 1);
-    }
   };
 
   return (
@@ -246,16 +249,6 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
           </View>
 
           <View className="flex-row justify-between mt-4 gap-4 mb-4">
-            {currentQuestionIndex > 0 && (
-              <TouchableOpacity
-                className="flex-1 bg-slate-200 py-4 rounded-2xl items-center shadow-sm"
-                onPress={handleBack}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                <Text className="text-slate-700 font-bold text-base">Back</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               className={`flex-1 py-4 rounded-2xl items-center justify-center shadow-md ${
                 isSubmitting ? "bg-slate-400" : "bg-slate-800"
@@ -278,8 +271,52 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Full-screen lock overlay — blocks all interaction during submission */}
+      {(isFinished || isSubmitting) && (
+        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
+          <View style={styles.card}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.title}>Submitting Answers…</Text>
+            <Text style={styles.subtitle}>Please wait, do not close the app</Text>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  overlay: {
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingVertical: 36,
+    paddingHorizontal: 40,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 10,
+    minWidth: 240,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#1e293b",
+    marginTop: 18,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#64748b",
+    marginTop: 6,
+    textAlign: "center",
+  },
+});
 
 export default ListeningScreen;

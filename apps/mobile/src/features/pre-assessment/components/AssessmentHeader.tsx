@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getCompletedSections } from "@/services/auth-storage";
+import { useGetAssessmentStatusQuery } from "@/services/assessment-api";
 
 export type SectionCode =
   | "A_READING"
@@ -45,11 +46,24 @@ export function AssessmentHeader({
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
 
+  // Fetch assessment status from backend using RTK Query
+  const { data: backendStatus } = useGetAssessmentStatusQuery(
+    { session_id: sessionId! },
+    { skip: !sessionId },
+  );
+
   useEffect(() => {
-    if (modalVisible) {
+    if (backendStatus) {
+      const sections = backendStatus.completed_sections || (backendStatus as any).completedSections;
+      if (sections && Array.isArray(sections)) {
+        setCompletedSections(sections);
+      } else {
+        getCompletedSections().then(setCompletedSections);
+      }
+    } else {
       getCompletedSections().then(setCompletedSections);
     }
-  }, [modalVisible]);
+  }, [backendStatus, modalVisible]);
 
   useEffect(() => {
     if (stopTimer) return;
@@ -77,12 +91,21 @@ export function AssessmentHeader({
     );
   };
 
-  const handleSkillSelect = (route: string) => {
+  const handleSkillSelect = (skill: (typeof SKILLS_MAP)[number]) => {
+    const isDone = completedSections.includes(skill.code);
+    const isActive = skill.label === skillName;
+
+    // Block navigation to completed or future sections
+    if (isDone) {
+      return; // Already completed — locked
+    }
+    if (isActive) {
+      setModalVisible(false);
+      return; // Already on this section
+    }
+
+    // Only allow navigating to the current active section (not forward or backward)
     setModalVisible(false);
-    router.replace({
-      pathname: route as any,
-      params: sessionId ? { session_id: sessionId } : undefined,
-    });
   };
 
   const progressPercent = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
@@ -140,7 +163,7 @@ export function AssessmentHeader({
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
           <SafeAreaView className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
             <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-lg font-bold text-slate-900">Select Skill Section</Text>
+              <Text className="text-lg font-bold text-slate-900">Assessment Sections</Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
                 className="p-2 bg-slate-100 rounded-full"
@@ -151,26 +174,69 @@ export function AssessmentHeader({
 
             <View className="gap-3">
               {SKILLS_MAP.map((skill, index) => {
-                const isSelected = skill.label === skillName;
+                const isActive = skill.label === skillName;
                 const isDone = completedSections.includes(skill.code);
+                const isLocked = !isDone && !isActive;
+
                 return (
                   <TouchableOpacity
                     key={index}
-                    onPress={() => handleSkillSelect(skill.route)}
+                    onPress={() => handleSkillSelect(skill)}
+                    disabled={isDone || isLocked}
+                    activeOpacity={isDone || isLocked ? 1 : 0.7}
                     className={`py-4 px-5 rounded-2xl flex-row justify-between items-center border ${
-                      isSelected ? "bg-indigo-50 border-indigo-200" : "bg-slate-50 border-slate-100"
+                      isDone
+                        ? "bg-green-50 border-green-200"
+                        : isActive
+                          ? "bg-indigo-50 border-indigo-200"
+                          : "bg-slate-50 border-slate-100 opacity-50"
                     }`}
                   >
-                    <Text
-                      className={`text-sm font-bold ${isSelected ? "text-indigo-600" : "text-slate-700"}`}
-                    >
-                      {skill.label}
-                    </Text>
-                    {isDone ? (
-                      <Feather name="check-circle" size={18} color="#22C55E" />
-                    ) : isSelected ? (
-                      <Feather name="check-circle" size={18} color="#4F46E5" />
-                    ) : null}
+                    <View className="flex-row items-center flex-1">
+                      {isDone && (
+                        <View className="w-6 h-6 bg-green-500 rounded-full items-center justify-center mr-3">
+                          <Feather name="check" size={14} color="#fff" />
+                        </View>
+                      )}
+                      {isActive && !isDone && (
+                        <View className="w-6 h-6 bg-indigo-500 rounded-full items-center justify-center mr-3">
+                          <Feather name="edit-3" size={12} color="#fff" />
+                        </View>
+                      )}
+                      {isLocked && (
+                        <View className="w-6 h-6 bg-slate-300 rounded-full items-center justify-center mr-3">
+                          <Feather name="lock" size={12} color="#fff" />
+                        </View>
+                      )}
+                      <View>
+                        <Text
+                          className={`text-sm font-bold ${
+                            isDone
+                              ? "text-green-700"
+                              : isActive
+                                ? "text-indigo-600"
+                                : "text-slate-400"
+                          }`}
+                        >
+                          {skill.label}
+                        </Text>
+                        <Text
+                          className={`text-[11px] mt-0.5 ${
+                            isDone
+                              ? "text-green-500"
+                              : isActive
+                                ? "text-indigo-400"
+                                : "text-slate-300"
+                          }`}
+                        >
+                          {isDone ? "Completed" : isActive ? "In Progress" : "Locked"}
+                        </Text>
+                      </View>
+                    </View>
+                    {isDone && <Feather name="check-circle" size={20} color="#22C55E" />}
+                    {isActive && !isDone && (
+                      <Feather name="arrow-right-circle" size={20} color="#6366f1" />
+                    )}
                   </TouchableOpacity>
                 );
               })}
