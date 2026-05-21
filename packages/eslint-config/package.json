@@ -1,0 +1,21 @@
+{
+  "name": "@powerup/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./react-native": "./react-native.js"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.57.1",
+    "@typescript-eslint/parser": "^8.57.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.4"
+  }
+}

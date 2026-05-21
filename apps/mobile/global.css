@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Premium Global Web Styles: Disables text cursors/carets and text selection on non-input nodes */
+@media (hover: hover) {
+  html, body, #root, div, span, p, a, img, svg, path {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+  }
+  
+  /* Always preserve text cursor and text selection in text fields & textareas */
+  input, textarea, [contenteditable="true"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+    cursor: text !important;
+  }
+  
+  /* Ensure clean pointer cursors for standard clickables, buttons, and anchors */
+  button, [role="button"], [type="button"], a {
+    cursor: pointer !important;
+  }
+}
