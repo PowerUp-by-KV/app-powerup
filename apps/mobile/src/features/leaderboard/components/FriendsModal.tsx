@@ -23,7 +23,20 @@ import {
   type SearchResult,
 } from "@/services/social-api";
 
-const TypedFlatList = FlatList as any;
+interface SafeFlatListProps<T> {
+  data: T[];
+  keyExtractor: (item: T, index: number) => string;
+  contentContainerStyle?: any;
+  ListEmptyComponent?: React.ReactNode;
+  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
+  className?: string;
+}
+
+const RequestFlatList = FlatList as unknown as React.ComponentType<
+  SafeFlatListProps<FriendRequest>
+>;
+const FriendsFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<FriendRow>>;
+const SearchFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<SearchResult>>;
 
 interface FriendsModalProps {
   visible: boolean;
@@ -89,7 +102,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
         </View>
 
         {tab === "requests" ? (
-          <TypedFlatList
+          <RequestFlatList
             data={requests}
             keyExtractor={(r: FriendRequest) => r.request_id}
             contentContainerStyle={{ padding: 16 }}
@@ -123,7 +136,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
             )}
           />
         ) : tab === "friends" ? (
-          <TypedFlatList
+          <FriendsFlatList
             data={friends}
             keyExtractor={(f: FriendRow) => f.user_id}
             contentContainerStyle={{ padding: 16 }}
@@ -153,7 +166,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
             )}
           />
         ) : (
-          <TypedFlatList
+          <SearchFlatList
             data={results}
             keyExtractor={(r: SearchResult) => r.user_id}
             contentContainerStyle={{ padding: 16 }}

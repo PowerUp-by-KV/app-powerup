@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  FlatListProps,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,8 +24,19 @@ import {
   useSendChatMessageMutation,
   useToggleBookmarkMutation,
 } from "@/services/chat-api";
+interface SafeFlatListProps<T> {
+  ref?: any;
+  data: T[];
+  keyExtractor: (item: T, index: number) => string;
+  contentContainerStyle?: any;
+  ListEmptyComponent?: React.ReactNode;
+  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
+  className?: string;
+}
 
-const TypedFlatList = FlatList as any;
+const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
+  SafeFlatListProps<ChatMessage> & React.RefAttributes<FlatList<ChatMessage>>
+>;
 
 export function ChatScreen() {
   const router = useRouter();
@@ -157,7 +169,7 @@ export function ChatScreen() {
               </View>
             </View>
           ) : (
-            <TypedFlatList
+            <MessageFlatList
               ref={listRef}
               data={sortedMessages}
               keyExtractor={(m: ChatMessage) => m.id}

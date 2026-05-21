@@ -100,49 +100,47 @@ export function EditProfileScreen() {
       });
       setQuestionIds(idsMap);
 
-      // Robust lookup function
-      const findQuestion = (keys: string[], textPhrase: string) => {
+      // Robust lookup function relying strictly on stable question_key identifiers provided by the API
+      const findQuestion = (keys: string[]) => {
         return allQuestionsWithAnswers.find((q) => {
-          const keyMatch = keys.some((k) => q.question_key?.toLowerCase() === k.toLowerCase());
-          const textMatch = q.question_text?.toLowerCase().includes(textPhrase.toLowerCase());
-          return keyMatch || textMatch;
+          return keys.some((k) => q.question_key?.toLowerCase() === k.toLowerCase());
         });
       };
 
       // 1. Basic Profile
-      const qName = findQuestion(["name", "full_name"], "name or preferred");
-      const qEducation = findQuestion(["education", "profession"], "education or profession");
-      const qYear = findQuestion(["study_year", "year_of_study"], "year of study");
-      const qBranch = findQuestion(["engineering_branch", "branch"], "engineering branch");
-      const qDob = findQuestion(["dob", "date_of_birth"], "date of birth");
-      const qCountry = findQuestion(["country"], "country");
-      const qLang = findQuestion(["native_language"], "native language");
+      const qName = findQuestion(["name", "full_name"]);
+      const qEducation = findQuestion(["education", "profession"]);
+      const qYear = findQuestion(["study_year", "year_of_study"]);
+      const qBranch = findQuestion(["engineering_branch", "branch"]);
+      const qDob = findQuestion(["dob", "date_of_birth"]);
+      const qCountry = findQuestion(["country"]);
+      const qLang = findQuestion(["native_language"]);
 
       // 2. English Level
-      const qProf = findQuestion(["proficiency", "english_proficiency"], "proficiency");
-      const qSkills = findQuestion(["challenging_skills"], "challenging");
+      const qProf = findQuestion(["proficiency", "english_proficiency"]);
+      const qSkills = findQuestion(["challenging_skills"]);
 
       // 3. Learning Goals
-      const qGoal = findQuestion(["learning_goal", "primary_goal"], "primary goal");
-      const qAchieve = findQuestion(["achieve_30_days", "next_30_days"], "achieve in the next");
-      const qGuidance = findQuestion(["personalized_guidance"], "personalized guidance");
+      const qGoal = findQuestion(["learning_goal", "primary_goal"]);
+      const qAchieve = findQuestion(["achieve_30_days", "next_30_days"]);
+      const qGuidance = findQuestion(["personalized_guidance"]);
 
       // 4. Usage & Preferences
-      const qTime = findQuestion(["daily_time", "dedicate_time"], "dedicate per day");
-      const qPractice = findQuestion(["practice_time"], "prefer to practice");
-      const qStreak = findQuestion(["streak_challenge"], "streak challenge");
+      const qTime = findQuestion(["daily_time", "dedicate_time"]);
+      const qPractice = findQuestion(["practice_time"]);
+      const qStreak = findQuestion(["streak_challenge"]);
 
       // 5. Speaking & Confidence
-      const qComfort = findQuestion(["comfort_speaking"], "comfortable speaking");
-      const qCorrect = findQuestion(["ai_correction", "correct_method"], "correct you");
+      const qComfort = findQuestion(["comfort_speaking"]);
+      const qCorrect = findQuestion(["ai_correction", "correct_method"]);
 
       // 6. Motivation & Challenges
-      const qMotiv = findQuestion(["motivation"], "motivates");
-      const qStops = findQuestion(["challenges", "stops_practice"], "stops you");
+      const qMotiv = findQuestion(["motivation"]);
+      const qStops = findQuestion(["challenges", "stops_practice"]);
 
       // 7. Learning Path Setup
-      const qFocus = findQuestion(["focus_track"], "focus track");
-      const qDailyGoal = findQuestion(["daily_learning_goal"], "daily learning goal");
+      const qFocus = findQuestion(["focus_track"]);
+      const qDailyGoal = findQuestion(["daily_learning_goal"]);
 
       // Update questionIds with fallbacks based on textPhrase match to guarantee we have their database IDs
       const mergeId = (key: string, qObj: any) => {

@@ -34,6 +34,7 @@ export function OfflineGameView({ onScoreUpdate }: OfflineGameViewProps) {
   const mascotY = useRef(60);
   const velocity = useRef(0);
   const obstacles = useRef<Obstacle[]>([]);
+  const frameId = useRef<number | null>(null);
 
   const jump = () => {
     velocity.current = -3.0; // Soft, highly controllable float jump
@@ -71,11 +72,19 @@ export function OfflineGameView({ onScoreUpdate }: OfflineGameViewProps) {
   useEffect(() => {
     if (gameState !== "play") return;
 
-    //Throttled 24ms loop (40 FPS) perfectly matched to mobile UI refresh cycles
-    const interval = setInterval(() => {
+    let lastTime = Date.now();
+
+    const gameLoop = () => {
+      const now = Date.now();
+      const delta = now - lastTime;
+      lastTime = now;
+
+      // Gravity and movement scales based on time delta to ensure smooth, framerate-independent speed
+      const timeScale = Math.min(2.5, delta / 24);
+
       // Apply gravity (Tuned to be super floaty, like low-gravity bubble)
-      velocity.current += 0.11;
-      mascotY.current += velocity.current;
+      velocity.current += 0.11 * timeScale;
+      mascotY.current += velocity.current * timeScale;
 
       // Ground/ceiling collisions
       if (mascotY.current < 0 || mascotY.current > GAME_HEIGHT - MASCOT_SIZE) {
@@ -84,7 +93,7 @@ export function OfflineGameView({ onScoreUpdate }: OfflineGameViewProps) {
       }
 
       // Move columns (Tuned slow-motion scrolling speed for easy planning!)
-      const speed = 1.6;
+      const speed = 1.6 * timeScale;
       const currentObstacles = obstacles.current.map((obs) => ({
         ...obs,
         x: obs.x - speed,
@@ -181,9 +190,17 @@ export function OfflineGameView({ onScoreUpdate }: OfflineGameViewProps) {
           return next;
         });
       }
-    }, 24);
 
-    return () => clearInterval(interval);
+      frameId.current = requestAnimationFrame(gameLoop);
+    };
+
+    frameId.current = requestAnimationFrame(gameLoop);
+
+    return () => {
+      if (frameId.current) {
+        cancelAnimationFrame(frameId.current);
+      }
+    };
   }, [gameState, gameWidth, highScore, onScoreUpdate]);
 
   return (

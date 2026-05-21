@@ -363,7 +363,7 @@ export function LearningJourneyScreen() {
             reason={gate.blockedReason}
             onPrimary={async () => {
               if (gate.blockedReason === "onboarding") {
-                router.push("/dynamic-onboarding");
+                router.push("/onboarding");
                 return;
               }
               setIsStartingSession(true);

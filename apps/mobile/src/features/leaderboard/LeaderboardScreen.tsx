@@ -12,7 +12,18 @@ import { FriendsModal } from "./components/FriendsModal";
 
 const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
 
-const TypedFlatList = FlatList as any;
+interface SafeFlatListProps<T> {
+  data: T[];
+  keyExtractor: (item: T, index: number) => string;
+  contentContainerStyle?: any;
+  ListHeaderComponent?: React.ReactNode;
+  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
+  className?: string;
+}
+
+const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
+  SafeFlatListProps<LeaderboardEntry>
+>;
 
 export function LeaderboardScreen() {
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
@@ -43,7 +54,7 @@ export function LeaderboardScreen() {
       {isLoading ? (
         <ActivityIndicator color="#6366f1" />
       ) : (
-        <TypedFlatList
+        <LeaderboardFlatList
           ListHeaderComponent={
             <View className="px-5 pb-4">
               <View className="bg-slate-900 rounded-3xl p-5 mb-5">
