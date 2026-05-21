@@ -108,15 +108,18 @@ export function OfflineGameView({ onScoreUpdate }: OfflineGameViewProps) {
           bottomHeight,
           passed: false,
         });
-      } else if (currentObstacles[currentObstacles.length - 1].x < gameWidth - 200) {
-        const topHeight = Math.floor(Math.random() * (GAME_HEIGHT - GAP_SIZE - 30)) + 15;
-        const bottomHeight = GAME_HEIGHT - GAP_SIZE - topHeight;
-        currentObstacles.push({
-          x: gameWidth,
-          topHeight,
-          bottomHeight,
-          passed: false,
-        });
+      } else {
+        const lastObstacle = currentObstacles[currentObstacles.length - 1];
+        if (lastObstacle && lastObstacle.x < gameWidth - 200) {
+          const topHeight = Math.floor(Math.random() * (GAME_HEIGHT - GAP_SIZE - 30)) + 15;
+          const bottomHeight = GAME_HEIGHT - GAP_SIZE - topHeight;
+          currentObstacles.push({
+            x: gameWidth,
+            topHeight,
+            bottomHeight,
+            passed: false,
+          });
+        }
       }
 
       const filteredObstacles = currentObstacles.filter((obs) => obs.x > -OBSTACLE_WIDTH);

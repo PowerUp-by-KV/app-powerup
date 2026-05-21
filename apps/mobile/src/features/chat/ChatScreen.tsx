@@ -24,6 +24,8 @@ import {
   useToggleBookmarkMutation,
 } from "@/services/chat-api";
 
+const TypedFlatList = FlatList as any;
+
 export function ChatScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
@@ -155,10 +157,10 @@ export function ChatScreen() {
               </View>
             </View>
           ) : (
-            <FlatList
+            <TypedFlatList
               ref={listRef}
               data={sortedMessages}
-              keyExtractor={(m) => m.id}
+              keyExtractor={(m: ChatMessage) => m.id}
               contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
               ListEmptyComponent={
                 messagesLoading ? (
@@ -167,7 +169,7 @@ export function ChatScreen() {
                   </View>
                 ) : null
               }
-              renderItem={({ item }) => {
+              renderItem={({ item }: { item: ChatMessage }) => {
                 const isUser = item.role === "user";
                 return (
                   <View className={`mb-3 max-w-[85%] ${isUser ? "self-end" : "self-start"}`}>

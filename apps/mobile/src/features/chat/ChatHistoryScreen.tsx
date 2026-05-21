@@ -4,7 +4,14 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
-import { useListBookmarksQuery, useListChatThreadsQuery } from "@/services/chat-api";
+import {
+  useListBookmarksQuery,
+  useListChatThreadsQuery,
+  type ChatMessage,
+  type ChatThread,
+} from "@/services/chat-api";
+
+const TypedFlatList = FlatList as any;
 
 export function ChatHistoryScreen() {
   const router = useRouter();
@@ -40,9 +47,9 @@ export function ChatHistoryScreen() {
       </View>
 
       {tab === "recent" ? (
-        <FlatList
+        <TypedFlatList
           data={threads ?? []}
-          keyExtractor={(t) => t.id}
+          keyExtractor={(t: ChatThread) => t.id}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             threadsLoading ? (
@@ -51,7 +58,7 @@ export function ChatHistoryScreen() {
               <Text className="text-slate-400 text-center mt-12">No conversations yet</Text>
             )
           }
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: ChatThread }) => (
             <Pressable
               onPress={() =>
                 router.replace({ pathname: "/chat", params: { thread_id: item.id } } as never)
@@ -72,9 +79,9 @@ export function ChatHistoryScreen() {
           )}
         />
       ) : (
-        <FlatList
+        <TypedFlatList
           data={bookmarks ?? []}
-          keyExtractor={(m) => m.id}
+          keyExtractor={(m: ChatMessage) => m.id}
           contentContainerStyle={{ padding: 16 }}
           ListEmptyComponent={
             bookmarksLoading ? (
@@ -85,7 +92,7 @@ export function ChatHistoryScreen() {
               </Text>
             )
           }
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: ChatMessage }) => (
             <View className="bg-indigo-50 rounded-2xl p-4 mb-2">
               <Feather name="bookmark" size={14} color="#4f46e5" />
               <Text className="text-slate-900 mt-2">{item.content}</Text>

@@ -81,11 +81,8 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
           }
         });
 
-        // Spawn new obstacle
-        if (
-          currentObstacles.length === 0 ||
-          currentObstacles[currentObstacles.length - 1].x < gameWidth - 180
-        ) {
+        const lastObstacle = currentObstacles[currentObstacles.length - 1];
+        if (currentObstacles.length === 0 || (lastObstacle && lastObstacle.x < gameWidth - 180)) {
           const topHeight = Math.floor(Math.random() * (GAME_HEIGHT - GAP_SIZE - 60)) + 30;
           const bottomHeight = GAME_HEIGHT - GAP_SIZE - topHeight;
           currentObstacles.push({

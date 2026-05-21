@@ -2,11 +2,17 @@ import React, { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
-import { useGetLeaderboardQuery, type LeaderboardPeriod } from "@/services/social-api";
+import {
+  useGetLeaderboardQuery,
+  type LeaderboardPeriod,
+  type LeaderboardEntry,
+} from "@/services/social-api";
 
 import { FriendsModal } from "./components/FriendsModal";
 
 const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
+
+const TypedFlatList = FlatList as any;
 
 export function LeaderboardScreen() {
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
@@ -37,8 +43,7 @@ export function LeaderboardScreen() {
       {isLoading ? (
         <ActivityIndicator color="#6366f1" />
       ) : (
-        <FlatList
-          style={{ flex: 1 }}
+        <TypedFlatList
           ListHeaderComponent={
             <View className="px-5 pb-4">
               <View className="bg-slate-900 rounded-3xl p-5 mb-5">
@@ -75,9 +80,9 @@ export function LeaderboardScreen() {
             </View>
           }
           data={data?.list ?? []}
-          keyExtractor={(item) => item.user_id}
+          keyExtractor={(item: LeaderboardEntry) => item.user_id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}
-          renderItem={({ item }) => (
+          renderItem={({ item }: { item: LeaderboardEntry }) => (
             <View
               className={`flex-row items-center rounded-2xl p-3 mb-2 ${item.is_you ? "bg-slate-900" : "bg-white border border-slate-100"}`}
             >

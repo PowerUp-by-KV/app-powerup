@@ -18,7 +18,12 @@ import {
   useRejectFriendRequestMutation,
   useSearchFriendsQuery,
   useSendFriendRequestMutation,
+  type FriendRequest,
+  type FriendRow,
+  type SearchResult,
 } from "@/services/social-api";
+
+const TypedFlatList = FlatList as any;
 
 interface FriendsModalProps {
   visible: boolean;
@@ -84,9 +89,9 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
         </View>
 
         {tab === "requests" ? (
-          <FlatList
+          <TypedFlatList
             data={requests}
-            keyExtractor={(r) => r.request_id}
+            keyExtractor={(r: FriendRequest) => r.request_id}
             contentContainerStyle={{ padding: 16 }}
             ListEmptyComponent={
               reqLoading ? (
@@ -95,7 +100,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
                 <Text className="text-slate-400 text-center mt-12">No pending requests</Text>
               )
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: FriendRequest }) => (
               <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
                 <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
                 <View className="flex-1">
@@ -118,9 +123,9 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
             )}
           />
         ) : tab === "friends" ? (
-          <FlatList
+          <TypedFlatList
             data={friends}
-            keyExtractor={(f) => f.user_id}
+            keyExtractor={(f: FriendRow) => f.user_id}
             contentContainerStyle={{ padding: 16 }}
             ListEmptyComponent={
               friendsLoading ? (
@@ -129,7 +134,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
                 <Text className="text-slate-400 text-center mt-12">No friends yet</Text>
               )
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: FriendRow }) => (
               <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
                 <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
                 <View className="flex-1">
@@ -148,9 +153,9 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
             )}
           />
         ) : (
-          <FlatList
+          <TypedFlatList
             data={results}
-            keyExtractor={(r) => r.user_id}
+            keyExtractor={(r: SearchResult) => r.user_id}
             contentContainerStyle={{ padding: 16 }}
             ListEmptyComponent={
               query.length < 2 ? (
@@ -161,7 +166,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
                 <Text className="text-slate-400 text-center mt-12">No matches</Text>
               )
             }
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: SearchResult }) => (
               <View className="flex-row items-center bg-slate-50 rounded-2xl p-3 mb-2">
                 <View className="w-8 h-8 rounded-full bg-slate-300 mr-3" />
                 <View className="flex-1">
