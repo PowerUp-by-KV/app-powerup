@@ -11,14 +11,7 @@ import {
   type ChatThread,
 } from "@/services/chat-api";
 
-interface SafeFlatListProps<T> {
-  data: T[];
-  keyExtractor: (item: T, index: number) => string;
-  contentContainerStyle?: any;
-  ListEmptyComponent?: React.ReactNode;
-  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
-  className?: string;
-}
+import { SafeFlatListProps } from "@/types";
 
 const ThreadFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<ChatThread>>;
 const BookmarkFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<ChatMessage>>;

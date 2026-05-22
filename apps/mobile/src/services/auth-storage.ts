@@ -170,17 +170,27 @@ export async function clearAssessmentStartTime(): Promise<void> {
   await deleteItem(ASSESSMENT_START_TIME_KEY);
 }
 
+export interface StoredPreAssessmentResult {
+  percentage?: number;
+  total_score?: number;
+  max_score?: number;
+  cefr_level?: string | null;
+  cefr_range?: string | null;
+  section_percentages?: Record<string, number>;
+  timeTaken?: string;
+}
+
 const PRE_ASSESSMENT_RESULTS_KEY = "powerup.pre_assessment_results";
 
-export async function savePreAssessmentResults(results: any): Promise<void> {
+export async function savePreAssessmentResults(results: StoredPreAssessmentResult): Promise<void> {
   await setItem(PRE_ASSESSMENT_RESULTS_KEY, JSON.stringify(results));
 }
 
-export async function getPreAssessmentResults(): Promise<any | null> {
+export async function getPreAssessmentResults(): Promise<StoredPreAssessmentResult | null> {
   const raw = await getItem(PRE_ASSESSMENT_RESULTS_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw);
+    return JSON.parse(raw) as StoredPreAssessmentResult;
   } catch {
     return null;
   }

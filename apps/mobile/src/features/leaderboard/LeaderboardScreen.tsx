@@ -11,15 +11,7 @@ import {
 import { FriendsModal } from "./components/FriendsModal";
 
 const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
-
-interface SafeFlatListProps<T> {
-  data: T[];
-  keyExtractor: (item: T, index: number) => string;
-  contentContainerStyle?: any;
-  ListHeaderComponent?: React.ReactNode;
-  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
-  className?: string;
-}
+import { SafeFlatListProps } from "@/types";
 
 const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
   SafeFlatListProps<LeaderboardEntry>

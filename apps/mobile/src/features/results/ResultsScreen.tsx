@@ -21,6 +21,7 @@ import {
   savePreAssessmentResults,
   getPreAssessmentResults,
 } from "@/services/auth-storage";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 
 interface ResultsScreenProps {
   sessionId?: string;
@@ -125,11 +126,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     : [];
 
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
-    );
+    return <GamifiedMascotLoader title="Analyzing your assessment responses..." />;
   }
 
   if (error || !resultData || !("percentage" in resultData)) {

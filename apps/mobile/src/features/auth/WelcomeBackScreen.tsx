@@ -15,8 +15,11 @@ export function WelcomeBackScreen() {
       subtitle={`Good to see you again, ${name}. You've successfully signed in.`}
       cta="Get Started"
       onCta={() => {
-        if (profile?.cefr_range) router.replace("/(tabs)");
-        else router.replace("/onboarding");
+        if (profile?.profile_completed) {
+          router.replace("/my-learning" as any);
+        } else {
+          router.replace("/onboarding");
+        }
       }}
     />
   );

@@ -81,41 +81,8 @@ export function LoginScreen() {
         return;
       }
 
-      // ─── PRE-ASSESSMENT CHECK ──────────────────────────────────────────────
-      // Primary truth: `cefr_range` from the backend profile.
-      // A non-null cefr_range means the full pre-assessment is complete.
-      if (profile.cefr_range) {
-        router.replace("/(tabs)");
-        return;
-      }
-
-      // ─── RESUME INCOMPLETE PRE-ASSESSMENT ─────────────────────────────────
-      // Onboarding is done but pre-assessment is not yet complete.
-      // startSession returns:
-      //   • first_section = next section the user needs to answer (resume point)
-      //   • first_section = null/empty → all sections submitted, go to results
-      try {
-        const session = await startSession().unwrap();
-        if (session?.session_id) {
-          await saveAssessmentSessionId(session.session_id);
-
-          if (session.first_section) {
-            const nextRoute = getNextRouteForSection(session.first_section);
-            const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
-            router.replace(
-              `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
-            );
-          } else {
-            // All sections answered but cefr_range not yet set → show results
-            router.replace(`/results?session_id=${encodeURIComponent(session.session_id)}` as any);
-          }
-        } else {
-          router.replace("/(tabs)");
-        }
-      } catch {
-        // startSession failed (network error, etc.) → safe fallback to home
-        router.replace("/(tabs)");
-      }
+      // If onboarding is complete, navigate directly to My Learning tab
+      router.replace("/my-learning" as any);
     } catch {
       // getProfile failed → cannot determine status, send to onboarding as safest fallback
       router.replace("/onboarding");

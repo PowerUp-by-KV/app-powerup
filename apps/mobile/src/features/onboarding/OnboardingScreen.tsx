@@ -12,7 +12,12 @@ import {
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
 import { RootState } from "@/store";
-import { updateField, nextStep, prevStep } from "@/store/slices/onboardingSlice";
+import {
+  updateField,
+  nextStep,
+  prevStep,
+  type OnboardingState,
+} from "@/store/slices/onboardingSlice";
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
@@ -62,57 +67,11 @@ export default function OnboardingScreen() {
           return;
         }
 
-        // Onboarding is completed! Always fetch/resume session status from the backend to prevent local desyncs
-        try {
-          const session = await startSession().unwrap();
-          if (session?.session_id) {
-            await saveAssessmentSessionId(session.session_id);
-
-            if (session.first_section) {
-              const nextRoute = getNextRouteForSection(session.first_section);
-              const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
-              router.replace(
-                `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
-              );
-              return;
-            } else {
-              router.replace(
-                `/results?session_id=${encodeURIComponent(session.session_id)}` as any,
-              );
-              return;
-            }
-          }
-        } catch (e) {
-          // If starting/retrieving session fails, fall back to check if we have a local session ID
-          const localSessionId = await getAssessmentSessionId();
-          if (localSessionId) {
-            const completed = await getCompletedSections();
-            const SECTIONS_ORDER = [
-              { code: "A_READING", route: "/read" },
-              { code: "A_SPEAKING", route: "/speak-read" },
-              { code: "A_LISTEN", route: "/listen-audio" },
-              { code: "B_SPEAKING", route: "/speak" },
-              { code: "C_GRAMMAR", route: "/grammar" },
-              { code: "D_LISTEN_ANSWER", route: "/listen" },
-            ];
-
-            const nextIncomplete = SECTIONS_ORDER.find((s) => !completed.includes(s.code));
-            if (nextIncomplete) {
-              const cleanPath = nextIncomplete.route.startsWith("/")
-                ? nextIncomplete.route
-                : `/${nextIncomplete.route}`;
-              router.replace(
-                `${cleanPath}?session_id=${encodeURIComponent(localSessionId)}` as any,
-              );
-              return;
-            } else {
-              router.replace(`/results?session_id=${encodeURIComponent(localSessionId)}` as any);
-              return;
-            }
-          }
-        }
+        // Onboarding is completed! Redirect directly to My Learning tab
+        router.replace("/my-learning" as any);
+        return;
       } catch (err) {
-        console.warn("Failed to auto-resume assessment:", err);
+        console.warn("Failed to check onboarding state:", err);
       } finally {
         setIsCheckingResume(false);
       }
@@ -149,56 +108,15 @@ export default function OnboardingScreen() {
           </Text>
 
           <TouchableOpacity
-            onPress={async () => {
-              try {
-                let session: any = null;
-                let retries = 3;
-                while (retries > 0) {
-                  try {
-                    session = await startSession().unwrap();
-                    break;
-                  } catch (startErr) {
-                    retries--;
-                    if (retries === 0) throw startErr;
-                    await new Promise((res) => setTimeout(res, 1000));
-                  }
-                }
-
-                if (session?.session_id) {
-                  await clearCompletedSections();
-                  await saveAssessmentSessionId(session.session_id);
-                  const nextRoute = getNextRouteForSection(session.first_section);
-
-                  // Small delay on Android to ensure native bridge is ready
-                  if (Platform.OS === "android") {
-                    await new Promise((resolve) => setTimeout(resolve, 300));
-                  }
-
-                  const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
-                  router.replace(
-                    `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
-                  );
-                }
-              } catch (err) {
-                Alert.alert("Error", getApiErrorMessage(err, "Could not start assessment session"));
-              }
+            onPress={() => {
+              router.replace("/my-learning" as any);
             }}
-            disabled={isStarting}
-            className={`w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center ${
-              isStarting ? "bg-indigo-400" : "bg-indigo-600"
-            } shadow-lg shadow-indigo-200`}
+            className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
-            {isStarting && <ActivityIndicator color="white" className="mr-3" size="small" />}
-            <Text className="text-white font-bold text-lg">
-              {isStarting ? "Preparing..." : "Start Assessment"}
-            </Text>
+            <Text className="text-white font-bold text-lg">Go to My Learning</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => dispatch(prevStep())}
-            disabled={isStarting}
-            className="mt-6 py-2"
-          >
+          <TouchableOpacity onPress={() => dispatch(prevStep())} className="mt-6 py-2">
             <Text className="text-indigo-600 font-semibold text-base">Review Answers</Text>
           </TouchableOpacity>
         </View>
@@ -207,7 +125,7 @@ export default function OnboardingScreen() {
   }
 
   const handleInputChange = (key: string, value: any) => {
-    dispatch(updateField({ field: key, value }));
+    dispatch(updateField({ field: key as keyof OnboardingState, value }));
     if (question?.input_type === "file" && key === question.question_key) {
       setResumeUploaded(false);
     }
@@ -265,34 +183,8 @@ export default function OnboardingScreen() {
       // 3. Mark profile as completed locally
       await setProfileCompletedInSession(true);
 
-      // 4. Start Assessment Session with localized retry loop
-      let session: any = null;
-      let sessionRetries = 3;
-      while (sessionRetries > 0) {
-        try {
-          session = await startSession().unwrap();
-          break;
-        } catch (startErr) {
-          sessionRetries--;
-          if (sessionRetries === 0) throw startErr;
-          await new Promise((res) => setTimeout(res, 1000));
-        }
-      }
-
-      // 5. Save Session ID and navigate
-      if (session?.session_id) {
-        await saveAssessmentSessionId(session.session_id);
-        const nextRoute = getNextRouteForSection(session.first_section);
-
-        if (Platform.OS === "android") {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-
-        const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
-        router.replace(`${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any);
-      } else {
-        throw new Error("No session ID returned from server.");
-      }
+      // 4. Redirect directly to My Learning tab
+      router.replace("/my-learning" as any);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
