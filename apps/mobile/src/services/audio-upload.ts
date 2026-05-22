@@ -31,7 +31,7 @@ export async function uploadAudioFile(
   const isAssessment = !moduleId && !activityId;
   const uploadUrl = isAssessment
     ? `${baseUrl}/v1/assessment/audio`
-    : `${baseUrl}/v1/audio/upload?module_id=${moduleId || "1f79a741-1ca8-48da-84a7-9dc6d7e88f98"}&activity_id=${activityId || "a246be9e-1fce-4a78-b5bf-6092db19ad78"}`;
+    : `${baseUrl}/v1/audio/upload?module_id=${moduleId || ""}&activity_id=${activityId || ""}`;
 
   const fd = new FormData();
 

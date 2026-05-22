@@ -22,7 +22,7 @@ import {
   useGetPersonalizedPathQuery,
 } from "@/services/module-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
-import { saveAssessmentSessionId } from "@/services/auth-storage";
+import { saveAssessmentSessionId, getPreAssessmentResults } from "@/services/auth-storage";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
@@ -34,9 +34,11 @@ import { TimelineRow } from "./components/TimelineRow";
 interface PreAssessmentModalProps {
   visible: boolean;
   onClose: () => void;
+  cefrRange?: string | null;
+  results?: any | null;
 }
 
-function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
+function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessmentModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -77,6 +79,34 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
 
   if (!visible) return null;
 
+  // Dynamically calculate the displayed scores or fallback gracefully to pre-designed dummy/standard defaults
+  const percentage = results?.percentage ?? 83.33; // Default 5.0 of 6 = 83.33%
+  const obtainedPoints = Math.round(results?.total_score ?? 100);
+  const totalPoints = Math.round(results?.max_score ?? 120);
+  const formattedOverall = `${((percentage / 100) * 6).toFixed(1)} of 6`;
+  const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
+  const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? "A1-A2";
+
+  // Reading Score: A_READING percentage mapped out of 6
+  const readingPct = results?.section_percentages?.["A_READING"] ?? 83.33;
+  const readingScoreText = `${((readingPct / 100) * 6).toFixed(1)} of 6`;
+
+  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of 6
+  const listen1 = results?.section_percentages?.["A_LISTEN"] ?? 83.33;
+  const listen2 = results?.section_percentages?.["D_LISTEN_ANSWER"] ?? 83.33;
+  const listenPct = (listen1 + listen2) / 2;
+  const listeningScoreText = `${((listenPct / 100) * 6).toFixed(1)} of 6`;
+
+  // Writing Score: C_GRAMMAR percentage mapped out of 6
+  const writingPct = results?.section_percentages?.["C_GRAMMAR"] ?? 66.67;
+  const writingScoreText = `${((writingPct / 100) * 6).toFixed(1)} of 6`;
+
+  // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of 6
+  const speak1 = results?.section_percentages?.["A_SPEAKING"] ?? 100.0;
+  const speak2 = results?.section_percentages?.["B_SPEAKING"] ?? 100.0;
+  const speakPct = (speak1 + speak2) / 2;
+  const speakingScoreText = `${((speakPct / 100) * 6).toFixed(1)} of 6`;
+
   return (
     <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
       <Animated.View style={[scoreStyles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
@@ -95,12 +125,12 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
           <View style={scoreStyles.gaugeFill} />
           {/* Central score content labels */}
           <View style={scoreStyles.gaugeCutout}>
-            <Text style={scoreStyles.gaugeScoreText}>5.0 of 6</Text>
-            <Text style={scoreStyles.gaugePointsText}>100 of 120</Text>
+            <Text style={scoreStyles.gaugeScoreText}>{formattedOverall}</Text>
+            <Text style={scoreStyles.gaugePointsText}>{formattedPoints}</Text>
           </View>
         </View>
 
-        <Text style={scoreStyles.cefrTitle}>CEFR: C1</Text>
+        <Text style={scoreStyles.cefrTitle}>CEFR: {actualCefr}</Text>
 
         {/* 2. Grid breakdown (2x2) */}
         <View style={scoreStyles.gridContainer}>
@@ -113,7 +143,7 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
                 <Text style={scoreStyles.skillLabel}>Reading</Text>
               </View>
               <View style={scoreStyles.skillCard}>
-                <Text style={scoreStyles.skillScoreText}>5.0 of 6</Text>
+                <Text style={scoreStyles.skillScoreText}>{readingScoreText}</Text>
               </View>
             </View>
 
@@ -124,7 +154,7 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
                 <Text style={scoreStyles.skillLabel}>Listening</Text>
               </View>
               <View style={scoreStyles.skillCard}>
-                <Text style={scoreStyles.skillScoreText}>5.0 of 6</Text>
+                <Text style={scoreStyles.skillScoreText}>{listeningScoreText}</Text>
               </View>
             </View>
           </View>
@@ -138,7 +168,7 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
                 <Text style={scoreStyles.skillLabel}>Writing</Text>
               </View>
               <View style={scoreStyles.skillCard}>
-                <Text style={scoreStyles.skillScoreText}>4.0 of 6</Text>
+                <Text style={scoreStyles.skillScoreText}>{writingScoreText}</Text>
               </View>
             </View>
 
@@ -149,7 +179,7 @@ function PreAssessmentModal({ visible, onClose }: PreAssessmentModalProps) {
                 <Text style={scoreStyles.skillLabel}>Speaking</Text>
               </View>
               <View style={scoreStyles.skillCard}>
-                <Text style={scoreStyles.skillScoreText}>6.0 of 6</Text>
+                <Text style={scoreStyles.skillScoreText}>{speakingScoreText}</Text>
               </View>
             </View>
           </View>
@@ -215,6 +245,15 @@ export function LearningJourneyScreen() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [showModules, setShowModules] = useState(false);
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
+  const [preAssessmentResults, setPreAssessmentResults] = useState<any | null>(null);
+
+  useEffect(() => {
+    getPreAssessmentResults().then((res) => {
+      if (res) {
+        setPreAssessmentResults(res);
+      }
+    });
+  }, [showPreAssessmentModal]);
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
@@ -363,7 +402,7 @@ export function LearningJourneyScreen() {
             reason={gate.blockedReason}
             onPrimary={async () => {
               if (gate.blockedReason === "onboarding") {
-                router.push("/dynamic-onboarding");
+                router.push("/onboarding");
                 return;
               }
               setIsStartingSession(true);
@@ -394,6 +433,8 @@ export function LearningJourneyScreen() {
       <PreAssessmentModal
         visible={showPreAssessmentModal}
         onClose={() => setShowPreAssessmentModal(false)}
+        cefrRange={profile?.cefr_range}
+        results={preAssessmentResults}
       />
 
       <ScrollView
@@ -471,12 +512,18 @@ export function LearningJourneyScreen() {
               {/* Right Content */}
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={timelineStyles.stageTitle}>Pre Assesment</Text>
+                  <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
                   <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                    <Text style={timelineStyles.badgeText}>Completed</Text>
+                    <Text style={timelineStyles.badgeText}>
+                      {profile?.cefr_range ? `Level ${profile.cefr_range}` : "Completed"}
+                    </Text>
                   </View>
                 </View>
-                <Text style={timelineStyles.stageSubtitle}>Master the fundamentals</Text>
+                <Text style={timelineStyles.stageSubtitle}>
+                  {profile?.cefr_range
+                    ? `Assessed proficiency: Band ${profile.cefr_range}`
+                    : "Master the fundamentals"}
+                </Text>
 
                 {/* Thick Progress Bar */}
                 <View style={timelineStyles.progressBarBg}>

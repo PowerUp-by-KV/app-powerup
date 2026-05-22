@@ -11,7 +11,17 @@ import {
   type ChatThread,
 } from "@/services/chat-api";
 
-const TypedFlatList = FlatList as any;
+interface SafeFlatListProps<T> {
+  data: T[];
+  keyExtractor: (item: T, index: number) => string;
+  contentContainerStyle?: any;
+  ListEmptyComponent?: React.ReactNode;
+  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
+  className?: string;
+}
+
+const ThreadFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<ChatThread>>;
+const BookmarkFlatList = FlatList as unknown as React.ComponentType<SafeFlatListProps<ChatMessage>>;
 
 export function ChatHistoryScreen() {
   const router = useRouter();
@@ -47,7 +57,7 @@ export function ChatHistoryScreen() {
       </View>
 
       {tab === "recent" ? (
-        <TypedFlatList
+        <ThreadFlatList
           data={threads ?? []}
           keyExtractor={(t: ChatThread) => t.id}
           contentContainerStyle={{ padding: 16 }}
@@ -79,7 +89,7 @@ export function ChatHistoryScreen() {
           )}
         />
       ) : (
-        <TypedFlatList
+        <BookmarkFlatList
           data={bookmarks ?? []}
           keyExtractor={(m: ChatMessage) => m.id}
           contentContainerStyle={{ padding: 16 }}

@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node --max-old-space-size=8192 node_modules/expo/AppEntry.js",
-    "start:clean": "node --max-old-space-size=8192 node_modules/expo/AppEntry.js --clear",
+    "start": "expo start",
+    "start:clean": "expo start --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

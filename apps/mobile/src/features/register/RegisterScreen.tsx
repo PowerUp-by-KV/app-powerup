@@ -15,7 +15,15 @@ import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { getApiErrorMessage } from "@/utils/error-message";
-import { saveAuthSession } from "@/services/auth-storage";
+import {
+  saveAuthSession,
+  clearProfileCompletedInSession,
+  clearCompletedSections,
+  clearAssessmentSessionId,
+  clearAssessmentStartTime,
+  saveLastLoggedInEmail,
+  clearPreAssessmentResults,
+} from "@/services/auth-storage";
 import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 import { onboardingApi } from "@/services/onboarding-api";
 
@@ -116,6 +124,14 @@ export function RegisterScreen() {
       };
 
       await saveAuthSession(auth);
+      // Clear any device-local onboarding completion flags and session IDs from a previous user
+      await clearProfileCompletedInSession();
+      await clearCompletedSections();
+      await clearAssessmentSessionId();
+      await clearAssessmentStartTime();
+      await saveLastLoggedInEmail(email.trim());
+      await clearPreAssessmentResults();
+
       Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
     } catch (error: any) {

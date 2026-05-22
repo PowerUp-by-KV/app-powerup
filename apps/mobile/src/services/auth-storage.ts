@@ -125,6 +125,7 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
     await deleteItem(COMPLETED_SECTIONS_KEY);
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
+    await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
     return true;
   }
   await setItem(LAST_LOGGED_IN_EMAIL_KEY, normalized);
@@ -167,4 +168,24 @@ export async function getAssessmentStartTime(): Promise<number | null> {
 
 export async function clearAssessmentStartTime(): Promise<void> {
   await deleteItem(ASSESSMENT_START_TIME_KEY);
+}
+
+const PRE_ASSESSMENT_RESULTS_KEY = "powerup.pre_assessment_results";
+
+export async function savePreAssessmentResults(results: any): Promise<void> {
+  await setItem(PRE_ASSESSMENT_RESULTS_KEY, JSON.stringify(results));
+}
+
+export async function getPreAssessmentResults(): Promise<any | null> {
+  const raw = await getItem(PRE_ASSESSMENT_RESULTS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPreAssessmentResults(): Promise<void> {
+  await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
 }
