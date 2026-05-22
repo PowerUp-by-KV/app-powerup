@@ -56,8 +56,8 @@ export default function OnboardingScreen() {
         const localOnboardingDone = await getProfileCompletedInSession();
         const isOnboardingComplete = profile?.profile_completed || localOnboardingDone;
 
-        // If the user has NOT completed onboarding yet, DO NOT try to auto-resume or start any assessment session!
-        if (profile && !isOnboardingComplete) {
+        // If the user profile is not loaded or onboarding is not completed, DO NOT start any assessment session!
+        if (!profile || !isOnboardingComplete) {
           setIsCheckingResume(false);
           return;
         }

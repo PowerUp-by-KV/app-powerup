@@ -18,6 +18,8 @@ import {
   getAssessmentSessionId,
   getAssessmentStartTime,
   clearAssessmentStartTime,
+  savePreAssessmentResults,
+  getPreAssessmentResults,
 } from "@/services/auth-storage";
 
 interface ResultsScreenProps {
@@ -46,6 +48,13 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         const elapsed = Date.now() - startTime;
         setTimeTaken(formatDuration(elapsed));
         clearAssessmentStartTime();
+      } else {
+        // Fallback: check if we have a saved pre-assessment result with a saved timeTaken
+        getPreAssessmentResults().then((saved) => {
+          if (saved && saved.timeTaken) {
+            setTimeTaken(saved.timeTaken);
+          }
+        });
       }
     });
   }, []);
@@ -73,6 +82,18 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   };
 
   const resultData = rawResultData as AssessmentResultResponse | undefined;
+
+  useEffect(() => {
+    if (resultData && "percentage" in resultData) {
+      const merged = {
+        ...resultData,
+        timeTaken: timeTaken || undefined,
+      };
+      savePreAssessmentResults(merged).catch((err) => {
+        console.warn("Failed to save preassessment results:", err);
+      });
+    }
+  }, [resultData, timeTaken]);
 
   const sectionCards = resultData?.section_percentages
     ? [
