@@ -46,6 +46,13 @@ export function PreviewScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const formData = useAppSelector(selectFormData);
+  const experience = formData?.experience || [];
+  const education = formData?.education || [];
+  const skills = formData?.skills || [];
+  const projects = formData?.projects || [];
+  const certifications = formData?.certifications || [];
+  const languages = formData?.languages || [];
+  const achievements = formData?.achievements || [];
   const isSaving = useAppSelector(selectIsSaving);
   const error = useAppSelector(selectError);
   const [updateResume, { isLoading: isUpdating }] = useUpdateResumeMutation();
@@ -263,10 +270,10 @@ export function PreviewScreen() {
           ) : null}
 
           {/* Experience Section */}
-          {formData.experience.length > 0 && (
+          {experience.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Experience</Text>
-              {formData.experience.map((exp) => (
+              {experience.map((exp) => (
                 <View key={exp.id} style={styles.previewItem}>
                   <View style={styles.itemHeader}>
                     <Text style={styles.itemTitle}>{exp.position}</Text>
@@ -284,10 +291,10 @@ export function PreviewScreen() {
           )}
 
           {/* Education Section */}
-          {formData.education.length > 0 && (
+          {education.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Education</Text>
-              {formData.education.map((edu) => (
+              {education.map((edu) => (
                 <View key={edu.id} style={styles.previewItem}>
                   <View style={styles.itemHeader}>
                     <Text style={styles.itemTitle}>{edu.degree}</Text>
@@ -301,13 +308,18 @@ export function PreviewScreen() {
           )}
 
           {/* Skills Section */}
-          {formData.skills.length > 0 && (
+          {skills.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Skills</Text>
               <View style={styles.skillsList}>
-                {formData.skills.map((skill) => (
-                  <View key={skill.id} style={styles.skillBadge}>
-                    <Text style={styles.skillText}>{skill.name}</Text>
+                {skills.map((skill, idx) => (
+                  <View
+                    key={typeof skill === "string" ? skill : skill.id || idx}
+                    style={styles.skillBadge}
+                  >
+                    <Text style={styles.skillText}>
+                      {typeof skill === "string" ? skill : skill.name}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -315,10 +327,10 @@ export function PreviewScreen() {
           )}
 
           {/* Projects Section */}
-          {formData.projects && formData.projects.length > 0 && (
+          {projects && projects.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Projects</Text>
-              {formData.projects.map((project) => (
+              {projects.map((project) => (
                 <View key={project.id || project.name} style={styles.previewItem}>
                   <Text style={styles.itemTitle}>{project.name}</Text>
                   {project.description ? (
@@ -340,36 +352,49 @@ export function PreviewScreen() {
           )}
 
           {/* Certifications Section */}
-          {formData.certifications && formData.certifications.length > 0 && (
+          {certifications && certifications.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Certifications</Text>
-              {formData.certifications.map((cert) => (
-                <View key={cert.id || cert.name} style={styles.previewItem}>
-                  <View style={styles.itemHeader}>
-                    <Text style={styles.itemTitle}>{cert.name}</Text>
+              {certifications.map((cert, idx) => {
+                if (typeof cert === "string") {
+                  return (
+                    <View key={idx} style={styles.previewItem}>
+                      <Text style={styles.itemTitle}>{cert}</Text>
+                    </View>
+                  );
+                }
+                return (
+                  <View key={cert.id || cert.name || idx} style={styles.previewItem}>
+                    <View style={styles.itemHeader}>
+                      <Text style={styles.itemTitle}>{cert.name}</Text>
+                    </View>
+                    <Text style={styles.itemCompany}>{cert.issuer}</Text>
+                    {cert.issueDate ? (
+                      <Text style={styles.itemDescription}>Issued: {cert.issueDate}</Text>
+                    ) : null}
+                    {cert.expiryDate ? (
+                      <Text style={styles.itemDescription}>Expires: {cert.expiryDate}</Text>
+                    ) : null}
                   </View>
-                  <Text style={styles.itemCompany}>{cert.issuer}</Text>
-                  {cert.issueDate ? (
-                    <Text style={styles.itemDescription}>Issued: {cert.issueDate}</Text>
-                  ) : null}
-                  {cert.expiryDate ? (
-                    <Text style={styles.itemDescription}>Expires: {cert.expiryDate}</Text>
-                  ) : null}
-                </View>
-              ))}
+                );
+              })}
             </View>
           )}
 
           {/* Languages Section */}
-          {formData.languages && formData.languages.length > 0 && (
+          {languages && languages.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Languages</Text>
               <View style={styles.skillsList}>
-                {formData.languages.map((language) => (
-                  <View key={language.id || language.name} style={styles.languageBadge}>
+                {languages.map((language, idx) => (
+                  <View
+                    key={typeof language === "string" ? language : language.name || idx}
+                    style={styles.languageBadge}
+                  >
                     <Text style={styles.languageText}>
-                      {language.name}
-                      {language.proficiency ? ` • ${language.proficiency}` : ""}
+                      {typeof language === "string"
+                        ? language
+                        : `${language.name || ""}${language.proficiency ? ` • ${language.proficiency}` : ""}`}
                     </Text>
                   </View>
                 ))}
@@ -378,10 +403,10 @@ export function PreviewScreen() {
           )}
 
           {/* Achievements Section */}
-          {formData.achievements && formData.achievements.length > 0 && (
+          {achievements && achievements.length > 0 && (
             <View style={styles.previewSection}>
               <Text style={styles.previewHeading}>Achievements</Text>
-              {formData.achievements.map((achievement, idx) => (
+              {achievements.map((achievement, idx) => (
                 <View key={idx} style={styles.bulletItem}>
                   <Text style={styles.bulletPoint}>•</Text>
                   <Text style={styles.bulletText}>{achievement}</Text>

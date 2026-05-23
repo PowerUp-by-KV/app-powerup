@@ -15,61 +15,124 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { saveAuthSession } from "@/services/auth-storage";
+import {
+  AuthResponse,
+  LoginRequest,
+  useLoginMutation,
+  useLazyGetProfileQuery,
+} from "@/services/auth-api";
+import { getApiErrorMessage } from "@/utils/error-message";
+import {
+  clearAuthSession,
+  saveAuthSession,
+  saveAssessmentSessionId,
+  getProfileCompletedInSession,
+  clearStaleLocalFlagsIfUserChanged,
+  saveLastLoggedInEmail,
+} from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
+import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 
 export function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
+  const [getProfile] = useLazyGetProfileQuery();
+  const [startSession] = useStartSessionMutation();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
-  const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    setAuthToken(auth.access_token);
-    if (auth.user.cefr_range) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/dynamic-onboarding");
+  // Prefetch onboarding questions in the background during the authentication handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
+
+  const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
+    try {
+      await saveAuthSession(auth);
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
+      // If a different email has logged in on this device, wipe stale local flags
+      // so they don't mistakenly mark the new user's onboarding/assessment as done.
+      await clearStaleLocalFlagsIfUserChanged(loginEmail);
+      // Persist the current email for future login comparisons
+      await saveLastLoggedInEmail(loginEmail);
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      // Fetch the latest full profile details from the backend
+      const profile = await getProfile().unwrap();
+
+      // ─── ONBOARDING CHECK ─────────────────────────────────────────────────
+      // Primary truth  : backend `profile_completed` field (works across devices).
+      // Secondary truth: local session flag (covers same-session race conditions
+      //                  where the backend flag may not have propagated yet).
+      const localOnboardingDone = await getProfileCompletedInSession();
+      const isOnboardingComplete = profile.profile_completed || localOnboardingDone;
+
+      if (!isOnboardingComplete) {
+        router.replace("/onboarding");
+        return;
+      }
+
+      // ─── PRE-ASSESSMENT CHECK ──────────────────────────────────────────────
+      // Primary truth: `cefr_range` from the backend profile.
+      // A non-null cefr_range means the full pre-assessment is complete.
+      if (profile.cefr_range) {
+        router.replace("/(tabs)");
+        return;
+      }
+
+      // ─── RESUME INCOMPLETE PRE-ASSESSMENT ─────────────────────────────────
+      // Onboarding is done but pre-assessment is not yet complete.
+      // startSession returns:
+      //   • first_section = next section the user needs to answer (resume point)
+      //   • first_section = null/empty → all sections submitted, go to results
+      try {
+        const session = await startSession().unwrap();
+        if (session?.session_id) {
+          await saveAssessmentSessionId(session.session_id);
+
+          if (session.first_section) {
+            const nextRoute = getNextRouteForSection(session.first_section);
+            const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
+            router.replace(
+              `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
+            );
+          } else {
+            // All sections answered but cefr_range not yet set → show results
+            router.replace(`/results?session_id=${encodeURIComponent(session.session_id)}` as any);
+          }
+        } else {
+          router.replace("/(tabs)");
+        }
+      } catch {
+        // startSession failed (network error, etc.) → safe fallback to home
+        router.replace("/(tabs)");
+      }
+    } catch {
+      // getProfile failed → cannot determine status, send to onboarding as safest fallback
+      router.replace("/onboarding");
     }
   };
 
   const handleLogin = async () => {
     const email_value = email.trim();
-    const phone_value = phoneNumber.trim();
-    const identifier_value = identifier.trim();
     const password_value = password.trim();
-    const normalizedPhone = phone_value.replace(/[\s\-()]/g, "");
 
-    // Validate password is required
+    if (!email_value) {
+      Alert.alert("Error", "Email is required");
+      return;
+    }
+
     if (!password_value) {
       Alert.alert("Error", "Password is required");
-      return;
-    }
-
-    const filledIdentifiers = [email_value, phone_value, identifier_value].filter(Boolean).length;
-
-    if (filledIdentifiers === 0) {
-      Alert.alert("Error", "Please enter email, phone number, or username/ID");
-      return;
-    }
-
-    // Choose one identifier deterministically to keep requests valid for backend contract.
-    const identifierType = email_value ? "email" : phone_value ? "phone_number" : "identifier";
-
-    if (identifierType === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email_value)) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    if (identifierType === "phone_number" && !/^\+?\d{7,15}$/.test(normalizedPhone)) {
-      Alert.alert("Error", "Please enter a valid phone number");
       return;
     }
 
@@ -81,28 +144,21 @@ export function LoginScreen() {
         remember_me: rememberMe,
       };
 
-      if (identifierType === "email") {
+      if (email_value.includes("@")) {
         payload.email = email_value.toLowerCase();
-      } else if (identifierType === "phone_number") {
-        payload.phone_number = normalizedPhone;
       } else {
-        payload.identifier = identifier_value;
+        payload.identifier = email_value;
       }
 
-      console.log("Login payload:", payload);
-
       const response = await login(payload).unwrap();
-
-      console.log("Login response:", response);
-      Alert.alert("Success", "Login successful");
-      await persistAuthAndNavigate(response);
+      // Pass the email so we can detect if a different user has logged in on this device
+      const resolvedEmail = payload.email ?? payload.identifier ?? "";
+      await persistAuthAndNavigate(response, resolvedEmail);
     } catch (error) {
-      console.error("Login error:", error);
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {
-        await clearAuthState();
+        await clearAuthSession();
         Alert.alert("Error", "Invalid credentials");
-        router.replace("/login");
         return;
       }
 
@@ -122,152 +178,132 @@ export function LoginScreen() {
         style={{ flex: 1 }}
       >
         <ScrollView
-          contentContainerStyle={{ alignItems: "center", paddingBottom: 50 }}
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingBottom: 60,
+            paddingTop: Platform.OS === "android" ? 48 : 16,
+          }}
           style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="w-full max-w-sm py-8">
-            <View className="items-center mb-8">
-              <View className="w-20 h-20 rounded-2xl bg-gray-200 mb-6 shadow-md" />
-              <Text className="text-3xl font-extrabold text-slate-900">Welcome Back</Text>
-              <Text className="text-base text-slate-500 mt-2">
-                Sign in to continue your learning
-              </Text>
+          <View className="w-full max-w-md py-8">
+            <View className="items-center mb-6">
+              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
+              <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
+              <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
 
-            <View className="space-y-4">
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="mail" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="your@email.com"
-                  keyboardType="email-address"
-                  className="flex-1 text-base text-slate-900"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="phone" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Your phone number"
-                  keyboardType="phone-pad"
-                  className="flex-1 text-base text-slate-900"
-                  value={phoneNumber}
-                  onChangeText={setPhoneNumber}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="user" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Username or ID"
-                  className="flex-1 text-base text-slate-900"
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  autoCapitalize="none"
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-              </View>
-
-              <View className="flex-row items-center border-b-2 border-gray-200 py-2">
-                <Feather name="lock" size={20} color="#94A3B8" className="mr-3" />
-                <TextInput
-                  placeholder="Password"
-                  secureTextEntry={!showPassword}
-                  className="flex-1 text-base text-slate-900"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((p) => !p)}
-                  disabled={isLoading}
-                  className="ml-2"
-                >
-                  <Feather name={showPassword ? "eye-off" : "eye"} size={20} color="#94A3B8" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View className="flex-row items-center justify-between my-6">
-              <View className="flex-row items-center">
-                <TouchableOpacity
-                  onPress={() => setRememberMe(!rememberMe)}
-                  className="w-4 h-4 border border-slate-300 rounded-sm items-center justify-center mr-2"
-                >
-                  {rememberMe && <View className="w-2 h-2 bg-indigo-600" />}
-                </TouchableOpacity>
-                <Text className="text-slate-600">Remember me</Text>
-              </View>
-              <TouchableOpacity onPress={() => {}}>
-                <Text className="text-indigo-600">Forgot password?</Text>
+            <View className="flex-row justify-between w-full mt-2">
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
+                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
+                <AntDesign name="github" size={18} color="#333" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Github</Text>
               </TouchableOpacity>
             </View>
 
             <TouchableOpacity
-              className={`rounded-full py-4 items-center justify-center mb-4 bg-gray-800 ${
-                isLoading ? "opacity-75" : ""
-              }`}
-              disabled={isLoading}
-              onPress={handleLogin}
+              onPress={() => router.push("/login-otp")}
+              className="mt-5 mb-2 rounded-full py-4 items-center justify-center border-2 border-slate-300"
             >
-              {isLoading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Text className="text-white text-base font-bold">Sign In</Text>
-              )}
+              <Text className="text-sm font-bold text-slate-800">Login with OTP</Text>
             </TouchableOpacity>
 
-            <View className="items-center mt-2">
-              <Text className="text-sm text-slate-500">
-                Don&apos;t have an account?{" "}
-                <Text
-                  className="text-indigo-600 font-bold"
-                  onPress={() => router.push("/register")}
+            <View className="flex-row items-center my-4 w-full">
+              <View className="h-px bg-slate-100 flex-1" />
+              <Text className="mx-4 text-sm text-slate-400">or</Text>
+              <View className="h-px bg-slate-100 flex-1" />
+            </View>
+
+            <View className="space-y-4 w-full">
+              <View className="w-full">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="mail" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Your@email.com"
+                    keyboardType="email-address"
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <TextInput
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((p) => !p)}
+                    disabled={isLoading}
+                    className="ml-2 py-1"
+                  >
+                    <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-between w-full mt-5 mb-2">
+                <TouchableOpacity
+                  onPress={() => setRememberMe(!rememberMe)}
+                  className="flex-row items-center"
                 >
-                  Sign up
+                  <View
+                    className={`w-5 h-5 rounded mr-3 items-center justify-center ${
+                      rememberMe ? "bg-slate-400" : "bg-slate-200"
+                    }`}
+                  >
+                    {rememberMe && <Feather name="check" size={12} color="white" />}
+                  </View>
+                  <Text className="text-sm font-bold text-slate-600">Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => {}}>
+                  <Text className="text-sm text-blue-500 font-medium">Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
+                  isLoading ? "opacity-75" : ""
+                }`}
+                disabled={isLoading}
+                onPress={handleLogin}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white text-sm font-bold">Sign in</Text>
+                )}
+              </TouchableOpacity>
+
+              <View className="items-center mt-1">
+                <Text className="text-sm text-slate-500">
+                  Don&apos;t have an account?{" "}
+                  <Text
+                    className="text-blue-600 font-bold"
+                    onPress={() => router.push("/register")}
+                  >
+                    Sign up
+                  </Text>
                 </Text>
-              </Text>
+              </View>
             </View>
-
-            <View className="relative flex-row justify-center items-center my-6">
-              <View className="h-px bg-slate-200 flex-1" />
-              <Text className="mx-4 text-slate-400">OR</Text>
-              <View className="h-px bg-slate-200 flex-1" />
-            </View>
-
-            <TouchableOpacity
-              onPress={() => router.push("/otp")}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300"
-            >
-              <Text className="text-slate-800 text-base font-bold">Login with OTP</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {}}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-            >
-              <AntDesign name="google" size={18} color="#DB4437" className="mr-3" />
-              <Text className="text-slate-800 text-base font-bold">Sign in with Google</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {}}
-              className="rounded-full py-4 items-center justify-center border-2 border-slate-300 mt-3 flex-row"
-            >
-              <AntDesign name="github" size={18} color="#333" className="mr-3" />
-              <Text className="text-slate-800 text-base font-bold">Sign in with GitHub</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -1,5 +1,6 @@
-import { Redirect } from "expo-router";
+import React from "react";
+import { HomeScreen } from "@/features/home";
 
-export default function HomeScreen() {
-  return <Redirect href="/splash" />;
+export default function HomeRoute() {
+  return <HomeScreen />;
 }

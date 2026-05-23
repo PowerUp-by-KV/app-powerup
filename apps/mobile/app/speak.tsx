@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { SpeakingScreen } from "@/features/pre-speaking";
+import { SpeakingScreen } from "@/features/pre-assessment";
 
 export default function SpeakRoute() {
   const { session_id } = useLocalSearchParams<{ session_id: string }>();

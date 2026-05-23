@@ -21,7 +21,7 @@ import {
 import { TextInput } from "../components";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import type { Experience, Education } from "@app-powerup/shared";
+import type { Experience, Education } from "@/services/resume-api";
 
 const createResumeItemId = () => {
   if (typeof globalThis.crypto?.randomUUID === "function") {
@@ -33,8 +33,8 @@ const createResumeItemId = () => {
 
 export function ExperienceScreen() {
   const dispatch = useAppDispatch();
-  const experience = useAppSelector(selectExperience);
-  const education = useAppSelector(selectEducation);
+  const experience = useAppSelector(selectExperience) || [];
+  const education = useAppSelector(selectEducation) || [];
 
   // Experience form state
   const [showExperienceForm, setShowExperienceForm] = useState(false);

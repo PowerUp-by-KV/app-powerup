@@ -1,5 +1,5 @@
-import { DynamicOnboardingScreen } from "@/features/pre-profile";
+import { OnboardingScreen } from "@/features/onboarding";
 
 export default function DynamicOnboardingRoute() {
-  return <DynamicOnboardingScreen />;
+  return <OnboardingScreen />;
 }
