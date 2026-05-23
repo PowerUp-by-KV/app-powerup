@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, qa]
   pull_request:
-    branches: [main]
+    branches: [main, qa, dev]
 
 jobs:
   quality:
@@ -32,11 +32,11 @@ jobs:
       - name: Test
         run: pnpm turbo run test -- --ci --coverage
 
-  eas-build:
-    name: EAS Build (Preview)
+  eas-build-android:
+    name: EAS Build (Android preview APK)
     runs-on: ubuntu-latest
     needs: quality
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/qa'
     steps:
       - uses: actions/checkout@v4
 
@@ -55,5 +55,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build preview
-        run: cd apps/mobile && eas build --platform all --profile preview --non-interactive
+      - name: Build Android preview APK
+        run: cd apps/mobile && eas build --platform android --profile preview --non-interactive --no-wait
+
+      - name: Summary
+        run: |
+          echo "Android preview build queued on EAS." >> $GITHUB_STEP_SUMMARY
+          echo "Track at https://expo.dev/accounts/deepakdev6055/projects/powerup/builds" >> $GITHUB_STEP_SUMMARY
+          echo "You will get an email when the APK is ready." >> $GITHUB_STEP_SUMMARY
