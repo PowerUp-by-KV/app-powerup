@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -99,6 +99,10 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [timeLeft, setTimeLeft] = useState(45); // Default 45s
   const [uploadingQuestions, setUploadingQuestions] = useState<Record<string, boolean>>({});
   const isAnyUploading = Object.values(uploadingQuestions).some(Boolean);
+  // Tracks in-flight upload promises per question so handleFinish can await
+  // them before reading `answers`. Without this, a fast tap-through after the
+  // last recording would submit with audio_url=undefined.
+  const pendingUploadsRef = useRef<Record<string, Promise<string | void>>>({});
 
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
@@ -198,8 +202,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         setHasRecorded((prev) => ({ ...prev, [qId]: true }));
         setUploadingQuestions((prev) => ({ ...prev, [qId]: true }));
 
-        // Asynchronous upload that returns a promise so callers can await it before submitting
-        return uploadAudioFile(uri, "recording.m4a")
+        const uploadPromise = uploadAudioFile(uri, "recording.m4a")
           .then((sasUrl) => {
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
@@ -209,7 +212,10 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           })
           .finally(() => {
             setUploadingQuestions((prev) => ({ ...prev, [qId]: false }));
+            delete pendingUploadsRef.current[qId];
           });
+        pendingUploadsRef.current[qId] = uploadPromise;
+        return uploadPromise;
       }
     } catch {
       // Ignore stop errors
@@ -268,6 +274,13 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const handleFinish = async () => {
     setIsFinished(true);
     try {
+      // Wait for any in-flight audio uploads to settle before reading answers,
+      // otherwise the last question's audio_url may still be undefined.
+      const pending = Object.values(pendingUploadsRef.current);
+      if (pending.length > 0) {
+        await Promise.allSettled(pending);
+      }
+
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,
         audio_url: val,
@@ -312,7 +325,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }
 
     if (isLastQuestion) {
-      handleFinish();
+      await handleFinish();
       return;
     }
 

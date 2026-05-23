@@ -91,20 +91,26 @@ export function EditProfileScreen() {
       const data = onboardingAnswers;
       const allQuestionsWithAnswers = Object.values(data).flat() as any[];
 
-      // Populate dynamic question mapping
+      // Populate dynamic question mapping and a lookup by question_key (lowercased)
+      // so findQuestion is O(1) per key instead of O(n) per field.
       const idsMap: Record<string, string> = {};
+      const byKey = new Map<string, any>();
       allQuestionsWithAnswers.forEach((q) => {
         if (q.question_key && q.id) {
           idsMap[q.question_key] = q.id;
         }
+        if (q.question_key) {
+          byKey.set(String(q.question_key).toLowerCase(), q);
+        }
       });
       setQuestionIds(idsMap);
 
-      // Robust lookup function relying strictly on stable question_key identifiers provided by the API
       const findQuestion = (keys: string[]) => {
-        return allQuestionsWithAnswers.find((q) => {
-          return keys.some((k) => q.question_key?.toLowerCase() === k.toLowerCase());
-        });
+        for (const k of keys) {
+          const found = byKey.get(k.toLowerCase());
+          if (found) return found;
+        }
+        return undefined;
       };
 
       // 1. Basic Profile

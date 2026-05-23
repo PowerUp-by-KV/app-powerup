@@ -282,16 +282,8 @@ export default function DayCompleteScreen() {
             You scored {moduleCheckScore}% — {readyToAdvance ? "you've earned a new level." : ""}
           </Text>
 
-          <View
-            style={{
-              marginTop: 24,
-              paddingVertical: 10,
-              paddingHorizontal: 16,
-              borderRadius: 999,
-              backgroundColor: "#fef3c7",
-            }}
-          >
-            <Text style={{ color: "#92400e", fontWeight: "700" }}>+{xpEarned} XP</Text>
+          <View className="mt-6 py-2.5 px-4 rounded-full bg-amber-100">
+            <Text className="text-amber-800 font-bold">+{xpEarned} XP</Text>
           </View>
 
           {atCeiling ? (
