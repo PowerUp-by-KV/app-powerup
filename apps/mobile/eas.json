@@ -17,12 +17,14 @@
     "preview": {
       "distribution": "internal",
       "autoIncrement": true,
+      "node": "22.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
       }
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
       }
