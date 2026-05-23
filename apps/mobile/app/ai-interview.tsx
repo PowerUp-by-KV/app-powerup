@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -22,6 +22,43 @@ import {
   useGenerateInterviewReportMutation,
 } from "@/services/practice-api";
 
+const getApiErrorMessage = (error: unknown) => {
+  if (typeof error !== "object" || error === null) return "Failed to submit answer";
+
+  const data = "data" in error ? (error as { data?: unknown }).data : undefined;
+  if (typeof data === "string") return data;
+  if (typeof data === "object" && data !== null) {
+    if ("error" in data && typeof (data as { error?: unknown }).error === "string") {
+      return (data as { error: string }).error;
+    }
+    if ("detail" in data && typeof (data as { detail?: unknown }).detail === "string") {
+      return (data as { detail: string }).detail;
+    }
+  }
+
+  if ("error" in error && typeof (error as { error?: unknown }).error === "string") {
+    return (error as { error: string }).error;
+  }
+
+  return "Failed to submit answer";
+};
+
+const getResumeSkills = (resume: unknown) => {
+  if (typeof resume !== "object" || resume === null) return [];
+
+  const record = resume as { skills?: unknown; parsed_data?: { skills?: unknown } };
+  const skills = Array.isArray(record.skills)
+    ? record.skills
+    : Array.isArray(record.parsed_data?.skills)
+      ? record.parsed_data.skills
+      : [];
+
+  return skills.filter((skill) => {
+    if (typeof skill === "string") return skill.trim().length > 0;
+    return typeof skill === "object" && skill !== null && "name" in skill;
+  });
+};
+
 export default function InterviewScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
@@ -29,7 +66,9 @@ export default function InterviewScreen() {
 
   const { data: resume, isLoading: resumeLoading } = useGetResumeQuery(userId ?? "", { skip: !userId });
 
-  const hasSkills = resume?.parse_status === "completed" && (resume.skills?.length ?? 0) > 0;
+  const resumeSkills = getResumeSkills(resume);
+  const resumeIsReady = resume?.parse_status === undefined || resume.parse_status === "completed";
+  const hasSkills = resumeIsReady && resumeSkills.length > 0;
 
   // Practice flow state
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -38,7 +77,9 @@ export default function InterviewScreen() {
   const currentQuestion = questions[questionIdx] ?? null;
 
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
+  const [recordingBusy, setRecordingBusy] = useState(false);
   const [lastAnswer, setLastAnswer] = useState<AiAnswerResult | null>(null);
 
   const [startPractice, { isLoading: creating }] = useStartPracticeSessionMutation();
@@ -46,7 +87,7 @@ export default function InterviewScreen() {
     skip: !sessionId,
   });
   const [submitPracticeAnswer, { isLoading: submitting }] = useSubmitPracticeAnswerMutation();
-  const [generateReport] = useGenerateInterviewReportMutation();
+  const [generateReport, { isLoading: generatingReport }] = useGenerateInterviewReportMutation();
 
   // Start practice session
   const handleStart = async () => {
@@ -66,29 +107,62 @@ export default function InterviewScreen() {
     }
   }, [fetchedQuestions]);
 
+  useEffect(() => {
+    return () => {
+      recordingRef.current?.stopAndUnloadAsync().catch(() => undefined);
+      recordingRef.current = null;
+    };
+  }, []);
+
   // Recording helpers
   const startRecording = async () => {
+    if (recordingBusy || recordingRef.current) return;
+    setRecordingBusy(true);
+    let rec: Audio.Recording | null = null;
+
     try {
-      await Audio.requestPermissionsAsync();
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Microphone permission required", "Please allow microphone access to record your answer.");
+        return;
+      }
+
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-      const rec = new Audio.Recording();
+      rec = new Audio.Recording();
       await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await rec.startAsync();
+      recordingRef.current = rec;
       setRecording(rec);
+      setAudioUri(null);
     } catch (e) {
       console.error('Recording error', e);
+      await rec?.stopAndUnloadAsync().catch(() => undefined);
+      if (recordingRef.current === rec) {
+        recordingRef.current = null;
+      }
+      setRecording(null);
+      Alert.alert("Recording error", "Could not start recording. Please try again.");
+    } finally {
+      setRecordingBusy(false);
     }
   };
 
   const stopRecording = async () => {
-    if (!recording) return;
+    const rec = recordingRef.current;
+    if (!rec || recordingBusy) return;
+    setRecordingBusy(true);
+
     try {
-      await recording.stopAndUnloadAsync();
-      const uri = recording.getURI();
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
       setAudioUri(uri ?? null);
-      setRecording(null);
     } catch (e) {
       console.error('Stop error', e);
+      Alert.alert("Recording error", "Could not stop recording. Please try again.");
+    } finally {
+      recordingRef.current = null;
+      setRecording(null);
+      setRecordingBusy(false);
     }
   };
 
@@ -105,18 +179,30 @@ export default function InterviewScreen() {
         file: { uri: audioUri, name: "answer.wav", type: "audio/wav" },
       }).unwrap();
       setLastAnswer(result);
-      // Move to next question or finish
-      if (questionIdx + 1 < questions.length) {
-        setQuestionIdx(questionIdx + 1);
-        setAudioUri(null);
-        setLastAnswer(null);
-      } else {
+      setAudioUri(null);
         // All answered – generate report
-        await generateReport(sessionId).unwrap();
-        setQuestionIdx(questionIdx + 1); // keep index out of range to stop UI
-      }
     } catch (e) {
-      Alert.alert('Error', 'Failed to submit answer');
+      console.error("Submit answer error", e);
+      Alert.alert("Error", getApiErrorMessage(e));
+    }
+  };
+
+  const handleReviewContinue = async () => {
+    if (!lastAnswer || !sessionId) return;
+
+    if (questionIdx + 1 < questions.length) {
+      setQuestionIdx((idx) => idx + 1);
+      setAudioUri(null);
+      setLastAnswer(null);
+      return;
+    }
+
+    try {
+      await generateReport(sessionId).unwrap();
+      router.back();
+    } catch (e) {
+      console.error("Generate interview report error", e);
+      Alert.alert("Error", getApiErrorMessage(e));
     }
   };
 
@@ -171,7 +257,7 @@ export default function InterviewScreen() {
   }
 
   // Question screen
-  if (currentQuestion && questionIdx < questions.length) {
+  if (!lastAnswer && currentQuestion && questionIdx < questions.length) {
     return (
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
@@ -194,8 +280,11 @@ export default function InterviewScreen() {
             <Pressable
               style={[styles.primaryBtn, recording && styles.primaryBtnDisabled]}
               onPress={recording ? stopRecording : startRecording}
+              disabled={recordingBusy}
             >
-              <Text style={styles.primaryBtnText}>{recording ? 'Stop Recording' : 'Start Recording'}</Text>
+              <Text style={styles.primaryBtnText}>
+                {recordingBusy ? 'Please wait...' : recording ? 'Stop Recording' : 'Start Recording'}
+              </Text>
             </Pressable>
             {audioUri && <Text style={{ marginLeft: 12, color: '#4f46e5' }}>Recorded</Text>}
           </View>
@@ -214,6 +303,7 @@ export default function InterviewScreen() {
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.heading}>Answer Scored</Text>
+          <Text style={styles.sub}>Q{questionIdx + 1} of {questions.length}</Text>
           <View style={[styles.card, styles.scoreCard]}>
             <Text style={styles.scoreNumber}>{(lastAnswer.score ?? 0).toFixed(1)}</Text>
             <Text style={styles.scoreDenominator}>/10</Text>
@@ -233,8 +323,18 @@ export default function InterviewScreen() {
               <Text style={styles.feedbackText}>{lastAnswer.feedback}</Text>
             </View>
           )}
-          <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
-            <Text style={styles.primaryBtnText}>Back to Home</Text>
+          <Pressable
+            style={[styles.primaryBtn, generatingReport && styles.primaryBtnDisabled]}
+            onPress={handleReviewContinue}
+            disabled={generatingReport}
+          >
+            {generatingReport ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.primaryBtnText}>
+                {questionIdx + 1 < questions.length ? "Next Question" : "Finish Interview"}
+              </Text>
+            )}
           </Pressable>
         </ScrollView>
       </SafeAreaView>
