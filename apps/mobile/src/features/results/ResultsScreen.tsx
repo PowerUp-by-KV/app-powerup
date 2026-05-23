@@ -20,8 +20,10 @@ import {
   clearAssessmentStartTime,
   savePreAssessmentResults,
   getPreAssessmentResults,
+  setPreAssessmentCompletedInSession,
 } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { OfflineGameView } from "@/components/OfflineGameView";
 
 interface ResultsScreenProps {
   sessionId?: string;
@@ -82,6 +84,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     router.replace("/(tabs)/my-learning" as never);
   };
 
+  const handleTryAgain = () => {
+    if (sessionId) {
+      completeSession({ session_id: sessionId });
+    }
+  };
+
   const resultData = rawResultData as AssessmentResultResponse | undefined;
 
   useEffect(() => {
@@ -92,6 +100,9 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       };
       savePreAssessmentResults(merged).catch((err) => {
         console.warn("Failed to save preassessment results:", err);
+      });
+      setPreAssessmentCompletedInSession(true).catch((err) => {
+        console.warn("Failed to set preassessment completed flag:", err);
       });
     }
   }, [resultData, timeTaken]);
@@ -129,7 +140,47 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     return <GamifiedMascotLoader title="Analyzing your assessment responses..." />;
   }
 
-  if (error || !resultData || !("percentage" in resultData)) {
+  if (error) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} className="bg-slate-900 justify-center items-center px-6">
+        <View className="items-center mb-4">
+          <View className="w-16 h-16 bg-rose-500/10 rounded-full items-center justify-center mb-4">
+            <Feather name="wifi-off" size={32} color="#f43f5e" />
+          </View>
+          <Text className="text-2xl font-black text-white text-center mb-2">
+            Connection Timeout
+          </Text>
+          <Text className="text-slate-400 text-center text-sm mb-4 px-4">
+            We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
+            reconnect!
+          </Text>
+        </View>
+
+        {/* Playable Offline Game View */}
+        <View className="w-full max-w-sm mb-6">
+          <OfflineGameView />
+        </View>
+
+        <View className="flex-row gap-4 w-full max-w-sm justify-center">
+          <TouchableOpacity
+            className="flex-1 bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
+            onPress={handleTryAgain}
+          >
+            <Text className="text-white font-bold text-base">Try Again</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="flex-1 bg-slate-800 active:bg-slate-700 py-3.5 rounded-2xl items-center border border-slate-700 active:scale-95"
+            onPress={handleBack}
+          >
+            <Text className="text-slate-300 font-bold text-base">Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!resultData || !("percentage" in resultData)) {
     return (
       <View className="flex-1 items-center justify-center bg-white px-6">
         <Text className="text-lg text-slate-600 text-center mb-6">

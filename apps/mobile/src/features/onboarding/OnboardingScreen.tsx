@@ -27,6 +27,7 @@ import { useStartSessionMutation, getNextRouteForSection } from "@/services/asse
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
+  setPreAssessmentCompletedInSession,
   saveAssessmentSessionId,
   getAuthSession,
   getAssessmentSessionId,
@@ -37,6 +38,8 @@ import {
 import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import LoaderScreen from "./components/LoaderScreen";
+import { OfflineGameView } from "@/components/OfflineGameView";
+import { Feather } from "@expo/vector-icons";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -45,7 +48,12 @@ export default function OnboardingScreen() {
   const stepNumber = formData.currentStep;
 
   const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
-  const { data: groupedQuestions, isLoading: isFetching } = useGetGroupedQuestionsQuery();
+  const {
+    data: groupedQuestions,
+    isLoading: isFetching,
+    isError: onboardingError,
+    refetch: refetchQuestions,
+  } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
 
@@ -87,6 +95,40 @@ export default function OnboardingScreen() {
   }, [groupedQuestions]);
 
   const question = flattenedQuestions[stepNumber - 1];
+
+  if (onboardingError && !isFetching) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <View className="flex-1 w-full items-center justify-center p-6">
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <View className="w-16 h-16 rounded-2xl bg-rose-50 items-center justify-center mb-6">
+              <Feather name="wifi-off" size={28} color="#e11d48" />
+            </View>
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Server Connection Lost
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+              We couldn't connect to the learning server. Please ensure the backend service is
+              running and try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3">
+              <TouchableOpacity
+                onPress={() => refetchQuestions()}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (isCheckingResume || isFetching || isProfileLoading) {
     return <LoaderScreen />;
@@ -180,8 +222,10 @@ export default function OnboardingScreen() {
         }
       }
 
-      // 3. Mark profile as completed locally
+      // 3. Mark profile as completed locally, reset pre-assessment completed flag, and clear completed pre-assessment sections
       await setProfileCompletedInSession(true);
+      await setPreAssessmentCompletedInSession(false);
+      await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
       router.replace("/my-learning" as any);

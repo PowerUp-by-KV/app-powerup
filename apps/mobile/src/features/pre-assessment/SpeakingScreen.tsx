@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
@@ -24,6 +23,8 @@ import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
+import { OfflineGameView } from "@/components/OfflineGameView";
+import { Feather } from "@expo/vector-icons";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
@@ -237,20 +238,35 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-bold text-slate-800 text-center mb-2">
-          Connection Timeout
-        </Text>
-        <Text className="text-sm text-slate-500 text-center mb-6">
-          Could not load speaking section due to network delay. Please try again.
-        </Text>
-        <TouchableOpacity
-          onPress={() => refetch()}
-          className="bg-indigo-600 px-6 py-3 rounded-xl shadow-sm"
-        >
-          <Text className="text-white font-semibold">Retry Loading Questions</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <View className="flex-1 w-full items-center justify-center p-6">
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <View className="w-16 h-16 rounded-2xl bg-rose-50 items-center justify-center mb-6">
+              <Feather name="wifi-off" size={28} color="#e11d48" />
+            </View>
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Server Connection Lost
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+              We couldn't connect to the learning server. Please ensure the backend service is
+              running and try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3">
+              <TouchableOpacity
+                onPress={() => refetch()}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -390,50 +406,19 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-          <View style={styles.card}>
+        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
+          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
             <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.title}>Submitting Answers…</Text>
-            <Text style={styles.subtitle}>Please wait, do not close the app</Text>
+            <Text className="text-slate-800 font-bold text-base mt-4">Submitting Answers…</Text>
+            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+              Please wait, do not close the app
+            </Text>
           </View>
         </View>
       )}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 36,
-    paddingHorizontal: 40,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    minWidth: 240,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginTop: 18,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#64748b",
-    marginTop: 6,
-    textAlign: "center",
-  },
-});
 
 interface SpeakingScreenProps {
   sessionId?: string;

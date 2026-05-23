@@ -99,6 +99,21 @@ export async function clearProfileCompletedInSession(): Promise<void> {
   await deleteItem(PROFILE_COMPLETED_KEY);
 }
 
+const PRE_ASSESSMENT_COMPLETED_KEY = "powerup.pre_assessment_completed";
+
+export async function setPreAssessmentCompletedInSession(completed: boolean): Promise<void> {
+  await setItem(PRE_ASSESSMENT_COMPLETED_KEY, completed ? "1" : "0");
+}
+
+export async function getPreAssessmentCompletedInSession(): Promise<boolean> {
+  const raw = await getItem(PRE_ASSESSMENT_COMPLETED_KEY);
+  return raw === "1";
+}
+
+export async function clearPreAssessmentCompletedInSession(): Promise<void> {
+  await deleteItem(PRE_ASSESSMENT_COMPLETED_KEY);
+}
+
 /**
  * Saves the email of the currently logged-in user.
  * On next login, if a different email is detected, stale local flags are cleared.
@@ -122,6 +137,7 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
   if (lastEmail && lastEmail !== normalized) {
     // Different user — wipe all device-local state
     await deleteItem(PROFILE_COMPLETED_KEY);
+    await deleteItem(PRE_ASSESSMENT_COMPLETED_KEY);
     await deleteItem(COMPLETED_SECTIONS_KEY);
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
