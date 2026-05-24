@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 import { useCompleteSessionMutation, AssessmentResultResponse } from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
@@ -143,10 +144,13 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   if (error) {
     return (
       <SafeAreaView style={{ flex: 1 }} className="bg-slate-900 justify-center items-center px-6">
-        <View className="items-center mb-4">
-          <View className="w-16 h-16 bg-rose-500/10 rounded-full items-center justify-center mb-4">
-            <Feather name="wifi-off" size={32} color="#f43f5e" />
-          </View>
+        <View className="items-center mb-4 self-center" style={{ alignSelf: "center" }}>
+          <LottieView
+            source={require("../../../assets/mascot/Error 404.lottie")}
+            autoPlay
+            loop
+            style={{ width: 140, height: 140, marginBottom: 12 }}
+          />
           <Text className="text-2xl font-black text-white text-center mb-2">
             Connection Timeout
           </Text>
@@ -157,11 +161,14 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         </View>
 
         {/* Playable Offline Game View */}
-        <View className="w-full max-w-sm mb-6">
+        <View className="w-full max-w-sm mb-6 self-center" style={{ alignSelf: "center" }}>
           <OfflineGameView />
         </View>
 
-        <View className="flex-row gap-4 w-full max-w-sm justify-center">
+        <View
+          className="flex-row gap-4 w-full max-w-sm justify-center self-center"
+          style={{ alignSelf: "center" }}
+        >
           <TouchableOpacity
             className="flex-1 bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
             onPress={handleTryAgain}

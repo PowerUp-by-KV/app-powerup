@@ -25,6 +25,7 @@ import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
@@ -241,9 +242,12 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <View className="w-16 h-16 rounded-2xl bg-rose-50 items-center justify-center mb-6">
-              <Feather name="wifi-off" size={28} color="#e11d48" />
-            </View>
+            <LottieView
+              source={require("../../../assets/mascot/Error 404.lottie")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140, marginBottom: 12 }}
+            />
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -408,8 +412,13 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       {(isFinished || isSubmitting) && (
         <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
           <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text className="text-slate-800 font-bold text-base mt-4">Submitting Answers…</Text>
+            <LottieView
+              source={require("../../../assets/mascot/Dino Loading.json")}
+              autoPlay
+              loop
+              style={{ width: 40, height: 40 }}
+            />
+            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
             <Text className="text-slate-500 text-xs mt-1.5 text-center">
               Please wait, do not close the app
             </Text>

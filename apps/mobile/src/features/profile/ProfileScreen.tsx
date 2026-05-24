@@ -13,6 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
@@ -37,11 +38,7 @@ export function ProfileScreen() {
   }, []);
 
   if (isLoading) {
-    return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
-      </SafeAreaView>
-    );
+    return <GamifiedMascotLoader title="Loading Profile..." />;
   }
 
   const settingsRows = [

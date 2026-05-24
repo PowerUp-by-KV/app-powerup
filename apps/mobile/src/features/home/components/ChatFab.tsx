@@ -1,6 +1,6 @@
 import React from "react";
 import { Pressable, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { RiveMascot } from "@/components/RiveMascot";
 
 interface ChatFabProps {
   onPress: () => void;
@@ -11,23 +11,22 @@ export function ChatFab({ onPress }: ChatFabProps) {
     <View
       style={{
         position: "absolute",
-        right: 20,
-        bottom: 84,
+        right: 8,
+        bottom: 64,
       }}
       pointerEvents="box-none"
     >
       <Pressable
         onPress={onPress}
-        className="w-14 h-14 rounded-full bg-slate-900 items-center justify-center active:scale-95"
+        className="active:scale-90"
         style={{
-          shadowColor: "#000",
-          shadowOpacity: 0.2,
-          shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 8,
-          elevation: 6,
+          width: 110,
+          height: 110,
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Feather name="message-circle" size={24} color="#fff" />
+        <RiveMascot width={110} height={110} />
       </Pressable>
     </View>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, SafeAreaView, Text, View } from "react-native";
-import { RiveMascot } from "./RiveMascot";
+import LottieView from "lottie-react-native";
 
 const TIPS = [
   "Consistency is key! Just 10 minutes a day builds strong neural paths.",
@@ -49,8 +49,13 @@ export function GamifiedMascotLoader({
         }}
         className="items-center justify-center p-4"
       >
-        {/* Animated Funny Mascot */}
-        <RiveMascot width={220} height={220} />
+        {/* Animated Dino Mascot Loader */}
+        <LottieView
+          source={require("../../assets/mascot/Dino Loading.json")}
+          autoPlay
+          loop
+          style={{ width: 220, height: 220 }}
+        />
 
         {/* Loading Indicator & Title */}
         <View className="flex-row items-center justify-center mt-8 mb-2">

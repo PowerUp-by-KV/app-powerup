@@ -21,6 +21,8 @@ import {
   useUpdateProfileOnboardingAnswersMutation,
 } from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { ErrorMascot } from "@/components";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 
 // Helper to parse multi-select answers
 const parseMultiSelect = (text: string): string[] => {
@@ -28,7 +30,7 @@ const parseMultiSelect = (text: string): string[] => {
   try {
     const parsed = JSON.parse(text);
     if (Array.isArray(parsed)) return parsed;
-  } catch (e) {}
+  } catch {}
   return text
     .split(",")
     .map((s) => s.trim())
@@ -37,7 +39,7 @@ const parseMultiSelect = (text: string): string[] => {
 
 export function EditProfileScreen() {
   const safeBack = useSafeBack();
-  const { data: profile } = useGetProfileQuery();
+  const { data: profile, error: profileError } = useGetProfileQuery();
   const [patch] = usePatchProfileMutation();
 
   // Fetch onboarding profile answers from GET /api/v1/users/profile
@@ -45,11 +47,16 @@ export function EditProfileScreen() {
     data: onboardingAnswers,
     isLoading: answersLoading,
     refetch,
+    error: answersError,
   } = useGetProfileOnboardingAnswersQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
   const [updateProfileOnboardingAnswers, { isLoading: isSaving }] =
     useUpdateProfileOnboardingAnswersMutation();
+
+  const is404Error =
+    (profileError && "status" in profileError && profileError.status === 404) ||
+    (answersError && "status" in answersError && answersError.status === 404);
 
   // Mode state: 'view' or 'edit'
   const [mode, setMode] = useState<"view" | "edit">("view");
@@ -108,39 +115,47 @@ export function EditProfileScreen() {
       };
 
       // 1. Basic Profile
-      const qName = findQuestion(["name", "full_name"]);
-      const qEducation = findQuestion(["education", "profession"]);
-      const qYear = findQuestion(["study_year", "year_of_study"]);
-      const qBranch = findQuestion(["engineering_branch", "branch"]);
-      const qDob = findQuestion(["dob", "date_of_birth"]);
-      const qCountry = findQuestion(["country"]);
-      const qLang = findQuestion(["native_language"]);
+      const qName = findQuestion(["name", "full_name", "basic_profile_1_name"]);
+      const qEducation = findQuestion(["education", "profession", "basic_profile_2_education"]);
+      const qYear = findQuestion(["study_year", "year_of_study", "basic_profile_3_year"]);
+      const qBranch = findQuestion(["engineering_branch", "branch", "basic_profile_4_branch"]);
+      const qDob = findQuestion(["dob", "date_of_birth", "basic_profile_5_dob"]);
+      const qCountry = findQuestion(["country", "basic_profile_6_country"]);
+      const qLang = findQuestion(["native_language", "basic_profile_7_language"]);
 
       // 2. English Level
-      const qProf = findQuestion(["proficiency", "english_proficiency"]);
-      const qSkills = findQuestion(["challenging_skills"]);
+      const qProf = findQuestion([
+        "proficiency",
+        "english_proficiency",
+        "english_level_1_proficiency",
+      ]);
+      const qSkills = findQuestion(["challenging_skills", "english_level_2_challenges"]);
 
       // 3. Learning Goals
-      const qGoal = findQuestion(["learning_goal", "primary_goal"]);
-      const qAchieve = findQuestion(["achieve_30_days", "next_30_days"]);
-      const qGuidance = findQuestion(["personalized_guidance"]);
+      const qGoal = findQuestion(["learning_goal", "primary_goal", "learning_goals_1_primary"]);
+      const qAchieve = findQuestion(["achieve_30_days", "next_30_days", "learning_goals_2_30days"]);
+      const qGuidance = findQuestion(["personalized_guidance", "learning_goals_3_personalized"]);
 
       // 4. Usage & Preferences
-      const qTime = findQuestion(["daily_time", "dedicate_time"]);
-      const qPractice = findQuestion(["practice_time"]);
-      const qStreak = findQuestion(["streak_challenge"]);
+      const qTime = findQuestion(["daily_time", "dedicate_time", "preferences_1_daily_time"]);
+      const qPractice = findQuestion(["practice_time", "preferences_2_when_practice"]);
+      const qStreak = findQuestion(["streak_challenge", "preferences_3_streak_challenge"]);
 
       // 5. Speaking & Confidence
-      const qComfort = findQuestion(["comfort_speaking"]);
-      const qCorrect = findQuestion(["ai_correction", "correct_method"]);
+      const qComfort = findQuestion(["comfort_speaking", "speaking_1_comfort"]);
+      const qCorrect = findQuestion([
+        "ai_correction",
+        "correct_method",
+        "speaking_2_feedback_style",
+      ]);
 
       // 6. Motivation & Challenges
-      const qMotiv = findQuestion(["motivation"]);
-      const qStops = findQuestion(["challenges", "stops_practice"]);
+      const qMotiv = findQuestion(["motivation", "motivation_1_what_motivates"]);
+      const qStops = findQuestion(["challenges", "stops_practice", "motivation_2_challenges"]);
 
       // 7. Learning Path Setup
-      const qFocus = findQuestion(["focus_track"]);
-      const qDailyGoal = findQuestion(["daily_learning_goal"]);
+      const qFocus = findQuestion(["focus_track", "path_setup_1_track"]);
+      const qDailyGoal = findQuestion(["daily_learning_goal", "path_setup_2_daily_goal"]);
 
       // Update questionIds with fallbacks based on textPhrase match to guarantee we have their database IDs
       const mergeId = (key: string, qObj: any) => {
@@ -338,11 +353,10 @@ export function EditProfileScreen() {
           learning_goal: primaryGoal || undefined,
         };
         await patch(patchPayload).unwrap();
-      } catch (err) {
+      } catch {
         // Silently skip if auth patch fails but users/profile PUT completes
       }
 
-      Alert.alert("Success", "Profile updated successfully!");
       setMode("view");
       refetch();
     } catch (err) {
@@ -350,12 +364,18 @@ export function EditProfileScreen() {
     }
   };
 
-  if (answersLoading) {
+  if (is404Error) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
-      </SafeAreaView>
+      <ErrorMascot
+        title="Profile Not Found"
+        message="The personal profile or details you are looking for could not be found. Please try again later or contact support."
+        showBackButton
+      />
     );
+  }
+
+  if (answersLoading) {
+    return <GamifiedMascotLoader title="Loading Profile..." />;
   }
 
   // Multi-select helpers
