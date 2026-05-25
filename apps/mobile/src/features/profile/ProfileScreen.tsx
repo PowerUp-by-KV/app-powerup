@@ -48,6 +48,11 @@ export function ProfileScreen() {
       onPress: () => router.push("/profile/edit" as never),
     },
     {
+      icon: "file-text" as const,
+      label: "My Resume",
+      onPress: () => router.push("/profile/resume" as never),
+    },
+    {
       icon: "globe" as const,
       label: "Language",
       onPress: () => router.push("/profile/language" as never),

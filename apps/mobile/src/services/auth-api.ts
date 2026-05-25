@@ -103,12 +103,12 @@ export const authApi = api.injectEndpoints({
     }),
 
     getProfile: builder.query<UserProfile, void>({
-      query: () => "/v1/auth/me",
+      query: () => "/v1/users/profile",
       providesTags: ["Auth"],
     }),
 
     patchProfile: builder.mutation<UserProfile, UserUpdate>({
-      query: (body) => ({ url: "/v1/auth/me", method: "PATCH", body }),
+      query: (body) => ({ url: "/v1/users/profile", method: "PUT", body }),
       invalidatesTags: ["Auth"],
     }),
   }),

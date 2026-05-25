@@ -6,6 +6,7 @@ import {
   getPreAssessmentCompletedInSession,
   setPreAssessmentCompletedInSession,
 } from "@/services/auth-storage";
+import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 export type GateReason = "onboarding" | "assessment" | null;
 
@@ -17,6 +18,9 @@ export interface LearningJourneyGate {
 
 export function useLearningJourneyGate(): LearningJourneyGate {
   const { data: profile, isLoading } = useGetProfileQuery();
+  const { data: onboardingStatus } = useGetOnboardingStatusQuery(profile?.id ?? "", {
+    skip: !profile?.id,
+  });
   const [localDone, setLocalDone] = useState<boolean | null>(null);
   const [localPreAssessmentDone, setLocalPreAssessmentDone] = useState<boolean | null>(null);
 
@@ -48,9 +52,12 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     return { ready: false, canEnter: false, blockedReason: null };
   }
 
-  // Use || (not ??) so the local flag compensates when the backend flag is
+  // Use || so the local flag compensates when the backend flag is
   // false due to propagation lag or the flag not being set on this device yet.
-  const profileDone = (profile?.profile_completed ?? false) || localDone;
+  const profileDone =
+    (onboardingStatus?.profile_completed ?? false) ||
+    (profile?.profile_completed ?? false) ||
+    localDone;
 
   // A user has completed pre-assessment if:
   // - They explicitly have a local/session pre-assessment completed flag OR
