@@ -12,4 +12,5 @@ export interface SafeFlatListProps<T> {
   renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
   className?: string;
   ref?: React.Ref<FlatList<T>> | any;
+  onContentSizeChange?: (w: number, h: number) => void;
 }

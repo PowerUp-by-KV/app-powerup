@@ -27,7 +27,7 @@ export function InterviewHistoryScreen() {
   const handleStartInterview = useCallback(() => {
     // Navigate to the interview/mock interview start screen
     // Adjust route path to match your app's routing
-    router.push("/quiz");
+    router.push("/mock-interview" as never);
   }, [router]);
 
   const handleViewSession = useCallback(
