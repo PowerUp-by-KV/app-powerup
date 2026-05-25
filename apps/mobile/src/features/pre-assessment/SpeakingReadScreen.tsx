@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
@@ -24,6 +23,9 @@ import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
+import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
+import { OfflineGameView } from "@/components/OfflineGameView";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
@@ -102,11 +104,11 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
+  const comp = String(currentQuestion?.complexity || "")
+    .toLowerCase()
+    .trim();
   const maxDuration =
-    currentQuestion?.recording_time_seconds ||
-    (currentQuestion?.complexity === "Advanced" || currentQuestion?.complexity === "Difficult"
-      ? 30
-      : 15);
+    currentQuestion?.recording_time_seconds || (comp === "easy" || comp === "medium" ? 15 : 30);
 
   // Initialize and reset timer for each question
   useEffect(() => {
@@ -209,8 +211,12 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch(() => {
-            // Background upload failure handler
+          .catch((err) => {
+            Alert.alert(
+              "Upload Failed",
+              "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
+            );
+            setHasRecorded((prev) => ({ ...prev, [qId]: false }));
           })
           .finally(() => {
             setUploadingQuestions((prev) => ({ ...prev, [qId]: false }));
@@ -241,20 +247,37 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-bold text-slate-800 text-center mb-2">
-          Connection Timeout
-        </Text>
-        <Text className="text-sm text-slate-500 text-center mb-6">
-          Could not load speaking sentences due to network delay. Please try again.
-        </Text>
-        <TouchableOpacity
-          onPress={() => refetch()}
-          className="bg-indigo-600 px-6 py-3 rounded-xl shadow-sm"
-        >
-          <Text className="text-white font-semibold">Retry Loading Questions</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <View className="flex-1 w-full items-center justify-center p-6">
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <LottieView
+              source={require("../../../assets/mascot/Error 404.lottie")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140, marginBottom: 12 }}
+            />
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Connection Timeout
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-4 text-center">
+              Could not load speaking sentences due to network delay. Please try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3 mt-2">
+              <TouchableOpacity
+                onPress={() => refetch()}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -271,10 +294,34 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   }
 
   const handleFinish = async () => {
+    const qId = currentQuestion?.id;
+    if (uploadingQuestions[qId]) {
+      Alert.alert("Uploading Audio", "Please wait for your last audio upload to complete.");
+      return;
+    }
+    if (!answers[qId]) {
+      Alert.alert(
+        "Upload Error",
+        "Last audio upload failed. Please tap 'Retake' and record again.",
+      );
+      return;
+    }
+
+    // Verify all questions have an answer
+    const missingAny = questions.some((q) => !answers[q.id]);
+    if (missingAny) {
+      Alert.alert(
+        "Incomplete Answers",
+        "Some of your recordings were not uploaded successfully. Please review and record them again.",
+      );
+      return;
+    }
+
     setIsFinished(true);
     try {
-      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
-        question_id: qId,
+      const formattedAnswers = Object.entries(answers).map(([qid, val]) => ({
+        question_id: qid,
+        answer: val,
         audio_url: val,
       }));
 
@@ -301,6 +348,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
+      setIsFinished(false);
       const msg = err?.data?.message || err?.message || "Could not submit answers.";
       Alert.alert("Submission Failed", msg);
     }
@@ -311,8 +359,19 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       await stopRecording();
     }
 
-    if (!hasRecorded[currentQuestion?.id]) {
+    const qId = currentQuestion?.id;
+    if (!hasRecorded[qId]) {
       Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      return;
+    }
+
+    if (uploadingQuestions[qId]) {
+      Alert.alert("Uploading Audio", "Please wait for your audio upload to complete.");
+      return;
+    }
+
+    if (!answers[qId]) {
+      Alert.alert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 
@@ -394,50 +453,24 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-          <View style={styles.card}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.title}>Submitting Answers…</Text>
-            <Text style={styles.subtitle}>Please wait, do not close the app</Text>
+        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
+          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
+            <LottieView
+              source={require("../../../assets/mascot/Dino Loading.json")}
+              autoPlay
+              loop
+              style={{ width: 40, height: 40 }}
+            />
+            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
+            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+              Please wait, do not close the app
+            </Text>
           </View>
         </View>
       )}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 36,
-    paddingHorizontal: 40,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    minWidth: 240,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginTop: 18,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#64748b",
-    marginTop: 6,
-    textAlign: "center",
-  },
-});
 
 interface SpeakingReadScreenProps {
   sessionId?: string;

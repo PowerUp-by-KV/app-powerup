@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ActivityIndicator, SafeAreaView, Text, View, Animated } from "react-native";
-import { RiveMascot } from "@/components/RiveMascot";
+import LottieView from "lottie-react-native";
 
 const ONBOARDING_TIPS = [
   "A complete profile helps your AI coach personalize your journey.",
@@ -65,9 +65,13 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
         }}
         className="items-center justify-center p-4"
       >
-        {/* Animated Funny Mascot (Exactly like GamifiedMascotLoader) */}
-        {/* Note: The internal color of this Rive animation cannot be natively changed without a new .riv file */}
-        <RiveMascot width={220} height={220} />
+        {/* Animated Dino Mascot Loader */}
+        <LottieView
+          source={require("../../../../assets/mascot/Cute Robot Flying Cartoon.json")}
+          autoPlay
+          loop
+          style={{ width: 220, height: 220 }}
+        />
 
         {/* Loading Indicator & Title */}
         <View className="flex-row items-center justify-center mt-8 mb-2">

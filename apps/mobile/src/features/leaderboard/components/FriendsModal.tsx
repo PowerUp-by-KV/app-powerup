@@ -22,15 +22,7 @@ import {
   type FriendRow,
   type SearchResult,
 } from "@/services/social-api";
-
-interface SafeFlatListProps<T> {
-  data: T[];
-  keyExtractor: (item: T, index: number) => string;
-  contentContainerStyle?: any;
-  ListEmptyComponent?: React.ReactNode;
-  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
-  className?: string;
-}
+import { SafeFlatListProps } from "@/types";
 
 const RequestFlatList = FlatList as unknown as React.ComponentType<
   SafeFlatListProps<FriendRequest>

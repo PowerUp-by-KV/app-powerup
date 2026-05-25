@@ -43,7 +43,7 @@ export function SplashScreen() {
       <View style={{ width: "100%", maxWidth: 360, alignItems: "center" }}>
         {/* Animated Mascot wrapped in a floating container for extra polish */}
         <Animated.View style={{ transform: [{ translateY: floatAnim }], marginBottom: 16 }}>
-          <SplashMascot width={220} height={220} />
+          <SplashMascot width={280} height={220} />
         </Animated.View>
 
         {/* Title */}

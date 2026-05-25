@@ -19,8 +19,15 @@ import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api
 import {
   useGetProfileOnboardingAnswersQuery,
   useUpdateProfileOnboardingAnswersMutation,
+  useGetGroupedQuestionsQuery,
+  useSubmitOnboardingMutation,
+  useGetProfileResumeQuery,
+  useUpdateProfileResumeMutation,
 } from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { ErrorMascot } from "@/components";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { getLocalOnboardingAnswers, saveLocalOnboardingAnswers } from "@/services/auth-storage";
 
 // Helper to parse multi-select answers
 const parseMultiSelect = (text: string): string[] => {
@@ -28,7 +35,7 @@ const parseMultiSelect = (text: string): string[] => {
   try {
     const parsed = JSON.parse(text);
     if (Array.isArray(parsed)) return parsed;
-  } catch (e) {}
+  } catch {}
   return text
     .split(",")
     .map((s) => s.trim())
@@ -37,22 +44,74 @@ const parseMultiSelect = (text: string): string[] => {
 
 export function EditProfileScreen() {
   const safeBack = useSafeBack();
-  const { data: profile } = useGetProfileQuery();
-  const [patch] = usePatchProfileMutation();
+  const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
+  const [patch, { isLoading: isPatchSaving }] = usePatchProfileMutation();
+
+  const { data: groupedQuestions } = useGetGroupedQuestionsQuery();
+  const [localAnswers, setLocalAnswers] = useState<any>(null);
+
+  useEffect(() => {
+    getLocalOnboardingAnswers().then((ans) => {
+      if (ans) {
+        setLocalAnswers(ans);
+      }
+    });
+  }, []);
 
   // Fetch onboarding profile answers from GET /api/v1/users/profile
   const {
     data: onboardingAnswers,
     isLoading: answersLoading,
     refetch,
+    error: answersError,
   } = useGetProfileOnboardingAnswersQuery(undefined, {
     refetchOnMountOrArgChange: true,
   });
-  const [updateProfileOnboardingAnswers, { isLoading: isSaving }] =
+  const [updateProfileOnboardingAnswers, { isLoading: isOnboardingSaving }] =
     useUpdateProfileOnboardingAnswersMutation();
+  const [submitOnboarding] = useSubmitOnboardingMutation();
+
+  const is404Error =
+    (profileError && "status" in profileError && profileError.status === 404) ||
+    (answersError && "status" in answersError && answersError.status === 404);
 
   // Mode state: 'view' or 'edit'
   const [mode, setMode] = useState<"view" | "edit">("view");
+
+  // Resume Hooks & States
+  const { data: resumeData, refetch: refetchResume } = useGetProfileResumeQuery();
+  const [updateProfileResume, { isLoading: isResumeSaving }] = useUpdateProfileResumeMutation();
+
+  const isSaving = isOnboardingSaving || isResumeSaving || isPatchSaving;
+
+  const [resumeSummary, setResumeSummary] = useState("");
+  const [resumeSkills, setResumeSkills] = useState("");
+  const [resumeExperienceText, setResumeExperienceText] = useState("");
+  const [resumeProjectsText, setResumeProjectsText] = useState("");
+
+  useEffect(() => {
+    if (resumeData) {
+      setResumeSummary(resumeData.summary?.text || "");
+
+      const skillsArr = resumeData.skills || [];
+      const skillsStr = skillsArr
+        .map((s: any) => (typeof s === "string" ? s : s.name || ""))
+        .join(", ");
+      setResumeSkills(skillsStr);
+
+      const expArr = resumeData.experience || [];
+      const expStr = expArr
+        .map(
+          (exp: any) => `${exp.company} - ${exp.position || exp.title}\n${exp.description || ""}`,
+        )
+        .join("\n\n");
+      setResumeExperienceText(expStr);
+
+      const projArr = resumeData.projects || [];
+      const projStr = projArr.map((p: any) => `${p.name}\n${p.description || ""}`).join("\n\n");
+      setResumeProjectsText(projStr);
+    }
+  }, [resumeData]);
 
   // State mapping for all 22 questions
   const [name, setName] = useState("");
@@ -87,9 +146,16 @@ export function EditProfileScreen() {
   const [questionIds, setQuestionIds] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (onboardingAnswers) {
-      const data = onboardingAnswers;
-      const allQuestionsWithAnswers = Object.values(data).flat() as any[];
+    // 1. Choose the best template source (localAnswers > groupedQuestions > onboardingAnswers)
+    let templateSource = localAnswers || groupedQuestions;
+    if (!templateSource && onboardingAnswers && !onboardingAnswers.id) {
+      templateSource = onboardingAnswers;
+    }
+
+    if (templateSource || profile || onboardingAnswers) {
+      const allQuestionsWithAnswers = templateSource
+        ? (Object.values(templateSource).flat() as any[]).filter((q) => q && typeof q === "object")
+        : [];
 
       // Populate dynamic question mapping and a lookup by question_key (lowercased)
       // so findQuestion is O(1) per key instead of O(n) per field.
@@ -103,8 +169,8 @@ export function EditProfileScreen() {
           byKey.set(String(q.question_key).toLowerCase(), q);
         }
       });
-      setQuestionIds(idsMap);
 
+      // Robust lookup function
       const findQuestion = (keys: string[]) => {
         for (const k of keys) {
           const found = byKey.get(k.toLowerCase());
@@ -113,40 +179,41 @@ export function EditProfileScreen() {
         return undefined;
       };
 
-      // 1. Basic Profile
-      const qName = findQuestion(["name", "full_name"]);
-      const qEducation = findQuestion(["education", "profession"]);
-      const qYear = findQuestion(["study_year", "year_of_study"]);
-      const qBranch = findQuestion(["engineering_branch", "branch"]);
-      const qDob = findQuestion(["dob", "date_of_birth"]);
-      const qCountry = findQuestion(["country"]);
-      const qLang = findQuestion(["native_language"]);
+      const qName = findQuestion(["name", "full_name", "basic_profile_1_name"]);
+      const qEducation = findQuestion(["education", "profession", "basic_profile_2_education"]);
+      const qYear = findQuestion(["study_year", "year_of_study", "basic_profile_3_year"]);
+      const qBranch = findQuestion(["engineering_branch", "branch", "basic_profile_4_branch"]);
+      const qDob = findQuestion(["dob", "date_of_birth", "basic_profile_5_dob"]);
+      const qCountry = findQuestion(["country", "basic_profile_6_country"]);
+      const qLang = findQuestion(["native_language", "basic_profile_7_language"]);
 
-      // 2. English Level
-      const qProf = findQuestion(["proficiency", "english_proficiency"]);
-      const qSkills = findQuestion(["challenging_skills"]);
+      const qProf = findQuestion([
+        "proficiency",
+        "english_proficiency",
+        "english_level_1_proficiency",
+      ]);
+      const qSkills = findQuestion(["challenging_skills", "english_level_2_challenges"]);
 
-      // 3. Learning Goals
-      const qGoal = findQuestion(["learning_goal", "primary_goal"]);
-      const qAchieve = findQuestion(["achieve_30_days", "next_30_days"]);
-      const qGuidance = findQuestion(["personalized_guidance"]);
+      const qGoal = findQuestion(["learning_goal", "primary_goal", "learning_goals_1_primary"]);
+      const qAchieve = findQuestion(["achieve_30_days", "next_30_days", "learning_goals_2_30days"]);
+      const qGuidance = findQuestion(["personalized_guidance", "learning_goals_3_personalized"]);
 
-      // 4. Usage & Preferences
-      const qTime = findQuestion(["daily_time", "dedicate_time"]);
-      const qPractice = findQuestion(["practice_time"]);
-      const qStreak = findQuestion(["streak_challenge"]);
+      const qTime = findQuestion(["daily_time", "dedicate_time", "preferences_1_daily_time"]);
+      const qPractice = findQuestion(["practice_time", "preferences_2_when_practice"]);
+      const qStreak = findQuestion(["streak_challenge", "preferences_3_streak_challenge"]);
 
-      // 5. Speaking & Confidence
-      const qComfort = findQuestion(["comfort_speaking"]);
-      const qCorrect = findQuestion(["ai_correction", "correct_method"]);
+      const qComfort = findQuestion(["comfort_speaking", "speaking_1_comfort"]);
+      const qCorrect = findQuestion([
+        "ai_correction",
+        "correct_method",
+        "speaking_2_feedback_style",
+      ]);
 
-      // 6. Motivation & Challenges
-      const qMotiv = findQuestion(["motivation"]);
-      const qStops = findQuestion(["challenges", "stops_practice"]);
+      const qMotiv = findQuestion(["motivation", "motivation_1_what_motivates"]);
+      const qStops = findQuestion(["challenges", "stops_practice", "motivation_2_challenges"]);
 
-      // 7. Learning Path Setup
-      const qFocus = findQuestion(["focus_track"]);
-      const qDailyGoal = findQuestion(["daily_learning_goal"]);
+      const qFocus = findQuestion(["focus_track", "path_setup_1_track"]);
+      const qDailyGoal = findQuestion(["daily_learning_goal", "path_setup_2_daily_goal"]);
 
       // Update questionIds with fallbacks based on textPhrase match to guarantee we have their database IDs
       const mergeId = (key: string, qObj: any) => {
@@ -178,18 +245,21 @@ export function EditProfileScreen() {
       setQuestionIds(idsMap);
 
       // Populate state values
-      setName(qName?.answer_text || "");
+      // Standardize values with fallbacks to backend profile properties
+      setName(qName?.answer_text || profile?.name || onboardingAnswers?.name || "");
       setEducation(qEducation?.answer_text || "");
       setYearOfStudy(qYear?.answer_text || "");
       setBranch(qBranch?.answer_text || "");
       setDob(qDob?.answer_text || "");
-      setCountry(qCountry?.answer_text || "");
+      setCountry(qCountry?.answer_text || profile?.country || onboardingAnswers?.country || "");
       setNativeLanguage(qLang?.answer_text || "");
 
       setEnglishProficiency(qProf?.answer_text || "");
       setChallengingSkills(parseMultiSelect(qSkills?.answer_text || ""));
 
-      setPrimaryGoal(qGoal?.answer_text || "");
+      setPrimaryGoal(
+        qGoal?.answer_text || profile?.learning_goal || onboardingAnswers?.learning_goal || "",
+      );
       setAchieve30Days(qAchieve?.answer_text || "");
       setGuidanceAreas(parseMultiSelect(qGuidance?.answer_text || ""));
 
@@ -204,9 +274,14 @@ export function EditProfileScreen() {
       setStopsPractice(parseMultiSelect(qStops?.answer_text || ""));
 
       setFocusTrack(qFocus?.answer_text || "");
-      setDailyLearningGoal(qDailyGoal?.answer_text || "");
+      setDailyLearningGoal(
+        qDailyGoal?.answer_text ||
+          profile?.learning_frequency ||
+          onboardingAnswers?.learning_frequency ||
+          "",
+      );
     }
-  }, [onboardingAnswers]);
+  }, [localAnswers, groupedQuestions, onboardingAnswers, profile]);
 
   // Options lists
   const EDUCATION_OPTIONS = ["Engineering Student", "Working Professional", "Job Seeker", "Others"];
@@ -331,37 +406,160 @@ export function EditProfileScreen() {
         answers: answersList,
       };
 
-      // Update backend using PUT users/profile matching the OpenAPI schema
+      // 1. Update the onboarding answers in the backend via PUT /api/v1/users/profile
       await updateProfileOnboardingAnswers(payload).unwrap();
 
-      // Dispatch local profile patch to keep global user state perfectly in sync
+      // 2. Also update the local onboarding answers copy in SecureStore
+      try {
+        const currentLocal = (await getLocalOnboardingAnswers()) || groupedQuestions;
+        if (currentLocal) {
+          const updatedLocal: Record<string, any[]> = {};
+          Object.entries(currentLocal).forEach(([sectionName, questionsList]) => {
+            updatedLocal[sectionName] = (questionsList as any[]).map((q) => {
+              const matchingNew = answersList.find((ans) => ans.question_id === q.id);
+              if (matchingNew) {
+                return {
+                  ...q,
+                  answer_text: matchingNew.answer_text,
+                };
+              }
+              return q;
+            });
+          });
+          await saveLocalOnboardingAnswers(updatedLocal);
+          setLocalAnswers(updatedLocal);
+        }
+      } catch (localSaveErr) {
+        console.warn("Failed to update local onboarding answers copy:", localSaveErr);
+      }
+
+      // 3. Update standard profile properties on the backend via PUT /api/v1/users/profile
       try {
         const patchPayload = {
-          name,
-          phone_number: profile?.phone_number || undefined,
-          country: country || undefined,
+          name: name || undefined,
+          phone_number:
+            profile?.phone_number &&
+            profile.phone_number.length >= 10 &&
+            profile.phone_number.length <= 20
+              ? profile.phone_number
+              : undefined,
+          country: country && country.length === 2 ? country : undefined,
           gender: profile?.gender || undefined,
           learning_goal: primaryGoal || undefined,
+          learning_frequency: dailyLearningGoal || undefined,
         };
         await patch(patchPayload).unwrap();
       } catch (err) {
-        // Silently skip if auth patch fails but users/profile PUT completes
+        console.warn("Failed to update users/profile PUT:", err);
       }
 
-      Alert.alert("Success", "Profile updated successfully!");
+      // 4. Update standard profile resume on the backend via PUT /api/v1/users/profile/resume
+      try {
+        if (resumeData) {
+          const parsedExperience = resumeExperienceText
+            .split("\n\n")
+            .filter(Boolean)
+            .map((chunk) => {
+              const lines = chunk.split("\n");
+              const header = lines[0] || "";
+              const [company = "Company", title = "Role"] = header.split(" - ");
+              const description = lines.slice(1).join("\n");
+              return {
+                company: company.trim(),
+                title: title.trim(),
+                description: description.trim(),
+                start_date: null,
+                end_date: null,
+                highlights: [],
+                technologies: [],
+              };
+            });
+
+          const parsedProjects = resumeProjectsText
+            .split("\n\n")
+            .filter(Boolean)
+            .map((chunk) => {
+              const lines = chunk.split("\n");
+              const name = lines[0] || "Project";
+              const description = lines.slice(1).join("\n");
+              return {
+                name: name.trim(),
+                description: description.trim(),
+                technologies: [],
+              };
+            });
+
+          const updatedParsedData = {
+            contact: resumeData.contact || {},
+            summary: resumeSummary,
+            skills: resumeSkills
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean),
+            education: resumeData.education || [],
+            experience: parsedExperience,
+            projects: parsedProjects,
+            certifications: resumeData.certifications || [],
+          };
+          try {
+            await updateProfileResume({ parsed_data: updatedParsedData }).unwrap();
+          } catch (resumeErr: any) {
+            if (
+              resumeErr?.status === 504 ||
+              resumeErr?.status === "TIMEOUT" ||
+              String(resumeErr?.message).includes("504")
+            ) {
+              Alert.alert(
+                "Processing Resume",
+                "Your resume is being updated and compiled in the background. It will reflect on your profile shortly!",
+              );
+            } else {
+              console.warn("Resume update error:", resumeErr);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to update profile resume PUT:", err);
+      }
+
       setMode("view");
       refetch();
+      refetchResume();
     } catch (err) {
       Alert.alert("Save failed", getApiErrorMessage(err, "Could not save your profile."));
     }
   };
 
-  if (answersLoading) {
+  const handleRetry = () => {
+    refetchProfile();
+    refetch();
+    refetchResume();
+  };
+
+  if (is404Error) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#6366f1" />
-      </SafeAreaView>
+      <ErrorMascot
+        title="Profile Not Found"
+        message="The personal profile or details you are looking for could not be found. Please try again later or contact support."
+        showBackButton
+        onRetry={handleRetry}
+      />
     );
+  }
+
+  if (profileError || answersError) {
+    return (
+      <ErrorMascot
+        title="Connection Timeout"
+        message="We had trouble reaching our servers. Please check your internet connection and try again."
+        showBackButton
+        onRetry={handleRetry}
+      />
+    );
+  }
+
+  if (answersLoading) {
+    return <GamifiedMascotLoader title="Loading Profile..." />;
   }
 
   // Multi-select helpers
@@ -555,6 +753,53 @@ export function EditProfileScreen() {
                   <DetailRow label="Daily Learning Goal" value={dailyLearningGoal} />
                 </View>
               </View>
+
+              {/* 8. Resume Details Card */}
+              {resumeData && (
+                <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                  <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+                    <Feather name="file-text" size={18} color="#4f46e5" />
+                    <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
+                      Resume Details
+                    </Text>
+                  </View>
+                  <View className="gap-3">
+                    {resumeSummary ? (
+                      <DetailRow label="Professional Summary" value={resumeSummary} />
+                    ) : null}
+                    {resumeSkills ? (
+                      <DetailChipsRow
+                        label="Key Skills"
+                        values={resumeSkills
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean)}
+                        color="indigo"
+                      />
+                    ) : null}
+                    {resumeExperienceText ? (
+                      <View className="gap-1 mt-2">
+                        <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">
+                          Experience
+                        </Text>
+                        <Text className="text-slate-900 text-sm leading-relaxed whitespace-pre-line">
+                          {resumeExperienceText}
+                        </Text>
+                      </View>
+                    ) : null}
+                    {resumeProjectsText ? (
+                      <View className="gap-1 mt-2">
+                        <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">
+                          Projects
+                        </Text>
+                        <Text className="text-slate-900 text-sm leading-relaxed whitespace-pre-line">
+                          {resumeProjectsText}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -790,6 +1035,49 @@ export function EditProfileScreen() {
                   />
                 </View>
               </View>
+
+              {/* 8. Resume Details Fields */}
+              {resumeData && (
+                <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                  <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                    <Feather name="file-text" size={18} color="#4f46e5" />
+                    <Text className="text-indigo-600 font-bold text-sm uppercase tracking-wider">
+                      Resume Details
+                    </Text>
+                  </View>
+
+                  <View className="gap-4">
+                    <InputField
+                      label="Professional Summary"
+                      value={resumeSummary}
+                      onChange={setResumeSummary}
+                      multiline
+                    />
+
+                    <InputField
+                      label="Key Skills (comma-separated)"
+                      value={resumeSkills}
+                      onChange={setResumeSkills}
+                    />
+
+                    <InputField
+                      label="Experience (Format: Company - Role on line 1, followed by Description)"
+                      value={resumeExperienceText}
+                      onChange={setResumeExperienceText}
+                      multiline
+                      placeholder={`Google - Software Engineer\nDeveloped awesome web applications.\n\nMeta - Frontend Lead\nBuilt user interfaces.`}
+                    />
+
+                    <InputField
+                      label="Projects (Format: Project Name on line 1, followed by Description)"
+                      value={resumeProjectsText}
+                      onChange={setResumeProjectsText}
+                      multiline
+                      placeholder={`E-commerce Website\nDeveloped full-stack shopping app.\n\nPersonal Blog\nBuilt a beautiful static blog website.`}
+                    />
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>

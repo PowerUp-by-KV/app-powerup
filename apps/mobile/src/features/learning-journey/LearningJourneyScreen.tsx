@@ -10,9 +10,11 @@ import {
   View,
   StyleSheet,
   Animated,
+  Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import {
@@ -21,8 +23,18 @@ import {
   useGetModuleProgressQuery,
   useGetPersonalizedPathQuery,
 } from "@/services/module-api";
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
-import { saveAssessmentSessionId, getPreAssessmentResults } from "@/services/auth-storage";
+import {
+  useStartSessionMutation,
+  getNextRouteForSection,
+  useGetAssessmentResultQuery,
+} from "@/services/assessment-api";
+import {
+  saveAssessmentSessionId,
+  getPreAssessmentResults,
+  getAssessmentSessionId,
+  getCompletedSections,
+  syncCompletedSections,
+} from "@/services/auth-storage";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
@@ -37,6 +49,16 @@ interface PreAssessmentModalProps {
   cefrRange?: string | null;
   results?: any | null;
 }
+
+// CEFR Score Mapping Constants
+const DEFAULT_CEFR_PERCENTAGE = 83.33;
+const DEFAULT_OBTAINED_POINTS = 100;
+const DEFAULT_MAX_POINTS = 120;
+const MAX_CEFR_SCALE = 6;
+const DEFAULT_WRITING_PERCENTAGE = 66.67;
+const DEFAULT_SPEAKING_PERCENTAGE = 100.0;
+const SCORE_SCALE_CONVERSION = 100;
+const SCORE_AVERAGING_DIVISOR = 2;
 
 function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessmentModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -80,32 +102,32 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   if (!visible) return null;
 
   // Dynamically calculate the displayed scores or fallback gracefully to pre-designed dummy/standard defaults
-  const percentage = results?.percentage ?? 83.33; // Default 5.0 of 6 = 83.33%
-  const obtainedPoints = Math.round(results?.total_score ?? 100);
-  const totalPoints = Math.round(results?.max_score ?? 120);
-  const formattedOverall = `${((percentage / 100) * 6).toFixed(1)} of 6`;
+  const percentage = results?.percentage ?? DEFAULT_CEFR_PERCENTAGE;
+  const obtainedPoints = Math.round(results?.total_score ?? DEFAULT_OBTAINED_POINTS);
+  const totalPoints = Math.round(results?.max_score ?? DEFAULT_MAX_POINTS);
+  const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
   const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? "A1-A2";
 
-  // Reading Score: A_READING percentage mapped out of 6
-  const readingPct = results?.section_percentages?.["A_READING"] ?? 83.33;
-  const readingScoreText = `${((readingPct / 100) * 6).toFixed(1)} of 6`;
+  // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
+  const readingPct = results?.section_percentages?.["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of 6
-  const listen1 = results?.section_percentages?.["A_LISTEN"] ?? 83.33;
-  const listen2 = results?.section_percentages?.["D_LISTEN_ANSWER"] ?? 83.33;
-  const listenPct = (listen1 + listen2) / 2;
-  const listeningScoreText = `${((listenPct / 100) * 6).toFixed(1)} of 6`;
+  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
+  const listen1 = results?.section_percentages?.["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen2 = results?.section_percentages?.["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
+  const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Writing Score: C_GRAMMAR percentage mapped out of 6
-  const writingPct = results?.section_percentages?.["C_GRAMMAR"] ?? 66.67;
-  const writingScoreText = `${((writingPct / 100) * 6).toFixed(1)} of 6`;
+  // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
+  const writingPct = results?.section_percentages?.["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
+  const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of 6
-  const speak1 = results?.section_percentages?.["A_SPEAKING"] ?? 100.0;
-  const speak2 = results?.section_percentages?.["B_SPEAKING"] ?? 100.0;
-  const speakPct = (speak1 + speak2) / 2;
-  const speakingScoreText = `${((speakPct / 100) * 6).toFixed(1)} of 6`;
+  // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
+  const speak1 = results?.section_percentages?.["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak2 = results?.section_percentages?.["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
+  const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   return (
     <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
@@ -194,29 +216,80 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   );
 }
 
+const SECTIONS_ORDER = [
+  "A_READING",
+  "A_SPEAKING",
+  "A_LISTEN",
+  "B_SPEAKING",
+  "C_GRAMMAR",
+  "D_LISTEN_ANSWER",
+];
+
+function getNextIncompleteSection(completed: string[]): string {
+  for (const sec of SECTIONS_ORDER) {
+    if (!completed.includes(sec)) {
+      return sec;
+    }
+  }
+  return "A_READING";
+}
+
 function GateEmptyState({
   reason,
   onPrimary,
   isLoading = false,
+  completedSections = [],
 }: {
   reason: "onboarding" | "assessment";
   onPrimary: () => void;
   isLoading?: boolean;
+  completedSections?: string[];
 }) {
   const isOnboarding = reason === "onboarding";
+  const completedCount = completedSections.length;
+  const totalSections = 6;
+  const progressPct = Math.round((completedCount / totalSections) * 100);
+
   return (
-    <View className="flex-1 items-center justify-center px-8 py-16">
+    <View className="flex-1 items-center justify-center px-8 py-12">
       <View className="w-16 h-16 rounded-3xl bg-indigo-100 items-center justify-center mb-4">
         <Text className="text-3xl">{isOnboarding ? "📝" : "🎯"}</Text>
       </View>
       <Text className="text-slate-900 text-xl font-extrabold mb-2 text-center">
-        {isOnboarding ? "Complete your onboarding" : "Take your Diagnostic Assessment"}
+        {isOnboarding
+          ? "Complete your onboarding"
+          : completedCount > 0
+            ? "Resume your Diagnostic Assessment"
+            : "Take your Diagnostic Assessment"}
       </Text>
-      <Text className="text-slate-500 text-center mb-8">
+      <Text className="text-slate-500 text-center mb-6">
         {isOnboarding
           ? "Answer a few questions so we can build a learning path that fits you."
           : "We need to assess your skills before we can unlock your daily lessons."}
       </Text>
+
+      {!isOnboarding && completedCount > 0 && (
+        <View className="w-full max-w-sm bg-white border border-slate-200/80 rounded-2xl p-4 mb-8 shadow-sm">
+          <View className="flex-row justify-between items-center mb-2">
+            <Text className="text-slate-500 font-extrabold text-[10px] uppercase tracking-wider">
+              Assessment Progress
+            </Text>
+            <Text className="text-indigo-600 font-black text-xs">
+              {completedCount} of {totalSections} completed
+            </Text>
+          </View>
+          <View className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden mb-1">
+            <View
+              className="h-full bg-indigo-600 rounded-full"
+              style={{ width: `${progressPct}%` }}
+            />
+          </View>
+          <Text className="text-slate-400 font-bold text-[10px] text-right">
+            {progressPct}% Completed
+          </Text>
+        </View>
+      )}
+
       <Pressable
         onPress={onPrimary}
         disabled={isLoading}
@@ -226,7 +299,11 @@ function GateEmptyState({
           <ActivityIndicator color="white" />
         ) : (
           <Text className="text-white font-bold text-base">
-            {isOnboarding ? "Start onboarding" : "Start assessment"}
+            {isOnboarding
+              ? "Start onboarding"
+              : completedCount > 0
+                ? "Resume assessment"
+                : "Start assessment"}
           </Text>
         )}
       </Pressable>
@@ -236,6 +313,7 @@ function GateEmptyState({
 
 export function LearningJourneyScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ module_id?: string }>();
   const gate = useLearningJourneyGate();
 
   // Navigation state management:
@@ -244,16 +322,40 @@ export function LearningJourneyScreen() {
   // - Level 3: selectedModuleId !== null (Days list view)
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [showModules, setShowModules] = useState(false);
-  const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
-  const [preAssessmentResults, setPreAssessmentResults] = useState<any | null>(null);
 
   useEffect(() => {
+    if (params?.module_id) {
+      setSelectedModuleId(params.module_id);
+      setShowModules(true);
+    }
+  }, [params?.module_id]);
+  const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
+  const [preAssessmentResults, setPreAssessmentResults] = useState<any | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  useEffect(() => {
+    getAssessmentSessionId().then((id) => {
+      if (id) setActiveSessionId(id);
+    });
+
     getPreAssessmentResults().then((res) => {
       if (res) {
         setPreAssessmentResults(res);
       }
     });
+
+    getCompletedSections().then((sections) => {
+      if (sections) setCompletedSections(sections);
+    });
   }, [showPreAssessmentModal]);
+
+  const { data: liveResult } = useGetAssessmentResultQuery(
+    { session_id: activeSessionId || "" },
+    { skip: !activeSessionId || !gate.canEnter },
+  );
+
+  const resultsToPass = liveResult || preAssessmentResults;
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
@@ -344,36 +446,46 @@ export function LearningJourneyScreen() {
         style={{
           flex: 1,
           backgroundColor: "#f8fafc",
-          justifyContent: "center",
-          alignItems: "center",
         }}
-        className="p-6"
       >
-        <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-          <View className="w-16 h-16 rounded-2xl bg-rose-50 items-center justify-center mb-6">
-            <Feather name="wifi-off" size={28} color="#e11d48" />
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <LottieView
+              source={require("../../../assets/mascot/Error 404.lottie")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140, marginBottom: 12 }}
+            />
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Server Connection Lost
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center px-2">
+              We couldn't connect to the learning server. Please ensure the backend service is
+              running and try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3 mt-4">
+              <Pressable
+                onPress={handleRetry}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </Pressable>
+            </View>
           </View>
-
-          <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
-            Server Connection Lost
-          </Text>
-          <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
-            We couldn't connect to the learning server. Please ensure the backend service is running
-            and try again.
-          </Text>
-
-          {/* Inline Arcade Offline Game (Chrome Dino Style) */}
-          <OfflineGameView />
-
-          <View className="w-full gap-3">
-            <Pressable
-              onPress={handleRetry}
-              className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
-            >
-              <Text className="text-white font-extrabold text-sm">Try Again</Text>
-            </Pressable>
-          </View>
-        </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -400,6 +512,7 @@ export function LearningJourneyScreen() {
           </View>
           <GateEmptyState
             reason={gate.blockedReason}
+            completedSections={completedSections}
             onPrimary={async () => {
               if (gate.blockedReason === "onboarding") {
                 router.push("/onboarding");
@@ -407,11 +520,35 @@ export function LearningJourneyScreen() {
               }
               setIsStartingSession(true);
               try {
+                // Check if we already have an active assessment session in progress
+                const existingSessionId = await getAssessmentSessionId();
+                if (existingSessionId) {
+                  // Find the next chronological incomplete section
+                  const nextSec = getNextIncompleteSection(completedSections);
+                  const targetRoute = getNextRouteForSection(nextSec);
+                  router.push({ pathname: targetRoute, params: { session_id: existingSessionId } });
+                  return;
+                }
+
+                // If no active session, start a brand new assessment session
                 const session = await startSession().unwrap();
                 await saveAssessmentSessionId(session.session_id);
-                const firstRoute = getNextRouteForSection(session.first_section);
-                router.push({ pathname: firstRoute, params: { session_id: session.session_id } });
-              } catch {
+
+                // Reset completed sections to start a clean attempt
+                await syncCompletedSections([]);
+                setCompletedSections([]);
+
+                if (session.first_section) {
+                  const targetRoute = getNextRouteForSection(session.first_section);
+                  router.push({
+                    pathname: targetRoute,
+                    params: { session_id: session.session_id },
+                  });
+                } else {
+                  router.push({ pathname: "/read", params: { session_id: session.session_id } });
+                }
+              } catch (err: any) {
+                console.error("Start assessment session failed:", err);
                 Alert.alert("Error", "Could not start assessment. Please try again.");
               } finally {
                 setIsStartingSession(false);
@@ -434,7 +571,7 @@ export function LearningJourneyScreen() {
         visible={showPreAssessmentModal}
         onClose={() => setShowPreAssessmentModal(false)}
         cefrRange={profile?.cefr_range}
-        results={preAssessmentResults}
+        results={resultsToPass}
       />
 
       <ScrollView
@@ -726,9 +863,9 @@ const timelineStyles = StyleSheet.create({
   },
   timelineVerticalLine: {
     position: "absolute",
-    left: 42,
-    top: 48,
-    bottom: 48,
+    left: Platform.OS === "android" ? 18 : 42,
+    top: Platform.OS === "android" ? 18 : 42,
+    bottom: Platform.OS === "android" ? 18 : 42,
     width: 3,
     backgroundColor: "#cbd5e1",
     zIndex: 1,

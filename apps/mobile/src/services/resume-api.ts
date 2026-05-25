@@ -231,6 +231,23 @@ export const resumeApi = api.injectEndpoints({
         }
       },
     }),
+
+    getProfileResume: builder.query<ResumeRead, void>({
+      query: () => ({
+        url: "/v1/users/profile/resume",
+        method: "GET",
+      }),
+      providesTags: ["Resume"],
+    }),
+
+    updateProfileResume: builder.mutation<ResumeRead, { parsed_data: any }>({
+      query: (body) => ({
+        url: "/v1/users/profile/resume",
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["Resume"],
+    }),
   }),
   overrideExisting: true,
 });
@@ -273,4 +290,6 @@ export const {
   useGetResumeQuery,
   useUpdateResumeMutation,
   useDeleteResumeMutation,
+  useGetProfileResumeQuery,
+  useUpdateProfileResumeMutation,
 } = resumeApi;

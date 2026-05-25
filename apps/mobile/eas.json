@@ -11,22 +11,28 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:9000/api"
+        "EXPO_PUBLIC_API_URL": "http://localhost:9000/api",
+        "EXPO_USE_PNPM": "1"
       }
     },
     "preview": {
       "distribution": "internal",
       "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
       "node": "22.18.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
+        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
+        "EXPO_USE_PNPM": "1"
       }
     },
     "production": {
       "autoIncrement": true,
       "node": "22.18.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
+        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
+        "EXPO_USE_PNPM": "1"
       }
     }
   },
