@@ -1,7 +1,5 @@
 import { api } from "./api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export interface InterviewSession {
   id: string;
   status: "in_progress" | "completed" | "abandoned";
@@ -61,7 +59,25 @@ export interface InterviewResultResponse {
   grade: "Needs Practice" | "Good" | "Very Good" | "Excellent";
 }
 
-// ─── Mock Interview (Sequential) Endpoints ────────────────────────────────────
+export interface PracticeResponse {
+  response_id: string;
+  question_text: string;
+  user_answer: string;
+  audio_url?: string;
+  ai_feedback?: string;
+  score?: number;
+  created_at: string;
+}
+
+export interface PracticeSession {
+  session_id: string;
+  status: string;
+  created_at: string;
+  response_count: number;
+  responses: PracticeResponse[];
+}
+
+export type PracticeHistoryResponse = PracticeSession[];
 
 export const mockInterviewApi = api.injectEndpoints({
   endpoints: (builder) => ({
@@ -105,7 +121,16 @@ export const mockInterviewApi = api.injectEndpoints({
         method: "POST",
       }),
     }),
+
+    getPracticeHistory: builder.query<PracticeHistoryResponse, void>({
+      query: () => ({
+        url: "/v1/practice/history",
+        method: "GET",
+      }),
+      providesTags: ["PracticeHistory"],
+    }),
   }),
+  overrideExisting: false,
 });
 
 export const {
@@ -116,4 +141,7 @@ export const {
   useGetMockInterviewResultsQuery,
   useGetMockInterviewHistoryQuery,
   useAbandonMockInterviewMutation,
+  useGetPracticeHistoryQuery,
 } = mockInterviewApi;
+
+export const interviewApi = mockInterviewApi;

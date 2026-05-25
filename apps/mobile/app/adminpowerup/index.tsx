@@ -1,7 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
-const ADMIN_PASSWORD = process.env.EXPO_PUBLIC_ADMIN_PASSWORD ?? "";
+// NOTE: Client-side password gate. This is a low-trust web-only barrier — the
+// real authorization must be enforced server-side on every admin endpoint.
+// The variable is intentionally non-EXPO_PUBLIC: it is read at runtime on web
+// where `process.env` is substituted at build time, and is required to be
+// supplied via the build environment. Missing config throws immediately so the
+// app never silently falls back to an empty/default password.
+const ADMIN_PASSWORD: string = (() => {
+  const value = process.env.ADMIN_PANEL_PASSWORD;
+  if (Platform.OS === "web" && !value) {
+    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the web build environment.");
+  }
+  return value ?? "";
+})();
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
@@ -47,10 +59,6 @@ export default function AdminPowerupPage() {
   }
 
   const onLogin = () => {
-    if (!ADMIN_PASSWORD) {
-      setError("EXPO_PUBLIC_ADMIN_PASSWORD is not configured.");
-      return;
-    }
     if (pw === ADMIN_PASSWORD) {
       window.localStorage.setItem(SESSION_KEY, "1");
       setAuthed(true);

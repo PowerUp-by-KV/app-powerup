@@ -119,6 +119,7 @@ export const api = createApi({
     "Friends",
     "Subscription",
     "Avatars",
+    "PracticeHistory",
   ] as const,
   endpoints: () => ({}),
 });

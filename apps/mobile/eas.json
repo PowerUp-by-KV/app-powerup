@@ -21,6 +21,7 @@
       "android": {
         "buildType": "apk"
       },
+      "node": "22.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
         "EXPO_USE_PNPM": "1"
@@ -28,6 +29,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
         "EXPO_USE_PNPM": "1"

@@ -305,7 +305,11 @@ export default function OnboardingScreen() {
             const blob = await r.blob();
             fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
           } else {
-            fd.append("file", { uri: fileUri, name: fileName, type: "application/pdf" } as any);
+            // React Native FormData accepts an object with { uri, name, type }
+            // even though the standard DOM FormData type does not. Cast through
+            // unknown to a Blob shape so TypeScript is satisfied without `any`.
+            const rnFile = { uri: fileUri, name: fileName, type: "application/pdf" };
+            fd.append("file", rnFile as unknown as Blob, fileName);
           }
 
           const response = await fetch(uploadUrl, {
@@ -321,17 +325,19 @@ export default function OnboardingScreen() {
             body: fd,
           });
 
-          // 2xx = explicit success
-          // 5xx = backend server/parsing error — file was transmitted, treat as accepted
-          //        (500 = parser crash, 504 = AI timeout, 502/503 = gateway issues)
-          // 4xx = real client errors (wrong format, too large, unauthorized) — block
-          const isClientError = response.status >= 400 && response.status < 500;
-          if (isClientError) {
-            const errBody = await response.json().catch(() => ({ detail: "Upload rejected" }));
-            const msg = errBody?.detail || `Upload rejected (${response.status})`;
+          // Treat anything outside 2xx as a failure so the user gets explicit
+          // feedback. 4xx → format/size/auth errors the user must fix; 5xx →
+          // backend issue, surface so they can retry rather than silently
+          // continuing with an unprocessed resume.
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({ detail: "Upload failed" }));
+            const fallback =
+              response.status >= 500
+                ? `Server error (${response.status}). Please try again.`
+                : `Upload rejected (${response.status})`;
+            const msg = errBody?.detail || fallback;
             throw new Error(msg);
           }
-          // For 5xx: proceed with a console warning — the backend is the problem, not the user
 
           setResumeUploaded(true);
           setIsUploading(false);

@@ -51,11 +51,9 @@ export function ChatScreen() {
 
   const firstName = profile?.name?.split(" ")[0] ?? "there";
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 80);
-    }
-  }, [messages.length]);
+  // Scrolling is triggered via FlatList's onContentSizeChange below so the
+  // scroll fires exactly when new content has actually been laid out — a
+  // setTimeout here was unreliable on slower devices.
 
   const startThread = async (content: string, quickActionId?: string) => {
     if (!content.trim()) return;
@@ -166,6 +164,7 @@ export function ChatScreen() {
               data={sortedMessages}
               keyExtractor={(m: ChatMessage) => m.id}
               contentContainerStyle={{ padding: 16, paddingBottom: 24 }}
+              onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
               ListEmptyComponent={
                 messagesLoading ? (
                   <View className="py-12 items-center">

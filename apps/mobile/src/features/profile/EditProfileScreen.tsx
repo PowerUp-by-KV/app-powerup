@@ -157,19 +157,26 @@ export function EditProfileScreen() {
         ? (Object.values(templateSource).flat() as any[]).filter((q) => q && typeof q === "object")
         : [];
 
-      // Populate dynamic question mapping from the templateSource
+      // Populate dynamic question mapping and a lookup by question_key (lowercased)
+      // so findQuestion is O(1) per key instead of O(n) per field.
       const idsMap: Record<string, string> = {};
+      const byKey = new Map<string, any>();
       allQuestionsWithAnswers.forEach((q) => {
         if (q.question_key && q.id) {
           idsMap[q.question_key] = q.id;
+        }
+        if (q.question_key) {
+          byKey.set(String(q.question_key).toLowerCase(), q);
         }
       });
 
       // Robust lookup function
       const findQuestion = (keys: string[]) => {
-        return allQuestionsWithAnswers.find((q) => {
-          return keys.some((k) => q.question_key?.toLowerCase() === k.toLowerCase());
-        });
+        for (const k of keys) {
+          const found = byKey.get(k.toLowerCase());
+          if (found) return found;
+        }
+        return undefined;
       };
 
       const qName = findQuestion(["name", "full_name", "basic_profile_1_name"]);
