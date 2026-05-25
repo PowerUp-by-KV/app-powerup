@@ -104,11 +104,11 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
+  const comp = String(currentQuestion?.complexity || "")
+    .toLowerCase()
+    .trim();
   const maxDuration =
-    currentQuestion?.recording_time_seconds ||
-    (currentQuestion?.complexity === "Advanced" || currentQuestion?.complexity === "Difficult"
-      ? 30
-      : 15);
+    currentQuestion?.recording_time_seconds || (comp === "easy" || comp === "medium" ? 15 : 30);
 
   // Initialize and reset timer for each question
   useEffect(() => {

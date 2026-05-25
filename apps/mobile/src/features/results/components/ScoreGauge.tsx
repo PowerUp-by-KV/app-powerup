@@ -12,44 +12,50 @@ interface ScoreGaugeProps {
 function getCefrInfo(cefrStr: string) {
   const clean = (cefrStr || "").toUpperCase().trim();
 
-  if (clean.includes("C2")) {
-    return { percentage: 100, label: "C2 - Proficient", color: "#3b82f6" }; // blue-500
-  }
-  if (clean.includes("C1")) {
-    return { percentage: 83.3, label: "C1 - Advanced", color: "#06b6d4" }; // cyan-500
-  }
-  if (clean.includes("B2")) {
-    return { percentage: 66.7, label: "B2 - Upper Intermediate", color: "#10b981" }; // emerald-500
-  }
-  if (clean.includes("B1")) {
-    return { percentage: 50.0, label: "B1 - Intermediate", color: "#f59e0b" }; // amber-500
-  }
-  if (clean.includes("A2")) {
-    return { percentage: 33.3, label: "A2 - Elementary", color: "#f97316" }; // orange-500
-  }
-  if (clean.includes("A1")) {
-    return { percentage: 16.7, label: "A1 - Beginner", color: "#ef4444" }; // red-500
-  }
-
-  // Handle range strings
+  // 1. Double range matches first
   if (clean.includes("A1") && clean.includes("A2")) {
-    return { percentage: 25.0, label: "A1-A2 - Elementary", color: "#f97316" };
+    return { percentage: 25.0, label: "A1-A2", color: "#f97316" };
   }
   if (clean.includes("B1") && clean.includes("B2")) {
-    return { percentage: 58.3, label: "B1-B2 - Intermediate", color: "#10b981" };
+    return { percentage: 58.3, label: "B1-B2", color: "#10b981" };
   }
   if (clean.includes("C1") && clean.includes("C2")) {
-    return { percentage: 91.7, label: "C1-C2 - Advanced", color: "#3b82f6" };
+    return { percentage: 91.7, label: "C1-C2", color: "#3b82f6" };
   }
 
-  if (clean.startsWith("C"))
-    return { percentage: 83.3, label: "C1/C2 - Advanced", color: "#3b82f6" };
-  if (clean.startsWith("B"))
-    return { percentage: 58.3, label: "B1/B2 - Intermediate", color: "#10b981" };
-  if (clean.startsWith("A"))
-    return { percentage: 25.0, label: "A1/A2 - Beginner", color: "#f97316" };
+  // 2. Single matches
+  if (clean.includes("C2")) {
+    return { percentage: 100, label: "C2", color: "#3b82f6" }; // blue-500
+  }
+  if (clean.includes("C1")) {
+    return { percentage: 83.3, label: "C1", color: "#06b6d4" }; // cyan-500
+  }
+  if (clean.includes("B2")) {
+    return { percentage: 66.7, label: "B2", color: "#10b981" }; // emerald-500
+  }
+  if (clean.includes("B1")) {
+    return { percentage: 50.0, label: "B1", color: "#f59e0b" }; // amber-500
+  }
+  if (clean.includes("A2")) {
+    return { percentage: 33.3, label: "A2", color: "#f97316" }; // orange-500
+  }
+  if (clean.includes("A1")) {
+    return { percentage: 16.7, label: "A1", color: "#ef4444" }; // red-500
+  }
 
-  return { percentage: 0, label: cefrStr || "N/A", color: "#64748b" }; // slate-500
+  // 3. Fallback startWith or contains letter matches (ignores surrounding random text)
+  if (clean.includes("C")) {
+    return { percentage: 83.3, label: "C1-C2", color: "#3b82f6" };
+  }
+  if (clean.includes("B")) {
+    return { percentage: 58.3, label: "B1-B2", color: "#10b981" };
+  }
+  if (clean.includes("A")) {
+    return { percentage: 25.0, label: "A1-A2", color: "#f97316" };
+  }
+
+  // 4. Default fallback if no A/B/C match at all
+  return { percentage: 16.7, label: "A1", color: "#ef4444" };
 }
 
 export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: ScoreGaugeProps) {

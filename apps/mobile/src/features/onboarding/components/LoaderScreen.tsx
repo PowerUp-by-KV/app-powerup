@@ -67,7 +67,7 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
       >
         {/* Animated Dino Mascot Loader */}
         <LottieView
-          source={require("../../../../assets/mascot/Dino Loading.json")}
+          source={require("../../../../assets/mascot/Cute Robot Flying Cartoon.json")}
           autoPlay
           loop
           style={{ width: 220, height: 220 }}

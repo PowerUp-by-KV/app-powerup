@@ -106,14 +106,16 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
   const getListeningDuration = () => {
-    if (currentQuestion?.recording_time_seconds) {
-      return currentQuestion.recording_time_seconds;
-    }
-    const complexity = currentQuestion?.complexity?.toLowerCase() || "";
+    const complexity = String(currentQuestion?.complexity || "")
+      .toLowerCase()
+      .trim();
     if (complexity === "easy" || complexity === "medium") {
       return 15;
     }
-    return 30;
+    if (complexity === "hard" || complexity === "difficult" || complexity === "advanced") {
+      return 30;
+    }
+    return currentQuestion?.recording_time_seconds || 30;
   };
 
   const maxDuration = getListeningDuration();

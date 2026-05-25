@@ -104,7 +104,11 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
-  const maxDuration = 30; // Standard for B_SPEAKING
+  const comp = String(currentQuestion?.complexity || "")
+    .toLowerCase()
+    .trim();
+  const maxDuration =
+    currentQuestion?.time_seconds || (comp === "easy" || comp === "medium" ? 15 : 30);
 
   // Initialize and reset timer for each question
   useEffect(() => {
