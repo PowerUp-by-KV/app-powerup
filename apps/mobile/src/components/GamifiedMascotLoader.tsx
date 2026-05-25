@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, Text, View, TouchableOpacity } from "react-native";
 import LottieView from "lottie-react-native";
 
 const TIPS = [
@@ -13,10 +13,14 @@ const TIPS = [
 
 interface GamifiedMascotLoaderProps {
   title?: string;
+  buttonText?: string;
+  onButtonPress?: () => void;
 }
 
 export function GamifiedMascotLoader({
   title = "Preparing your session...",
+  buttonText,
+  onButtonPress,
 }: GamifiedMascotLoaderProps) {
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -75,6 +79,16 @@ export function GamifiedMascotLoader({
           </Text>
           <Text className="text-slate-700 text-xs font-semibold leading-5">{TIPS[tipIdx]}</Text>
         </View>
+
+        {buttonText && onButtonPress && (
+          <TouchableOpacity
+            onPress={onButtonPress}
+            style={{ marginTop: 24, width: "100%" }}
+            className="bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
+          >
+            <Text className="text-white font-extrabold text-sm">{buttonText}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );

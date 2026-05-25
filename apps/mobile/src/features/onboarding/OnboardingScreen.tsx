@@ -34,6 +34,7 @@ import {
   getCompletedSections,
   clearCompletedSections,
   getProfileCompletedInSession,
+  saveLocalOnboardingAnswers,
 } from "@/services/auth-storage";
 import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
@@ -224,6 +225,35 @@ export default function OnboardingScreen() {
           if (ansRetries === 0) throw ansErr;
           await new Promise((res) => setTimeout(res, 1000));
         }
+      }
+
+      // 2.5 Save answers to SecureStore for EditProfileScreen local fallback
+      try {
+        if (groupedQuestions) {
+          const answersGroupedWithAnswers: Record<string, any[]> = {};
+          Object.entries(groupedQuestions).forEach(([sectionName, questionsList]) => {
+            answersGroupedWithAnswers[sectionName] = questionsList.map((q) => {
+              const answerValue = formData[q.question_key as keyof typeof formData];
+              let answer_text = "";
+              if (answerValue !== undefined && answerValue !== null && answerValue !== "") {
+                if (Array.isArray(answerValue)) {
+                  answer_text = answerValue.join(", ");
+                } else if (typeof answerValue === "object") {
+                  answer_text = JSON.stringify(answerValue);
+                } else {
+                  answer_text = String(answerValue);
+                }
+              }
+              return {
+                ...q,
+                answer_text,
+              };
+            });
+          });
+          await saveLocalOnboardingAnswers(answersGroupedWithAnswers);
+        }
+      } catch (saveErr) {
+        console.warn("Failed to save local onboarding answers copy:", saveErr);
       }
 
       // 3. Mark profile as completed locally, reset pre-assessment completed flag, and clear completed pre-assessment sections

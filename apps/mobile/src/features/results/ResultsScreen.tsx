@@ -8,11 +8,18 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
-import { useCompleteSessionMutation, AssessmentResultResponse } from "@/services/assessment-api";
+import {
+  useCompleteSessionMutation,
+  useGetAssessmentStatusQuery,
+  useLazyGetAssessmentResultQuery,
+  AssessmentResultResponse,
+  AssessmentScoringStatusResponse,
+} from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import {
@@ -72,7 +79,40 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }, [sessionId]);
 
   const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
+  const [triggerGetResult, { data: lazyResult }] = useLazyGetAssessmentResultQuery();
   const [hasTriggered, setHasTriggered] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
+
+  const handleSkipAndCalculate = async () => {
+    setIsPolling(false);
+    if (sessionId) {
+      try {
+        await triggerGetResult({ session_id: sessionId }).unwrap();
+      } catch (err) {
+        Alert.alert(
+          "Results Pending",
+          "Your speaking audios are still being processed on the backend. Please give it a few more seconds to prepare your initial CEFR calculation!",
+          [
+            {
+              text: "Wait",
+              onPress: () => setIsPolling(true),
+            },
+            {
+              text: "Go Home",
+              onPress: handleBack,
+            },
+          ],
+        );
+      }
+    }
+  };
+
+  // Poll the status API every 3 seconds only when isPolling is true
+  const { data: currentStatus } = useGetAssessmentStatusQuery(
+    { session_id: sessionId || "" },
+    { skip: !sessionId || !isPolling, pollingInterval: 3000 },
+  );
 
   useEffect(() => {
     if (sessionId && !hasTriggered) {
@@ -81,17 +121,43 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId, hasTriggered, completeSession]);
 
+  // Handle status update from polling query
+  useEffect(() => {
+    if (currentStatus) {
+      setStatusData(currentStatus);
+      if (currentStatus.pending_answers === 0) {
+        // Scoring is completed! Re-fetch results and stop polling.
+        setIsPolling(false);
+        completeSession({ session_id: sessionId! });
+      }
+    }
+  }, [currentStatus, sessionId, completeSession]);
+
+  // Watch mutation result
+  useEffect(() => {
+    if (rawResultData) {
+      if ("percentage" in rawResultData) {
+        setIsPolling(false);
+      } else {
+        // Not scored yet: start polling and save initial status
+        setIsPolling(true);
+        setStatusData(rawResultData as AssessmentScoringStatusResponse);
+      }
+    }
+  }, [rawResultData]);
+
   const handleBack = () => {
     router.replace("/(tabs)/my-learning" as never);
   };
 
   const handleTryAgain = () => {
     if (sessionId) {
+      setIsPolling(true);
       completeSession({ session_id: sessionId });
     }
   };
 
-  const resultData = rawResultData as AssessmentResultResponse | undefined;
+  const resultData = (rawResultData || lazyResult) as AssessmentResultResponse | undefined;
 
   useEffect(() => {
     if (resultData && "percentage" in resultData) {
@@ -137,8 +203,26 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       }))
     : [];
 
-  if (isLoading) {
-    return <GamifiedMascotLoader title="Analyzing your assessment responses..." />;
+  const total = statusData?.total_answers || 0;
+  const completed = statusData?.completed_answers || 0;
+  const pending = statusData?.pending_answers ?? -1;
+
+  let loaderTitle = "Analyzing your responses...";
+  if (total > 0) {
+    loaderTitle = `Scoring: ${completed}/${total} answers completed...`;
+    if (pending === 0 || completed === total) {
+      loaderTitle = "Calculating your CEFR results...";
+    }
+  }
+
+  if (isLoading || isPolling) {
+    return (
+      <GamifiedMascotLoader
+        title={loaderTitle}
+        buttonText={isPolling ? "Skip Wait & Show Results" : undefined}
+        onButtonPress={isPolling ? handleSkipAndCalculate : undefined}
+      />
+    );
   }
 
   if (error) {
@@ -189,14 +273,11 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   if (!resultData || !("percentage" in resultData)) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg text-slate-600 text-center mb-6">
-          Scoring in progress or could not load assessment results. Please check back shortly.
-        </Text>
-        <TouchableOpacity className="bg-slate-900 py-3 px-8 rounded-xl" onPress={handleBack}>
-          <Text className="text-white font-bold">Back to Home</Text>
-        </TouchableOpacity>
-      </View>
+      <GamifiedMascotLoader
+        title={loaderTitle}
+        buttonText="Skip Wait & Show Results"
+        onButtonPress={handleSkipAndCalculate}
+      />
     );
   }
 

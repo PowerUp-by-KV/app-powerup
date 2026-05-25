@@ -207,8 +207,12 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch(() => {
-            // Background upload failure handler
+          .catch((err) => {
+            Alert.alert(
+              "Upload Failed",
+              "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
+            );
+            setHasRecorded((prev) => ({ ...prev, [qId]: false }));
           })
           .finally(() => {
             setUploadingQuestions((prev) => ({ ...prev, [qId]: false }));
@@ -287,10 +291,34 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   }
 
   const handleFinish = async () => {
+    const qId = currentQuestion?.id;
+    if (uploadingQuestions[qId]) {
+      Alert.alert("Uploading Audio", "Please wait for your last audio upload to complete.");
+      return;
+    }
+    if (!answers[qId]) {
+      Alert.alert(
+        "Upload Error",
+        "Last audio upload failed. Please tap 'Retake' and record again.",
+      );
+      return;
+    }
+
+    // Verify all questions have an answer
+    const missingAny = questions.some((q) => !answers[q.id]);
+    if (missingAny) {
+      Alert.alert(
+        "Incomplete Answers",
+        "Some of your recordings were not uploaded successfully. Please review and record them again.",
+      );
+      return;
+    }
+
     setIsFinished(true);
     try {
-      const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
-        question_id: qId,
+      const formattedAnswers = Object.entries(answers).map(([qid, val]) => ({
+        question_id: qid,
+        answer: val,
         audio_url: val,
       }));
 
@@ -317,6 +345,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
+      setIsFinished(false);
       const msg = err?.data?.message || err?.message || "Could not submit answers.";
       Alert.alert("Submission Failed", msg);
     }
@@ -327,8 +356,19 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       await stopRecording();
     }
 
-    if (!hasRecorded[currentQuestion?.id]) {
+    const qId = currentQuestion?.id;
+    if (!hasRecorded[qId]) {
       Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      return;
+    }
+
+    if (uploadingQuestions[qId]) {
+      Alert.alert("Uploading Audio", "Please wait for your audio upload to complete.");
+      return;
+    }
+
+    if (!answers[qId]) {
+      Alert.alert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 

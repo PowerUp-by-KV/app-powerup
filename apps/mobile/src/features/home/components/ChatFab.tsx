@@ -26,7 +26,9 @@ export function ChatFab({ onPress }: ChatFabProps) {
           justifyContent: "center",
         }}
       >
-        <RiveMascot width={110} height={110} />
+        <View pointerEvents="none" style={{ width: 110, height: 110 }}>
+          <RiveMascot width={110} height={110} />
+        </View>
       </Pressable>
     </View>
   );

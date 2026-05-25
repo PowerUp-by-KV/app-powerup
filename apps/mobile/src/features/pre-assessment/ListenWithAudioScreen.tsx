@@ -105,9 +105,18 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
-  const maxDuration = currentQuestion?.recording_time_seconds || 30;
+  const getListeningDuration = () => {
+    if (currentQuestion?.recording_time_seconds) {
+      return currentQuestion.recording_time_seconds;
+    }
+    const complexity = currentQuestion?.complexity?.toLowerCase() || "";
+    if (complexity === "easy" || complexity === "medium") {
+      return 15;
+    }
+    return 30;
+  };
 
-  // Reset timer on question change
+  const maxDuration = getListeningDuration();
   useEffect(() => {
     if (currentQuestion) {
       setTimeLeft(maxDuration + 10);
@@ -206,8 +215,22 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch(() => {
-            // Background upload failure handler
+          .catch((err) => {
+            // Background upload failure handler with user alerts
+            console.error("Audio upload failed:", err);
+            Alert.alert(
+              "Upload Failed",
+              "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
+            );
+            // Reset recorded states on failure
+            setHasRecorded((prev) => ({ ...prev, [qId]: false }));
+            setAnswers((prev) => {
+              const next = { ...prev };
+              delete next[qId];
+              return next;
+            });
+            setCurrentLocalUri(null);
+            setCurrentLocalDuration(0);
           })
           .finally(() => {
             setUploadingQuestions((prev) => ({ ...prev, [qId]: false }));
@@ -285,10 +308,30 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }
 
   const handleFinish = async () => {
+    // Prevent proceeding during active background audio upload
+    const pendingQIds = Object.keys(uploadingQuestions).filter(
+      (qId) => uploadingQuestions[qId] === true,
+    );
+    if (pendingQIds.length > 0 || isAnyUploading) {
+      Alert.alert(
+        "Upload in Progress",
+        "Your recorded answer is still uploading. Please wait a few seconds and try again.",
+      );
+      return;
+    }
+
+    // Verify all questions have answers
+    const unanswered = questions.filter((q) => !answers[q.id]);
+    if (unanswered.length > 0) {
+      Alert.alert("Incomplete Answers", "Please record and upload your answer before proceeding.");
+      return;
+    }
+
     setIsFinished(true);
     try {
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,
+        answer: val,
         audio_url: val,
       }));
 
@@ -317,6 +360,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     } catch (err: any) {
       const msg = err?.data?.message || err?.message || "Could not submit answers.";
       Alert.alert("Submission Failed", msg);
+      setIsFinished(false);
     }
   };
 
@@ -325,7 +369,18 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       await stopRecording();
     }
 
-    if (!hasRecorded[currentQuestion?.id]) {
+    const currentQId = currentQuestion?.id || "";
+
+    // Gating transitions if background audio upload is still in progress
+    if (uploadingQuestions[currentQId] === true) {
+      Alert.alert(
+        "Upload In Progress",
+        "Please wait a few seconds for your audio recording to finish uploading.",
+      );
+      return;
+    }
+
+    if (!hasRecorded[currentQId] || !answers[currentQId]) {
       Alert.alert("Recording Required", "Please record your answer before proceeding.");
       return;
     }

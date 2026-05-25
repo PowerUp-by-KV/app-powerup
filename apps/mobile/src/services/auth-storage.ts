@@ -142,6 +142,7 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
     await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
+    await deleteItem(ONBOARDING_ANSWERS_KEY);
     return true;
   }
   await setItem(LAST_LOGGED_IN_EMAIL_KEY, normalized);
@@ -157,6 +158,10 @@ export async function saveCompletedSection(section: string): Promise<void> {
     existing.push(section);
     await setItem(COMPLETED_SECTIONS_KEY, JSON.stringify(existing));
   }
+}
+
+export async function syncCompletedSections(sections: string[]): Promise<void> {
+  await setItem(COMPLETED_SECTIONS_KEY, JSON.stringify(sections));
 }
 
 export async function getCompletedSections(): Promise<string[]> {
@@ -214,4 +219,24 @@ export async function getPreAssessmentResults(): Promise<StoredPreAssessmentResu
 
 export async function clearPreAssessmentResults(): Promise<void> {
   await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
+}
+
+const ONBOARDING_ANSWERS_KEY = "powerup.onboarding_answers";
+
+export async function saveLocalOnboardingAnswers(answers: Record<string, any>): Promise<void> {
+  await setItem(ONBOARDING_ANSWERS_KEY, JSON.stringify(answers));
+}
+
+export async function getLocalOnboardingAnswers(): Promise<Record<string, any> | null> {
+  const raw = await getItem(ONBOARDING_ANSWERS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearLocalOnboardingAnswers(): Promise<void> {
+  await deleteItem(ONBOARDING_ANSWERS_KEY);
 }

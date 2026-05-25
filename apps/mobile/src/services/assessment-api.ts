@@ -284,4 +284,5 @@ export const {
   useGetAssessmentStatusQuery,
   useLazyGetAssessmentStatusQuery,
   useGetAssessmentResultQuery,
+  useLazyGetAssessmentResultQuery,
 } = assessmentApi;

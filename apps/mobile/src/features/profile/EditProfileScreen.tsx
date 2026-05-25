@@ -39,7 +39,7 @@ const parseMultiSelect = (text: string): string[] => {
 
 export function EditProfileScreen() {
   const safeBack = useSafeBack();
-  const { data: profile, error: profileError } = useGetProfileQuery();
+  const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
   const [patch] = usePatchProfileMutation();
 
   // Fetch onboarding profile answers from GET /api/v1/users/profile
@@ -364,12 +364,29 @@ export function EditProfileScreen() {
     }
   };
 
+  const handleRetry = () => {
+    refetchProfile();
+    refetch();
+  };
+
   if (is404Error) {
     return (
       <ErrorMascot
         title="Profile Not Found"
         message="The personal profile or details you are looking for could not be found. Please try again later or contact support."
         showBackButton
+        onRetry={handleRetry}
+      />
+    );
+  }
+
+  if (profileError || answersError) {
+    return (
+      <ErrorMascot
+        title="Connection Timeout"
+        message="We had trouble reaching our servers. Please check your internet connection and try again."
+        showBackButton
+        onRetry={handleRetry}
       />
     );
   }

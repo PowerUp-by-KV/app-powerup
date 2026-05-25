@@ -252,7 +252,16 @@ export default function DayCompleteScreen() {
   const cefrProgressPct = engagement?.cefr_progress_pct ?? 0;
   const nextBand = engagement?.next_cefr_band ?? (nextCefr || null);
 
-  const goHome = () => router.replace("/(tabs)/my-learning");
+  const goHome = () => {
+    if (moduleId) {
+      router.replace({
+        pathname: "/(tabs)/my-learning" as any,
+        params: { module_id: moduleId },
+      });
+    } else {
+      router.replace("/(tabs)/my-learning");
+    }
+  };
 
   const handleLevelUp = async () => {
     if (!moduleId) return;
