@@ -23,6 +23,7 @@ import {
   useSubmitOnboardingMutation,
   useGetProfileResumeQuery,
   useUpdateProfileResumeMutation,
+  OnboardingQuestion,
 } from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { ErrorMascot } from "@/components";
@@ -413,9 +414,11 @@ export function EditProfileScreen() {
       try {
         const currentLocal = (await getLocalOnboardingAnswers()) || groupedQuestions;
         if (currentLocal) {
-          const updatedLocal: Record<string, any[]> = {};
+          const updatedLocal: Record<string, (OnboardingQuestion & { answer_text: string })[]> = {};
           Object.entries(currentLocal).forEach(([sectionName, questionsList]) => {
-            updatedLocal[sectionName] = (questionsList as any[]).map((q) => {
+            updatedLocal[sectionName] = (
+              questionsList as (OnboardingQuestion & { answer_text: string })[]
+            ).map((q) => {
               const matchingNew = answersList.find((ans) => ans.question_id === q.id);
               if (matchingNew) {
                 return {

@@ -21,7 +21,7 @@ export function WelcomeBackScreen() {
       cta="Get Started"
       onCta={() => {
         if (isComplete) {
-          router.replace("/my-learning" as any);
+          router.replace("/(tabs)/my-learning" as never);
         } else {
           router.replace("/onboarding");
         }

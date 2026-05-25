@@ -14,7 +14,22 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
-import { useGetProfileResumeQuery, useUpdateProfileResumeMutation } from "@/services/resume-api";
+import {
+  useGetProfileResumeQuery,
+  useUpdateProfileResumeMutation,
+  ResumeRead,
+  ResumeParsedData,
+  Contact,
+  Summary,
+} from "@/services/resume-api";
+
+interface ExtendedResume extends Omit<ResumeRead, "contact"> {
+  parsed_data?: ResumeParsedData;
+  contact?: Contact & { name?: string };
+  linkedin_url?: string;
+  github_url?: string;
+  summary?: Summary;
+}
 
 export function ProfileResumeScreen() {
   const safeBack = useSafeBack();
@@ -33,18 +48,22 @@ export function ProfileResumeScreen() {
   const [summary, setSummary] = useState("");
   const [skills, setSkills] = useState("");
 
-  // Sync state with fetched resume data
   useEffect(() => {
     if (resume) {
-      const res = resume as any;
-      const contact = res.parsed_data?.contact || res.contact || {};
+      const res = resume as ExtendedResume;
+      const contact = (res.parsed_data?.contact || res.contact || {}) as Contact & {
+        name?: string;
+      };
       setFullName(res.full_name || contact.name || contact.fullName || "");
       setEmail(res.email || contact.email || "");
       setPhone(res.phone || contact.phone || "");
       setLocation(res.location || contact.location || "");
       setLinkedinUrl(res.linkedin_url || contact.linkedin || "");
       setGithubUrl(res.github_url || "");
-      setSummary(res.summary || res.parsed_data?.summary?.text || res.summary?.text || "");
+
+      const rawSummary = res.parsed_data?.summary || res.summary;
+      const summaryText = typeof rawSummary === "string" ? rawSummary : rawSummary?.text || "";
+      setSummary(summaryText);
 
       const skillsList = res.skills || res.parsed_data?.skills || [];
       setSkills(skillsList.map((s: any) => (typeof s === "string" ? s : s.name || "")).join(", "));
@@ -54,7 +73,7 @@ export function ProfileResumeScreen() {
   const handleSave = async () => {
     if (isUpdating) return;
     try {
-      const res = resume as any;
+      const res = resume as ExtendedResume;
       const parsedSkills = skills
         .split(",")
         .map((s) => s.trim())

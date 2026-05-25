@@ -34,6 +34,7 @@ import {
   getAssessmentSessionId,
   getCompletedSections,
   syncCompletedSections,
+  StoredPreAssessmentResult,
 } from "@/services/auth-storage";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
@@ -330,7 +331,8 @@ export function LearningJourneyScreen() {
     }
   }, [params?.module_id]);
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
-  const [preAssessmentResults, setPreAssessmentResults] = useState<any | null>(null);
+  const [preAssessmentResults, setPreAssessmentResults] =
+    useState<StoredPreAssessmentResult | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
 

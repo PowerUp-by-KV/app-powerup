@@ -93,7 +93,7 @@ export function LoginScreen() {
       }
 
       // If onboarding is complete, navigate directly to My Learning tab
-      router.replace("/my-learning" as any);
+      router.replace("/(tabs)/my-learning" as never);
     } catch {
       // getProfile failed → cannot determine status, send to onboarding as safest fallback
       router.replace("/onboarding");

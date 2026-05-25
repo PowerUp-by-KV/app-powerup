@@ -21,6 +21,7 @@ import {
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
+  OnboardingQuestion,
 } from "@/services/onboarding-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
@@ -78,7 +79,7 @@ export default function OnboardingScreen() {
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/my-learning" as any);
+        router.replace("/(tabs)/my-learning" as never);
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -156,7 +157,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/my-learning" as any);
+              router.replace("/(tabs)/my-learning" as never);
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -230,7 +231,10 @@ export default function OnboardingScreen() {
       // 2.5 Save answers to SecureStore for EditProfileScreen local fallback
       try {
         if (groupedQuestions) {
-          const answersGroupedWithAnswers: Record<string, any[]> = {};
+          const answersGroupedWithAnswers: Record<
+            string,
+            (OnboardingQuestion & { answer_text: string })[]
+          > = {};
           Object.entries(groupedQuestions).forEach(([sectionName, questionsList]) => {
             answersGroupedWithAnswers[sectionName] = questionsList.map((q) => {
               const answerValue = formData[q.question_key as keyof typeof formData];
@@ -262,7 +266,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/my-learning" as any);
+      router.replace("/(tabs)/my-learning" as never);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
