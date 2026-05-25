@@ -12,35 +12,48 @@ interface ScoreGaugeProps {
 function getCefrInfo(cefrStr: string) {
   const clean = (cefrStr || "").toUpperCase().trim();
 
-  // 1. Double range matches first
-  if (clean.includes("A1") && clean.includes("A2")) {
-    return { percentage: 25.0, label: "A1-A2", color: "#f97316" };
-  }
-  if (clean.includes("B1") && clean.includes("B2")) {
-    return { percentage: 58.3, label: "B1-B2", color: "#10b981" };
-  }
-  if (clean.includes("C1") && clean.includes("C2")) {
-    return { percentage: 91.7, label: "C1-C2", color: "#3b82f6" };
+  // Find all matches of CEFR levels: A1, A2, B1, B2, C1, C2
+  const matches = clean.match(/[ABC][12]/g) || [];
+
+  // Unique matches keeping order or sorting them
+  const uniqueMatches = Array.from(new Set(matches));
+
+  if (uniqueMatches.length >= 2) {
+    // Sort uniqueMatches to ensure standard ascending order, e.g. A2-B1
+    const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+    uniqueMatches.sort((a, b) => levelOrder.indexOf(a) - levelOrder.indexOf(b));
+
+    const rangeLabel = `${uniqueMatches[0]}-${uniqueMatches[1]}`;
+
+    // Determine info based on the range
+    if (rangeLabel === "A1-A2") {
+      return { percentage: 25.0, label: "A1-A2", color: "#f97316" };
+    }
+    if (rangeLabel === "A2-B1") {
+      return { percentage: 41.7, label: "A2-B1", color: "#f59e0b" };
+    }
+    if (rangeLabel === "B1-B2") {
+      return { percentage: 58.3, label: "B1-B2", color: "#10b981" };
+    }
+    if (rangeLabel === "B2-C1") {
+      return { percentage: 75.0, label: "B2-C1", color: "#06b6d4" };
+    }
+    if (rangeLabel === "C1-C2") {
+      return { percentage: 91.7, label: "C1-C2", color: "#3b82f6" };
+    }
+
+    // Generic fallback for any other range
+    return { percentage: 50.0, label: rangeLabel, color: "#10b981" };
   }
 
-  // 2. Single matches
-  if (clean.includes("C2")) {
-    return { percentage: 100, label: "C2", color: "#3b82f6" }; // blue-500
-  }
-  if (clean.includes("C1")) {
-    return { percentage: 83.3, label: "C1", color: "#06b6d4" }; // cyan-500
-  }
-  if (clean.includes("B2")) {
-    return { percentage: 66.7, label: "B2", color: "#10b981" }; // emerald-500
-  }
-  if (clean.includes("B1")) {
-    return { percentage: 50.0, label: "B1", color: "#f59e0b" }; // amber-500
-  }
-  if (clean.includes("A2")) {
-    return { percentage: 33.3, label: "A2", color: "#f97316" }; // orange-500
-  }
-  if (clean.includes("A1")) {
-    return { percentage: 16.7, label: "A1", color: "#ef4444" }; // red-500
+  if (uniqueMatches.length === 1) {
+    const single = uniqueMatches[0];
+    if (single === "C2") return { percentage: 100.0, label: "C2", color: "#3b82f6" };
+    if (single === "C1") return { percentage: 83.3, label: "C1", color: "#06b6d4" };
+    if (single === "B2") return { percentage: 66.7, label: "B2", color: "#10b981" };
+    if (single === "B1") return { percentage: 50.0, label: "B1", color: "#f59e0b" };
+    if (single === "A2") return { percentage: 33.3, label: "A2", color: "#f97316" };
+    if (single === "A1") return { percentage: 16.7, label: "A1", color: "#ef4444" };
   }
 
   // 3. Fallback startWith or contains letter matches (ignores surrounding random text)
