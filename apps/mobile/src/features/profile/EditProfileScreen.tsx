@@ -512,11 +512,22 @@ export function EditProfileScreen() {
               );
             } else {
               console.warn("Resume update error:", resumeErr);
+              Alert.alert(
+                "Couldn't Save Resume",
+                "We couldn't save your resume changes. Please check your connection and try again.",
+              );
+              // Keep the user in edit mode so the unsaved changes aren't lost.
+              return;
             }
           }
         }
       } catch (err) {
         console.warn("Failed to update profile resume PUT:", err);
+        Alert.alert(
+          "Couldn't Save Resume",
+          "We couldn't save your resume changes. Please check your connection and try again.",
+        );
+        return;
       }
 
       setMode("view");
