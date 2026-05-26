@@ -1,0 +1,588 @@
+import React from "react";
+import {
+  View,
+  Text,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Platform,
+} from "react-native";
+import { useSelector, useDispatch } from "react-redux";
+import { useRouter } from "expo-router";
+import { RootState } from "@/store";
+import {
+  updateField,
+  nextStep,
+  prevStep,
+  setStep,
+  type OnboardingState,
+} from "@/store/slices/onboardingSlice";
+import {
+  useGetGroupedQuestionsQuery,
+  useSubmitOnboardingMutation,
+  useCompleteProfileMutation,
+  useLazyGetOnboardingStatusQuery,
+  OnboardingQuestion,
+} from "@/services/onboarding-api";
+import { useLazyGetProfileQuery } from "@/services/auth-api";
+import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
+import {
+  setProfileCompletedInSession,
+  setPreAssessmentCompletedInSession,
+  saveAssessmentSessionId,
+  getAuthSession,
+  getAssessmentSessionId,
+  getCompletedSections,
+  clearCompletedSections,
+  getProfileCompletedInSession,
+  saveLocalOnboardingAnswers,
+  saveOnboardingWizardState,
+  getOnboardingWizardState,
+  clearOnboardingWizardState,
+} from "@/services/auth-storage";
+import { normalizeBaseUrlForRuntime } from "@/services/api";
+import { getApiErrorMessage } from "@/utils/error-message";
+import LoaderScreen from "./components/LoaderScreen";
+import { OfflineGameView } from "@/components/OfflineGameView";
+import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
+
+export default function OnboardingScreen() {
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const formData = useSelector((state: RootState) => state.onboarding);
+  const stepNumber = formData.currentStep;
+
+  const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
+  const [getProfile] = useLazyGetProfileQuery();
+  const {
+    data: groupedQuestions,
+    isLoading: isFetching,
+    isError: onboardingError,
+    refetch: refetchQuestions,
+  } = useGetGroupedQuestionsQuery();
+  const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
+  const [completeProfile] = useCompleteProfileMutation();
+  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [resumeUploaded, setResumeUploaded] = React.useState(false);
+  const [isCheckingResume, setIsCheckingResume] = React.useState(true);
+
+  // Load / Restore saved onboarding wizard state when the component mounts
+  React.useEffect(() => {
+    const restoreWizardState = async () => {
+      try {
+        const savedState = await getOnboardingWizardState();
+        if (savedState) {
+          if (savedState.currentStep) {
+            dispatch(setStep(savedState.currentStep));
+          }
+          if (savedState.formData) {
+            Object.entries(savedState.formData).forEach(([field, value]) => {
+              dispatch(updateField({ field: field as any, value }));
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to restore onboarding wizard progress:", err);
+      }
+    };
+    restoreWizardState();
+  }, [dispatch]);
+
+  // Auto-save wizard progress to local storage on change
+  React.useEffect(() => {
+    if (
+      stepNumber > 1 ||
+      Object.values(formData).some((val) => val !== "" && val !== null && val !== undefined)
+    ) {
+      saveOnboardingWizardState({
+        currentStep: stepNumber,
+        formData: formData,
+      }).catch((err) => console.warn("Failed to auto-save onboarding wizard progress:", err));
+    }
+  }, [stepNumber, formData]);
+
+  React.useEffect(() => {
+    const checkResumeAssessment = async () => {
+      try {
+        const session = await getAuthSession();
+        if (!session?.user?.id) {
+          setIsCheckingResume(false);
+          return;
+        }
+
+        const localOnboardingDone = await getProfileCompletedInSession();
+        let onboardingStatus = null;
+        try {
+          onboardingStatus = await getOnboardingStatus(session.user.id).unwrap();
+        } catch (statusErr) {
+          console.warn("Failed to check onboarding status in OnboardingScreen:", statusErr);
+        }
+
+        let profileStatus = null;
+        try {
+          profileStatus = await getProfile().unwrap();
+        } catch (profileErr) {
+          console.warn("Failed to check profile status in OnboardingScreen:", profileErr);
+        }
+
+        const isOnboardingComplete =
+          (onboardingStatus?.profile_completed ?? false) ||
+          (profileStatus?.profile_completed ?? false) ||
+          localOnboardingDone;
+
+        // If onboarding is not completed, stay on onboarding screen
+        if (!isOnboardingComplete) {
+          setIsCheckingResume(false);
+          return;
+        }
+
+        // Onboarding is completed! Redirect directly to My Learning tab
+        router.replace("/(tabs)/my-learning" as never);
+        return;
+      } catch (err) {
+        console.warn("Failed to check onboarding state:", err);
+      } finally {
+        setIsCheckingResume(false);
+      }
+    };
+
+    checkResumeAssessment();
+  }, [getOnboardingStatus, getProfile]);
+
+  // Flatten the questions from the API for the step-by-step wizard
+  const flattenedQuestions = React.useMemo(() => {
+    if (!groupedQuestions) return [];
+    return Object.values(groupedQuestions).flat();
+  }, [groupedQuestions]);
+
+  const question = flattenedQuestions[stepNumber - 1];
+
+  if (onboardingError && !isFetching) {
+    return (
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <View className="flex-1 w-full items-center justify-center p-6">
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <LottieView
+              source={require("../../../assets/mascot/Error 404.lottie")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140, marginBottom: 12 }}
+            />
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Server Connection Lost
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+              We couldn't connect to the learning server. Please ensure the backend service is
+              running and try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3">
+              <TouchableOpacity
+                onPress={() => refetchQuestions()}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (isCheckingResume || isFetching) {
+    return <LoaderScreen />;
+  }
+
+  if (!question && !isFetching) {
+    return (
+      <SafeAreaView className="flex-1 bg-white">
+        <View className="flex-1 justify-center items-center p-8">
+          <View className="w-20 h-20 bg-indigo-100 rounded-full items-center justify-center mb-6">
+            <Text className="text-4xl">🎯</Text>
+          </View>
+          <Text className="text-2xl font-bold text-slate-900 text-center mb-2">
+            Profile Completed!
+          </Text>
+          <Text className="text-slate-500 text-center text-base mb-10 px-4">
+            Your personalized onboarding is finished. You are now ready to begin the core
+            assessment.
+          </Text>
+
+          <TouchableOpacity
+            onPress={() => {
+              router.replace("/(tabs)/my-learning" as never);
+            }}
+            className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
+          >
+            <Text className="text-white font-bold text-lg">Go to My Learning</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => dispatch(prevStep())} className="mt-6 py-2">
+            <Text className="text-indigo-600 font-semibold text-base">Review Answers</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const handleInputChange = (key: string, value: any) => {
+    dispatch(updateField({ field: key as keyof OnboardingState, value }));
+    if (question?.input_type === "file" && key === question.question_key) {
+      setResumeUploaded(false);
+    }
+  };
+
+  const submitFinalAnswers = async () => {
+    if (isSubmitting || isStarting) return;
+
+    try {
+      // 1. Build answers payload — API only accepts question_id + answer_text
+      // Skip file questions (handled earlier) and empty/skipped questions
+      const answersPayload = flattenedQuestions
+        .filter((q) => q.input_type !== "file")
+        .map((q) => {
+          const answerValue = formData[q.question_key];
+
+          let answer_text: string;
+          if (answerValue === undefined || answerValue === null || answerValue === "") {
+            answer_text = "";
+          } else if (Array.isArray(answerValue)) {
+            answer_text = answerValue.join(", ");
+          } else if (typeof answerValue === "object") {
+            answer_text = JSON.stringify(answerValue);
+          } else {
+            answer_text = String(answerValue);
+          }
+
+          return {
+            question_id: q.id,
+            answer_text,
+          };
+        })
+        .filter((ans) => {
+          // Payload filtering: only send answers that are not empty
+          return (
+            ans.answer_text !== undefined &&
+            ans.answer_text !== null &&
+            ans.answer_text.trim() !== ""
+          );
+        });
+
+      // 2. Submit Onboarding Answers with localized retry loop
+      let ansRetries = 3;
+      while (ansRetries > 0) {
+        try {
+          await submitOnboarding({ answers: answersPayload }).unwrap();
+          break;
+        } catch (ansErr) {
+          ansRetries--;
+          if (ansRetries === 0) throw ansErr;
+          await new Promise((res) => setTimeout(res, 1000));
+        }
+      }
+
+      // 2.5 Save answers to SecureStore for EditProfileScreen local fallback
+      try {
+        if (groupedQuestions) {
+          const answersGroupedWithAnswers: Record<
+            string,
+            (OnboardingQuestion & { answer_text: string })[]
+          > = {};
+          Object.entries(groupedQuestions).forEach(([sectionName, questionsList]) => {
+            answersGroupedWithAnswers[sectionName] = questionsList.map((q) => {
+              const answerValue = formData[q.question_key as keyof typeof formData];
+              let answer_text = "";
+              if (answerValue !== undefined && answerValue !== null && answerValue !== "") {
+                if (Array.isArray(answerValue)) {
+                  answer_text = answerValue.join(", ");
+                } else if (typeof answerValue === "object") {
+                  answer_text = JSON.stringify(answerValue);
+                } else {
+                  answer_text = String(answerValue);
+                }
+              }
+              return {
+                ...q,
+                answer_text,
+              };
+            });
+          });
+          await saveLocalOnboardingAnswers(answersGroupedWithAnswers);
+        }
+      } catch (saveErr) {
+        console.warn("Failed to save local onboarding answers copy:", saveErr);
+      }
+
+      // 3. Call completeProfile to establish the UserProfile record on the backend
+      try {
+        const session = await getAuthSession();
+
+        // Extract raw date for DOB
+        let dobStr = formData.dob || "2000-01-01";
+        // Ensure standard YYYY-MM-DD or DD/MM/YYYY format
+        if (dobStr.includes("T")) {
+          dobStr = dobStr.split("T")[0];
+        }
+
+        const profilePayload = {
+          name: (formData.name || session?.user?.name || "User").trim(),
+          mobile: (session?.user?.phone_number || "+919999999999").trim(),
+          dob: dobStr,
+          college: (formData.education || "Not Specified").trim(),
+        };
+
+        // Enforce validations matching backend OnboardingRequest schema
+        if (profilePayload.name.length < 1) profilePayload.name = "User";
+        if (profilePayload.mobile.length < 10) profilePayload.mobile = "+919999999999";
+        if (profilePayload.college.length < 2) profilePayload.college = "Not Specified";
+
+        await completeProfile(profilePayload).unwrap();
+      } catch (profileErr) {
+        console.warn("Failed to create UserProfile via completeProfile:", profileErr);
+      }
+
+      // 4. Mark profile as completed locally, reset pre-assessment completed flag, clear wizard state and completed pre-assessment sections
+      await setProfileCompletedInSession(true);
+      await setPreAssessmentCompletedInSession(false);
+      await clearCompletedSections();
+      await clearOnboardingWizardState();
+
+      // 5. Redirect directly to My Learning tab
+      router.replace("/(tabs)/my-learning" as never);
+    } catch (err) {
+      Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
+    }
+  };
+
+  const handleNext = async () => {
+    if (!question) return;
+
+    const isFileQuestion = question.input_type === "file";
+
+    // Check required fields
+    const answerValue = formData[question.question_key as keyof typeof formData];
+    if (question.is_required && !answerValue && !isFileQuestion) {
+      Alert.alert("Required", "Please provide an answer to continue.");
+      return;
+    }
+
+    if (isFileQuestion) {
+      const fileUri = formData[question.question_key];
+      if (!fileUri) {
+        Alert.alert("Required", "Please select a resume to upload.");
+        return;
+      }
+
+      if (!resumeUploaded) {
+        setIsUploading(true);
+        try {
+          const authSession = await getAuthSession();
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+          if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
+          const rawBase = apiUrl.replace(/\/$/, "");
+          const baseUrl = normalizeBaseUrlForRuntime(rawBase);
+          const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
+
+          const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
+          const fd = new FormData();
+
+          if (Platform.OS === "web") {
+            const r = await fetch(fileUri);
+            const blob = await r.blob();
+            fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
+          } else {
+            // React Native FormData accepts an object with { uri, name, type }
+            // even though the standard DOM FormData type does not. Cast through
+            // unknown to a Blob shape so TypeScript is satisfied without `any`.
+            const rnFile = { uri: fileUri, name: fileName, type: "application/pdf" };
+            fd.append("file", rnFile as unknown as Blob, fileName);
+          }
+
+          const response = await fetch(uploadUrl, {
+            method: "POST",
+            headers: authSession?.access_token
+              ? {
+                  Authorization: `Bearer ${authSession.access_token}`,
+                  "X-Tunnel-Skip-AntiPhishing-Page": "true",
+                }
+              : {
+                  "X-Tunnel-Skip-AntiPhishing-Page": "true",
+                },
+            body: fd,
+          });
+
+          // Treat anything outside 2xx as a failure so the user gets explicit
+          // feedback. 4xx → format/size/auth errors the user must fix; 5xx →
+          // backend issue, surface so they can retry rather than silently
+          // continuing with an unprocessed resume.
+          if (!response.ok) {
+            const errBody = await response.json().catch(() => ({ detail: "Upload failed" }));
+            const fallback =
+              response.status >= 500
+                ? `Server error (${response.status}). Please try again.`
+                : `Upload rejected (${response.status})`;
+            const msg = errBody?.detail || fallback;
+            throw new Error(msg);
+          }
+
+          setResumeUploaded(true);
+          setIsUploading(false);
+          // Only proceed after successful upload
+          if (stepNumber < flattenedQuestions.length) {
+            dispatch(nextStep());
+          } else {
+            await submitFinalAnswers();
+          }
+          return;
+        } catch (uploadErr) {
+          setIsUploading(false);
+          Alert.alert(
+            "Upload Failed",
+            "Could not upload resume. Please check your connection and try again.",
+          );
+          return;
+        }
+      }
+    }
+
+    if (stepNumber < flattenedQuestions.length) {
+      dispatch(nextStep());
+    } else {
+      await submitFinalAnswers();
+    }
+  };
+
+  const handleSkip = async () => {
+    if (!question) return;
+
+    if (question.input_type === "file") {
+      Alert.alert(
+        "Resume Required",
+        "Resume upload is a required first step to personalize your onboarding. You cannot skip this step.",
+      );
+      return;
+    }
+
+    // Optionally clear value when skipping
+    dispatch(updateField({ field: question.question_key as any, value: "" }));
+
+    if (stepNumber < flattenedQuestions.length) {
+      dispatch(nextStep());
+    } else {
+      await submitFinalAnswers();
+    }
+  };
+
+  const handleBack = () => {
+    if (stepNumber > 1) {
+      dispatch(prevStep());
+    } else {
+      router.back();
+    }
+  };
+
+  const progress = (stepNumber / flattenedQuestions.length) * 100;
+  const isFileQuestion = question?.input_type === "file";
+
+  return (
+    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingHorizontal: 24,
+          paddingBottom: 40,
+          paddingTop: Platform.OS === "android" ? 48 : 20,
+          alignItems: "center",
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Progress Track Header */}
+        <View className="w-32 h-1.5 bg-slate-200 rounded-full mt-2 mb-2 overflow-hidden">
+          <View className="h-full bg-slate-600 rounded-full" style={{ width: `${progress}%` }} />
+        </View>
+
+        {/* Section Title */}
+        <Text className="text-sm font-bold text-slate-800 text-center mb-6">
+          {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
+        </Text>
+
+        {/* Question & Options Card Container */}
+        <View
+          className={`bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 w-full max-w-md ${
+            isFileQuestion ? "mb-4" : "mb-8"
+          }`}
+        >
+          {!isFileQuestion && (
+            <Text className="text-base font-bold text-slate-900 mb-4 leading-relaxed">
+              {question?.question_text}
+            </Text>
+          )}
+
+          {question && (
+            <DynamicOnboardingForm
+              questions={[question]}
+              formData={formData}
+              onInputChange={handleInputChange}
+              hideLabel={true}
+            />
+          )}
+        </View>
+
+        {/* Description paragraph specific to file upload step */}
+        {isFileQuestion && (
+          <Text className="text-sm text-slate-500 text-center px-4 mb-6 leading-relaxed max-w-md">
+            Upload your resume to analyze and enhance your professional profile
+          </Text>
+        )}
+
+        {/* Bottom Continue Button */}
+        <TouchableOpacity
+          onPress={handleNext}
+          disabled={isSubmitting || isStarting || isUploading}
+          className={`py-3.5 px-16 rounded-2xl items-center justify-center shadow-sm ${
+            isSubmitting || isStarting || isUploading ? "bg-slate-400" : "bg-slate-700"
+          }`}
+        >
+          {isSubmitting || isStarting || isUploading ? (
+            <View className="flex-row items-center">
+              <ActivityIndicator color="white" size="small" className="mr-2" />
+              <Text className="text-white font-bold text-sm">
+                {isUploading ? "Uploading..." : "Processing..."}
+              </Text>
+            </View>
+          ) : (
+            <Text className="text-white font-bold text-sm">
+              {isFileQuestion && resumeUploaded
+                ? "Upload Successful - Continue"
+                : isFileQuestion
+                  ? "Upload & Continue"
+                  : "Continue"}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Dynamic Secondary Action Link */}
+        {isFileQuestion ? (
+          <TouchableOpacity onPress={handleSkip} className="mt-4 py-2">
+            <Text className="text-sm text-slate-400">Skip for now</Text>
+          </TouchableOpacity>
+        ) : stepNumber > 1 ? (
+          <TouchableOpacity onPress={handleBack} className="mt-4 py-2">
+            <Text className="text-sm text-slate-400">Go Back</Text>
+          </TouchableOpacity>
+        ) : null}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
