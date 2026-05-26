@@ -1,0 +1,130 @@
+- generic [ref=e8]:
+  - generic [ref=e9]:
+    - generic [ref=e11]:
+      - heading [level=1] [ref=e160]: Home
+      - generic [ref=e15]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - generic [ref=e19]:
+              - generic [ref=e20]: Hi, Smoke!
+              - generic [ref=e21]: Ready to learn something new?
+            - generic [ref=e23] [cursor=pointer]: 
+          - generic [ref=e24]:
+            - generic [ref=e25]: Weekly Streak
+            - generic [ref=e26]:
+              - generic [ref=e27]:
+                - generic [ref=e29]: 🔥
+                - generic [ref=e30]: M
+              - generic [ref=e31]:
+                - generic [ref=e33]: 🔥
+                - generic [ref=e34]: T
+              - generic [ref=e35]:
+                - generic [ref=e37]: 🔥
+                - generic [ref=e38]: W
+              - generic [ref=e39]:
+                - generic [ref=e41]: 🔥
+                - generic [ref=e42]: T
+              - generic [ref=e43]:
+                - generic [ref=e45]: 🔥
+                - generic [ref=e46]: F
+              - generic [ref=e47]:
+                - generic [ref=e49]: 🔥
+                - generic [ref=e50]: S
+              - generic [ref=e51]:
+                - generic [ref=e53]: 🔥
+                - generic [ref=e54]: S
+          - generic [ref=e55]:
+            - generic [ref=e56]: My Learning
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - generic [ref=e59]: 🔥
+                - generic [ref=e60]: "0"
+                - generic [ref=e61]: Streaks
+              - generic [ref=e62]:
+                - generic [ref=e63]: 🏅
+                - generic [ref=e64]: "0"
+                - generic [ref=e65]: Badges
+              - generic [ref=e66]:
+                - generic [ref=e67]: ⚡
+                - generic [ref=e68]: "0"
+                - generic [ref=e69]: XP Points
+            - generic [ref=e71]:
+              - generic [ref=e72]: 0 / 13 modules
+              - generic [ref=e73]: 0%
+            - generic [ref=e76] [cursor=pointer]: Track My Learning
+          - generic [ref=e77]:
+            - generic [ref=e78]: Continue Learning
+            - generic [ref=e80] [cursor=pointer]: View All
+          - generic [ref=e81] [cursor=pointer]:
+            - generic [ref=e83]: 
+            - generic [ref=e84]:
+              - generic [ref=e85]: Public Speaking
+              - generic [ref=e86]: ⏱ 15 min left
+            - generic [ref=e87]: 
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - generic [ref=e91]: ✨
+              - generic [ref=e92]:
+                - generic [ref=e93]: Convo Coach
+                - generic [ref=e94]: Say it better, every time
+            - generic [ref=e95]:
+              - generic [ref=e96] [cursor=pointer]:
+                - generic [ref=e97]:
+                  - generic [ref=e98]: Interview Playground
+                  - generic [ref=e99]: Try, learn and improve — No pressure
+                - generic [ref=e100]: 
+              - generic [ref=e101] [cursor=pointer]:
+                - generic [ref=e102]:
+                  - generic [ref=e103]: Interview Buddy
+                  - generic [ref=e104]: Practice with a buddy before it counts
+                - generic [ref=e105]: 
+          - generic [ref=e106]:
+            - generic [ref=e107]:
+              - generic [ref=e109]: 📝
+              - generic [ref=e110]:
+                - generic [ref=e111]: Resume Studio
+                - generic [ref=e112]: Build a resume you're proud to share
+            - generic [ref=e113]:
+              - generic [ref=e114] [cursor=pointer]:
+                - generic [ref=e115]:
+                  - generic [ref=e116]: Resume Buddy
+                  - generic [ref=e117]: Know what recruiters notice
+                - generic [ref=e118]: 
+              - generic [ref=e119] [cursor=pointer]:
+                - generic [ref=e120]:
+                  - generic [ref=e121]: Craft your Resume
+                  - generic [ref=e122]: Design your story, your way
+                - generic [ref=e123]: 
+        - generic [ref=e125] [cursor=pointer]: 
+    - generic [ref=e162]:
+      - heading "My Learning" [level=1] [ref=e164]
+      - generic [ref=e166]:
+        - generic [ref=e167]:
+          - generic [ref=e168]: Hi, Smoke!
+          - generic [ref=e169]: My Learning
+        - generic [ref=e170]:
+          - generic [ref=e172]: 🎯
+          - generic [ref=e173]: Take your Diagnostic Assessment
+          - generic [ref=e174]: We need to assess your skills before we can unlock your daily lessons.
+          - generic [ref=e176] [cursor=pointer]: Start assessment
+  - tablist [ref=e127]:
+    - tab "  Home" [ref=e129] [cursor=pointer]:
+      - generic [ref=e130]:
+        - generic [ref=e132]: 
+        - generic [ref=e134]: 
+      - generic [ref=e135]: Home
+    - tab "  My Learning" [active] [selected] [ref=e137] [cursor=pointer]:
+      - generic [ref=e138]:
+        - generic [ref=e140]: 
+        - generic [ref=e142]: 
+      - generic [ref=e143]: My Learning
+    - tab "  Achievements" [ref=e145] [cursor=pointer]:
+      - generic [ref=e146]:
+        - generic [ref=e148]: 
+        - generic [ref=e150]: 
+      - generic [ref=e151]: Achievements
+    - tab "  Leader Board" [ref=e153] [cursor=pointer]:
+      - generic [ref=e154]:
+        - generic [ref=e156]: 
+        - generic [ref=e158]: 
+      - generic [ref=e159]: Leader Board

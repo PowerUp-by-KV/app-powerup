@@ -5,13 +5,20 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useCompleteSessionMutation, AssessmentResultResponse } from "@/services/assessment-api";
+import LottieView from "lottie-react-native";
+import {
+  useCompleteSessionMutation,
+  useGetAssessmentStatusQuery,
+  useLazyGetAssessmentResultQuery,
+  AssessmentResultResponse,
+  AssessmentScoringStatusResponse,
+} from "@/services/assessment-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import {
@@ -20,7 +27,10 @@ import {
   clearAssessmentStartTime,
   savePreAssessmentResults,
   getPreAssessmentResults,
+  setPreAssessmentCompletedInSession,
 } from "@/services/auth-storage";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { OfflineGameView } from "@/components/OfflineGameView";
 
 interface ResultsScreenProps {
   sessionId?: string;
@@ -68,7 +78,40 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }, [sessionId]);
 
   const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
+  const [triggerGetResult, { data: lazyResult }] = useLazyGetAssessmentResultQuery();
   const [hasTriggered, setHasTriggered] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
+
+  const handleSkipAndCalculate = async () => {
+    setIsPolling(false);
+    if (sessionId) {
+      try {
+        await triggerGetResult({ session_id: sessionId }).unwrap();
+      } catch {
+        Alert.alert(
+          "Results Pending",
+          "Your speaking audios are still being processed on the backend. Please give it a few more seconds to prepare your initial CEFR calculation!",
+          [
+            {
+              text: "Wait",
+              onPress: () => setIsPolling(true),
+            },
+            {
+              text: "Go Home",
+              onPress: handleBack,
+            },
+          ],
+        );
+      }
+    }
+  };
+
+  // Poll the status API every 3 seconds only when isPolling is true
+  const { data: currentStatus } = useGetAssessmentStatusQuery(
+    { session_id: sessionId || "" },
+    { skip: !sessionId || !isPolling, pollingInterval: 3000 },
+  );
 
   useEffect(() => {
     if (sessionId && !hasTriggered) {
@@ -77,11 +120,43 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId, hasTriggered, completeSession]);
 
+  // Handle status update from polling query
+  useEffect(() => {
+    if (currentStatus) {
+      setStatusData(currentStatus);
+      if (currentStatus.pending_answers === 0) {
+        // Scoring is completed! Re-fetch results and stop polling.
+        setIsPolling(false);
+        completeSession({ session_id: sessionId! });
+      }
+    }
+  }, [currentStatus, sessionId, completeSession]);
+
+  // Watch mutation result
+  useEffect(() => {
+    if (rawResultData) {
+      if ("percentage" in rawResultData) {
+        setIsPolling(false);
+      } else {
+        // Not scored yet: start polling and save initial status
+        setIsPolling(true);
+        setStatusData(rawResultData as AssessmentScoringStatusResponse);
+      }
+    }
+  }, [rawResultData]);
+
   const handleBack = () => {
     router.replace("/(tabs)/my-learning" as never);
   };
 
-  const resultData = rawResultData as AssessmentResultResponse | undefined;
+  const handleTryAgain = () => {
+    if (sessionId) {
+      setIsPolling(true);
+      completeSession({ session_id: sessionId });
+    }
+  };
+
+  const resultData = (rawResultData || lazyResult) as AssessmentResultResponse | undefined;
 
   useEffect(() => {
     if (resultData && "percentage" in resultData) {
@@ -91,6 +166,9 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       };
       savePreAssessmentResults(merged).catch((err) => {
         console.warn("Failed to save preassessment results:", err);
+      });
+      setPreAssessmentCompletedInSession(true).catch((err) => {
+        console.warn("Failed to set preassessment completed flag:", err);
       });
     }
   }, [resultData, timeTaken]);
@@ -124,24 +202,81 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       }))
     : [];
 
-  if (isLoading) {
+  const total = statusData?.total_answers || 0;
+  const completed = statusData?.completed_answers || 0;
+  const pending = statusData?.pending_answers ?? -1;
+
+  let loaderTitle = "Analyzing your responses...";
+  if (total > 0) {
+    loaderTitle = `Scoring: ${completed}/${total} answers completed...`;
+    if (pending === 0 || completed === total) {
+      loaderTitle = "Calculating your CEFR results...";
+    }
+  }
+
+  if (isLoading || isPolling) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
+      <GamifiedMascotLoader
+        title={loaderTitle}
+        buttonText={isPolling ? "Skip Wait & Show Results" : undefined}
+        onButtonPress={isPolling ? handleSkipAndCalculate : undefined}
+      />
     );
   }
 
-  if (error || !resultData || !("percentage" in resultData)) {
+  if (error) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg text-slate-600 text-center mb-6">
-          Scoring in progress or could not load assessment results. Please check back shortly.
-        </Text>
-        <TouchableOpacity className="bg-slate-900 py-3 px-8 rounded-xl" onPress={handleBack}>
-          <Text className="text-white font-bold">Back to Home</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={{ flex: 1 }} className="bg-slate-900 justify-center items-center px-6">
+        <View className="items-center mb-4 self-center" style={{ alignSelf: "center" }}>
+          <LottieView
+            source={require("../../../assets/mascot/Error 404.lottie")}
+            autoPlay
+            loop
+            style={{ width: 140, height: 140, marginBottom: 12 }}
+          />
+          <Text className="text-2xl font-black text-white text-center mb-2">
+            Connection Timeout
+          </Text>
+          <Text className="text-slate-400 text-center text-sm mb-4 px-4">
+            We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
+            reconnect!
+          </Text>
+        </View>
+
+        {/* Playable Offline Game View */}
+        <View className="w-full max-w-sm mb-6 self-center" style={{ alignSelf: "center" }}>
+          <OfflineGameView />
+        </View>
+
+        <View
+          className="flex-row gap-4 w-full max-w-sm justify-center self-center"
+          style={{ alignSelf: "center" }}
+        >
+          <TouchableOpacity
+            className="flex-1 bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
+            onPress={handleTryAgain}
+          >
+            <Text className="text-white font-bold text-base">Try Again</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="flex-1 bg-slate-800 active:bg-slate-700 py-3.5 rounded-2xl items-center border border-slate-700 active:scale-95"
+            onPress={handleBack}
+          >
+            <Text className="text-slate-300 font-bold text-base">Back to Home</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!resultData || !("percentage" in resultData)) {
+    return (
+      <GamifiedMascotLoader
+        title={loaderTitle}
+        buttonText="Skip Wait & Show Results"
+        onButtonPress={handleSkipAndCalculate}
+      />
     );
   }
 

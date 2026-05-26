@@ -13,15 +13,20 @@ import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 
 import { useStartSessionMutation } from "@/services/assessment-api";
-import { useUploadResumeMutation } from "@/services/resume-api";
+import {
+  useExtractOnboardingResumeMutation,
+  useConfirmOnboardingResumeMutation,
+} from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 
 export function ResumeUploadStep() {
   const router = useRouter();
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
-  const [uploadResume, { isLoading }] = useUploadResumeMutation();
-  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [extractResume, { isLoading: isExtracting }] = useExtractOnboardingResumeMutation();
+  const [confirmResume, { isLoading: isConfirming }] = useConfirmOnboardingResumeMutation();
+  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+  const isLoading = isExtracting || isConfirming || isStarting;
 
   const handlePick = async () => {
     const result = await DocumentPicker.getDocumentAsync({
@@ -47,7 +52,7 @@ export function ResumeUploadStep() {
   };
 
   const handleContinue = async () => {
-    if (!picked) return;
+    if (!picked || isLoading) return;
     try {
       const formData = new FormData();
       if (Platform.OS === "web" && (picked as any).file) {
@@ -61,7 +66,20 @@ export function ResumeUploadStep() {
           type: picked.mimeType ?? "application/pdf",
         } as unknown as File);
       }
-      await uploadResume(formData).unwrap();
+
+      // 1. Extract resume data and save file
+      const extractRes = await extractResume(formData).unwrap();
+      const resumeId = extractRes?.resume_id;
+      const parsedData = extractRes?.parsed_data;
+
+      // 2. Confirm immediately using the extracted parsed data
+      if (resumeId && parsedData) {
+        await confirmResume({
+          resume_id: resumeId,
+          confirmed_data: JSON.stringify(parsedData),
+        }).unwrap();
+      }
+
       // Show success screen for 2 seconds, then navigate
       setUploadSuccess(true);
       setTimeout(async () => {
@@ -73,7 +91,10 @@ export function ResumeUploadStep() {
         }
       }, 2000);
     } catch (err) {
-      Alert.alert("Upload failed", getApiErrorMessage(err, "Could not upload your resume."));
+      Alert.alert(
+        "Upload failed",
+        getApiErrorMessage(err, "Could not upload and extract your resume."),
+      );
     }
   };
 

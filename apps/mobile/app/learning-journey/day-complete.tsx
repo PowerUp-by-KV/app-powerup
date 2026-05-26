@@ -84,7 +84,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
         p.rotate.setValue(0);
       });
 
-      const animations = particles.map((p, i) => {
+      const animations = particles.map((p) => {
         return Animated.parallel([
           Animated.timing(p.y, {
             toValue: screenHeight + 50,
@@ -252,7 +252,16 @@ export default function DayCompleteScreen() {
   const cefrProgressPct = engagement?.cefr_progress_pct ?? 0;
   const nextBand = engagement?.next_cefr_band ?? (nextCefr || null);
 
-  const goHome = () => router.replace("/(tabs)/my-learning");
+  const goHome = () => {
+    if (moduleId) {
+      router.replace({
+        pathname: "/(tabs)/my-learning" as any,
+        params: { module_id: moduleId },
+      });
+    } else {
+      router.replace("/(tabs)/my-learning");
+    }
+  };
 
   const handleLevelUp = async () => {
     if (!moduleId) return;

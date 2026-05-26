@@ -99,6 +99,21 @@ export async function clearProfileCompletedInSession(): Promise<void> {
   await deleteItem(PROFILE_COMPLETED_KEY);
 }
 
+const PRE_ASSESSMENT_COMPLETED_KEY = "powerup.pre_assessment_completed";
+
+export async function setPreAssessmentCompletedInSession(completed: boolean): Promise<void> {
+  await setItem(PRE_ASSESSMENT_COMPLETED_KEY, completed ? "1" : "0");
+}
+
+export async function getPreAssessmentCompletedInSession(): Promise<boolean> {
+  const raw = await getItem(PRE_ASSESSMENT_COMPLETED_KEY);
+  return raw === "1";
+}
+
+export async function clearPreAssessmentCompletedInSession(): Promise<void> {
+  await deleteItem(PRE_ASSESSMENT_COMPLETED_KEY);
+}
+
 /**
  * Saves the email of the currently logged-in user.
  * On next login, if a different email is detected, stale local flags are cleared.
@@ -122,10 +137,12 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
   if (lastEmail && lastEmail !== normalized) {
     // Different user — wipe all device-local state
     await deleteItem(PROFILE_COMPLETED_KEY);
+    await deleteItem(PRE_ASSESSMENT_COMPLETED_KEY);
     await deleteItem(COMPLETED_SECTIONS_KEY);
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
     await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
+    await deleteItem(ONBOARDING_ANSWERS_KEY);
     return true;
   }
   await setItem(LAST_LOGGED_IN_EMAIL_KEY, normalized);
@@ -141,6 +158,10 @@ export async function saveCompletedSection(section: string): Promise<void> {
     existing.push(section);
     await setItem(COMPLETED_SECTIONS_KEY, JSON.stringify(existing));
   }
+}
+
+export async function syncCompletedSections(sections: string[]): Promise<void> {
+  await setItem(COMPLETED_SECTIONS_KEY, JSON.stringify(sections));
 }
 
 export async function getCompletedSections(): Promise<string[]> {
@@ -170,14 +191,44 @@ export async function clearAssessmentStartTime(): Promise<void> {
   await deleteItem(ASSESSMENT_START_TIME_KEY);
 }
 
+export interface StoredPreAssessmentResult {
+  percentage?: number;
+  total_score?: number;
+  max_score?: number;
+  cefr_level?: string | null;
+  cefr_range?: string | null;
+  section_percentages?: Record<string, number>;
+  timeTaken?: string;
+}
+
 const PRE_ASSESSMENT_RESULTS_KEY = "powerup.pre_assessment_results";
 
-export async function savePreAssessmentResults(results: any): Promise<void> {
+export async function savePreAssessmentResults(results: StoredPreAssessmentResult): Promise<void> {
   await setItem(PRE_ASSESSMENT_RESULTS_KEY, JSON.stringify(results));
 }
 
-export async function getPreAssessmentResults(): Promise<any | null> {
+export async function getPreAssessmentResults(): Promise<StoredPreAssessmentResult | null> {
   const raw = await getItem(PRE_ASSESSMENT_RESULTS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as StoredPreAssessmentResult;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPreAssessmentResults(): Promise<void> {
+  await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
+}
+
+const ONBOARDING_ANSWERS_KEY = "powerup.onboarding_answers";
+
+export async function saveLocalOnboardingAnswers(answers: Record<string, any>): Promise<void> {
+  await setItem(ONBOARDING_ANSWERS_KEY, JSON.stringify(answers));
+}
+
+export async function getLocalOnboardingAnswers(): Promise<Record<string, any> | null> {
+  const raw = await getItem(ONBOARDING_ANSWERS_KEY);
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -186,6 +237,6 @@ export async function getPreAssessmentResults(): Promise<any | null> {
   }
 }
 
-export async function clearPreAssessmentResults(): Promise<void> {
-  await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
+export async function clearLocalOnboardingAnswers(): Promise<void> {
+  await deleteItem(ONBOARDING_ANSWERS_KEY);
 }

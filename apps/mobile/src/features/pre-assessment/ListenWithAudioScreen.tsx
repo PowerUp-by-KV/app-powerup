@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
-  StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -25,6 +24,8 @@ import { Platform } from "react-native";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
+import LottieView from "lottie-react-native";
+import { OfflineGameView } from "@/components/OfflineGameView";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
@@ -107,9 +108,20 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [currentLocalUri, setCurrentLocalUri] = useState<string | null>(null);
   const [currentLocalDuration, setCurrentLocalDuration] = useState<number>(0);
 
-  const maxDuration = currentQuestion?.recording_time_seconds || 30;
+  const getListeningDuration = () => {
+    const complexity = String(currentQuestion?.complexity || "")
+      .toLowerCase()
+      .trim();
+    if (complexity === "easy" || complexity === "medium") {
+      return 15;
+    }
+    if (complexity === "hard" || complexity === "difficult" || complexity === "advanced") {
+      return 30;
+    }
+    return currentQuestion?.recording_time_seconds || 30;
+  };
 
-  // Reset timer on question change
+  const maxDuration = getListeningDuration();
   useEffect(() => {
     if (currentQuestion) {
       setTimeLeft(maxDuration + 10);
@@ -207,8 +219,22 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch(() => {
-            // Background upload failure handler
+          .catch((err) => {
+            // Background upload failure handler with user alerts
+            console.error("Audio upload failed:", err);
+            Alert.alert(
+              "Upload Failed",
+              "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
+            );
+            // Reset recorded states on failure
+            setHasRecorded((prev) => ({ ...prev, [qId]: false }));
+            setAnswers((prev) => {
+              const next = { ...prev };
+              delete next[qId];
+              return next;
+            });
+            setCurrentLocalUri(null);
+            setCurrentLocalDuration(0);
           })
           .finally(() => {
             setUploadingQuestions((prev) => ({ ...prev, [qId]: false }));
@@ -242,20 +268,37 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-white px-6">
-        <Text className="text-lg font-bold text-slate-800 text-center mb-2">
-          Connection Timeout
-        </Text>
-        <Text className="text-sm text-slate-500 text-center mb-6">
-          Could not load listening section due to network delay. Please try again.
-        </Text>
-        <TouchableOpacity
-          onPress={() => refetch()}
-          className="bg-indigo-600 px-6 py-3 rounded-xl shadow-sm"
-        >
-          <Text className="text-white font-semibold">Retry Loading Questions</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView className="flex-1 bg-slate-50">
+        <View className="flex-1 w-full items-center justify-center p-6">
+          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <LottieView
+              source={require("../../../assets/mascot/Error 404.lottie")}
+              autoPlay
+              loop
+              style={{ width: 140, height: 140, marginBottom: 12 }}
+            />
+
+            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+              Connection Timeout
+            </Text>
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-4 text-center">
+              Could not load listening section due to network delay. Please try again.
+            </Text>
+
+            {/* Inline Arcade Offline Game (Chrome Dino Style) */}
+            <OfflineGameView />
+
+            <View className="w-full gap-3 mt-2">
+              <TouchableOpacity
+                onPress={() => refetch()}
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -272,6 +315,25 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }
 
   const handleFinish = async () => {
+    // Prevent proceeding during active background audio upload
+    const pendingQIds = Object.keys(uploadingQuestions).filter(
+      (qId) => uploadingQuestions[qId] === true,
+    );
+    if (pendingQIds.length > 0 || isAnyUploading) {
+      Alert.alert(
+        "Upload in Progress",
+        "Your recorded answer is still uploading. Please wait a few seconds and try again.",
+      );
+      return;
+    }
+
+    // Verify all questions have answers
+    const unanswered = questions.filter((q) => !answers[q.id]);
+    if (unanswered.length > 0) {
+      Alert.alert("Incomplete Answers", "Please record and upload your answer before proceeding.");
+      return;
+    }
+
     setIsFinished(true);
     try {
       // Wait for any in-flight audio uploads to settle before reading answers,
@@ -283,6 +345,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
       const formattedAnswers = Object.entries(answers).map(([qId, val]) => ({
         question_id: qId,
+        answer: val,
         audio_url: val,
       }));
 
@@ -311,6 +374,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     } catch (err: any) {
       const msg = err?.data?.message || err?.message || "Could not submit answers.";
       Alert.alert("Submission Failed", msg);
+      setIsFinished(false);
     }
   };
 
@@ -319,7 +383,18 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       await stopRecording();
     }
 
-    if (!hasRecorded[currentQuestion?.id]) {
+    const currentQId = currentQuestion?.id || "";
+
+    // Gating transitions if background audio upload is still in progress
+    if (uploadingQuestions[currentQId] === true) {
+      Alert.alert(
+        "Upload In Progress",
+        "Please wait a few seconds for your audio recording to finish uploading.",
+      );
+      return;
+    }
+
+    if (!hasRecorded[currentQId] || !answers[currentQId]) {
       Alert.alert("Recording Required", "Please record your answer before proceeding.");
       return;
     }
@@ -408,50 +483,24 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-          <View style={styles.card}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.title}>Submitting Answers…</Text>
-            <Text style={styles.subtitle}>Please wait, do not close the app</Text>
+        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
+          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
+            <LottieView
+              source={require("../../../assets/mascot/Dino Loading.json")}
+              autoPlay
+              loop
+              style={{ width: 40, height: 40 }}
+            />
+            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
+            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+              Please wait, do not close the app
+            </Text>
           </View>
         </View>
       )}
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    backgroundColor: "rgba(0,0,0,0.55)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 9999,
-  },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingVertical: 36,
-    paddingHorizontal: 40,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 10,
-    minWidth: 240,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#1e293b",
-    marginTop: 18,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: "#64748b",
-    marginTop: 6,
-    textAlign: "center",
-  },
-});
 
 interface ListenWithAudioScreenProps {
   sessionId?: string;

@@ -107,6 +107,29 @@ export const onboardingApi = api.injectEndpoints({
         formData: true,
       }),
     }),
+    extractOnboardingResume: builder.mutation<any, FormData>({
+      query: (formData) => ({
+        url: "/v1/onboarding/resume/extract",
+        method: "POST",
+        body: formData,
+        formData: true,
+      }),
+    }),
+    confirmOnboardingResume: builder.mutation<any, { resume_id: string; confirmed_data: string }>({
+      query: ({ resume_id, confirmed_data }) => {
+        const params = new URLSearchParams();
+        params.append("resume_id", resume_id);
+        params.append("confirmed_data", confirmed_data);
+        return {
+          url: "/v1/onboarding/resume/confirm",
+          method: "POST",
+          body: params.toString(),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        };
+      },
+    }),
     getProfileOnboardingAnswers: builder.query<any, void>({
       query: () => "/v1/users/profile",
       providesTags: ["Onboarding"],
@@ -119,6 +142,13 @@ export const onboardingApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Onboarding", "Auth"],
     }),
+    getOnboardingStatus: builder.query<{ user_id: string; profile_completed: boolean }, string>({
+      query: (user_id) => `/v1/onboarding/${user_id}/status`,
+      providesTags: ["Onboarding"],
+    }),
+    // NOTE: profile-resume read/update live in resume-api.ts (typed as
+    // ResumeRead). They were duplicated here against the same shared base API,
+    // causing an endpoint-name collision — import those hooks from resume-api.
   }),
 });
 
@@ -126,7 +156,11 @@ export const {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
   useUploadResumeMutation,
+  useExtractOnboardingResumeMutation,
+  useConfirmOnboardingResumeMutation,
   useCompleteProfileMutation,
   useGetProfileOnboardingAnswersQuery,
   useUpdateProfileOnboardingAnswersMutation,
+  useGetOnboardingStatusQuery,
+  useLazyGetOnboardingStatusQuery,
 } = onboardingApi;

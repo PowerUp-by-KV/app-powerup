@@ -1,0 +1,7 @@
+- generic [ref=e15]:
+  - generic [ref=e16]:
+    - generic [ref=e17]: Content versions
+    - generic [ref=e19] [cursor=pointer]: Refresh
+    - generic [ref=e21] [cursor=pointer]: Sign out
+  - generic [ref=e22]: HTTP 404
+  - generic [ref=e23]: No content versions generated yet.

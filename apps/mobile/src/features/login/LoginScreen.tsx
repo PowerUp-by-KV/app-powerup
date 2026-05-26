@@ -25,13 +25,11 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
   saveAuthSession,
-  saveAssessmentSessionId,
   getProfileCompletedInSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi } from "@/services/onboarding-api";
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { onboardingApi, useLazyGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -42,7 +40,7 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
   const [getProfile] = useLazyGetProfileQuery();
-  const [startSession] = useStartSessionMutation();
+  const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the authentication handshake
@@ -69,53 +67,30 @@ export function LoginScreen() {
       // Fetch the latest full profile details from the backend
       const profile = await getProfile().unwrap();
 
+      // Fetch authoritative onboarding status from status endpoint
+      let onboardingStatus = null;
+      try {
+        if (profile.id) {
+          onboardingStatus = await getOnboardingStatus(profile.id).unwrap();
+        }
+      } catch (err) {
+        console.warn("Failed to fetch onboarding status:", err);
+      }
+
       // ─── ONBOARDING CHECK ─────────────────────────────────────────────────
-      // Primary truth  : backend `profile_completed` field (works across devices).
-      // Secondary truth: local session flag (covers same-session race conditions
-      //                  where the backend flag may not have propagated yet).
+      // Primary truth  : backend onboarding status or profile field.
+      // Secondary truth: local session flag.
       const localOnboardingDone = await getProfileCompletedInSession();
-      const isOnboardingComplete = profile.profile_completed || localOnboardingDone;
+      const isOnboardingComplete =
+        onboardingStatus?.profile_completed || profile.profile_completed || localOnboardingDone;
 
       if (!isOnboardingComplete) {
         router.replace("/onboarding");
         return;
       }
 
-      // ─── PRE-ASSESSMENT CHECK ──────────────────────────────────────────────
-      // Primary truth: `cefr_range` from the backend profile.
-      // A non-null cefr_range means the full pre-assessment is complete.
-      if (profile.cefr_range) {
-        router.replace("/(tabs)");
-        return;
-      }
-
-      // ─── RESUME INCOMPLETE PRE-ASSESSMENT ─────────────────────────────────
-      // Onboarding is done but pre-assessment is not yet complete.
-      // startSession returns:
-      //   • first_section = next section the user needs to answer (resume point)
-      //   • first_section = null/empty → all sections submitted, go to results
-      try {
-        const session = await startSession().unwrap();
-        if (session?.session_id) {
-          await saveAssessmentSessionId(session.session_id);
-
-          if (session.first_section) {
-            const nextRoute = getNextRouteForSection(session.first_section);
-            const cleanPath = nextRoute.startsWith("/") ? nextRoute : `/${nextRoute}`;
-            router.replace(
-              `${cleanPath}?session_id=${encodeURIComponent(session.session_id)}` as any,
-            );
-          } else {
-            // All sections answered but cefr_range not yet set → show results
-            router.replace(`/results?session_id=${encodeURIComponent(session.session_id)}` as any);
-          }
-        } else {
-          router.replace("/(tabs)");
-        }
-      } catch {
-        // startSession failed (network error, etc.) → safe fallback to home
-        router.replace("/(tabs)");
-      }
+      // If onboarding is complete, navigate directly to My Learning tab
+      router.replace("/my-learning" as any);
     } catch {
       // getProfile failed → cannot determine status, send to onboarding as safest fallback
       router.replace("/onboarding");

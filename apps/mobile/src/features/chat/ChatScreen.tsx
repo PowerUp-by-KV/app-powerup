@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  FlatListProps,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,16 +23,7 @@ import {
   useSendChatMessageMutation,
   useToggleBookmarkMutation,
 } from "@/services/chat-api";
-interface SafeFlatListProps<T> {
-  ref?: any;
-  data: T[];
-  keyExtractor: (item: T, index: number) => string;
-  contentContainerStyle?: any;
-  ListEmptyComponent?: React.ReactNode;
-  renderItem: (info: { item: T; index: number }) => React.ReactElement | null;
-  className?: string;
-  onContentSizeChange?: (w: number, h: number) => void;
-}
+import { SafeFlatListProps } from "@/types";
 
 const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
   SafeFlatListProps<ChatMessage> & React.RefAttributes<FlatList<ChatMessage>>

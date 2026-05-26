@@ -11,7 +11,6 @@ import {
   Modal,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetMedalsQuery } from "@/services/gamification-api";
@@ -217,7 +216,6 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 }
 
 export function MedalsScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const { data, isLoading } = useGetMedalsQuery();
 

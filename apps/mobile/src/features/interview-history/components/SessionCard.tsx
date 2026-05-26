@@ -52,7 +52,12 @@ function formatSessionDate(dateStr: string): string {
 
 export function SessionCard({ session, onPress }: SessionCardProps) {
   const statusKey = session.status?.toLowerCase().replace(/\s+/g, "_") || "default";
-  const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.default;
+  const statusCfg = (STATUS_CONFIG[statusKey] || STATUS_CONFIG.default) as {
+    label: string;
+    color: string;
+    bg: string;
+    icon: string;
+  };
 
   return (
     <Pressable
