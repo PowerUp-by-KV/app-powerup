@@ -16,14 +16,17 @@ import {
   updateField,
   nextStep,
   prevStep,
+  setStep,
   type OnboardingState,
 } from "@/store/slices/onboardingSlice";
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
+  useCompleteProfileMutation,
+  useLazyGetOnboardingStatusQuery,
   OnboardingQuestion,
 } from "@/services/onboarding-api";
-import { useGetProfileQuery } from "@/services/auth-api";
+import { useLazyGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
@@ -36,6 +39,9 @@ import {
   clearCompletedSections,
   getProfileCompletedInSession,
   saveLocalOnboardingAnswers,
+  saveOnboardingWizardState,
+  getOnboardingWizardState,
+  clearOnboardingWizardState,
 } from "@/services/auth-storage";
 import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
@@ -50,7 +56,8 @@ export default function OnboardingScreen() {
   const formData = useSelector((state: RootState) => state.onboarding);
   const stepNumber = formData.currentStep;
 
-  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
+  const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
+  const [getProfile] = useLazyGetProfileQuery();
   const {
     data: groupedQuestions,
     isLoading: isFetching,
@@ -58,22 +65,79 @@ export default function OnboardingScreen() {
     refetch: refetchQuestions,
   } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
+  const [completeProfile] = useCompleteProfileMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
 
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
   const [isCheckingResume, setIsCheckingResume] = React.useState(true);
 
+  // Load / Restore saved onboarding wizard state when the component mounts
   React.useEffect(() => {
-    if (isProfileLoading) return;
+    const restoreWizardState = async () => {
+      try {
+        const savedState = await getOnboardingWizardState();
+        if (savedState) {
+          if (savedState.currentStep) {
+            dispatch(setStep(savedState.currentStep));
+          }
+          if (savedState.formData) {
+            Object.entries(savedState.formData).forEach(([field, value]) => {
+              dispatch(updateField({ field: field as any, value }));
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to restore onboarding wizard progress:", err);
+      }
+    };
+    restoreWizardState();
+  }, [dispatch]);
 
+  // Auto-save wizard progress to local storage on change
+  React.useEffect(() => {
+    if (
+      stepNumber > 1 ||
+      Object.values(formData).some((val) => val !== "" && val !== null && val !== undefined)
+    ) {
+      saveOnboardingWizardState({
+        currentStep: stepNumber,
+        formData: formData,
+      }).catch((err) => console.warn("Failed to auto-save onboarding wizard progress:", err));
+    }
+  }, [stepNumber, formData]);
+
+  React.useEffect(() => {
     const checkResumeAssessment = async () => {
       try {
-        const localOnboardingDone = await getProfileCompletedInSession();
-        const isOnboardingComplete = profile?.profile_completed || localOnboardingDone;
+        const session = await getAuthSession();
+        if (!session?.user?.id) {
+          setIsCheckingResume(false);
+          return;
+        }
 
-        // If the user profile is not loaded or onboarding is not completed, DO NOT start any assessment session!
-        if (!profile || !isOnboardingComplete) {
+        const localOnboardingDone = await getProfileCompletedInSession();
+        let onboardingStatus = null;
+        try {
+          onboardingStatus = await getOnboardingStatus(session.user.id).unwrap();
+        } catch (statusErr) {
+          console.warn("Failed to check onboarding status in OnboardingScreen:", statusErr);
+        }
+
+        let profileStatus = null;
+        try {
+          profileStatus = await getProfile().unwrap();
+        } catch (profileErr) {
+          console.warn("Failed to check profile status in OnboardingScreen:", profileErr);
+        }
+
+        const isOnboardingComplete =
+          (onboardingStatus?.profile_completed ?? false) ||
+          (profileStatus?.profile_completed ?? false) ||
+          localOnboardingDone;
+
+        // If onboarding is not completed, stay on onboarding screen
+        if (!isOnboardingComplete) {
           setIsCheckingResume(false);
           return;
         }
@@ -89,7 +153,7 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
-  }, [profile, isProfileLoading]);
+  }, [getOnboardingStatus, getProfile]);
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -136,7 +200,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  if (isCheckingResume || isFetching || isProfileLoading) {
+  if (isCheckingResume || isFetching) {
     return <LoaderScreen />;
   }
 
@@ -260,12 +324,41 @@ export default function OnboardingScreen() {
         console.warn("Failed to save local onboarding answers copy:", saveErr);
       }
 
-      // 3. Mark profile as completed locally, reset pre-assessment completed flag, and clear completed pre-assessment sections
+      // 3. Call completeProfile to establish the UserProfile record on the backend
+      try {
+        const session = await getAuthSession();
+
+        // Extract raw date for DOB
+        let dobStr = formData.dob || "2000-01-01";
+        // Ensure standard YYYY-MM-DD or DD/MM/YYYY format
+        if (dobStr.includes("T")) {
+          dobStr = dobStr.split("T")[0];
+        }
+
+        const profilePayload = {
+          name: (formData.name || session?.user?.name || "User").trim(),
+          mobile: (session?.user?.phone_number || "+919999999999").trim(),
+          dob: dobStr,
+          college: (formData.education || "Not Specified").trim(),
+        };
+
+        // Enforce validations matching backend OnboardingRequest schema
+        if (profilePayload.name.length < 1) profilePayload.name = "User";
+        if (profilePayload.mobile.length < 10) profilePayload.mobile = "+919999999999";
+        if (profilePayload.college.length < 2) profilePayload.college = "Not Specified";
+
+        await completeProfile(profilePayload).unwrap();
+      } catch (profileErr) {
+        console.warn("Failed to create UserProfile via completeProfile:", profileErr);
+      }
+
+      // 4. Mark profile as completed locally, reset pre-assessment completed flag, clear wizard state and completed pre-assessment sections
       await setProfileCompletedInSession(true);
       await setPreAssessmentCompletedInSession(false);
       await clearCompletedSections();
+      await clearOnboardingWizardState();
 
-      // 4. Redirect directly to My Learning tab
+      // 5. Redirect directly to My Learning tab
       router.replace("/(tabs)/my-learning" as never);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));

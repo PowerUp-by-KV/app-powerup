@@ -201,13 +201,23 @@ export function ProfileResumeScreen() {
                     <View className="border-t border-slate-100 mt-2 pt-3 flex-row gap-4">
                       {linkedinUrl && (
                         <View className="flex-row items-center">
-                          <Feather name="linkedin" size={14} color="#0077b5" className="mr-1.5" />
+                          <Feather
+                            name="linkedin"
+                            size={14}
+                            color="#0077b5"
+                            style={{ marginRight: 6 }}
+                          />
                           <Text className="text-slate-500 text-xs font-bold">LinkedIn</Text>
                         </View>
                       )}
                       {githubUrl && (
                         <View className="flex-row items-center">
-                          <Feather name="github" size={14} color="#24292e" className="mr-1.5" />
+                          <Feather
+                            name="github"
+                            size={14}
+                            color="#24292e"
+                            style={{ marginRight: 6 }}
+                          />
                           <Text className="text-slate-500 text-xs font-bold">GitHub</Text>
                         </View>
                       )}
@@ -247,7 +257,7 @@ export function ProfileResumeScreen() {
               {/* Interactive Edit Callout */}
               <Pressable
                 onPress={() => setActiveTab("edit")}
-                className="bg-slate-900 active:bg-slate-800 py-4.5 rounded-2xl flex-row items-center justify-center gap-2.5 shadow-sm"
+                className="bg-slate-900 active:bg-slate-800 py-4 rounded-2xl flex-row items-center justify-center gap-2.5 shadow-sm"
               >
                 <Feather name="edit-3" size={16} color="#fff" />
                 <Text className="text-white font-extrabold text-sm">Edit Resume Details</Text>
@@ -359,13 +369,18 @@ export function ProfileResumeScreen() {
               <Pressable
                 onPress={handleSave}
                 disabled={isUpdating}
-                className={`py-4.5 rounded-2xl items-center justify-center flex-row shadow-sm ${isUpdating ? "bg-slate-300" : "bg-emerald-600 active:bg-emerald-700"}`}
+                className={`py-4 rounded-2xl items-center justify-center flex-row shadow-sm ${isUpdating ? "bg-slate-300" : "bg-emerald-600 active:bg-emerald-700"}`}
               >
                 {isUpdating ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Feather name="check-circle" size={16} color="#fff" className="mr-2" />
+                    <Feather
+                      name="check-circle"
+                      size={16}
+                      color="#fff"
+                      style={{ marginRight: 8 }}
+                    />
                     <Text className="text-white font-black text-sm">Save Changes</Text>
                   </>
                 )}

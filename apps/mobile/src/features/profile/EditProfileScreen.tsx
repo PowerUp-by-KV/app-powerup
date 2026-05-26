@@ -595,7 +595,7 @@ export function EditProfileScreen() {
               onPress={() => setMode("edit")}
               className="flex-row items-center px-4 py-2 bg-indigo-600 rounded-full shadow"
             >
-              <Feather name="edit-2" size={14} color="#fff" className="mr-1.5" />
+              <Feather name="edit-2" size={14} color="#fff" style={{ marginRight: 6 }} />
               <Text className="text-white font-bold text-xs">EDIT</Text>
             </Pressable>
           ) : (
@@ -618,7 +618,7 @@ export function EditProfileScreen() {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <>
-                    <Feather name="check" size={14} color="#fff" className="mr-1.5" />
+                    <Feather name="check" size={14} color="#fff" style={{ marginRight: 6 }} />
                     <Text className="text-white font-bold text-xs">SAVE</Text>
                   </>
                 )}

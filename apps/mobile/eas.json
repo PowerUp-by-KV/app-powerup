@@ -7,12 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "node": "22.18.0",
       "ios": {
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://localhost:9000/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_PUBLIC_API_URL": "http://localhost:9000/api"
       }
     },
     "preview": {
@@ -23,16 +23,14 @@
       },
       "node": "22.18.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
       }
     },
     "production": {
       "autoIncrement": true,
       "node": "22.18.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api"
       }
     }
   },

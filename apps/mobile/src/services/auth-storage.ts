@@ -24,6 +24,7 @@ const AUTH_KEY = "powerup_auth_session";
 const ASSESSMENT_SESSION_KEY = "powerup_assessment_session_id";
 const PROFILE_COMPLETED_KEY = "powerup.profile_completed";
 const LAST_LOGGED_IN_EMAIL_KEY = "powerup.last_logged_in_email";
+const ONBOARDING_WIZARD_STATE_KEY = "powerup.onboarding_wizard_state";
 
 const isWeb = Platform.OS === "web";
 
@@ -143,10 +144,35 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
     await deleteItem(ASSESSMENT_START_TIME_KEY);
     await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
     await deleteItem(ONBOARDING_ANSWERS_KEY);
+    await deleteItem(ONBOARDING_WIZARD_STATE_KEY);
     return true;
   }
   await setItem(LAST_LOGGED_IN_EMAIL_KEY, normalized);
   return false;
+}
+
+export async function saveOnboardingWizardState(state: {
+  currentStep: number;
+  formData: any;
+}): Promise<void> {
+  await setItem(ONBOARDING_WIZARD_STATE_KEY, JSON.stringify(state));
+}
+
+export async function getOnboardingWizardState(): Promise<{
+  currentStep: number;
+  formData: any;
+} | null> {
+  const raw = await getItem(ONBOARDING_WIZARD_STATE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export async function clearOnboardingWizardState(): Promise<void> {
+  await deleteItem(ONBOARDING_WIZARD_STATE_KEY);
 }
 
 const COMPLETED_SECTIONS_KEY = "powerup.completed_sections";

@@ -96,11 +96,32 @@ export interface WritingResultRead {
   passed: boolean;
 }
 
+export interface ProgressionModuleRead {
+  module_id: string;
+  module_no: number;
+  title: string;
+  completed: boolean;
+  locked: boolean;
+  unlocked_days: number[];
+  wave: number;
+}
+
+export interface ProgressionRead {
+  current_wave: number;
+  current_day_phase: number[];
+  unlocked_modules: ProgressionModuleRead[];
+}
+
 export const moduleApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
     getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
       query: () => "/v1/learning-path/personalized",
+      providesTags: ["Modules"],
+    }),
+
+    getProgression: builder.query<ProgressionRead, void>({
+      query: () => "/v1/progression",
       providesTags: ["Modules"],
     }),
 
@@ -223,6 +244,8 @@ export const moduleApi = api.injectEndpoints({
 
 export const {
   useGetPersonalizedPathQuery,
+  useGetProgressionQuery,
+  useLazyGetProgressionQuery,
   useGetModuleProgressQuery,
   useGetModulesQuery,
   useGetModuleVariantsQuery,
