@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetAccuracyQuery, type AccuracyScope } from "@/services/gamification-api";
@@ -13,7 +12,6 @@ const SCOPES: { key: AccuracyScope; label: string }[] = [
 ];
 
 export function AccuracyScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
   const [scope, setScope] = useState<AccuracyScope>("learning");
   const { data, isLoading } = useGetAccuracyQuery(scope);
