@@ -39,10 +39,6 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     [questions],
   );
 
-  if (isSpeedMatching) {
-    return <SpeedMatchingGame questions={questions} onComplete={onComplete} />;
-  }
-
   const mcqs = useMemo(
     () =>
       questions.filter(
@@ -108,6 +104,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
       isParsed: false,
     };
   }, [current]);
+
+  if (isSpeedMatching) {
+    return <SpeedMatchingGame questions={questions} onComplete={onComplete} />;
+  }
 
   if (!current) {
     return (
