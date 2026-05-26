@@ -23,15 +23,12 @@ import {
   useSubmitOnboardingMutation,
 } from "@/services/onboarding-api";
 import { useGetProfileQuery } from "@/services/auth-api";
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
   setPreAssessmentCompletedInSession,
-  saveAssessmentSessionId,
   getAuthSession,
-  getAssessmentSessionId,
-  getCompletedSections,
   clearCompletedSections,
   getProfileCompletedInSession,
   saveLocalOnboardingAnswers,
@@ -40,7 +37,6 @@ import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import LoaderScreen from "./components/LoaderScreen";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 
 export default function OnboardingScreen() {
@@ -57,7 +53,7 @@ export default function OnboardingScreen() {
     refetch: refetchQuestions,
   } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
-  const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+  const [, { isLoading: isStarting }] = useStartSessionMutation();
 
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
@@ -348,7 +344,7 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch (uploadErr) {
+        } catch {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",

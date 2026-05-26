@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
+import { FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, SafeAreaView, Text, View, Pressable, Dimensions, StyleSheet } from "react-native";
+import { Modal, SafeAreaView, Text, View, Pressable, StyleSheet } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 const GAME_HEIGHT = 300;
@@ -50,12 +50,7 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
 
   useEffect(() => {
     if (gameState === "play") {
-      let lastTime = Date.now();
-
       const gameLoop = () => {
-        const now = Date.now();
-        lastTime = now;
-
         // Apply physics
         velocity.current += 0.28; // Lower gravity for smooth, fun gameplay
         mascotY.current += velocity.current;

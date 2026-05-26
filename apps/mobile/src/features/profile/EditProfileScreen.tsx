@@ -20,7 +20,6 @@ import {
   useGetProfileOnboardingAnswersQuery,
   useUpdateProfileOnboardingAnswersMutation,
   useGetGroupedQuestionsQuery,
-  useSubmitOnboardingMutation,
 } from "@/services/onboarding-api";
 import { useGetProfileResumeQuery, useUpdateProfileResumeMutation } from "@/services/resume-api";
 import { getApiErrorMessage } from "@/utils/error-message";
@@ -68,7 +67,6 @@ export function EditProfileScreen() {
   });
   const [updateProfileOnboardingAnswers, { isLoading: isOnboardingSaving }] =
     useUpdateProfileOnboardingAnswersMutation();
-  const [submitOnboarding] = useSubmitOnboardingMutation();
 
   const is404Error =
     (profileError && "status" in profileError && profileError.status === 404) ||

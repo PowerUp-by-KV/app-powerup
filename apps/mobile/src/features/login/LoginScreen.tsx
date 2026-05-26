@@ -25,13 +25,11 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
   saveAuthSession,
-  saveAssessmentSessionId,
   getProfileCompletedInSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
 import { onboardingApi, useLazyGetOnboardingStatusQuery } from "@/services/onboarding-api";
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 
 export function LoginScreen() {
   const router = useRouter();
@@ -43,7 +41,6 @@ export function LoginScreen() {
   const [login] = useLoginMutation();
   const [getProfile] = useLazyGetProfileQuery();
   const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
-  const [startSession] = useStartSessionMutation();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the authentication handshake

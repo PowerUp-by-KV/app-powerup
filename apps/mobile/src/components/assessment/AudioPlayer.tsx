@@ -13,13 +13,7 @@ interface AudioPlayerProps {
   onPlayEnd?: () => void;
 }
 
-export function AudioPlayer({
-  audioUrl,
-  audioText,
-  duration = 30,
-  onPlayStart,
-  onPlayEnd,
-}: AudioPlayerProps) {
+export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }: AudioPlayerProps) {
   const resolvedAudioUrl = resolveApiAssetUrl(audioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);

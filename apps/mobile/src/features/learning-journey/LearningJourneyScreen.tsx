@@ -38,7 +38,6 @@ import {
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Ionicons } from "@expo/vector-icons";
 
 import { CefrProgressBar } from "./components/CefrProgressBar";
 import { TimelineRow } from "./components/TimelineRow";
@@ -407,10 +406,9 @@ export function LearningJourneyScreen() {
     skip: !selectedModule,
   });
 
-  const { data: moduleProgress, refetch: refetchProgress } = useGetModuleProgressQuery(
-    selectedModule?.id ?? "",
-    { skip: !selectedModule },
-  );
+  const { refetch: refetchProgress } = useGetModuleProgressQuery(selectedModule?.id ?? "", {
+    skip: !selectedModule,
+  });
 
   const { data: engagement, refetch: refetchEngagement } = useGetModuleEngagementQuery(
     selectedModule?.id ?? "",
@@ -562,7 +560,6 @@ export function LearningJourneyScreen() {
   }
 
   const totalDays = days?.length ?? 0;
-  const completedDays = moduleProgress ? moduleProgress.current_day - 1 : 0;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">

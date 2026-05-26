@@ -1,0 +1,6 @@
+- generic [ref=e61]:
+  - generic [ref=e62]:
+    - generic [ref=e63]: Basic Profile • Step 1 of 22
+    - generic [ref=e64]: What is your name or preferred display name?
+  - textbox "What is your name or preferred display name?" [ref=e68]
+  - generic [ref=e71] [cursor=pointer]: Next

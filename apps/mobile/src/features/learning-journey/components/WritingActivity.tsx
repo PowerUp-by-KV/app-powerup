@@ -25,7 +25,7 @@ interface WritingActivityProps {
   onComplete: (result: WritingActivityResult) => void;
 }
 
-export function WritingActivity({ activityId, questions, onComplete }: WritingActivityProps) {
+export function WritingActivity({ questions, onComplete }: WritingActivityProps) {
   const prompt = questions[0];
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);

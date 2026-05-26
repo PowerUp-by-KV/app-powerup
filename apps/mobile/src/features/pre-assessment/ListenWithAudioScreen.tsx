@@ -24,7 +24,6 @@ import { Platform } from "react-native";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
-import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 

@@ -23,7 +23,6 @@ import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
-import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 
@@ -211,7 +210,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch((err) => {
+          .catch((_err) => {
             Alert.alert(
               "Upload Failed",
               "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",

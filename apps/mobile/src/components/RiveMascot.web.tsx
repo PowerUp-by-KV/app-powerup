@@ -46,16 +46,18 @@ function RiveContainer({ src, width, height, containerRef }: RiveContainerProps)
     autoplay: true,
   });
 
-  // Defensively match any of the standard tracking inputs (xAxis, pointerX, mouseX)
-  const xAxis =
-    useStateMachineInput(rive, "State Machine 1", "xAxis") ||
-    useStateMachineInput(rive, "State Machine 1", "pointerX") ||
-    useStateMachineInput(rive, "State Machine 1", "mouseX");
+  // Defensively match any of the standard tracking inputs (xAxis, pointerX,
+  // mouseX). Every hook must be called unconditionally on every render — do
+  // NOT short-circuit the hook calls with ||, only combine their results.
+  const xAxisStd = useStateMachineInput(rive, "State Machine 1", "xAxis");
+  const xAxisPointer = useStateMachineInput(rive, "State Machine 1", "pointerX");
+  const xAxisMouse = useStateMachineInput(rive, "State Machine 1", "mouseX");
+  const xAxis = xAxisStd || xAxisPointer || xAxisMouse;
 
-  const yAxis =
-    useStateMachineInput(rive, "State Machine 1", "yAxis") ||
-    useStateMachineInput(rive, "State Machine 1", "pointerY") ||
-    useStateMachineInput(rive, "State Machine 1", "mouseY");
+  const yAxisStd = useStateMachineInput(rive, "State Machine 1", "yAxis");
+  const yAxisPointer = useStateMachineInput(rive, "State Machine 1", "pointerY");
+  const yAxisMouse = useStateMachineInput(rive, "State Machine 1", "mouseY");
+  const yAxis = yAxisStd || yAxisPointer || yAxisMouse;
 
   useEffect(() => {
     if (!rive) return;

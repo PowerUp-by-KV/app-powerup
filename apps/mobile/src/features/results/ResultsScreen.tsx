@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   SafeAreaView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -89,7 +88,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     if (sessionId) {
       try {
         await triggerGetResult({ session_id: sessionId }).unwrap();
-      } catch (err) {
+      } catch {
         Alert.alert(
           "Results Pending",
           "Your speaking audios are still being processed on the backend. Please give it a few more seconds to prepare your initial CEFR calculation!",

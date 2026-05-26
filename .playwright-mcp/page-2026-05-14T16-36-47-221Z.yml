@@ -1,0 +1,17 @@
+- generic [ref=e9]:
+  - generic [ref=e10]:
+    - generic [ref=e12] [cursor=pointer]: 
+    - generic [ref=e13]: AI Coach
+    - generic [ref=e15] [cursor=pointer]: 
+  - generic [ref=e16]:
+    - generic [ref=e49]:
+      - generic [ref=e53]: Give me a grammar tip about past simple.
+      - generic [ref=e55]:
+        - generic [ref=e57]: Great choice! The past simple tense is used to describe completed actions in the past. **Tip:** Regular verbs form the past simple by adding “-ed” to the base form (e.g., “play” becomes “played”). For irregular verbs, you need to memorize their past forms (e.g., “go” becomes “went”). **Actionable practice:** Write five sentences about what you did yesterday using both regular and irregular verbs. This will help reinforce your understanding! Keep it up!
+        - generic [ref=e58] [cursor=pointer]:
+          - generic [ref=e59]: 
+          - generic [ref=e60]: Bookmark
+    - generic [ref=e43]:
+      - generic [ref=e45] [cursor=pointer]: 
+      - textbox "Ask me anything..." [ref=e46]
+      - generic [ref=e61]: 

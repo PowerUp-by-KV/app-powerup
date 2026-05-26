@@ -84,7 +84,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
         p.rotate.setValue(0);
       });
 
-      const animations = particles.map((p, i) => {
+      const animations = particles.map((p) => {
         return Animated.parallel([
           Animated.timing(p.y, {
             toValue: screenHeight + 50,

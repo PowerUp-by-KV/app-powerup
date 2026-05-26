@@ -24,7 +24,6 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { SpeakingFeedbackPlayback } from "@/components/assessment/SpeakingFeedbackPlayback";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 
 import { Audio } from "expo-av";
@@ -211,7 +210,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             setAnswers((prev) => ({ ...prev, [qId]: sasUrl }));
             return sasUrl;
           })
-          .catch((err) => {
+          .catch((_err) => {
             Alert.alert(
               "Upload Failed",
               "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
