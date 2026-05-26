@@ -146,18 +146,9 @@ export const onboardingApi = api.injectEndpoints({
       query: (user_id) => `/v1/onboarding/${user_id}/status`,
       providesTags: ["Onboarding"],
     }),
-    getProfileResume: builder.query<any, void>({
-      query: () => "/v1/users/profile/resume",
-      providesTags: ["Resume"],
-    }),
-    updateProfileResume: builder.mutation<any, { parsed_data: any }>({
-      query: (body) => ({
-        url: "/v1/users/profile/resume",
-        method: "PUT",
-        body,
-      }),
-      invalidatesTags: ["Resume"],
-    }),
+    // NOTE: profile-resume read/update live in resume-api.ts (typed as
+    // ResumeRead). They were duplicated here against the same shared base API,
+    // causing an endpoint-name collision — import those hooks from resume-api.
   }),
 });
 
@@ -172,6 +163,4 @@ export const {
   useUpdateProfileOnboardingAnswersMutation,
   useGetOnboardingStatusQuery,
   useLazyGetOnboardingStatusQuery,
-  useGetProfileResumeQuery,
-  useUpdateProfileResumeMutation,
 } = onboardingApi;

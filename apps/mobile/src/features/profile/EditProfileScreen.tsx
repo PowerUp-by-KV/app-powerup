@@ -21,9 +21,8 @@ import {
   useUpdateProfileOnboardingAnswersMutation,
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
-  useGetProfileResumeQuery,
-  useUpdateProfileResumeMutation,
 } from "@/services/onboarding-api";
+import { useGetProfileResumeQuery, useUpdateProfileResumeMutation } from "@/services/resume-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { ErrorMascot } from "@/components";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
