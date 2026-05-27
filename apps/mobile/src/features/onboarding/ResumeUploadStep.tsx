@@ -163,8 +163,8 @@ export function ResumeUploadStep() {
             <Feather name="file-text" size={14} color="#fff" />
             <Text className="text-white font-semibold ml-2">Browse Files</Text>
           </Pressable>
-          <Text className="text-slate-400 text-xs mt-4">Supported formats: PDF, DOC, DOCX</Text>
-          <Text className="text-slate-400 text-xs">Maximum file size: 10MB</Text>
+          <Text className="text-slate-400 text-xs mt-4">Supported formats: PDF</Text>
+          <Text className="text-slate-400 text-xs">Maximum file size: 5 MB</Text>
         </Pressable>
 
         <Text className="text-slate-500 text-sm text-center mt-6 px-4">

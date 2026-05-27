@@ -13,5 +13,6 @@
     "**/.turbo": true,
     "**/.expo": true
   },
-  "editor.fontFamily": "Jetbrains Mono, Consolas, 'Courier New', monospace"
+  "editor.fontFamily": "Jetbrains Mono, Consolas, 'Courier New', monospace",
+  "postman.settings.dotenv-detection-notification-visibility": false
 }

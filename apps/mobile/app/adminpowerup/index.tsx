@@ -3,17 +3,11 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 
 // NOTE: Client-side password gate. This is a low-trust web-only barrier — the
 // real authorization must be enforced server-side on every admin endpoint.
-// The variable is intentionally non-EXPO_PUBLIC: it is read at runtime on web
-// where `process.env` is substituted at build time, and is required to be
-// supplied via the build environment. Missing config throws immediately so the
-// app never silently falls back to an empty/default password.
-const ADMIN_PASSWORD: string = (() => {
-  const value = process.env.ADMIN_PANEL_PASSWORD;
-  if (Platform.OS === "web" && !value) {
-    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the web build environment.");
-  }
-  return value ?? "";
-})();
+// The password is supplied as a public Expo env var so the web build can read
+// it at compile time. Missing config shows a clear setup message instead of
+// silently falling back to an empty/default password.
+const ADMIN_PASSWORD: string = process.env.EXPO_PUBLIC_ADMIN_PASSWORD?.trim() ?? "";
+const IS_ADMIN_PASSWORD_CONFIGURED: boolean = !!process.env.EXPO_PUBLIC_ADMIN_PASSWORD?.trim();
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
@@ -34,7 +28,7 @@ interface ContentVersion {
 /**
  * Web-only internal admin panel.
  * - On native (iOS/Android) it short-circuits to a "web only" notice.
- * - Auth is a single hardcoded password from EXPO_PUBLIC_ADMIN_PASSWORD.
+ * - Auth is a single password from EXPO_PUBLIC_ADMIN_PASSWORD.
  * - Session lives in localStorage; mobile bundle never renders this route.
  */
 export default function AdminPowerupPage() {
@@ -47,6 +41,47 @@ export default function AdminPowerupPage() {
       setAuthed(true);
     }
   }, []);
+
+  if (Platform.OS === "web" && !IS_ADMIN_PASSWORD_CONFIGURED) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          backgroundColor: "#fef2f2",
+        }}
+      >
+        <View
+          style={{
+            width: 420,
+            maxWidth: "100%",
+            padding: 24,
+            backgroundColor: "#fff",
+            borderRadius: 16,
+            borderWidth: 1,
+            borderColor: "#fee2e2",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 15,
+          }}
+        >
+          <Text style={{ fontSize: 20, fontWeight: "900", color: "#991b1b", marginBottom: 12 }}>
+            Configuration Required
+          </Text>
+          <Text style={{ fontSize: 14, color: "#7f1d1d", lineHeight: 20, marginBottom: 16 }}>
+            The admin panel password is not configured. Please set the
+            <Text style={{ fontWeight: "700", fontFamily: "monospace" }}>
+              EXPO_PUBLIC_ADMIN_PASSWORD
+            </Text>{" "}
+            environment variable in your web build/development environment to activate this panel.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   if (Platform.OS !== "web") {
     return (

@@ -95,7 +95,7 @@ export function LoginOtpScreen() {
 
           <View className="items-center mt-8">
             <Text className="text-slate-500 text-sm">
-              Don&apos;t have an account?{" "}
+              Don&apos;t have an account?
               <Text className="text-indigo-600 font-bold" onPress={() => router.push("/register")}>
                 Sign up
               </Text>

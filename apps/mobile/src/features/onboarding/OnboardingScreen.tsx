@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
+import * as FileSystem from "expo-file-system";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
 import { RootState } from "@/store";
@@ -58,6 +59,7 @@ export default function OnboardingScreen() {
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
   const [isCheckingResume, setIsCheckingResume] = React.useState(true);
+  const MAX_RESUME_BYTES = 5 * 1024 * 1024; // 5 MB
 
   React.useEffect(() => {
     if (isProfileLoading) return;
@@ -74,7 +76,7 @@ export default function OnboardingScreen() {
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/my-learning" as any);
+        router.replace("/my-learning");
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -84,7 +86,7 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
-  }, [profile, isProfileLoading]);
+  }, [profile, isProfileLoading, router]);
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -109,7 +111,7 @@ export default function OnboardingScreen() {
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4">
               We couldn't connect to the learning server. Please ensure the backend service is
               running and try again.
             </Text>
@@ -152,7 +154,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/my-learning" as any);
+              router.replace("/my-learning");
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -167,7 +169,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  const handleInputChange = (key: string, value: any) => {
+  const handleInputChange = (key: string, value: unknown) => {
     dispatch(updateField({ field: key as keyof OnboardingState, value }));
     if (question?.input_type === "file" && key === question.question_key) {
       setResumeUploaded(false);
@@ -226,7 +228,7 @@ export default function OnboardingScreen() {
       // 2.5 Save answers to SecureStore for EditProfileScreen local fallback
       try {
         if (groupedQuestions) {
-          const answersGroupedWithAnswers: Record<string, any[]> = {};
+          const answersGroupedWithAnswers: Record<string, Array<Record<string, unknown>>> = {};
           Object.entries(groupedQuestions).forEach(([sectionName, questionsList]) => {
             answersGroupedWithAnswers[sectionName] = questionsList.map((q) => {
               const answerValue = formData[q.question_key as keyof typeof formData];
@@ -240,10 +242,7 @@ export default function OnboardingScreen() {
                   answer_text = String(answerValue);
                 }
               }
-              return {
-                ...q,
-                answer_text,
-              };
+              return { question_id: q.id, answer_text } as Record<string, unknown>;
             });
           });
           await saveLocalOnboardingAnswers(answersGroupedWithAnswers);
@@ -258,7 +257,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/my-learning" as any);
+      router.replace("/my-learning");
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
@@ -299,8 +298,26 @@ export default function OnboardingScreen() {
           if (Platform.OS === "web") {
             const r = await fetch(fileUri);
             const blob = await r.blob();
+            if (blob.size > MAX_RESUME_BYTES) {
+              setIsUploading(false);
+              Alert.alert("File Too Large", "Resume must be 5 MB or smaller.");
+              return;
+            }
             fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
           } else {
+            // On native, try to read the file size via Expo FileSystem
+            try {
+              const info = await FileSystem.getInfoAsync(fileUri);
+              const size = (info as unknown as { size?: number }).size ?? 0;
+              if (size > MAX_RESUME_BYTES) {
+                setIsUploading(false);
+                Alert.alert("File Too Large", "Resume must be 5 MB or smaller.");
+                return;
+              }
+            } catch (e) {
+              // Fall back to attempting upload; backend will validate size.
+              console.warn("Failed to read file size for resume upload:", e);
+            }
             // React Native FormData accepts an object with { uri, name, type }
             // even though the standard DOM FormData type does not. Cast through
             // unknown to a Blob shape so TypeScript is satisfied without `any`.
@@ -362,26 +379,8 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    if (!question) return;
-
-    if (question.input_type === "file") {
-      Alert.alert(
-        "Resume Required",
-        "Resume upload is a required first step to personalize your onboarding. You cannot skip this step.",
-      );
-      return;
-    }
-
-    // Optionally clear value when skipping
-    dispatch(updateField({ field: question.question_key as any, value: "" }));
-
-    if (stepNumber < flattenedQuestions.length) {
-      dispatch(nextStep());
-    } else {
-      await submitFinalAnswers();
-    }
-  };
+  // Skipping the resume upload step was removed — users must upload a resume
+  // to continue the onboarding. Navigation uses the Back/Continue controls.
 
   const handleBack = () => {
     if (stepNumber > 1) {
@@ -472,11 +471,7 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
 
         {/* Dynamic Secondary Action Link */}
-        {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Skip for now</Text>
-          </TouchableOpacity>
-        ) : stepNumber > 1 ? (
+        {stepNumber > 1 ? (
           <TouchableOpacity onPress={handleBack} className="mt-4 py-2">
             <Text className="text-sm text-slate-400">Go Back</Text>
           </TouchableOpacity>

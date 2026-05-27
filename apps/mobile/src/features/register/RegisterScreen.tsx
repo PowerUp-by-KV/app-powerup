@@ -175,7 +175,7 @@ export function RegisterScreen() {
           <View className="w-full max-w-sm py-4">
             {/* Top Logo Icon */}
             <View className="items-center mb-6">
-              <View className="w-14 h-14 rounded-2xl bg-slate-600 mb-4 items-center justify-center shadow-sm" />
+              {/* <View className="w-14 h-14 rounded-2xl bg-slate-600 mb-4 items-center justify-center shadow-sm" /> */}
               <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
                 Welcome to Powerup
               </Text>
@@ -446,7 +446,7 @@ export function RegisterScreen() {
             {/* Footer Link */}
             <View className="items-center mb-8">
               <Text className="text-xs text-slate-500">
-                Already have an account?{" "}
+                Already have an account?
                 <Text className="text-blue-600 font-bold" onPress={() => router.push("/login")}>
                   Log In
                 </Text>

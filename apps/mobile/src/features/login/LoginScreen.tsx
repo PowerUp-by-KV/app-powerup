@@ -165,7 +165,7 @@ export function LoginScreen() {
         >
           <View className="w-full max-w-md py-8">
             <View className="items-center mb-6">
-              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
+              {/* <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" /> */}
               <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
               <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
@@ -269,7 +269,7 @@ export function LoginScreen() {
 
               <View className="items-center mt-1">
                 <Text className="text-sm text-slate-500">
-                  Don&apos;t have an account?{" "}
+                  Don&apos;t have an account?
                   <Text
                     className="text-blue-600 font-bold"
                     onPress={() => router.push("/register")}

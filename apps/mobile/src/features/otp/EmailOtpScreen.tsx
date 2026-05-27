@@ -79,7 +79,7 @@ export function EmailOtpScreen() {
 
             <View className="items-center">
               <Text className="text-sm text-slate-500">
-                Don&apos;t have an account?{" "}
+                Don&apos;t have an account?
                 <Text
                   className="text-slate-900 font-bold underline"
                   onPress={() => router.push("/register")}
