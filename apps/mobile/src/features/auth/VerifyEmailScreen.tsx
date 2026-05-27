@@ -32,7 +32,8 @@ export function VerifyEmailScreen() {
 
   const handleContinue = () => {
     // Backend OTP endpoint not yet shipped — accept any 6-digit code in dev.
-    router.push({ pathname: "/verify-phone", params: { email } } as never);
+    // Route to thank-you after successful email verification
+    router.replace("/thank-you" as never);
   };
 
   return (
