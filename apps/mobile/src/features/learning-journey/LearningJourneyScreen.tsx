@@ -41,7 +41,6 @@ import {
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Ionicons } from "@expo/vector-icons";
 
 import { CefrProgressBar } from "./components/CefrProgressBar";
 import { TimelineRow } from "./components/TimelineRow";
@@ -823,7 +822,6 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const cefrState = isCefrCompleted ? "completed" : "in_progress";
   const cefrBadgeLabel = isCefrCompleted ? "Completed" : "In Progress";
   const cefrBadgeStyle = isCefrCompleted
     ? timelineStyles.badgeCompleted
@@ -846,7 +844,6 @@ export function LearningJourneyScreen() {
   const cefrXpText = `${engagement?.xp_earned ?? 0} XP earned in this module`;
 
   const isPostUnlocked = isCefrCompleted;
-  const postState = isPostUnlocked ? "available" : "locked";
   const postCircleStyle = isPostUnlocked
     ? timelineStyles.stageCircleInProgress
     : timelineStyles.stageCircleLocked;
@@ -860,7 +857,6 @@ export function LearningJourneyScreen() {
   const postIcon = isPostUnlocked ? ("edit-2" as const) : ("lock" as const);
 
   const isResumeUnlocked = isCefrCompleted;
-  const resumeState = isResumeUnlocked ? "available" : "locked";
   const resumeCircleStyle = isResumeUnlocked
     ? timelineStyles.stageCircleInProgress
     : timelineStyles.stageCircleLocked;
@@ -872,9 +868,6 @@ export function LearningJourneyScreen() {
     ? timelineStyles.stageTitle
     : [timelineStyles.stageTitle, timelineStyles.textLocked];
   const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
-
-  const totalDays = visibleDays?.length ?? 0;
-  const completedDays = visibleDays ? visibleDays.filter((d) => d.is_completed).length : 0;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">

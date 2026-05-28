@@ -165,6 +165,14 @@ export const onboardingApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Onboarding", "Auth"],
     }),
+    completeProfile: builder.mutation<OnboardingResponse, OnboardingRequest>({
+      query: (data) => ({
+        url: "/v1/onboarding",
+        method: "POST",
+        body: data,
+      }),
+      invalidatesTags: ["Onboarding", "Auth"],
+    }),
     getOnboardingStatus: builder.query<OnboardingStatusResponse, string>({
       query: (user_id) => `/v1/onboarding/${user_id}/status`,
       providesTags: ["Onboarding"],
@@ -189,11 +197,13 @@ export interface OnboardingStatusResponse {
   user_id: string;
   answers_present: boolean;
   resume_present: boolean;
+  profile_completed?: boolean;
 }
 
 export const {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
+  useCompleteProfileMutation,
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
   useGetProfileOnboardingAnswersQuery,
