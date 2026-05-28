@@ -70,6 +70,7 @@
     "@powerup/eslint-config": "workspace:*",
     "@testing-library/react-native": "^13",
     "@types/jest": "^29.5.14",
+    "babel-preset-expo": "~55.0.22",
     "@types/node": "^25.9.1",
     "@types/react": "~19.2.2",
     "eslint": "^9",
