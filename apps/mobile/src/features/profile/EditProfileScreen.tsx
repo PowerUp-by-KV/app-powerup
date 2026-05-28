@@ -19,16 +19,14 @@ import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api
 import {
   useGetProfileOnboardingAnswersQuery,
   useUpdateProfileOnboardingAnswersMutation,
-  useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
   useGetProfileResumeQuery,
   useUpdateProfileResumeMutation,
-  OnboardingQuestion,
+  OnboardingSectionQuestion,
 } from "@/services/onboarding-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { ErrorMascot } from "@/components";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
-import { getLocalOnboardingAnswers, saveLocalOnboardingAnswers } from "@/services/auth-storage";
 
 // Helper to parse multi-select answers
 const parseMultiSelect = (text: string): string[] => {
@@ -47,17 +45,6 @@ export function EditProfileScreen() {
   const safeBack = useSafeBack();
   const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
   const [patch, { isLoading: isPatchSaving }] = usePatchProfileMutation();
-
-  const { data: groupedQuestions } = useGetGroupedQuestionsQuery();
-  const [localAnswers, setLocalAnswers] = useState<any>(null);
-
-  useEffect(() => {
-    getLocalOnboardingAnswers().then((ans) => {
-      if (ans) {
-        setLocalAnswers(ans);
-      }
-    });
-  }, []);
 
   // Fetch onboarding profile answers from GET /api/v1/users/profile
   const {
@@ -92,7 +79,10 @@ export function EditProfileScreen() {
 
   useEffect(() => {
     if (resumeData) {
-      setResumeSummary(resumeData.summary?.text || "");
+      setResumeSummary(
+        resumeData.summary?.text ||
+          (typeof resumeData.summary === "string" ? resumeData.summary : ""),
+      );
 
       const skillsArr = resumeData.skills || [];
       const skillsStr = skillsArr
@@ -147,142 +137,101 @@ export function EditProfileScreen() {
   const [questionIds, setQuestionIds] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    // 1. Choose the best template source (localAnswers > groupedQuestions > onboardingAnswers)
-    let templateSource = localAnswers || groupedQuestions;
-    if (!templateSource && onboardingAnswers && !onboardingAnswers.id) {
-      templateSource = onboardingAnswers;
-    }
+    if (!onboardingAnswers && !profile) return;
 
-    if (templateSource || profile || onboardingAnswers) {
-      const allQuestionsWithAnswers = templateSource
-        ? (Object.values(templateSource).flat() as any[]).filter((q) => q && typeof q === "object")
-        : [];
+    // Flatten all sections → questions from the onboarding_sections response:
+    // { onboarding_sections: [{ section, questions: [{ question, answer }] }] }
+    const allQA: OnboardingSectionQuestion[] =
+      onboardingAnswers?.onboarding_sections?.flatMap((s) => s.questions) ?? [];
 
-      // Populate dynamic question mapping and a lookup by question_key (lowercased)
-      // so findQuestion is O(1) per key instead of O(n) per field.
-      const idsMap: Record<string, string> = {};
-      const byKey = new Map<string, any>();
-      allQuestionsWithAnswers.forEach((q) => {
-        if (q.question_key && q.id) {
-          idsMap[q.question_key] = q.id;
+    // Build lookup by question_key (lowercased) → { question, answer }
+    const byKey = new Map<string, OnboardingSectionQuestion>();
+    const idsMap: Record<string, string> = {};
+
+    allQA.forEach((qa) => {
+      const key = qa.question?.question_key?.toLowerCase();
+      if (key) {
+        byKey.set(key, qa);
+        idsMap[key] = qa.question.id;
+      }
+    });
+
+    // Helper: get answer_text for the first matching question_key
+    const getAnswer = (keys: string[]): string => {
+      for (const k of keys) {
+        const qa = byKey.get(k.toLowerCase());
+        if (qa?.answer?.answer_text) return qa.answer.answer_text;
+      }
+      return "";
+    };
+
+    // Helper: register question ID under a short alias
+    const regId = (alias: string, keys: string[]) => {
+      for (const k of keys) {
+        const qa = byKey.get(k.toLowerCase());
+        if (qa?.question?.id) {
+          idsMap[alias] = qa.question.id;
+          break;
         }
-        if (q.question_key) {
-          byKey.set(String(q.question_key).toLowerCase(), q);
-        }
-      });
+      }
+    };
 
-      // Robust lookup function
-      const findQuestion = (keys: string[]) => {
-        for (const k of keys) {
-          const found = byKey.get(k.toLowerCase());
-          if (found) return found;
-        }
-        return undefined;
-      };
+    // Register short-alias IDs used by handleSave
+    regId("name", ["basic_profile_1_name"]);
+    regId("education", ["basic_profile_2_education"]);
+    regId("year_of_study", ["basic_profile_3_year"]);
+    regId("branch", ["basic_profile_4_branch"]);
+    regId("dob", ["basic_profile_5_dob"]);
+    regId("country", ["basic_profile_6_country"]);
+    regId("native_language", ["basic_profile_7_language"]);
+    regId("proficiency", ["english_level_1_proficiency"]);
+    regId("challenging_skills", ["english_level_2_challenges"]);
+    regId("primary_goal", ["learning_goals_1_primary"]);
+    regId("achieve_30_days", ["learning_goals_2_30days"]);
+    regId("personalized_guidance", ["learning_goals_3_personalized"]);
+    regId("daily_time", ["preferences_1_daily_time"]);
+    regId("practice_time", ["preferences_2_when_practice"]);
+    regId("streak_challenge", ["preferences_3_streak_challenge"]);
+    regId("comfort_speaking", ["speaking_1_comfort"]);
+    regId("ai_correction", ["speaking_2_feedback_style"]);
+    regId("motivation", ["motivation_1_what_motivates"]);
+    regId("stops_practice", ["motivation_2_challenges"]);
+    regId("focus_track", ["path_setup_1_track"]);
+    regId("daily_learning_goal", ["path_setup_2_daily_goal"]);
 
-      const qName = findQuestion(["name", "full_name", "basic_profile_1_name"]);
-      const qEducation = findQuestion(["education", "profession", "basic_profile_2_education"]);
-      const qYear = findQuestion(["study_year", "year_of_study", "basic_profile_3_year"]);
-      const qBranch = findQuestion(["engineering_branch", "branch", "basic_profile_4_branch"]);
-      const qDob = findQuestion(["dob", "date_of_birth", "basic_profile_5_dob"]);
-      const qCountry = findQuestion(["country", "basic_profile_6_country"]);
-      const qLang = findQuestion(["native_language", "basic_profile_7_language"]);
+    setQuestionIds(idsMap);
 
-      const qProf = findQuestion([
-        "proficiency",
-        "english_proficiency",
-        "english_level_1_proficiency",
-      ]);
-      const qSkills = findQuestion(["challenging_skills", "english_level_2_challenges"]);
+    // Populate form state from answers
+    setName(getAnswer(["basic_profile_1_name"]) || profile?.name || "");
+    setEducation(getAnswer(["basic_profile_2_education"]));
+    setYearOfStudy(getAnswer(["basic_profile_3_year"]));
+    setBranch(getAnswer(["basic_profile_4_branch"]));
+    setDob(getAnswer(["basic_profile_5_dob"]));
+    setCountry(getAnswer(["basic_profile_6_country"]) || profile?.country || "");
+    setNativeLanguage(getAnswer(["basic_profile_7_language"]));
 
-      const qGoal = findQuestion(["learning_goal", "primary_goal", "learning_goals_1_primary"]);
-      const qAchieve = findQuestion(["achieve_30_days", "next_30_days", "learning_goals_2_30days"]);
-      const qGuidance = findQuestion(["personalized_guidance", "learning_goals_3_personalized"]);
+    setEnglishProficiency(getAnswer(["english_level_1_proficiency"]));
+    setChallengingSkills(parseMultiSelect(getAnswer(["english_level_2_challenges"])));
 
-      const qTime = findQuestion(["daily_time", "dedicate_time", "preferences_1_daily_time"]);
-      const qPractice = findQuestion(["practice_time", "preferences_2_when_practice"]);
-      const qStreak = findQuestion(["streak_challenge", "preferences_3_streak_challenge"]);
+    setPrimaryGoal(getAnswer(["learning_goals_1_primary"]) || profile?.learning_goal || "");
+    setAchieve30Days(getAnswer(["learning_goals_2_30days"]));
+    setGuidanceAreas(parseMultiSelect(getAnswer(["learning_goals_3_personalized"])));
 
-      const qComfort = findQuestion(["comfort_speaking", "speaking_1_comfort"]);
-      const qCorrect = findQuestion([
-        "ai_correction",
-        "correct_method",
-        "speaking_2_feedback_style",
-      ]);
+    setDailyTime(getAnswer(["preferences_1_daily_time"]));
+    setPracticeTime(getAnswer(["preferences_2_when_practice"]));
+    setStreakChallenge(getAnswer(["preferences_3_streak_challenge"]));
 
-      const qMotiv = findQuestion(["motivation", "motivation_1_what_motivates"]);
-      const qStops = findQuestion(["challenges", "stops_practice", "motivation_2_challenges"]);
+    setComfortSpeaking(getAnswer(["speaking_1_comfort"]));
+    setAiCorrection(getAnswer(["speaking_2_feedback_style"]));
 
-      const qFocus = findQuestion(["focus_track", "path_setup_1_track"]);
-      const qDailyGoal = findQuestion(["daily_learning_goal", "path_setup_2_daily_goal"]);
+    setMotivation(getAnswer(["motivation_1_what_motivates"]));
+    setStopsPractice(parseMultiSelect(getAnswer(["motivation_2_challenges"])));
 
-      // Update questionIds with fallbacks based on textPhrase match to guarantee we have their database IDs
-      const mergeId = (key: string, qObj: any) => {
-        if (qObj?.id) {
-          idsMap[key] = qObj.id;
-        }
-      };
-      mergeId("name", qName);
-      mergeId("education", qEducation);
-      mergeId("year_of_study", qYear);
-      mergeId("branch", qBranch);
-      mergeId("dob", qDob);
-      mergeId("country", qCountry);
-      mergeId("native_language", qLang);
-      mergeId("proficiency", qProf);
-      mergeId("challenging_skills", qSkills);
-      mergeId("primary_goal", qGoal);
-      mergeId("achieve_30_days", qAchieve);
-      mergeId("personalized_guidance", qGuidance);
-      mergeId("daily_time", qTime);
-      mergeId("practice_time", qPractice);
-      mergeId("streak_challenge", qStreak);
-      mergeId("comfort_speaking", qComfort);
-      mergeId("ai_correction", qCorrect);
-      mergeId("motivation", qMotiv);
-      mergeId("stops_practice", qStops);
-      mergeId("focus_track", qFocus);
-      mergeId("daily_learning_goal", qDailyGoal);
-      setQuestionIds(idsMap);
-
-      // Populate state values
-      // Standardize values with fallbacks to backend profile properties
-      setName(qName?.answer_text || profile?.name || onboardingAnswers?.name || "");
-      setEducation(qEducation?.answer_text || "");
-      setYearOfStudy(qYear?.answer_text || "");
-      setBranch(qBranch?.answer_text || "");
-      setDob(qDob?.answer_text || "");
-      setCountry(qCountry?.answer_text || profile?.country || onboardingAnswers?.country || "");
-      setNativeLanguage(qLang?.answer_text || "");
-
-      setEnglishProficiency(qProf?.answer_text || "");
-      setChallengingSkills(parseMultiSelect(qSkills?.answer_text || ""));
-
-      setPrimaryGoal(
-        qGoal?.answer_text || profile?.learning_goal || onboardingAnswers?.learning_goal || "",
-      );
-      setAchieve30Days(qAchieve?.answer_text || "");
-      setGuidanceAreas(parseMultiSelect(qGuidance?.answer_text || ""));
-
-      setDailyTime(qTime?.answer_text || "");
-      setPracticeTime(qPractice?.answer_text || "");
-      setStreakChallenge(qStreak?.answer_text || "");
-
-      setComfortSpeaking(qComfort?.answer_text || "");
-      setAiCorrection(qCorrect?.answer_text || "");
-
-      setMotivation(qMotiv?.answer_text || "");
-      setStopsPractice(parseMultiSelect(qStops?.answer_text || ""));
-
-      setFocusTrack(qFocus?.answer_text || "");
-      setDailyLearningGoal(
-        qDailyGoal?.answer_text ||
-          profile?.learning_frequency ||
-          onboardingAnswers?.learning_frequency ||
-          "",
-      );
-    }
-  }, [localAnswers, groupedQuestions, onboardingAnswers, profile]);
+    setFocusTrack(getAnswer(["path_setup_1_track"]));
+    setDailyLearningGoal(
+      getAnswer(["path_setup_2_daily_goal"]) || profile?.learning_frequency || "",
+    );
+  }, [onboardingAnswers, profile]);
 
   // Options lists
   const EDUCATION_OPTIONS = ["Engineering Student", "Working Professional", "Job Seeker", "Others"];
@@ -410,32 +359,6 @@ export function EditProfileScreen() {
       // 1. Update the onboarding answers in the backend via PUT /api/v1/users/profile
       await updateProfileOnboardingAnswers(payload).unwrap();
 
-      // 2. Also update the local onboarding answers copy in SecureStore
-      try {
-        const currentLocal = (await getLocalOnboardingAnswers()) || groupedQuestions;
-        if (currentLocal) {
-          const updatedLocal: Record<string, (OnboardingQuestion & { answer_text: string })[]> = {};
-          Object.entries(currentLocal).forEach(([sectionName, questionsList]) => {
-            updatedLocal[sectionName] = (
-              questionsList as (OnboardingQuestion & { answer_text: string })[]
-            ).map((q) => {
-              const matchingNew = answersList.find((ans) => ans.question_id === q.id);
-              if (matchingNew) {
-                return {
-                  ...q,
-                  answer_text: matchingNew.answer_text,
-                };
-              }
-              return q;
-            });
-          });
-          await saveLocalOnboardingAnswers(updatedLocal);
-          setLocalAnswers(updatedLocal);
-        }
-      } catch (localSaveErr) {
-        console.warn("Failed to update local onboarding answers copy:", localSaveErr);
-      }
-
       // 3. Update standard profile properties on the backend via PUT /api/v1/users/profile
       try {
         const patchPayload = {
@@ -494,7 +417,7 @@ export function EditProfileScreen() {
 
           const updatedParsedData = {
             contact: resumeData.contact || {},
-            summary: resumeSummary,
+            summary: { text: resumeSummary },
             skills: resumeSkills
               .split(",")
               .map((s) => s.trim())

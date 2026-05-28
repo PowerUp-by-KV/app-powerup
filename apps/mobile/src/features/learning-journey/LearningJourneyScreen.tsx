@@ -102,15 +102,25 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
     });
   };
 
-  const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? "A1-A2";
+  const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? null;
 
-  // Derive scores from CEFR level if results is null/undefined
+  // Only show real data — do NOT generate mock/derived scores if assessment is not completed.
+  // The assessment is considered completed only when cefr_range is set on the profile.
+  const isAssessmentComplete = !!actualCefr;
+
+  // Only derive scores from real results if they exist AND assessment is complete.
+  const hasRealResults =
+    isAssessmentComplete &&
+    results &&
+    results.section_percentages &&
+    Object.keys(results.section_percentages).length > 0;
+
   const derivedResults = useMemo(() => {
-    if (results && Object.keys(results).length > 0) {
-      return results;
-    }
-    // No real results present, generate matching realistic scores based on assessed CEFR level
-    const normalized = actualCefr.trim().toUpperCase();
+    if (!isAssessmentComplete) return null;
+    if (hasRealResults) return results;
+
+    // No real section-level results yet, but cefr_range is set — generate matching scores
+    const normalized = (actualCefr ?? "").trim().toUpperCase();
     if (normalized.includes("C2")) {
       return {
         percentage: 95.0,
@@ -201,7 +211,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         },
       };
     }
-    // B1-B2 range
     if (normalized.includes("B1-B2") || normalized.includes("B1 - B2")) {
       return {
         percentage: 62.5,
@@ -217,7 +226,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         },
       };
     }
-    // A1-A2 range
     if (normalized.includes("A1-A2") || normalized.includes("A1 - A2")) {
       return {
         percentage: 32.5,
@@ -233,8 +241,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         },
       };
     }
-
-    // Default fallback matching current constants
+    // Default fallback
     return {
       percentage: DEFAULT_CEFR_PERCENTAGE,
       total_score: DEFAULT_OBTAINED_POINTS,
@@ -248,33 +255,72 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         B_SPEAKING: DEFAULT_SPEAKING_PERCENTAGE,
       },
     };
-  }, [results, actualCefr]);
+  }, [results, actualCefr, isAssessmentComplete, hasRealResults]);
 
   if (!visible) return null;
 
-  const percentage = derivedResults.percentage;
-  const obtainedPoints = Math.round(derivedResults.total_score);
-  const totalPoints = Math.round(derivedResults.max_score);
+  // If assessment not yet completed — show a friendly "not completed" state
+  if (!isAssessmentComplete) {
+    return (
+      <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
+        <Animated.View style={[scoreStyles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
+          <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+            <Feather name="x" size={20} color="#64748b" />
+          </Pressable>
+          <Text style={scoreStyles.overallScoreTitle}>Pre-Assessment</Text>
+          <View style={{ alignItems: "center", paddingVertical: 32 }}>
+            <Text style={{ fontSize: 48, marginBottom: 12 }}>📋</Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#0f172a",
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Not yet completed
+            </Text>
+            <Text
+              style={{ fontSize: 13, color: "#64748b", textAlign: "center", paddingHorizontal: 16 }}
+            >
+              Complete your diagnostic assessment to see your CEFR level and detailed scores here.
+            </Text>
+          </View>
+          <Pressable onPress={handleClose} style={scoreStyles.doneButton}>
+            <Text style={scoreStyles.doneButtonText}>Close</Text>
+          </Pressable>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  // derivedResults is guaranteed non-null here because isAssessmentComplete is true
+  // (we early-returned above when !isAssessmentComplete where derivedResults === null)
+  const safeResults = derivedResults!;
+  const percentage = safeResults.percentage;
+  const obtainedPoints = Math.round(safeResults.total_score);
+  const totalPoints = Math.round(safeResults.max_score);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
   // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
-  const readingPct = derivedResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const readingPct = safeResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
-  const listen1 = derivedResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
-  const listen2 = derivedResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
-  const writingPct = derivedResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
+  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
-  const speak1 = derivedResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
-  const speak2 = derivedResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
@@ -607,11 +653,23 @@ export function LearningJourneyScreen() {
     { skip: !activeModuleId },
   );
 
+  const selectedModuleProgression = useMemo(() => {
+    if (!progression?.unlocked_modules?.length || !selectedModuleId) return null;
+    return progression.unlocked_modules.find((m) => m.module_id === selectedModuleId) ?? null;
+  }, [progression?.unlocked_modules, selectedModuleId]);
+
+  const visibleDays = useMemo(() => {
+    if (!days) return [];
+    if (!selectedModuleProgression) return days;
+    const allowed = selectedModuleProgression.unlocked_days;
+    return days.filter((d) => allowed.includes(d.day_number));
+  }, [days, selectedModuleProgression]);
+
   const firstIncompleteIdx = useMemo(() => {
-    if (!days) return 0;
-    const idx = days.findIndex((d) => !d.is_completed);
-    return idx === -1 ? days.length : idx;
-  }, [days]);
+    if (!visibleDays.length) return 0;
+    const idx = visibleDays.findIndex((d) => !d.is_completed);
+    return idx === -1 ? visibleDays.length : idx;
+  }, [visibleDays]);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -815,8 +873,8 @@ export function LearningJourneyScreen() {
     : [timelineStyles.stageTitle, timelineStyles.textLocked];
   const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
 
-  const totalDays = days?.length ?? 0;
-  const completedDays = moduleProgress ? moduleProgress.current_day - 1 : 0;
+  const totalDays = visibleDays?.length ?? 0;
+  const completedDays = visibleDays ? visibleDays.filter((d) => d.is_completed).length : 0;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
@@ -895,25 +953,39 @@ export function LearningJourneyScreen() {
               onPress={() => setShowPreAssessmentModal(true)}
               style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
             >
-              {/* Left Circle Icon */}
-              <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                <Feather name="check" size={16} color="white" />
+              {/* Left Circle Icon — check if completed, clock if pending */}
+              <View
+                style={[
+                  timelineStyles.stageIconCircle,
+                  profile?.cefr_range
+                    ? timelineStyles.stageCircleCompleted
+                    : timelineStyles.stageCircleInProgress,
+                ]}
+              >
+                <Feather name={profile?.cefr_range ? "check" : "clock"} size={16} color="white" />
               </View>
 
               {/* Right Content */}
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
                   <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
-                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                  <View
+                    style={[
+                      timelineStyles.statusBadge,
+                      profile?.cefr_range
+                        ? timelineStyles.badgeCompleted
+                        : timelineStyles.badgeInProgress,
+                    ]}
+                  >
                     <Text style={timelineStyles.badgeText}>
-                      {profile?.cefr_range ? `Level ${profile.cefr_range}` : "Completed"}
+                      {profile?.cefr_range ? `Level ${profile.cefr_range}` : "Pending"}
                     </Text>
                   </View>
                 </View>
                 <Text style={timelineStyles.stageSubtitle}>
                   {profile?.cefr_range
                     ? `Assessed proficiency: Band ${profile.cefr_range}`
-                    : "Master the fundamentals"}
+                    : "Complete the diagnostic to unlock your learning path"}
                 </Text>
 
                 {/* Thick Progress Bar */}
@@ -921,17 +993,26 @@ export function LearningJourneyScreen() {
                   <View
                     style={[
                       timelineStyles.progressBarFill,
-                      { width: "100%", backgroundColor: "#475569" },
+                      {
+                        width: profile?.cefr_range ? "100%" : "0%",
+                        backgroundColor: "#475569",
+                      },
                     ]}
                   />
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
-                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                  <Text style={timelineStyles.progressLabelText}>
+                    {profile?.cefr_range ? "8 lessons completed" : "Not started"}
+                  </Text>
+                  <Text style={timelineStyles.progressLabelPercent}>
+                    {profile?.cefr_range ? "100%" : "0%"}
+                  </Text>
                 </View>
 
-                <Text style={timelineStyles.xpText}>350 XP earned</Text>
+                <Text style={timelineStyles.xpText}>
+                  {profile?.cefr_range ? "350 XP earned" : "Tap to view details"}
+                </Text>
               </View>
             </Pressable>
 
@@ -1116,8 +1197,8 @@ export function LearningJourneyScreen() {
         {/* LEVEL 3: DAY ACTIVITIES CHECKLIST VIEW     */}
         {/* ========================================== */}
         {selectedModule &&
-          days?.slice(0, 12)?.map((day, idx) => {
-            const dayNumber = idx + 1;
+          visibleDays?.map((day, idx) => {
+            const dayNumber = day.day_number;
             const isCompleted = day.is_completed;
             const isLocked = idx > firstIncompleteIdx;
             const hours = day.duration_hours ?? 0.25;
@@ -1143,7 +1224,7 @@ export function LearningJourneyScreen() {
                           params: { module_id: selectedModule?.id ?? "" },
                         })
                 }
-                isLast={idx === Math.min(11, totalDays - 1)}
+                isLast={idx === visibleDays.length - 1}
               />
             );
           })}

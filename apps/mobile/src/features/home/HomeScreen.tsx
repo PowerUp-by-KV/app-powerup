@@ -1,9 +1,15 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
 import { useGetProfileQuery } from "@/services/auth-api";
+import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
+import {
+  useGetProgressionQuery,
+  useGetModuleDaysQuery,
+  useGetDayProgressQuery,
+} from "@/services/module-api";
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
@@ -14,8 +20,69 @@ import { ChatFab } from "./components/ChatFab";
 export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
+  const gate = useLearningJourneyGate();
+
+  const { data: progression } = useGetProgressionQuery(undefined, {
+    skip: !gate.canEnter,
+  });
+
+  const activeModule = useMemo(() => {
+    if (!progression?.unlocked_modules?.length) return null;
+    const current = progression.unlocked_modules.find((m) => !m.locked && !m.completed);
+    if (current) return current;
+    const firstUnlocked = progression.unlocked_modules.find((m) => !m.locked);
+    if (firstUnlocked) return firstUnlocked;
+    return progression.unlocked_modules[0];
+  }, [progression?.unlocked_modules]);
+
+  const { data: days } = useGetModuleDaysQuery(activeModule?.module_id ?? "", {
+    skip: !activeModule,
+  });
+
+  const activeDay = useMemo(() => {
+    if (!days) return null;
+    const firstIncomplete = days.find((d) => !d.is_completed);
+    return firstIncomplete ?? days[0] ?? null;
+  }, [days]);
+
+  const { data: dayProgress } = useGetDayProgressQuery(activeDay?.id ?? "", {
+    skip: !activeDay,
+  });
 
   const firstName = profile?.name?.split(" ")[0] ?? "there";
+
+  const handleContinuePress = () => {
+    if (!gate.canEnter) {
+      if (gate.blockedReason === "onboarding") {
+        router.push("/onboarding");
+      } else {
+        router.push("/(tabs)/my-learning" as never);
+      }
+      return;
+    }
+
+    if (activeDay && activeModule) {
+      router.push({
+        pathname: `/learning-journey/module/${activeDay.id}` as never,
+        params: { module_id: activeModule.module_id },
+      });
+    } else {
+      router.push("/(tabs)/my-learning" as never);
+    }
+  };
+
+  const continueTitle = activeModule
+    ? `${activeModule.title} (Day ${activeDay?.day_number ?? 1})`
+    : "Continue Learning";
+
+  const continueSubtitle = useMemo(() => {
+    if (!activeDay) return "⏱ 15 min left";
+    if (dayProgress) {
+      const mins = dayProgress.estimated_minutes_remaining;
+      return mins > 0 ? `⏱ ${mins} min left` : "Start today's activities";
+    }
+    return "Resume daily activities";
+  }, [activeDay, dayProgress]);
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
@@ -46,7 +113,7 @@ export function HomeScreen() {
           xpPoints={profile?.total_xp ?? 0}
           modulesCompleted={profile?.modules_completed ?? 0}
           totalModules={profile?.total_modules ?? null}
-          onTrack={() => router.push("/(tabs)/my-learning" as never)}
+          onTrack={() => router.push("/(tabs)/achievements" as never)}
         />
 
         <View className="flex-row justify-between items-center mb-3">
@@ -57,9 +124,9 @@ export function HomeScreen() {
         </View>
 
         <ContinueLearningCard
-          title="Public Speaking"
-          subtitle="⏱ 15 min left"
-          onPress={() => router.push("/(tabs)/my-learning" as never)}
+          title={continueTitle}
+          subtitle={continueSubtitle}
+          onPress={handleContinuePress}
         />
 
         <FeatureGroupCard

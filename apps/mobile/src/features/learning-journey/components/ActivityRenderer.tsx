@@ -17,18 +17,19 @@ interface ActivityRendererProps {
 }
 
 /**
- * Dispatches an activity to the correct renderer based on its `skill_type`.
+ * Dispatches an activity to the correct renderer based on its skill field.
  * Reading, vocabulary, and grammar all fall through to `McqActivity`.
  */
 export function ActivityRenderer({ activity, questions, onComplete }: ActivityRendererProps) {
-  const skill = (activity.skill_type ?? "").toLowerCase();
+  const skill = String(activity.skill_type ?? activity.skill ?? "").toLowerCase();
+  const hasAudio = questions.some((q) => !!q.audio_url);
 
   if (skill === "speaking") {
     return (
       <SpeakingActivity activityId={activity.id} questions={questions} onComplete={onComplete} />
     );
   }
-  if (skill === "listening") {
+  if (skill === "listening" || hasAudio) {
     return <ListeningActivity questions={questions} onComplete={onComplete} />;
   }
   if (skill === "writing") {
