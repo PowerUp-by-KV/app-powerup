@@ -32,6 +32,12 @@ jobs:
       - name: Test
         run: pnpm turbo run test -- --ci --coverage
 
+      # Preflight: exercise the same Metro bundling path EAS runs.
+      # Catches missing transitive deps (e.g. babel-preset-expo) in ~30s
+      # instead of failing 20+ min into an EAS build.
+      - name: Expo export (preflight bundle)
+        run: cd apps/mobile && pnpm exec expo export --platform android --output-dir /tmp/expo-export-preflight
+
   eas-build-android:
     name: EAS Build (Android preview APK)
     runs-on: ubuntu-latest
