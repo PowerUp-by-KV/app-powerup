@@ -9,7 +9,6 @@ import {
   useListAchievementsQuery,
   type Achievement,
 } from "@/services/gamification-api";
-
 import { StatTile } from "./components/StatTile";
 
 function ProgressBar({ pct }: { pct: number }) {
@@ -55,6 +54,7 @@ export function AchievementsScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<"achievements" | "skills">("achievements");
   const { data: profile } = useGetProfileQuery();
+
   const { data: list, isLoading: listLoading } = useListAchievementsQuery();
   const { data: skills, isLoading: skillsLoading } = useGetSkillsQuery(undefined, {
     skip: tab !== "skills",

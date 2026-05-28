@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
-
-import { useGetProfileQuery } from "@/services/auth-api";
-import {
-  getProfileCompletedInSession,
-  getPreAssessmentCompletedInSession,
-  setPreAssessmentCompletedInSession,
-} from "@/services/auth-storage";
+import { useEffect, useRef, useState } from "react";
+import { usePathname } from "expo-router";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
+import { getAuthSession, saveAssessmentSessionId } from "@/services/auth-storage";
+import { useGetProfileQuery } from "@/services/auth-api";
+import type { StartSessionResponse } from "@/services/assessment-api";
 
 export type GateReason = "onboarding" | "assessment" | null;
 
@@ -17,53 +15,105 @@ export interface LearningJourneyGate {
 }
 
 export function useLearningJourneyGate(): LearningJourneyGate {
-  const { data: profile, isLoading } = useGetProfileQuery();
-  const { data: onboardingStatus } = useGetOnboardingStatusQuery(profile?.id ?? "", {
-    skip: !profile?.id,
-  });
-  const [localDone, setLocalDone] = useState<boolean | null>(null);
-  const [localPreAssessmentDone, setLocalPreAssessmentDone] = useState<boolean | null>(null);
+  const pathname = usePathname();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLocalReady, setIsLocalReady] = useState(false);
+
+  // Assessment session fetched once via startSession POST (resumes existing sessions)
+  const [assessmentSession, setAssessmentSession] = useState<StartSessionResponse | null>(null);
+  const [assessmentChecked, setAssessmentChecked] = useState(false);
+  // Ref guard prevents the effect from firing more than once per userId
+  const checkInProgressRef = useRef(false);
 
   useEffect(() => {
-    let mounted = true;
-    Promise.all([getProfileCompletedInSession(), getPreAssessmentCompletedInSession()]).then(
-      ([done, preDone]) => {
-        if (mounted) {
-          setLocalDone(done);
-          setLocalPreAssessmentDone(preDone);
+    const loadLocal = async () => {
+      try {
+        const session = await getAuthSession();
+        if (session?.user?.id) {
+          setUserId(session.user.id);
+        } else {
+          setUserId(null);
         }
-      },
-    );
-    return () => {
-      mounted = false;
+      } catch (err) {
+        console.warn("Failed to load local session in gate:", err);
+      } finally {
+        setIsLocalReady(true);
+      }
     };
-  }, []);
+    loadLocal();
+  }, [pathname]);
 
-  // Sync server assessment completion to local storage for seamless cross-device/re-login usage
+  // Fetch live user profile dynamically from the backend
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery(undefined, {
+    skip: !userId,
+  });
+
+  // 1. Authoritatively check Onboarding status from backend endpoint
+  const { data: onboardingStatus, isLoading: isOnboardingLoading } = useGetOnboardingStatusQuery(
+    userId ?? "",
+    {
+      skip: !userId,
+    },
+  );
+
+  // profileDone only requires answers_present — resume upload is optional
+  const isCefrDone = !!profile?.cefr_range;
+  const profileDone = onboardingStatus?.answers_present ?? false;
+
+  const shouldCheckAssessment = !!userId && profileDone && !isCefrDone;
+
+  const [startSession] = useStartSessionMutation();
+
+  // 2. Fire the assessment check ONCE when shouldCheckAssessment becomes true.
+  //    Using a ref guard instead of putting startSession in the dep array
+  //    (startSession has an unstable reference that would cause an infinite loop).
   useEffect(() => {
-    if (profile?.cefr_range && profile?.profile_completed && localPreAssessmentDone === false) {
-      setPreAssessmentCompletedInSession(true).then(() => {
-        setLocalPreAssessmentDone(true);
-      });
-    }
-  }, [profile, localPreAssessmentDone]);
+    if (!shouldCheckAssessment || checkInProgressRef.current || assessmentChecked) return;
 
-  if (isLoading || localDone === null || localPreAssessmentDone === null) {
+    checkInProgressRef.current = true;
+    startSession()
+      .unwrap()
+      .then((session) => {
+        setAssessmentSession(session);
+        if (session.session_id) {
+          saveAssessmentSessionId(session.session_id).catch((err) => {
+            console.warn("Failed to auto-save session ID in gate:", err);
+          });
+        }
+      })
+      .catch((err) => {
+        console.warn("Gate: failed to fetch assessment session status:", err);
+      })
+      .finally(() => {
+        setAssessmentChecked(true);
+        checkInProgressRef.current = false;
+      });
+  }, [shouldCheckAssessment, assessmentChecked]); // intentionally omit startSession — its ref is unstable
+
+  // Reset assessment check when the user changes so a new login triggers a fresh check
+  useEffect(() => {
+    checkInProgressRef.current = false;
+    setAssessmentChecked(false);
+    setAssessmentSession(null);
+  }, [userId]);
+
+  if (
+    !isLocalReady ||
+    (userId && isProfileLoading) ||
+    (userId && isOnboardingLoading) ||
+    (shouldCheckAssessment && !assessmentChecked)
+  ) {
     return { ready: false, canEnter: false, blockedReason: null };
   }
 
-  // Use || so the local flag compensates when the backend flag is
-  // false due to propagation lag or the flag not being set on this device yet.
-  const profileDone =
-    (onboardingStatus?.profile_completed ?? false) ||
-    (profile?.profile_completed ?? false) ||
-    localDone;
-
-  // A user has completed pre-assessment if:
-  // - They explicitly have a local/session pre-assessment completed flag OR
-  // - Their server profile has a cefr_range (provided they didn't just clear localPreAssessmentDone during onboarding)
-  const assessmentDone =
-    localPreAssessmentDone || (!!profile?.cefr_range && localPreAssessmentDone !== false);
+  // Pre-assessment completion status is determined by:
+  // - Populated cefr_range on live user profile (already finished and scored)
+  // - Backend session's not_completed_sections list being empty
+  let assessmentDone = isCefrDone;
+  if (!isCefrDone && assessmentSession) {
+    const notCompleted = assessmentSession.not_completed_sections || [];
+    assessmentDone = notCompleted.length === 0;
+  }
 
   const canEnter = profileDone && assessmentDone;
   const blockedReason: GateReason = !profileDone

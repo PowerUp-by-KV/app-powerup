@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  TextInput,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "expo-router";
@@ -17,18 +18,20 @@ import {
   nextStep,
   prevStep,
   setStep,
+  resetOnboarding,
   type OnboardingState,
 } from "@/store/slices/onboardingSlice";
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
-  useCompleteProfileMutation,
+  useUpdateProfileOnboardingAnswersMutation,
   useLazyGetOnboardingStatusQuery,
+  useExtractOnboardingResumeMutation,
+  useConfirmOnboardingResumeMutation,
   OnboardingQuestion,
 } from "@/services/onboarding-api";
-import { useLazyGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
-import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
+import { DynamicOnboardingForm, getWebFileCache } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
   setPreAssessmentCompletedInSession,
@@ -38,7 +41,6 @@ import {
   getCompletedSections,
   clearCompletedSections,
   getProfileCompletedInSession,
-  saveLocalOnboardingAnswers,
   saveOnboardingWizardState,
   getOnboardingWizardState,
   clearOnboardingWizardState,
@@ -57,7 +59,6 @@ export default function OnboardingScreen() {
   const stepNumber = formData.currentStep;
 
   const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
-  const [getProfile] = useLazyGetProfileQuery();
   const {
     data: groupedQuestions,
     isLoading: isFetching,
@@ -65,12 +66,18 @@ export default function OnboardingScreen() {
     refetch: refetchQuestions,
   } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
-  const [completeProfile] = useCompleteProfileMutation();
+  const [updateProfile] = useUpdateProfileOnboardingAnswersMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
+  const [extractResume, { isLoading: isExtracting }] = useExtractOnboardingResumeMutation();
+  const [confirmResume, { isLoading: isConfirming }] = useConfirmOnboardingResumeMutation();
 
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
   const [isCheckingResume, setIsCheckingResume] = React.useState(true);
+
+  const [extractedData, setExtractedData] = React.useState<any | null>(null);
+  const [resumeId, setResumeId] = React.useState<string | null>(null);
+  const [isReviewMode, setIsReviewMode] = React.useState(false);
 
   // Load / Restore saved onboarding wizard state when the component mounts
   React.useEffect(() => {
@@ -86,6 +93,9 @@ export default function OnboardingScreen() {
               dispatch(updateField({ field: field as any, value }));
             });
           }
+        } else {
+          // No saved state means fresh user / new session — reset the in-memory redux slice
+          dispatch(resetOnboarding());
         }
       } catch (err) {
         console.warn("Failed to restore onboarding wizard progress:", err);
@@ -124,20 +134,12 @@ export default function OnboardingScreen() {
           console.warn("Failed to check onboarding status in OnboardingScreen:", statusErr);
         }
 
-        let profileStatus = null;
-        try {
-          profileStatus = await getProfile().unwrap();
-        } catch (profileErr) {
-          console.warn("Failed to check profile status in OnboardingScreen:", profileErr);
-        }
-
-        const isOnboardingComplete =
-          (onboardingStatus?.profile_completed ?? false) ||
-          (profileStatus?.profile_completed ?? false) ||
-          localOnboardingDone;
+        const backendOnboardingDone =
+          (onboardingStatus?.answers_present ?? false) &&
+          (onboardingStatus?.resume_present ?? false);
 
         // If onboarding is not completed, stay on onboarding screen
-        if (!isOnboardingComplete) {
+        if (!backendOnboardingDone) {
           setIsCheckingResume(false);
           return;
         }
@@ -153,7 +155,7 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
-  }, [getOnboardingStatus, getProfile]);
+  }, [getOnboardingStatus]);
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -292,64 +294,25 @@ export default function OnboardingScreen() {
         }
       }
 
-      // 2.5 Save answers to SecureStore for EditProfileScreen local fallback
+      // 3. Update the standard profile properties in the backend via PUT /api/v1/users/profile
+      // to officially complete the profile details.
       try {
-        if (groupedQuestions) {
-          const answersGroupedWithAnswers: Record<
-            string,
-            (OnboardingQuestion & { answer_text: string })[]
-          > = {};
-          Object.entries(groupedQuestions).forEach(([sectionName, questionsList]) => {
-            answersGroupedWithAnswers[sectionName] = questionsList.map((q) => {
-              const answerValue = formData[q.question_key as keyof typeof formData];
-              let answer_text = "";
-              if (answerValue !== undefined && answerValue !== null && answerValue !== "") {
-                if (Array.isArray(answerValue)) {
-                  answer_text = answerValue.join(", ");
-                } else if (typeof answerValue === "object") {
-                  answer_text = JSON.stringify(answerValue);
-                } else {
-                  answer_text = String(answerValue);
-                }
-              }
-              return {
-                ...q,
-                answer_text,
-              };
-            });
-          });
-          await saveLocalOnboardingAnswers(answersGroupedWithAnswers);
-        }
-      } catch (saveErr) {
-        console.warn("Failed to save local onboarding answers copy:", saveErr);
-      }
-
-      // 3. Call completeProfile to establish the UserProfile record on the backend
-      try {
-        const session = await getAuthSession();
-
-        // Extract raw date for DOB
-        let dobStr = formData.dob || "2000-01-01";
-        // Ensure standard YYYY-MM-DD or DD/MM/YYYY format
-        if (dobStr.includes("T")) {
-          dobStr = dobStr.split("T")[0];
-        }
-
         const profilePayload = {
-          name: (formData.name || session?.user?.name || "User").trim(),
-          mobile: (session?.user?.phone_number || "+919999999999").trim(),
-          dob: dobStr,
-          college: (formData.education || "Not Specified").trim(),
+          name: formData.name ? formData.name.trim() : undefined,
+          learning_goal: formData.primaryGoal ? formData.primaryGoal.trim() : undefined,
+          learning_frequency: formData.dailyTime ? formData.dailyTime.trim() : undefined,
+          language: formData.nativeLanguage ? formData.nativeLanguage.trim() : undefined,
+          country:
+            formData.country && formData.country.trim().length === 2
+              ? formData.country.trim()
+              : undefined,
         };
-
-        // Enforce validations matching backend OnboardingRequest schema
-        if (profilePayload.name.length < 1) profilePayload.name = "User";
-        if (profilePayload.mobile.length < 10) profilePayload.mobile = "+919999999999";
-        if (profilePayload.college.length < 2) profilePayload.college = "Not Specified";
-
-        await completeProfile(profilePayload).unwrap();
+        const cleanedPayload = Object.fromEntries(
+          Object.entries(profilePayload).filter(([_, v]) => v !== undefined && v !== ""),
+        );
+        await updateProfile(cleanedPayload).unwrap();
       } catch (profileErr) {
-        console.warn("Failed to create UserProfile via completeProfile:", profileErr);
+        console.warn("Failed to complete profile via PUT users/profile:", profileErr);
       }
 
       // 4. Mark profile as completed locally, reset pre-assessment completed flag, clear wizard state and completed pre-assessment sections
@@ -392,24 +355,48 @@ export default function OnboardingScreen() {
           if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
           const rawBase = apiUrl.replace(/\/$/, "");
           const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-          const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
+          const extractUrl = `${baseUrl}/v1/onboarding/resume/extract`;
 
           const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
           const fd = new FormData();
 
           if (Platform.OS === "web") {
-            const r = await fetch(fileUri);
-            const blob = await r.blob();
-            fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
+            console.log("[OnboardingScreen] Attempting web file upload. fileUri:", fileUri);
+            const g = (typeof window !== "undefined" ? window : globalThis) as any;
+            const cachedFile = getWebFileCache().get(fileUri) || g.__latestWebFile;
+            if (cachedFile) {
+              console.log(
+                "[OnboardingScreen] Success! Found cachedFile in memory or global fallback:",
+                cachedFile,
+              );
+              fd.append("file", cachedFile);
+            } else {
+              console.warn(
+                "[OnboardingScreen] Warning: cachedFile not found in webFileCache or global fallback. Falling back to fetching blob:",
+                fileUri,
+              );
+              try {
+                const r = await fetch(fileUri);
+                const blob = await r.blob();
+                fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
+                console.log("[OnboardingScreen] Fallback successful. Blob fetched and appended.");
+              } catch (fetchErr) {
+                console.warn(
+                  "[OnboardingScreen] Fallback failed! Could not fetch blob URI:",
+                  fetchErr,
+                );
+                throw new Error(
+                  "Could not fetch the picked file. Please click 'Change File' and re-select your resume.",
+                );
+              }
+            }
           } else {
-            // React Native FormData accepts an object with { uri, name, type }
-            // even though the standard DOM FormData type does not. Cast through
-            // unknown to a Blob shape so TypeScript is satisfied without `any`.
             const rnFile = { uri: fileUri, name: fileName, type: "application/pdf" };
             fd.append("file", rnFile as unknown as Blob, fileName);
           }
 
-          const response = await fetch(uploadUrl, {
+          // 2. Call extract to parse details from the uploaded resume
+          const extractResponse = await fetch(extractUrl, {
             method: "POST",
             headers: authSession?.access_token
               ? {
@@ -422,34 +409,41 @@ export default function OnboardingScreen() {
             body: fd,
           });
 
-          // Treat anything outside 2xx as a failure so the user gets explicit
-          // feedback. 4xx → format/size/auth errors the user must fix; 5xx →
-          // backend issue, surface so they can retry rather than silently
-          // continuing with an unprocessed resume.
-          if (!response.ok) {
-            const errBody = await response.json().catch(() => ({ detail: "Upload failed" }));
-            const fallback =
-              response.status >= 500
-                ? `Server error (${response.status}). Please try again.`
-                : `Upload rejected (${response.status})`;
-            const msg = errBody?.detail || fallback;
-            throw new Error(msg);
+          if (!extractResponse.ok) {
+            throw new Error(`Extraction failed (${extractResponse.status})`);
           }
 
+          const extractData = await extractResponse.json();
+          if (extractData?.resume_id && extractData?.parsed_data) {
+            console.log("[OnboardingScreen] Resume extracted successfully. Auto-confirming...");
+            try {
+              await confirmResume({
+                resume_id: extractData.resume_id,
+                confirmed_data: JSON.stringify(extractData.parsed_data),
+              }).unwrap();
+              console.log("[OnboardingScreen] Auto-confirm success (200 OK)!");
+            } catch (confirmErr) {
+              console.warn(
+                "[OnboardingScreen] Auto-confirm endpoint failed, but continuing:",
+                confirmErr,
+              );
+            }
+          }
+
+          // Advance directly to the next onboarding step, bypassing the review UI entirely as requested
           setResumeUploaded(true);
           setIsUploading(false);
-          // Only proceed after successful upload
           if (stepNumber < flattenedQuestions.length) {
             dispatch(nextStep());
           } else {
             await submitFinalAnswers();
           }
           return;
-        } catch (uploadErr) {
+        } catch (uploadErr: any) {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",
-            "Could not upload resume. Please check your connection and try again.",
+            uploadErr?.message || "Could not upload and extract resume. Please try again.",
           );
           return;
         }
@@ -573,11 +567,7 @@ export default function OnboardingScreen() {
         </TouchableOpacity>
 
         {/* Dynamic Secondary Action Link */}
-        {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Skip for now</Text>
-          </TouchableOpacity>
-        ) : stepNumber > 1 ? (
+        {stepNumber > 1 ? (
           <TouchableOpacity onPress={handleBack} className="mt-4 py-2">
             <Text className="text-sm text-slate-400">Go Back</Text>
           </TouchableOpacity>
@@ -585,4 +575,189 @@ export default function OnboardingScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+
+  // Handler to confirm the parsed resume details and proceed
+  const handleConfirmAndContinue = async () => {
+    if (!resumeId || !extractedData || isConfirming) return;
+    setIsUploading(true);
+    try {
+      await confirmResume({
+        resume_id: resumeId,
+        confirmed_data: JSON.stringify(extractedData),
+      }).unwrap();
+
+      setIsReviewMode(false);
+      setIsUploading(false);
+
+      // Proceed to the next step or final submit
+      if (stepNumber < flattenedQuestions.length) {
+        dispatch(nextStep());
+      } else {
+        await submitFinalAnswers();
+      }
+    } catch (confirmErr) {
+      setIsUploading(false);
+      Alert.alert(
+        "Confirmation Failed",
+        "Could not confirm your extracted profile details. Please try again.",
+      );
+    }
+  };
+
+  if (isReviewMode && extractedData) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            flexGrow: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingHorizontal: 24,
+            paddingVertical: 32,
+          }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <Text className="text-xl font-extrabold text-slate-900 text-center mb-1">
+            Review Extracted Profile
+          </Text>
+          <Text className="text-sm text-slate-400 text-center mb-6">
+            We analyzed your resume. Edit or verify the fields below.
+          </Text>
+
+          {/* Edit Form */}
+          <View className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 w-full max-w-md mb-6">
+            {/* Name */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Full Name
+              </Text>
+              <TextInput
+                value={extractedData.contact?.name || ""}
+                onChangeText={(val) =>
+                  setExtractedData({
+                    ...extractedData,
+                    contact: { ...extractedData.contact, name: val },
+                  })
+                }
+                placeholder="Enter Full Name"
+                placeholderTextColor="#cbd5e1"
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold"
+              />
+            </View>
+
+            {/* Email */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Email Address
+              </Text>
+              <TextInput
+                value={extractedData.contact?.email || ""}
+                onChangeText={(val) =>
+                  setExtractedData({
+                    ...extractedData,
+                    contact: { ...extractedData.contact, email: val },
+                  })
+                }
+                placeholder="Enter Email"
+                placeholderTextColor="#cbd5e1"
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold"
+              />
+            </View>
+
+            {/* Phone */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Phone Number
+              </Text>
+              <TextInput
+                value={extractedData.contact?.phone || ""}
+                onChangeText={(val) =>
+                  setExtractedData({
+                    ...extractedData,
+                    contact: { ...extractedData.contact, phone: val },
+                  })
+                }
+                placeholder="Enter Phone Number"
+                placeholderTextColor="#cbd5e1"
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold"
+              />
+            </View>
+
+            {/* Summary */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Professional Summary
+              </Text>
+              <TextInput
+                value={extractedData.summary || ""}
+                onChangeText={(val) => setExtractedData({ ...extractedData, summary: val })}
+                placeholder="Enter Summary"
+                placeholderTextColor="#cbd5e1"
+                multiline
+                numberOfLines={3}
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold min-h-[80px]"
+              />
+            </View>
+
+            {/* Skills */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                Key Skills (comma-separated)
+              </Text>
+              <TextInput
+                value={Array.isArray(extractedData.skills) ? extractedData.skills.join(", ") : ""}
+                onChangeText={(val) =>
+                  setExtractedData({
+                    ...extractedData,
+                    skills: val.split(",").map((s: string) => s.trim()),
+                  })
+                }
+                placeholder="Enter Skills"
+                placeholderTextColor="#cbd5e1"
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold"
+              />
+            </View>
+
+            {/* Education Institution */}
+            <View className="mb-2">
+              <Text className="text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
+                College/University
+              </Text>
+              <TextInput
+                value={extractedData.education?.[0]?.institution || ""}
+                onChangeText={(val) => {
+                  const newEdu = [...(extractedData.education || [])];
+                  if (newEdu.length === 0) {
+                    newEdu.push({ institution: val });
+                  } else {
+                    newEdu[0] = { ...newEdu[0], institution: val };
+                  }
+                  setExtractedData({ ...extractedData, education: newEdu });
+                }}
+                placeholder="Enter Institution"
+                placeholderTextColor="#cbd5e1"
+                className="w-full bg-slate-50 text-slate-800 px-4 py-2.5 rounded-xl border border-slate-200/60 text-sm font-semibold"
+              />
+            </View>
+          </View>
+
+          {/* Confirm Button */}
+          <TouchableOpacity
+            onPress={handleConfirmAndContinue}
+            disabled={isUploading || isConfirming}
+            className="w-full max-w-md py-4 rounded-2xl items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-100 active:bg-indigo-700"
+          >
+            {isUploading || isConfirming ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text className="text-white font-extrabold text-sm">Confirm & Submit</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 }

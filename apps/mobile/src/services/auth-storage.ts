@@ -11,6 +11,7 @@ export interface User {
   learning_frequency?: string;
   streak_count?: number;
   total_xp?: number;
+  profile_completed?: boolean;
 }
 
 export interface StoredSession {

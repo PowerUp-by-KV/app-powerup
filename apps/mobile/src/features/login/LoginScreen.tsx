@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   ActivityIndicator,
   Alert,
@@ -25,11 +26,13 @@ import {
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi } from "@/services/onboarding-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
 export function LoginScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -37,12 +40,6 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
   const [startSession] = useStartSessionMutation();
-  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
-
-  // Prefetch onboarding questions in the background during the authentication handshake
-  React.useEffect(() => {
-    prefetchOnboarding();
-  }, [prefetchOnboarding]);
 
   const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
     try {
@@ -57,8 +54,9 @@ export function LoginScreen() {
       // Persist the current email for future login comparisons
       await saveLastLoggedInEmail(loginEmail);
 
-      // Prefetch questions immediately upon successful handshake
-      prefetchOnboarding();
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
 
       // Navigate directly to My Learning tab (home) unconditionally upon login
       router.replace("/(tabs)/my-learning" as never);

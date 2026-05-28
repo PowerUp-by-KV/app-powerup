@@ -3,13 +3,12 @@ import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 
-import { useGetProfileQuery } from "@/services/auth-api";
-
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
 import { ContinueLearningCard } from "./components/ContinueLearningCard";
 import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
+import { useGetProfileQuery } from "@/services/auth-api";
 
 export function HomeScreen() {
   const router = useRouter();

@@ -197,9 +197,9 @@ export function ProfileResumeScreen() {
                     </View>
                     <Text className="text-slate-600 text-sm font-semibold">{location || "—"}</Text>
                   </View>
-                  {(linkedinUrl || githubUrl) && (
+                  {!!(linkedinUrl || githubUrl) && (
                     <View className="border-t border-slate-100 mt-2 pt-3 flex-row gap-4">
-                      {linkedinUrl && (
+                      {!!linkedinUrl && (
                         <View className="flex-row items-center">
                           <Feather
                             name="linkedin"
@@ -210,7 +210,7 @@ export function ProfileResumeScreen() {
                           <Text className="text-slate-500 text-xs font-bold">LinkedIn</Text>
                         </View>
                       )}
-                      {githubUrl && (
+                      {!!githubUrl && (
                         <View className="flex-row items-center">
                           <Feather
                             name="github"

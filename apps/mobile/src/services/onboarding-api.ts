@@ -76,6 +76,43 @@ export interface ResumeUploadResponse {
   message?: string;
 }
 
+// Shape returned by GET /v1/onboarding/answers
+export interface OnboardingSectionQuestion {
+  question: {
+    id: string;
+    section: string;
+    question_no: number;
+    question_key: string;
+    question_text: string;
+    question_type: string;
+    input_type: string;
+    options: string[] | Record<string, string> | null;
+    is_required: boolean;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+  };
+  answer: {
+    id: string;
+    user_id: string;
+    question_id: string;
+    answer_text: string | null;
+    answer_json: any | null;
+    is_skipped: boolean;
+    answered_at: string;
+    created_at: string;
+  } | null;
+}
+
+export interface OnboardingSectionEntry {
+  section: string;
+  questions: OnboardingSectionQuestion[];
+}
+
+export interface OnboardingSectionsResponse {
+  onboarding_sections: OnboardingSectionEntry[];
+}
+
 export const onboardingApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -89,24 +126,9 @@ export const onboardingApi = api.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Onboarding"],
-    }),
-    completeProfile: builder.mutation<OnboardingResponse, OnboardingRequest>({
-      query: (data) => ({
-        url: "/v1/onboarding",
-        method: "POST",
-        body: data,
-      }),
       invalidatesTags: ["Onboarding", "Auth"],
     }),
-    uploadResume: builder.mutation<void, FormData>({
-      query: (formData) => ({
-        url: "/v1/onboarding/resume",
-        method: "POST",
-        body: formData,
-        formData: true,
-      }),
-    }),
+
     extractOnboardingResume: builder.mutation<any, FormData>({
       query: (formData) => ({
         url: "/v1/onboarding/resume/extract",
@@ -129,8 +151,9 @@ export const onboardingApi = api.injectEndpoints({
           },
         };
       },
+      invalidatesTags: ["Onboarding", "Auth"],
     }),
-    getProfileOnboardingAnswers: builder.query<any, void>({
+    getProfileOnboardingAnswers: builder.query<OnboardingSectionsResponse, void>({
       query: () => "/v1/users/profile",
       providesTags: ["Onboarding"],
     }),
@@ -142,10 +165,11 @@ export const onboardingApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Onboarding", "Auth"],
     }),
-    getOnboardingStatus: builder.query<{ user_id: string; profile_completed: boolean }, string>({
+    getOnboardingStatus: builder.query<OnboardingStatusResponse, string>({
       query: (user_id) => `/v1/onboarding/${user_id}/status`,
       providesTags: ["Onboarding"],
     }),
+
     getProfileResume: builder.query<any, void>({
       query: () => "/v1/users/profile/resume",
       providesTags: ["Resume"],
@@ -161,13 +185,17 @@ export const onboardingApi = api.injectEndpoints({
   }),
 });
 
+export interface OnboardingStatusResponse {
+  user_id: string;
+  answers_present: boolean;
+  resume_present: boolean;
+}
+
 export const {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
-  useUploadResumeMutation,
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
-  useCompleteProfileMutation,
   useGetProfileOnboardingAnswersQuery,
   useUpdateProfileOnboardingAnswersMutation,
   useGetOnboardingStatusQuery,

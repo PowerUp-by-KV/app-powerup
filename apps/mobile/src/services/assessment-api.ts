@@ -6,6 +6,10 @@ export interface StartSessionResponse {
   set_number: number;
   total_sections: number;
   first_section: string;
+  is_resumed?: boolean;
+  current_section?: string | null;
+  completed_sections?: string[] | null;
+  not_completed_sections?: string[] | null;
 }
 
 export interface AssessmentOption {
@@ -180,6 +184,14 @@ export const assessmentApi = api.injectEndpoints({
       invalidatesTags: ["Assessment"],
     }),
 
+    checkAssessmentStatus: builder.query<StartSessionResponse, void>({
+      query: () => ({
+        url: "/v1/assessment/session/start",
+        method: "POST",
+      }),
+      providesTags: ["Assessment"],
+    }),
+
     getAssessmentSection: builder.query<
       AssessmentSectionResponse,
       { session_id: string; section: string }
@@ -277,6 +289,7 @@ export const getNextRouteForSection = (section?: string | null): AssessmentRoute
 
 export const {
   useStartSessionMutation,
+  useCheckAssessmentStatusQuery,
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
   useUploadAssessmentAudioMutation,

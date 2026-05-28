@@ -1,37 +1,19 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from "react-native";
 import { OnboardingQuestion } from "@/services/onboarding-api";
 import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
 import { DatePicker } from "./DatePicker";
 import { Dropdown } from "./Dropdown";
 
-const COMMON_LANGUAGES = [
-  "Hindi",
-  "English",
-  "Bengali",
-  "Marathi",
-  "Telugu",
-  "Tamil",
-  "Gujarati",
-  "Urdu",
-  "Kannada",
-  "Odia",
-  "Malayalam",
-  "Punjabi",
-  "Assamese",
-  "Maithili",
-  "Santali",
-  "Kashmiri",
-  "Nepali",
-  "Konkani",
-  "Sindhi",
-  "Dogri",
-  "Manipuri",
-  "Bodo",
-  "Sanskrit",
-  "Others",
-].map((lang) => ({ key: lang, label: lang }));
+export const getWebFileCache = (): Map<string, File> => {
+  if (Platform.OS !== "web") return new Map();
+  const g = (typeof window !== "undefined" ? window : globalThis) as any;
+  if (!g.__webFileCache) {
+    g.__webFileCache = new Map<string, File>();
+  }
+  return g.__webFileCache;
+};
 
 interface Props {
   questions: OnboardingQuestion[];
@@ -98,11 +80,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
         );
 
       case "dropdown":
-        const isLanguageQuestion = question_key.includes("language");
-        const dropdownOptions =
-          isLanguageQuestion && normalizedOptions.length === 0
-            ? COMMON_LANGUAGES
-            : normalizedOptions.map(([key, label]) => ({ key, label }));
+        const dropdownOptions = normalizedOptions.map(([key, label]) => ({ key, label }));
 
         return (
           <Dropdown
@@ -222,9 +200,21 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
 
                     onInputChange(question_key, asset.uri);
                     onInputChange(`${question_key}Name`, asset.name);
+                    if (Platform.OS === "web" && asset.file) {
+                      getWebFileCache().set(asset.uri, asset.file);
+                      const g = (typeof window !== "undefined" ? window : globalThis) as any;
+                      g.__latestWebFile = asset.file;
+                      console.log("[DynamicOnboardingForm] Web file cached:", {
+                        uri: asset.uri,
+                        fileName: asset.name,
+                        fileSize: asset.size,
+                        hasFileObj: !!asset.file,
+                        storedGlobal: !!g.__latestWebFile,
+                      });
+                    }
                   }
-                } catch {
-                  // silently ignore file picker errors
+                } catch (pickerErr) {
+                  console.error("[DynamicOnboardingForm] File picker error:", pickerErr);
                 }
               }}
               className="bg-white border border-dashed border-slate-300 rounded-2xl py-8 px-4 items-center justify-center w-full"
