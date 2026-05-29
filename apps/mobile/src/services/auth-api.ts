@@ -51,6 +51,21 @@ export interface UserProfile {
   address: string | null;
   language: string | null;
   avatar_id: string | null;
+  email_verified?: boolean;
+}
+
+export interface SendEmailOtpRequest {
+  email: string;
+}
+
+export interface VerifyEmailOtpRequest {
+  email: string;
+  code: string;
+}
+
+export interface EmailOtpStatusResponse {
+  email: string;
+  sent: boolean;
 }
 
 export interface UserUpdate {
@@ -111,6 +126,23 @@ export const authApi = api.injectEndpoints({
       query: (body) => ({ url: "/v1/users/profile", method: "PUT", body }),
       invalidatesTags: ["Auth"],
     }),
+
+    sendEmailOtp: builder.mutation<EmailOtpStatusResponse, SendEmailOtpRequest>({
+      query: (body) => ({
+        url: "/v1/auth/send-email-otp",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    verifyEmailOtp: builder.mutation<EmailOtpStatusResponse, VerifyEmailOtpRequest>({
+      query: (body) => ({
+        url: "/v1/auth/verify-email-otp",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
   }),
 });
 
@@ -120,4 +152,6 @@ export const {
   useGetProfileQuery,
   useLazyGetProfileQuery,
   usePatchProfileMutation,
+  useSendEmailOtpMutation,
+  useVerifyEmailOtpMutation,
 } = authApi;
