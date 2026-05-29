@@ -15,7 +15,7 @@ interface AudioPlayerProps {
 
 export function AudioPlayer({
   audioUrl,
-  audioText,
+  audioText: _audioText,
   duration = 30,
   onPlayStart,
   onPlayEnd,

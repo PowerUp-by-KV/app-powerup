@@ -16,9 +16,10 @@ import { OtpResendTimer } from "./components/OtpResendTimer";
 
 const DEV_BYPASS = process.env.EXPO_PUBLIC_DEV_BYPASS_OTP === "1" || __DEV__;
 
-export function VerifyEmailScreen() {
+export function VerifyEmailScreen({ flow: propFlow }: { flow?: "signup" | "signin" }) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string }>();
+  const params = useLocalSearchParams<{ email?: string; flow?: "signup" | "signin" }>();
+  const flow = propFlow ?? params.flow ?? "signup";
   const [email, setEmail] = useState(params.email ?? "");
   const [code, setCode] = useState("");
 
@@ -31,8 +32,11 @@ export function VerifyEmailScreen() {
   }, []);
 
   const handleContinue = () => {
-    // Backend OTP endpoint not yet shipped — accept any 6-digit code in dev.
-    router.push({ pathname: "/verify-phone", params: { email } } as never);
+    if (flow === "signup") {
+      router.replace("/thank-you" as never);
+    } else {
+      router.replace("/welcome-back" as never);
+    }
   };
 
   return (
@@ -87,7 +91,9 @@ export function VerifyEmailScreen() {
           </View>
 
           <Pressable
-            onPress={() => router.push({ pathname: "/verify-phone", params: { email } } as never)}
+            onPress={() =>
+              router.push({ pathname: "/verify-phone", params: { email, flow } } as never)
+            }
             className="mt-6 items-center"
           >
             <Text className="text-slate-900 font-bold underline">Use Mobile number Instead</Text>

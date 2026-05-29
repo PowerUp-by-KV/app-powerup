@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
 import {
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
@@ -44,9 +44,7 @@ export function ResumeUploadStep() {
   const goToAssessment = async () => {
     try {
       const session = await startSession().unwrap();
-      const targetSec = session.current_section || session.first_section || "A_READING";
-      const targetRoute = getNextRouteForSection(targetSec);
-      router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+      router.replace(`/read?session_id=${session.session_id}` as never);
     } catch {
       // If session start fails, still land user in the app — they can retry from My Learning
       router.replace("/(tabs)" as never);
@@ -87,9 +85,7 @@ export function ResumeUploadStep() {
       setTimeout(async () => {
         try {
           const session = await startSession().unwrap();
-          const targetSec = session.current_section || session.first_section || "A_READING";
-          const targetRoute = getNextRouteForSection(targetSec);
-          router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+          router.replace(`/read?session_id=${session.session_id}` as never);
         } catch {
           router.replace("/(tabs)" as never);
         }

@@ -46,16 +46,15 @@ function RiveContainer({ src, width, height, containerRef }: RiveContainerProps)
     autoplay: true,
   });
 
-  // Defensively match any of the standard tracking inputs (xAxis, pointerX, mouseX)
-  const xAxis =
-    useStateMachineInput(rive, "State Machine 1", "xAxis") ||
-    useStateMachineInput(rive, "State Machine 1", "pointerX") ||
-    useStateMachineInput(rive, "State Machine 1", "mouseX");
+  const inputXAxis = useStateMachineInput(rive, "State Machine 1", "xAxis");
+  const inputPointerX = useStateMachineInput(rive, "State Machine 1", "pointerX");
+  const inputMouseX = useStateMachineInput(rive, "State Machine 1", "mouseX");
+  const xAxis = inputXAxis || inputPointerX || inputMouseX;
 
-  const yAxis =
-    useStateMachineInput(rive, "State Machine 1", "yAxis") ||
-    useStateMachineInput(rive, "State Machine 1", "pointerY") ||
-    useStateMachineInput(rive, "State Machine 1", "mouseY");
+  const inputYAxis = useStateMachineInput(rive, "State Machine 1", "yAxis");
+  const inputPointerY = useStateMachineInput(rive, "State Machine 1", "pointerY");
+  const inputMouseY = useStateMachineInput(rive, "State Machine 1", "mouseY");
+  const yAxis = inputYAxis || inputPointerY || inputMouseY;
 
   useEffect(() => {
     if (!rive) return;

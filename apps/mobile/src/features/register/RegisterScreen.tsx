@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
 import {
   ActivityIndicator,
   Alert,
@@ -24,11 +23,9 @@ import {
   clearAssessmentStartTime,
   saveLastLoggedInEmail,
   clearPreAssessmentResults,
-  clearOnboardingWizardState,
 } from "@/services/auth-storage";
 import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
-import { api } from "@/services/api";
-import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { onboardingApi } from "@/services/onboarding-api";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
@@ -47,7 +44,6 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
 
 export function RegisterScreen() {
   const router = useRouter();
-  const dispatch = useDispatch();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,7 +52,12 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [register] = useRegisterMutation();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
+  // Prefetch onboarding questions in the background during the registration handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -130,11 +131,6 @@ export function RegisterScreen() {
       await clearAssessmentStartTime();
       await saveLastLoggedInEmail(email.trim());
       await clearPreAssessmentResults();
-      await clearOnboardingWizardState();
-
-      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
-      dispatch(api.util.resetApiState());
-      dispatch(resetOnboarding());
 
       Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });

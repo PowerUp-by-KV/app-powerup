@@ -43,7 +43,11 @@ const WAVEFORM_BARS = [
 /**
  * Record → review with waveform (playback/retake) → submit → AI score.
  */
-export function SpeakingActivity({ activityId, questions, onComplete }: SpeakingActivityProps) {
+export function SpeakingActivity({
+  activityId: _activityId,
+  questions,
+  onComplete,
+}: SpeakingActivityProps) {
   const prompt = questions[0];
   const recordingRef = useRef<Audio.Recording | null>(null);
 

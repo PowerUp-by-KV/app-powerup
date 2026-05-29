@@ -11,10 +11,13 @@ import {
   Modal,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
-import { useGetMedalsQuery } from "@/services/gamification-api";
+import {
+  useListAchievementsQuery,
+  useGetMedalsQuery,
+  type Achievement,
+} from "@/services/gamification-api";
 
 interface BadgeType {
   id: string;
@@ -23,73 +26,70 @@ interface BadgeType {
   requirement: string;
   color: string;
   unlocked: boolean;
+  progress?: number;
+  progressLabel?: string | null;
 }
 
-const BADGE_DESIGNS = [
-  {
-    id: "1",
-    title: "Daily Spark",
-    emoji: "🔥",
-    requirement: "Complete a daily lesson streak",
-    color: "#ff4757",
-  },
-  {
-    id: "2",
-    title: "Bibliophile",
-    emoji: "📖",
-    requirement: "Score 5.0+ in Reading assessment",
-    color: "#1e90ff",
-  },
-  {
-    id: "3",
-    title: "Sonic Ear",
-    emoji: "🎧",
-    requirement: "Score 5.0+ in Listening assessment",
-    color: "#8b5cf6",
-  },
-  {
-    id: "4",
-    title: "Scribe",
-    emoji: "✍️",
-    requirement: "Score 4.0+ in Writing assessment",
-    color: "#2ed573",
-  },
-  {
-    id: "5",
-    title: "Orator",
-    emoji: "🎙️",
-    requirement: "Score 6.0+ in Speaking assessment",
-    color: "#ec4899",
-  },
-  {
-    id: "6",
-    title: "CEFR Champion",
-    emoji: "🏆",
-    requirement: "Advance to the next CEFR level band",
-    color: "#ffa502",
-  },
-  {
-    id: "7",
-    title: "XP Collector",
-    emoji: "⚡",
-    requirement: "Accumulate 350+ total XP points",
-    color: "#ff6b81",
-  },
-  {
-    id: "8",
-    title: "Perfect 10",
-    emoji: "🌟",
-    requirement: "Score 100% on any lesson activity",
-    color: "#14b8a6",
-  },
-  {
-    id: "9",
-    title: "Linguist King",
-    emoji: "👑",
-    requirement: "Unlock and master C2 proficiency stage",
-    color: "#a855f7",
-  },
-];
+function getBadgeEmojiAndColor(code: string): { emoji: string; color: string } {
+  switch (code) {
+    case "identity_builder":
+      return { emoji: "👤", color: "#6366f1" };
+    case "first_steps":
+      return { emoji: "🗺️", color: "#3b82f6" };
+    case "explorer":
+      return { emoji: "🏁", color: "#10b981" };
+    case "true_start":
+      return { emoji: "🚀", color: "#f59e0b" };
+    case "flawless_start":
+      return { emoji: "🎯", color: "#ef4444" };
+    case "hybrid_learner":
+      return { emoji: "🔄", color: "#8b5cf6" };
+    case "lesson_one_day":
+      return { emoji: "⚡", color: "#ec4899" };
+    case "power_learner":
+      return { emoji: "⚡", color: "#f43f5e" };
+    case "deep_focus":
+      return { emoji: "⏳", color: "#14b8a6" };
+    case "study_marathon":
+      return { emoji: "🏃‍♂️", color: "#06b6d4" };
+    case "dedicated_learner":
+      return { emoji: "⏳", color: "#0f172a" };
+    case "beginner_conqueror":
+      return { emoji: "👑", color: "#d97706" };
+    case "self_improver":
+      return { emoji: "🧠", color: "#4f46e5" };
+    case "skill_streak_voice":
+      return { emoji: "🗣️", color: "#ec4899" };
+    case "getting_serious":
+      return { emoji: "📈", color: "#059669" };
+    case "weekly_warrior":
+      return { emoji: "⚔️", color: "#dc2626" };
+    case "steady_climber":
+      return { emoji: "🏔️", color: "#2563eb" };
+    case "streak_guardian":
+      return { emoji: "🛡️", color: "#7c3aed" };
+    case "unstoppable_learner":
+      return { emoji: "🏆", color: "#b91c1c" };
+    case "first_draft":
+      return { emoji: "📝", color: "#0d9488" };
+    case "accuracy_starter":
+      return { emoji: "🎯", color: "#e11d48" };
+    case "century_solver":
+      return { emoji: "💯", color: "#4f46e5" };
+    case "reactivated_learner":
+      return { emoji: "🔄", color: "#64748b" };
+    case "interview_ready":
+      return { emoji: "🎓", color: "#1e293b" };
+    case "achievement_hunter":
+      return { emoji: "🎯", color: "#f59e0b" };
+    case "badge_collector":
+      return { emoji: "🎒", color: "#10b981" };
+    case "legendary_learner":
+      return { emoji: "👑", color: "#7c3aed" };
+    default:
+      return { emoji: "🏅", color: "#6366f1" };
+  }
+}
 
 interface BadgeDetailModalProps {
   visible: boolean;
@@ -201,6 +201,35 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
           <View style={styles.requirementBox}>
             <Text style={styles.requirementLabel}>How to unlock:</Text>
             <Text style={styles.requirementText}>{badge.requirement}</Text>
+            {!badge.unlocked && badge.progressLabel ? (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.requirementLabel, { marginTop: 0 }]}>Progress:</Text>
+                <Text
+                  style={[
+                    styles.requirementText,
+                    { color: "#64748b", fontSize: 12, marginBottom: 6 },
+                  ]}
+                >
+                  {badge.progressLabel}
+                </Text>
+                <View
+                  style={{
+                    height: 6,
+                    backgroundColor: "#e2e8f0",
+                    borderRadius: 3,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      height: "100%",
+                      backgroundColor: badge.color,
+                      width: `${Math.min(100, Math.max(0, Math.round((badge.progress ?? 0) * 100)))}%`,
+                    }}
+                  />
+                </View>
+              </View>
+            ) : null}
           </View>
 
           {/* Action CTA */}
@@ -217,29 +246,85 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 }
 
 export function MedalsScreen() {
-  const router = useRouter();
   const safeBack = useSafeBack();
-  const { data, isLoading } = useGetMedalsQuery();
+  const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
+  const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
+  const isLoading = isAchievementsLoading || isMedalsLoading;
 
   const [selectedBadge, setSelectedBadge] = useState<BadgeType | null>(null);
 
   // Map backend achievements data with our premium badge list
   const badges = useMemo<BadgeType[]>(() => {
-    const unlockedIds = new Set(data?.unlocked?.map((m) => String(m.id)) ?? []);
+    if (!list) return [];
 
-    return BADGE_DESIGNS.map((b, idx) => {
-      // By default, unlock the 1st badge (demonstrating the "1st trophy" steak booster)
-      // or if included in backend unlocked ID list
-      const isUnlocked = idx === 0 || unlockedIds.has(b.id);
+    // Combine both unlocked (recent) and locked achievements into a single ordered list
+    const all = [...list.recent, ...list.locked];
+
+    // Dedup by achievement id just in case
+    const uniqueMap = new Map<string, (typeof all)[number]>();
+    all.forEach((item) => {
+      uniqueMap.set(item.id, item);
+    });
+    const uniqueList = Array.from(uniqueMap.values());
+
+    // Consistent ordering of badges to present in the collection grid
+    const orderOfCodes = [
+      "identity_builder",
+      "first_steps",
+      "explorer",
+      "true_start",
+      "flawless_start",
+      "hybrid_learner",
+      "lesson_one_day",
+      "power_learner",
+      "deep_focus",
+      "study_marathon",
+      "dedicated_learner",
+      "beginner_conqueror",
+      "self_improver",
+      "skill_streak_voice",
+      "getting_serious",
+      "weekly_warrior",
+      "steady_climber",
+      "streak_guardian",
+      "unstoppable_learner",
+      "first_draft",
+      "accuracy_starter",
+      "century_solver",
+      "reactivated_learner",
+      "interview_ready",
+      "achievement_hunter",
+      "badge_collector",
+      "legendary_learner",
+    ];
+
+    uniqueList.sort((a, b) => {
+      const idxA = orderOfCodes.indexOf(a.code);
+      const idxB = orderOfCodes.indexOf(b.code);
+      if (idxA === -1 && idxB === -1) return a.title.localeCompare(b.title);
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+
+    return uniqueList.map((a) => {
+      const { emoji, color } = getBadgeEmojiAndColor(a.code);
+      const isUnlocked = a.unlocked_at !== null;
       return {
-        ...b,
+        id: a.id,
+        title: a.title,
+        emoji: emoji,
+        requirement: a.description,
+        color: color,
         unlocked: isUnlocked,
+        progress: a.progress,
+        progressLabel: a.progress_label,
       };
     });
-  }, [data]);
+  }, [list]);
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50">
+    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
       {/* Dynamic Detailed Modal */}
       <BadgeDetailModal
         visible={selectedBadge !== null}
@@ -252,11 +337,15 @@ export function MedalsScreen() {
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
-        <Text className="flex-1 text-center font-extrabold text-slate-900 text-lg">Medals</Text>
+        <Text className="flex-1 text-center font-extrabold text-slate-900 text-lg">Badges</Text>
         <View className="w-9" />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 96 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 96 }}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading ? (
           <View style={{ paddingVertical: 40, alignItems: "center" }}>
             <ActivityIndicator color="#6366f1" size="large" />
@@ -266,7 +355,7 @@ export function MedalsScreen() {
             {/* Header Banner - Congratulations */}
             <View style={styles.bannerCard}>
               <Text style={styles.bannerTrophyEmoji}>🏆</Text>
-              <Text style={styles.bannerText}>Congratulations for your 1st trophy!</Text>
+              <Text style={styles.bannerText}>Congratulations on your learning journey!</Text>
             </View>
 
             {/* Premium Interactive Badges List */}
@@ -316,31 +405,52 @@ export function MedalsScreen() {
               ))}
             </View>
 
-            {/* Level Up Progress List */}
-            {data && data.level_up_progress.length > 0 && (
-              <View className="mt-8">
-                <Text style={styles.sectionTitle}>Level up your badge</Text>
-                {data.level_up_progress.map((p) => {
-                  const w = Math.min(100, Math.round(p.progress * 100));
-                  return (
-                    <View
-                      key={p.medal_id}
-                      className="bg-white rounded-2xl p-4 mb-3 border border-slate-100 shadow-sm"
-                    >
-                      <View className="flex-row justify-between mb-2">
-                        <Text className="text-slate-900 text-sm font-bold flex-1 pr-3">
-                          {p.title}
-                        </Text>
-                        <Text className="text-slate-500 text-xs font-semibold">{p.label}</Text>
+            {/* level up yor Medal Section */}
+            {medalsData &&
+              medalsData.level_up_progress &&
+              medalsData.level_up_progress.length > 0 && (
+                <View style={{ marginTop: 36, width: "100%" }}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: "900", color: "#000000", marginBottom: 16 }}
+                  >
+                    level up yor Medal
+                  </Text>
+
+                  {medalsData.level_up_progress.map((p) => {
+                    const percent = Math.min(100, Math.round(p.progress * 100));
+                    return (
+                      <View key={p.medal_id} style={styles.levelUpCard}>
+                        {/* Left contents */}
+                        <View style={{ flex: 1, paddingRight: 12 }}>
+                          <Text style={styles.levelUpText} numberOfLines={1}>
+                            {p.title}
+                          </Text>
+
+                          {/* Progress Bar Track */}
+                          <View style={styles.levelUpProgressTrack}>
+                            <View style={[styles.levelUpProgressBar, { width: `${percent}%` }]} />
+                          </View>
+                        </View>
+
+                        {/* Right Lock Icon */}
+                        <View style={styles.levelUpLockContainer}>
+                          <Feather name="lock" size={24} color="#000000" />
+                        </View>
                       </View>
-                      <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <View className="h-full bg-slate-900" style={{ width: `${w}%` }} />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
+                    );
+                  })}
+
+                  {/* Share Button */}
+                  <Pressable
+                    style={({ pressed }) => [styles.shareButton, { opacity: pressed ? 0.8 : 1 }]}
+                    onPress={() => {
+                      console.log("Medals shared!");
+                    }}
+                  >
+                    <Text style={styles.shareButtonText}>Share</Text>
+                  </Pressable>
+                </View>
+              )}
           </>
         )}
       </ScrollView>
@@ -546,5 +656,57 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "800",
     fontSize: 15,
+  },
+  levelUpCard: {
+    backgroundColor: "#d1d5db",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  levelUpText: {
+    fontWeight: "700",
+    fontSize: 14,
+    color: "#1f2937",
+    marginBottom: 6,
+  },
+  levelUpProgressTrack: {
+    height: 6,
+    backgroundColor: "#ffffff",
+    borderRadius: 3,
+    overflow: "hidden",
+    marginTop: 6,
+    width: "100%",
+  },
+  levelUpProgressBar: {
+    height: "100%",
+    backgroundColor: "#4b5563",
+  },
+  levelUpLockContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  shareButton: {
+    backgroundColor: "#4b5563",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 24,
+    alignSelf: "center",
+    width: 180,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  shareButtonText: {
+    color: "#ffffff",
+    fontWeight: "800",
+    fontSize: 16,
   },
 });

@@ -26,6 +26,7 @@ import {
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
@@ -40,6 +41,12 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
   const [startSession] = useStartSessionMutation();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
+
+  // Prefetch onboarding questions in the background during the authentication handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
 
   const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
     try {
@@ -57,6 +64,9 @@ export function LoginScreen() {
       // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
 
       // Navigate directly to My Learning tab (home) unconditionally upon login
       router.replace("/(tabs)/my-learning" as never);

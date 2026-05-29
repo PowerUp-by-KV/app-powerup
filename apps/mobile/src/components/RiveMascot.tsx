@@ -1,5 +1,4 @@
-import React from "react";
-import { StyleSheet, View, UIManager } from "react-native";
+import { View, UIManager } from "react-native";
 import Rive from "rive-react-native";
 import { useAssets } from "expo-asset";
 import { RobotMascot } from "./RobotMascot";

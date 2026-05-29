@@ -16,9 +16,10 @@ import { OtpResendTimer } from "./components/OtpResendTimer";
 
 const DEV_BYPASS = process.env.EXPO_PUBLIC_DEV_BYPASS_OTP === "1" || __DEV__;
 
-export function VerifyPhoneScreen({ flow = "signup" }: { flow?: "signup" | "signin" }) {
+export function VerifyPhoneScreen({ flow: propFlow }: { flow?: "signup" | "signin" }) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone?: string }>();
+  const params = useLocalSearchParams<{ phone?: string; flow?: "signup" | "signin" }>();
+  const flow = propFlow ?? params.flow ?? "signup";
   const [phone, setPhone] = useState(params.phone ?? "");
   const [code, setCode] = useState("");
 
