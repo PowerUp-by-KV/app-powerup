@@ -21,12 +21,11 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
   saveAuthSession,
-  saveAssessmentSessionId,
   getProfileCompletedInSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi } from "@/services/onboarding-api";
+import { onboardingApi, useLazyGetOnboardingStatusQuery } from "@/services/onboarding-api";
 import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";

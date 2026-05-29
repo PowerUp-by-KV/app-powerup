@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { getCompletedSections } from "@/services/auth-storage";
 import { useGetAssessmentStatusQuery } from "@/services/assessment-api";
 
@@ -41,7 +40,6 @@ export function AssessmentHeader({
   sessionId,
   stopTimer,
 }: AssessmentHeaderProps) {
-  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [completedSections, setCompletedSections] = useState<string[]>([]);

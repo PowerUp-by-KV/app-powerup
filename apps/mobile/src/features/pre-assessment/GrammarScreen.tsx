@@ -23,7 +23,6 @@ import { FillBlankInput } from "./components/FillBlankInput";
 import { AssessmentHeader } from "./components/AssessmentHeader";
 import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
-import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 

@@ -1,3 +1,4 @@
+import React from "react";
 import { View, UIManager } from "react-native";
 import Rive from "rive-react-native";
 import { useAssets } from "expo-asset";

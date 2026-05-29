@@ -1,0 +1,162 @@
+- generic [active] [ref=e1]:
+  - button "! messages is not iterable" [ref=e49] [cursor=pointer]:
+    - generic [ref=e51]: "!"
+    - generic [ref=e52]: messages is not iterable
+    - button [ref=e53]:
+      - img [ref=e55]
+  - generic [ref=e60]:
+    - generic [ref=e62]:
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - button "Dismiss error" [ref=e65] [cursor=pointer]:
+            - img [ref=e66]
+          - button "Minimize errors" [ref=e68] [cursor=pointer]:
+            - img [ref=e69]
+        - generic [ref=e72]:
+          - button "Previous error" [disabled] [ref=e73]:
+            - img [ref=e74]
+          - generic [ref=e76]: 1/1
+          - button "Next error" [disabled] [ref=e77]:
+            - img [ref=e78]
+      - generic [ref=e80]:
+        - button "Reload application" [ref=e81] [cursor=pointer]:
+          - img [ref=e82]
+        - button "Copy error" [ref=e84] [cursor=pointer]:
+          - img [ref=e85]
+        - generic [ref=e90]:
+          - img [ref=e91]
+          - generic [ref=e93]: Expo 55.0.0
+    - generic [ref=e94]:
+      - generic [ref=e95]:
+        - generic [ref=e97]: Uncaught Error
+        - generic [ref=e98]: messages is not iterable
+      - generic [ref=e99]:
+        - generic [ref=e100]:
+          - banner [ref=e101]:
+            - generic [ref=e103]:
+              - img [ref=e105]
+              - generic [ref=e107]: apps/mobile/app/chat.tsx (4:10)
+            - button "Copy content" [ref=e108] [cursor=pointer]:
+              - paragraph [ref=e109]: Open
+              - img [ref=e110]
+          - generic [ref=e113]:
+            - generic [ref=e116]: 2 |
+            - generic [ref=e117]:
+              - generic [ref=e119]: 3 |
+              - generic [ref=e121]: export
+              - generic [ref=e123]: default
+              - generic [ref=e125]: function
+              - generic [ref=e127]: ChatRoute
+              - generic [ref=e128]: "() {"
+            - generic [ref=e129]:
+              - generic [ref=e130]: ">"
+              - generic [ref=e131]: 4 |
+              - generic [ref=e133]: return
+              - generic [ref=e135]: <
+              - generic [ref=e136]: ChatScreen
+              - generic [ref=e138]: /
+              - generic [ref=e139]: ">"
+              - generic [ref=e140]: ;
+            - generic [ref=e141]:
+              - generic [ref=e143]: "|"
+              - generic [ref=e145]: ^
+            - generic [ref=e146]:
+              - generic [ref=e148]: 5 |
+              - generic [ref=e149]: "}"
+            - generic [ref=e152]: 6 |
+        - generic [ref=e153]:
+          - banner [ref=e154]:
+            - generic [ref=e156]:
+              - img [ref=e158]
+              - generic [ref=e160]: apps/mobile/src/features/chat/ChatScreen.tsx (85:15)
+            - button "Copy content" [ref=e161] [cursor=pointer]:
+              - paragraph [ref=e162]: Open
+              - img [ref=e163]
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - generic [ref=e169]: 83 |
+              - generic [ref=e171]: const
+              - generic [ref=e172]: empty
+              - generic [ref=e173]: =
+              - generic [ref=e175]: "!"
+              - generic [ref=e176]: threadId
+              - generic [ref=e177]: ;
+            - generic [ref=e178]:
+              - generic [ref=e180]: 84 |
+              - generic [ref=e182]: const
+              - generic [ref=e183]: sortedMessages
+              - generic [ref=e184]: =
+              - generic [ref=e185]: useMemo(
+            - generic [ref=e186]:
+              - generic [ref=e187]: ">"
+              - generic [ref=e188]: 85 |
+              - generic [ref=e189]: ()
+              - generic [ref=e190]: =>
+              - generic [ref=e191]: "["
+              - generic [ref=e192]: ...
+              - generic [ref=e193]: messages]
+              - generic [ref=e194]: .
+              - generic [ref=e195]: sort((a
+              - generic [ref=e196]: ","
+              - generic [ref=e197]: b)
+              - generic [ref=e198]: =>
+              - generic [ref=e199]: a
+              - generic [ref=e200]: .
+              - generic [ref=e201]: created_at
+              - generic [ref=e202]: .
+              - generic [ref=e203]: localeCompare(b
+              - generic [ref=e204]: .
+              - generic [ref=e205]: created_at))
+              - generic [ref=e206]: ","
+            - generic [ref=e207]:
+              - generic [ref=e209]: "|"
+              - generic [ref=e211]: ^
+            - generic [ref=e212]:
+              - generic [ref=e214]: 86 |
+              - generic [ref=e215]: "[messages]"
+              - generic [ref=e216]: ","
+            - generic [ref=e217]:
+              - generic [ref=e219]: 87 |
+              - generic [ref=e220]: )
+              - generic [ref=e221]: ;
+            - generic [ref=e224]: 88 |
+        - generic [ref=e225]:
+          - generic [ref=e226]:
+            - generic [ref=e227]:
+              - img [ref=e228]
+              - heading "Component Stack" [level=3] [ref=e230]
+              - generic [ref=e231]: "38"
+            - button "Show 36 ignored-listed frames" [ref=e232] [cursor=pointer]:
+              - generic "Show 36 ignored-listed frames" [ref=e233]:
+                - generic [ref=e234]: Show 36 ignored-listed frames
+                - img [ref=e235]
+          - generic [ref=e239]:
+            - generic [ref=e241] [cursor=pointer]:
+              - code [ref=e242]: <anonymous>
+              - code [ref=e243]: node_modules/.pnpm/react-native-css-interop@0.2.3_react-native-reanimated@4.2.1_react-native-worklets@0.7._c93654258884e100faa81556d4ea1abf/node_modules/react-native-css-interop/dist/runtime/wrap-jsx.js:20:20
+            - generic [ref=e245] [cursor=pointer]:
+              - code [ref=e246]: ChatRoute
+              - code [ref=e247]: apps/mobile/app/chat.tsx:4:10
+            - generic [ref=e249] [cursor=pointer]:
+              - code [ref=e250]: <anonymous>
+              - code [ref=e251]: node_modules/.pnpm/react-native-css-interop@0.2.3_react-native-reanimated@4.2.1_react-native-worklets@0.7._c93654258884e100faa81556d4ea1abf/node_modules/react-native-css-interop/dist/runtime/wrap-jsx.js:20:20
+            - generic [ref=e253] [cursor=pointer]:
+              - code [ref=e254]: WrappedScreenComponent
+              - code [ref=e255]: node_modules/.pnpm/expo-router@55.0.13_c131764a799823b9f213d84a8f83031c/node_modules/expo-router/build/useScreens.js:194:16
+        - generic [ref=e256]:
+          - generic [ref=e257]:
+            - generic [ref=e258]:
+              - img [ref=e259]
+              - heading "Call Stack" [level=3] [ref=e261]
+              - generic [ref=e262]: "18"
+            - button "Show 16 ignored-listed frames" [ref=e263] [cursor=pointer]:
+              - generic "Show 16 ignored-listed frames" [ref=e264]:
+                - generic [ref=e265]: Show 16 ignored-listed frames
+                - img [ref=e266]
+          - generic [ref=e270]:
+            - generic [ref=e272] [cursor=pointer]:
+              - code [ref=e273]: useMemo$argument_0
+              - code [ref=e274]: apps/mobile/src/features/chat/ChatScreen.tsx:85:15
+            - generic [ref=e276] [cursor=pointer]:
+              - code [ref=e277]: ChatScreen
+              - code [ref=e278]: apps/mobile/src/features/chat/ChatScreen.tsx:84:33

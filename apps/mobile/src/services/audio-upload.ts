@@ -2,12 +2,6 @@ import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
 import { normalizeBaseUrlForRuntime } from "./api";
 
-interface AudioUploadResponse {
-  blob_path: string;
-  sas_url: string;
-  expires_at: string;
-}
-
 /**
  * Uploads an audio recording to Azure Blob Storage via the backend.
  * Returns the SAS URL to use in assessment answer submissions.

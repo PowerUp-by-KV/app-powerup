@@ -7,7 +7,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Ionicons } from "@expo/vector-icons";
 
 import {
   useCompleteActivityMutation,

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -13,29 +15,51 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { OtpInput } from "./components/OtpInput";
 import { OtpResendTimer } from "./components/OtpResendTimer";
+import { useSendEmailOtpMutation, useVerifyEmailOtpMutation } from "../../services/auth-api";
 
-const DEV_BYPASS = process.env.EXPO_PUBLIC_DEV_BYPASS_OTP === "1" || __DEV__;
-
-export function VerifyEmailScreen({ flow: propFlow }: { flow?: "signup" | "signin" }) {
+export function VerifyEmailScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ email?: string; flow?: "signup" | "signin" }>();
-  const flow = propFlow ?? params.flow ?? "signup";
+  const params = useLocalSearchParams<{ email?: string; next?: string }>();
   const [email, setEmail] = useState(params.email ?? "");
   const [code, setCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
 
+  const [sendOtp, { isLoading: isSending }] = useSendEmailOtpMutation();
+  const [verifyOtp, { isLoading: isVerifying }] = useVerifyEmailOtpMutation();
+
+  // Auto-send the OTP when arriving with an email pre-filled (post-signup flow).
   useEffect(() => {
-    if (DEV_BYPASS) {
-      // Auto-fill with 6 zeros in dev so testers don't burn time
-      const t = setTimeout(() => setCode("000000"), 600);
-      return () => clearTimeout(t);
+    if (params.email && !otpSent) {
+      void handleSendOtp(params.email);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.email]);
 
-  const handleContinue = () => {
-    if (flow === "signup") {
-      router.replace("/thank-you" as never);
-    } else {
-      router.replace("/welcome-back" as never);
+  const handleSendOtp = async (target?: string) => {
+    const addr = (target ?? email).trim();
+    if (!addr) {
+      Alert.alert("Enter your email", "Please type your email address first.");
+      return;
+    }
+    try {
+      await sendOtp({ email: addr }).unwrap();
+      setOtpSent(true);
+    } catch (err) {
+      const data = (err as { data?: { detail?: string } })?.data;
+      Alert.alert("Couldn't send code", data?.detail ?? "Please try again in a moment.");
+    }
+  };
+
+  const handleContinue = async () => {
+    if (code.length !== 6) return;
+    try {
+      await verifyOtp({ email: email.trim(), code }).unwrap();
+      const next = params.next ?? "/(tabs)";
+      router.replace(next as never);
+    } catch (err) {
+      const data = (err as { data?: { detail?: string } })?.data;
+      Alert.alert("Invalid code", data?.detail ?? "That code didn't match. Try again.");
+      setCode("");
     }
   };
 
@@ -60,7 +84,9 @@ export function VerifyEmailScreen({ flow: propFlow }: { flow?: "signup" | "signi
             <View className="w-16 h-16 rounded-2xl bg-slate-200 mb-6" />
             <Text className="text-3xl font-extrabold text-slate-900 mb-2">Verify Your Email</Text>
             <Text className="text-slate-500 text-center">
-              Enter your email id to receive a one time password
+              {otpSent
+                ? `We sent a 6-digit code to ${email}`
+                : "Enter your email id to receive a one time password"}
             </Text>
           </View>
 
@@ -73,39 +99,55 @@ export function VerifyEmailScreen({ flow: propFlow }: { flow?: "signup" | "signi
               placeholderTextColor="#94a3b8"
               keyboardType="email-address"
               autoCapitalize="none"
+              editable={!otpSent}
               className="border border-slate-200 rounded-xl px-4 py-3 text-slate-900"
             />
           </View>
 
-          <View className="flex-row items-center my-6">
-            <View className="h-px flex-1 bg-slate-200" />
-            <Text className="mx-3 text-slate-400 text-xs tracking-widest">ENTER OTP</Text>
-            <View className="h-px flex-1 bg-slate-200" />
-          </View>
+          {!otpSent ? (
+            <Pressable
+              onPress={() => handleSendOtp()}
+              disabled={isSending || !email.trim()}
+              className={`rounded-full py-4 items-center ${
+                isSending || !email.trim() ? "bg-slate-300" : "bg-slate-700"
+              }`}
+            >
+              {isSending ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text className="text-white font-bold text-base">Send code</Text>
+              )}
+            </Pressable>
+          ) : (
+            <>
+              <View className="flex-row items-center my-6">
+                <View className="h-px flex-1 bg-slate-200" />
+                <Text className="mx-3 text-slate-400 text-xs tracking-widest">ENTER OTP</Text>
+                <View className="h-px flex-1 bg-slate-200" />
+              </View>
 
-          <Text className="text-slate-500 text-sm mb-3">Enter 6-digit code</Text>
-          <OtpInput length={6} value={code} onChange={setCode} />
+              <Text className="text-slate-500 text-sm mb-3">Enter 6-digit code</Text>
+              <OtpInput length={6} value={code} onChange={setCode} />
 
-          <View className="mt-6">
-            <OtpResendTimer onResend={() => {}} />
-          </View>
+              <View className="mt-6">
+                <OtpResendTimer onResend={() => handleSendOtp()} />
+              </View>
 
-          <Pressable
-            onPress={() =>
-              router.push({ pathname: "/verify-phone", params: { email, flow } } as never)
-            }
-            className="mt-6 items-center"
-          >
-            <Text className="text-slate-900 font-bold underline">Use Mobile number Instead</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={handleContinue}
-            disabled={code.length !== 6}
-            className={`mt-8 rounded-full py-4 items-center ${code.length === 6 ? "bg-slate-700" : "bg-slate-300"}`}
-          >
-            <Text className="text-white font-bold text-base">Continue</Text>
-          </Pressable>
+              <Pressable
+                onPress={handleContinue}
+                disabled={code.length !== 6 || isVerifying}
+                className={`mt-8 rounded-full py-4 items-center ${
+                  code.length === 6 && !isVerifying ? "bg-slate-700" : "bg-slate-300"
+                }`}
+              >
+                {isVerifying ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text className="text-white font-bold text-base">Verify</Text>
+                )}
+              </Pressable>
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

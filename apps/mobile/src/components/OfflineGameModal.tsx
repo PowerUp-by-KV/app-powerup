@@ -51,8 +51,6 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
   useEffect(() => {
     if (gameState === "play") {
       const gameLoop = () => {
-        const now = Date.now();
-
         // Apply physics
         velocity.current += 0.28; // Lower gravity for smooth, fun gameplay
         mascotY.current += velocity.current;

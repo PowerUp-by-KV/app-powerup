@@ -16,6 +16,7 @@ import { MyLearningCard } from "./components/MyLearningCard";
 import { ContinueLearningCard } from "./components/ContinueLearningCard";
 import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
+import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
 
 export function HomeScreen() {
   const router = useRouter();
@@ -104,6 +105,8 @@ export function HomeScreen() {
             <Feather name="user" size={20} color="#475569" />
           </Pressable>
         </View>
+
+        {profile && profile.email_verified === false && <VerifyEmailBanner email={profile.email} />}
 
         <WeeklyStreak days={profile?.weekly_streak} />
 
