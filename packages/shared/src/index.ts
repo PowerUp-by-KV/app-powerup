@@ -42,6 +42,8 @@ export interface ActivityQuestion {
   cefr_level: string;
   order_index: number;
   is_placeholder: boolean;
+  content?: { left_items?: string[]; right_items?: string[] } | null;
+  evaluation?: { matches?: Record<string, string> } | null;
 }
 
 export interface ActivitySubmitResponse {

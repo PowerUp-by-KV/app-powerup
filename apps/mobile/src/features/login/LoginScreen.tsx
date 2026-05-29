@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   ActivityIndicator,
   Alert,
@@ -15,32 +16,28 @@ import {
 import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import {
-  AuthResponse,
-  LoginRequest,
-  useLoginMutation,
-  useLazyGetProfileQuery,
-} from "@/services/auth-api";
+import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
   saveAuthSession,
-  getProfileCompletedInSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi, useLazyGetOnboardingStatusQuery } from "@/services/onboarding-api";
+import { onboardingApi } from "@/services/onboarding-api";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
 export function LoginScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
-  const [getProfile] = useLazyGetProfileQuery();
-  const [getOnboardingStatus] = useLazyGetOnboardingStatusQuery();
+  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the authentication handshake
@@ -61,39 +58,26 @@ export function LoginScreen() {
       // Persist the current email for future login comparisons
       await saveLastLoggedInEmail(loginEmail);
 
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
       // Prefetch questions immediately upon successful handshake
       prefetchOnboarding();
 
-      // Fetch the latest full profile details from the backend
-      const profile = await getProfile().unwrap();
-
-      // Fetch authoritative onboarding status from status endpoint
-      let onboardingStatus = null;
       try {
-        if (profile.id) {
-          onboardingStatus = await getOnboardingStatus(profile.id).unwrap();
+        const status = await getOnboardingStatus(auth.user?.id || "").unwrap();
+        if (status?.answers_present) {
+          router.replace("/(tabs)/my-learning" as never);
+        } else {
+          router.replace("/onboarding" as never);
         }
       } catch (err) {
-        console.warn("Failed to fetch onboarding status:", err);
+        console.warn("Failed to fetch onboarding status, falling back to /onboarding:", err);
+        router.replace("/onboarding" as never);
       }
-
-      // ─── ONBOARDING CHECK ─────────────────────────────────────────────────
-      // Primary truth  : backend onboarding status or profile field.
-      // Secondary truth: local session flag.
-      const localOnboardingDone = await getProfileCompletedInSession();
-      const isOnboardingComplete =
-        onboardingStatus?.profile_completed || profile.profile_completed || localOnboardingDone;
-
-      if (!isOnboardingComplete) {
-        router.replace("/onboarding");
-        return;
-      }
-
-      // If onboarding is complete, navigate directly to My Learning tab
-      router.replace("/my-learning" as any);
-    } catch {
-      // getProfile failed → cannot determine status, send to onboarding as safest fallback
-      router.replace("/onboarding");
+    } catch (err) {
+      Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }
   };
 

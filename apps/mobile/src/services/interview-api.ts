@@ -130,7 +130,7 @@ export const mockInterviewApi = api.injectEndpoints({
       providesTags: ["PracticeHistory"],
     }),
   }),
-  overrideExisting: false,
+  overrideExisting: true,
 });
 
 export const {
