@@ -23,6 +23,8 @@ jest.mock("@/services/onboarding-api", () => ({
     refetch: jest.fn(),
   }),
   useSubmitOnboardingMutation: () => [jest.fn(), { isLoading: false }],
+  useExtractOnboardingResumeMutation: () => [jest.fn(), { isLoading: false }],
+  useConfirmOnboardingResumeMutation: () => [jest.fn(), { isLoading: false }],
 }));
 jest.mock("@/services/assessment-api", () => ({
   useStartSessionMutation: () => [jest.fn(), { isLoading: false }],
