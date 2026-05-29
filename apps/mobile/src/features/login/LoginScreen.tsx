@@ -65,8 +65,13 @@ export function LoginScreen() {
       // Prefetch questions immediately upon successful handshake
       prefetchOnboarding();
 
+      const userId = auth?.user?.id;
+      if (!userId) {
+        router.replace("/onboarding" as never);
+        return;
+      }
       try {
-        const status = await getOnboardingStatus(auth.user?.id || "").unwrap();
+        const status = await getOnboardingStatus(userId).unwrap();
         if (status?.answers_present) {
           router.replace("/(tabs)/my-learning" as never);
         } else {

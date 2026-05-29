@@ -10,9 +10,6 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 const ADMIN_PASSWORD: string = (() => {
   const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
   if (!value) {
-    if (process.env.NODE_ENV !== "production") {
-      return "change-me-before-deploy";
-    }
     throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
   return value;

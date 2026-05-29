@@ -12,7 +12,7 @@ import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
 
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
 import {
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
@@ -44,35 +44,7 @@ export function ResumeUploadStep() {
   const goToAssessment = async () => {
     try {
       const session = await startSession().unwrap();
-      const notCompleted = session.not_completed_sections || [];
-      const backendCompleted = session.completed_sections || [];
-      const allSections = [
-        "A_READING",
-        "A_SPEAKING",
-        "A_LISTEN",
-        "B_SPEAKING",
-        "C_GRAMMAR",
-        "D_LISTEN_ANSWER",
-      ];
-      const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
-
-      let targetSec = activeNotCompleted[0];
-      if (!targetSec) {
-        if (session.current_section && !backendCompleted.includes(session.current_section)) {
-          targetSec = session.current_section;
-        }
-      }
-      if (!targetSec) {
-        if (session.first_section && !backendCompleted.includes(session.first_section)) {
-          targetSec = session.first_section;
-        }
-      }
-      if (!targetSec) {
-        targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-      }
-
-      const targetRoute = getNextRouteForSection(targetSec);
-      router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+      router.replace(`/assessment-entry?session_id=${session.session_id}` as never);
     } catch {
       // If session start fails, still land user in the app — they can retry from My Learning
       router.replace("/(tabs)" as never);
@@ -113,35 +85,7 @@ export function ResumeUploadStep() {
       setTimeout(async () => {
         try {
           const session = await startSession().unwrap();
-          const notCompleted = session.not_completed_sections || [];
-          const backendCompleted = session.completed_sections || [];
-          const allSections = [
-            "A_READING",
-            "A_SPEAKING",
-            "A_LISTEN",
-            "B_SPEAKING",
-            "C_GRAMMAR",
-            "D_LISTEN_ANSWER",
-          ];
-          const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
-
-          let targetSec = activeNotCompleted[0];
-          if (!targetSec) {
-            if (session.current_section && !backendCompleted.includes(session.current_section)) {
-              targetSec = session.current_section;
-            }
-          }
-          if (!targetSec) {
-            if (session.first_section && !backendCompleted.includes(session.first_section)) {
-              targetSec = session.first_section;
-            }
-          }
-          if (!targetSec) {
-            targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-          }
-
-          const targetRoute = getNextRouteForSection(targetSec);
-          router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+          router.replace(`/assessment-entry?session_id=${session.session_id}` as never);
         } catch {
           router.replace("/(tabs)" as never);
         }

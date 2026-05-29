@@ -23,18 +23,12 @@ import {
   useGetPersonalizedPathQuery,
   useGetProgressionQuery,
 } from "@/services/module-api";
+import { useStartSessionMutation, useGetAssessmentResultQuery } from "@/services/assessment-api";
 import {
-  useStartSessionMutation,
-  getNextRouteForSection,
-  useGetAssessmentResultQuery,
-} from "@/services/assessment-api";
-import {
-  saveAssessmentSessionId,
   getPreAssessmentResults,
   savePreAssessmentResults,
   getAssessmentSessionId,
   getCompletedSections,
-  syncCompletedSections,
   StoredPreAssessmentResult,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
@@ -754,49 +748,8 @@ export function LearningJourneyScreen() {
               try {
                 // Authoritatively start or resume the assessment session on the backend
                 const session = await startSession().unwrap();
-                await saveAssessmentSessionId(session.session_id);
-
-                // Synchronize completed sections from backend state
-                const backendCompleted = session.completed_sections || [];
-                await syncCompletedSections(backendCompleted);
-                setCompletedSections(backendCompleted);
-
-                // Navigate strictly to the first NOT-COMPLETED section as reported by the backend.
-                const notCompleted = session.not_completed_sections || [];
-                const allSections = [
-                  "A_READING",
-                  "A_SPEAKING",
-                  "A_LISTEN",
-                  "B_SPEAKING",
-                  "C_GRAMMAR",
-                  "D_LISTEN_ANSWER",
-                ];
-                const activeNotCompleted = notCompleted.filter(
-                  (sec) => !backendCompleted.includes(sec),
-                );
-
-                let targetSec = activeNotCompleted[0];
-                if (!targetSec) {
-                  if (
-                    session.current_section &&
-                    !backendCompleted.includes(session.current_section)
-                  ) {
-                    targetSec = session.current_section;
-                  }
-                }
-                if (!targetSec) {
-                  if (session.first_section && !backendCompleted.includes(session.first_section)) {
-                    targetSec = session.first_section;
-                  }
-                }
-                if (!targetSec) {
-                  targetSec =
-                    allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-                }
-
-                const targetRoute = getNextRouteForSection(targetSec);
                 router.push({
-                  pathname: targetRoute,
+                  pathname: "/assessment-entry" as any,
                   params: { session_id: session.session_id },
                 });
               } catch (err: any) {
