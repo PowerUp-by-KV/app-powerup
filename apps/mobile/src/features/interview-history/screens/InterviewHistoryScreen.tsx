@@ -32,7 +32,7 @@ export function InterviewHistoryScreen() {
 
   const handleViewSession = useCallback(
     (sessionId: string) => {
-      router.push(`/interview-detail?sessionId=${sessionId}`);
+      router.push(`/interview-detail?sessionId=${sessionId}` as never);
     },
     [router],
   );
