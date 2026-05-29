@@ -201,23 +201,13 @@ export function ProfileResumeScreen() {
                     <View className="border-t border-slate-100 mt-2 pt-3 flex-row gap-4">
                       {!!linkedinUrl && (
                         <View className="flex-row items-center">
-                          <Feather
-                            name="linkedin"
-                            size={14}
-                            color="#0077b5"
-                            style={{ marginRight: 6 }}
-                          />
+                          <Feather name="linkedin" size={14} color="#0077b5" className="mr-1.5" />
                           <Text className="text-slate-500 text-xs font-bold">LinkedIn</Text>
                         </View>
                       )}
                       {!!githubUrl && (
                         <View className="flex-row items-center">
-                          <Feather
-                            name="github"
-                            size={14}
-                            color="#24292e"
-                            style={{ marginRight: 6 }}
-                          />
+                          <Feather name="github" size={14} color="#24292e" className="mr-1.5" />
                           <Text className="text-slate-500 text-xs font-bold">GitHub</Text>
                         </View>
                       )}
@@ -375,12 +365,7 @@ export function ProfileResumeScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Feather
-                      name="check-circle"
-                      size={16}
-                      color="#fff"
-                      style={{ marginRight: 8 }}
-                    />
+                    <Feather name="check-circle" size={16} color="#fff" className="mr-2" />
                     <Text className="text-white font-black text-sm">Save Changes</Text>
                   </>
                 )}

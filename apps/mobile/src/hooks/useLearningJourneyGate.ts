@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "expo-router";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
-import { useStartSessionMutation } from "@/services/assessment-api";
+import { useCheckAssessmentStatusQuery } from "@/services/assessment-api";
 import { getAuthSession, saveAssessmentSessionId } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
-import type { StartSessionResponse } from "@/services/assessment-api";
 
 export type GateReason = "onboarding" | "assessment" | null;
 
@@ -18,12 +17,6 @@ export function useLearningJourneyGate(): LearningJourneyGate {
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
   const [isLocalReady, setIsLocalReady] = useState(false);
-
-  // Assessment session fetched once via startSession POST (resumes existing sessions)
-  const [assessmentSession, setAssessmentSession] = useState<StartSessionResponse | null>(null);
-  const [assessmentChecked, setAssessmentChecked] = useState(false);
-  // Ref guard prevents the effect from firing more than once per userId
-  const checkInProgressRef = useRef(false);
 
   useEffect(() => {
     const loadLocal = async () => {
@@ -62,46 +55,28 @@ export function useLearningJourneyGate(): LearningJourneyGate {
 
   const shouldCheckAssessment = !!userId && profileDone && !isCefrDone;
 
-  const [startSession] = useStartSessionMutation();
+  // 2. Authoritatively query the assessment status from the backend
+  const { data: assessmentSession, isLoading: isAssessmentLoading } = useCheckAssessmentStatusQuery(
+    undefined,
+    {
+      skip: !shouldCheckAssessment,
+    },
+  );
 
-  // 2. Fire the assessment check ONCE when shouldCheckAssessment becomes true.
-  //    Using a ref guard instead of putting startSession in the dep array
-  //    (startSession has an unstable reference that would cause an infinite loop).
+  // Auto-save session ID when fetched successfully
   useEffect(() => {
-    if (!shouldCheckAssessment || checkInProgressRef.current || assessmentChecked) return;
-
-    checkInProgressRef.current = true;
-    startSession()
-      .unwrap()
-      .then((session) => {
-        setAssessmentSession(session);
-        if (session.session_id) {
-          saveAssessmentSessionId(session.session_id).catch((err) => {
-            console.warn("Failed to auto-save session ID in gate:", err);
-          });
-        }
-      })
-      .catch((err) => {
-        console.warn("Gate: failed to fetch assessment session status:", err);
-      })
-      .finally(() => {
-        setAssessmentChecked(true);
-        checkInProgressRef.current = false;
+    if (assessmentSession?.session_id) {
+      saveAssessmentSessionId(assessmentSession.session_id).catch((err) => {
+        console.warn("Failed to auto-save session ID in gate:", err);
       });
-  }, [shouldCheckAssessment, assessmentChecked]); // intentionally omit startSession — its ref is unstable
-
-  // Reset assessment check when the user changes so a new login triggers a fresh check
-  useEffect(() => {
-    checkInProgressRef.current = false;
-    setAssessmentChecked(false);
-    setAssessmentSession(null);
-  }, [userId]);
+    }
+  }, [assessmentSession?.session_id]);
 
   if (
     !isLocalReady ||
     (userId && isProfileLoading) ||
     (userId && isOnboardingLoading) ||
-    (shouldCheckAssessment && !assessmentChecked)
+    (shouldCheckAssessment && isAssessmentLoading)
   ) {
     return { ready: false, canEnter: false, blockedReason: null };
   }

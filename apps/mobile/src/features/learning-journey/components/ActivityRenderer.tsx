@@ -21,7 +21,11 @@ interface ActivityRendererProps {
  * Reading, vocabulary, and grammar all fall through to `McqActivity`.
  */
 export function ActivityRenderer({ activity, questions, onComplete }: ActivityRendererProps) {
-  const skill = String(activity.skill_type ?? (activity as any).skill ?? "").toLowerCase();
+  const skill = String(
+    activity.skill_type ??
+      ("skill" in activity ? (activity as { skill?: string }).skill : "") ??
+      "",
+  ).toLowerCase();
   const hasAudio = questions.some((q) => !!q.audio_url);
 
   if (skill === "speaking") {

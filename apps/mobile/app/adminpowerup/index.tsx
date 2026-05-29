@@ -9,13 +9,13 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 // app never silently falls back to an empty/default password.
 const ADMIN_PASSWORD: string = (() => {
   const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
-  if (Platform.OS === "web" && !value) {
+  if (!value) {
     if (process.env.NODE_ENV !== "production") {
       return "change-me-before-deploy";
     }
-    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the web build environment.");
+    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
-  return value ?? "change-me-before-deploy";
+  return value;
 })();
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.

@@ -21,12 +21,10 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
   saveAuthSession,
-  getProfileCompletedInSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi, useLazyGetOnboardingStatusQuery } from "@/services/onboarding-api";
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
@@ -39,7 +37,7 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
-  const [startSession] = useStartSessionMutation();
+  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the authentication handshake
@@ -67,10 +65,19 @@ export function LoginScreen() {
       // Prefetch questions immediately upon successful handshake
       prefetchOnboarding();
 
-      // Navigate directly to My Learning tab (home) unconditionally upon login
-      router.replace("/(tabs)/my-learning" as never);
-    } catch {
-      router.replace("/(tabs)/my-learning" as never);
+      try {
+        const status = await getOnboardingStatus(auth.user?.id || "").unwrap();
+        if (status?.answers_present) {
+          router.replace("/(tabs)/my-learning" as never);
+        } else {
+          router.replace("/onboarding" as never);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch onboarding status, falling back to /onboarding:", err);
+        router.replace("/onboarding" as never);
+      }
+    } catch (err) {
+      Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }
   };
 

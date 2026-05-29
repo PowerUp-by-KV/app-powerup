@@ -32,6 +32,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       }
       setChecked(true);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [segments]);
 
   if (!checked) return null;

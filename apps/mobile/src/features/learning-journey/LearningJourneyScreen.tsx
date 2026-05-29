@@ -41,7 +41,6 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { Ionicons } from "@expo/vector-icons";
 
 import { CefrProgressBar } from "./components/CefrProgressBar";
 import { TimelineRow } from "./components/TimelineRow";
@@ -83,6 +82,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         }),
       ]).start();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -409,24 +409,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
       </Animated.View>
     </Animated.View>
   );
-}
-
-const SECTIONS_ORDER = [
-  "A_READING",
-  "A_SPEAKING",
-  "A_LISTEN",
-  "B_SPEAKING",
-  "C_GRAMMAR",
-  "D_LISTEN_ANSWER",
-];
-
-function getNextIncompleteSection(completed: string[]): string {
-  for (const sec of SECTIONS_ORDER) {
-    if (!completed.includes(sec)) {
-      return sec;
-    }
-  }
-  return "A_READING";
 }
 
 function GateEmptyState({
@@ -779,15 +761,39 @@ export function LearningJourneyScreen() {
                 await syncCompletedSections(backendCompleted);
                 setCompletedSections(backendCompleted);
 
-                // Navigate to the first NOT-COMPLETED section as reported by the backend.
-                // This is the authoritative source — current_section / first_section are
-                // fallbacks only (current_section can be null on a resumed session).
+                // Navigate strictly to the first NOT-COMPLETED section as reported by the backend.
                 const notCompleted = session.not_completed_sections || [];
-                const targetSec =
-                  notCompleted[0] ||
-                  session.current_section ||
-                  session.first_section ||
-                  "A_READING";
+                const allSections = [
+                  "A_READING",
+                  "A_SPEAKING",
+                  "A_LISTEN",
+                  "B_SPEAKING",
+                  "C_GRAMMAR",
+                  "D_LISTEN_ANSWER",
+                ];
+                const activeNotCompleted = notCompleted.filter(
+                  (sec) => !backendCompleted.includes(sec),
+                );
+
+                let targetSec = activeNotCompleted[0];
+                if (!targetSec) {
+                  if (
+                    session.current_section &&
+                    !backendCompleted.includes(session.current_section)
+                  ) {
+                    targetSec = session.current_section;
+                  }
+                }
+                if (!targetSec) {
+                  if (session.first_section && !backendCompleted.includes(session.first_section)) {
+                    targetSec = session.first_section;
+                  }
+                }
+                if (!targetSec) {
+                  targetSec =
+                    allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
+                }
+
                 const targetRoute = getNextRouteForSection(targetSec);
                 router.push({
                   pathname: targetRoute,
@@ -807,7 +813,6 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const cefrState = isCefrCompleted ? "completed" : "in_progress";
   const cefrBadgeLabel = isCefrCompleted ? "Completed" : "In Progress";
   const cefrBadgeStyle = isCefrCompleted
     ? timelineStyles.badgeCompleted
@@ -830,7 +835,6 @@ export function LearningJourneyScreen() {
   const cefrXpText = `${engagement?.xp_earned ?? 0} XP earned in this module`;
 
   const isPostUnlocked = isCefrCompleted;
-  const postState = isPostUnlocked ? "available" : "locked";
   const postCircleStyle = isPostUnlocked
     ? timelineStyles.stageCircleInProgress
     : timelineStyles.stageCircleLocked;
@@ -844,7 +848,6 @@ export function LearningJourneyScreen() {
   const postIcon = isPostUnlocked ? ("edit-2" as const) : ("lock" as const);
 
   const isResumeUnlocked = isCefrCompleted;
-  const resumeState = isResumeUnlocked ? "available" : "locked";
   const resumeCircleStyle = isResumeUnlocked
     ? timelineStyles.stageCircleInProgress
     : timelineStyles.stageCircleLocked;
@@ -858,7 +861,6 @@ export function LearningJourneyScreen() {
   const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
 
   const totalDays = days?.length ?? 0;
-  const completedDays = moduleProgress ? moduleProgress.current_day - 1 : 0;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">

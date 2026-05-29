@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Animated, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 import type { ActivityQuestion } from "@powerup/shared";
@@ -48,6 +48,12 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
   const [isGameOver, setIsGameOver] = useState(false);
   const [hasWon, setHasWon] = useState(false);
 
+  // Handle game end state
+  const handleGameOver = (won: boolean) => {
+    setIsGameOver(true);
+    setHasWon(won);
+  };
+
   // Timer logic
   useEffect(() => {
     if (isGameOver) return;
@@ -56,7 +62,6 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleGameOver(false);
           return 0;
         }
         return prev - 1;
@@ -66,11 +71,11 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     return () => clearInterval(timer);
   }, [isGameOver]);
 
-  // Handle game end state
-  const handleGameOver = (won: boolean) => {
-    setIsGameOver(true);
-    setHasWon(won);
-  };
+  useEffect(() => {
+    if (timeLeft === 0 && !isGameOver) {
+      handleGameOver(false);
+    }
+  }, [timeLeft, isGameOver]);
 
   // Check match when both sides are selected
   useEffect(() => {

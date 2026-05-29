@@ -13,11 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
-import {
-  useListAchievementsQuery,
-  useGetMedalsQuery,
-  type Achievement,
-} from "@/services/gamification-api";
+import { useListAchievementsQuery, useGetMedalsQuery } from "@/services/gamification-api";
 
 interface BadgeType {
   id: string;
@@ -133,6 +129,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
         ]),
       ).start();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {

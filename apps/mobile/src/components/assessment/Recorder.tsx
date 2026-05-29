@@ -60,6 +60,7 @@ function PulsingHalo({ isRecording, size }: { isRecording: boolean; size: number
       pulseAnim1.setValue(1);
       pulseAnim2.setValue(1);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRecording]);
 
   if (!isRecording) return null;
