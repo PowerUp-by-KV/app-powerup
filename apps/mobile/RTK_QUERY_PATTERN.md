@@ -156,9 +156,8 @@ JWT tokens are automatically injected into all requests via `prepareHeaders`. No
 See the implemented APIs:
 
 - `src/services/auth-api.ts` - Authentication endpoints
-- `src/services/grammar-api.ts` - Grammar assessment endpoints
-- `src/services/reading-api.ts` - Reading assessment endpoints
-- `src/services/listening-api.ts` - Listening assessment endpoints
+- `src/services/pre-reading-api.ts` - Reading assessment endpoints
+- `src/services/pre-listening-api.ts` - Listening assessment endpoints
 
 ## Migration from Axios
 

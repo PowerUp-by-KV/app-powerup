@@ -1,5 +1,7 @@
-import { ReadingScreen } from "@/features/read";
+import { useLocalSearchParams } from "expo-router";
+import { ReadingScreen } from "@/features/pre-assessment";
 
 export default function ReadRoute() {
-  return <ReadingScreen />;
+  const { session_id } = useLocalSearchParams<{ session_id: string }>();
+  return <ReadingScreen sessionId={session_id} />;
 }

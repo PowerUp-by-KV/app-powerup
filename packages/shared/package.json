@@ -9,6 +9,8 @@
     "lint": "eslint ."
   },
   "devDependencies": {
+    "@powerup/eslint-config": "workspace:*",
+    "eslint": "^9",
     "typescript": "~5.9.2"
   }
 }

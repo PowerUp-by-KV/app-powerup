@@ -1,130 +1,210 @@
-import { clearAuthState, getApiErrorMessage } from "@/services/auth-service";
-import { setProfileCompletedInSession } from "@/services/auth-storage";
-import { useSubmitOnboardingMutation } from "@/services/onboarding-api";
+import React, { useMemo, useState } from "react";
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { ImageBackground, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useSafeBack } from "@/hooks/useSafeBack";
+import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+
+import { useGetProfileQuery } from "@/services/auth-api";
+import { useGetStreakCalendarQuery } from "@/services/profile-api";
+import { useLogout } from "@/utils/auth";
+
+function currentMonthIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+}
 
 export function ProfileScreen() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [dob, setDob] = useState("");
-  const [college, setCollege] = useState("");
-  const [submitOnboarding, { isLoading }] = useSubmitOnboardingMutation();
+  const safeBack = useSafeBack();
+  const { logout } = useLogout();
+  const [tab, setTab] = useState<"stats" | "space">("stats");
+  const { data: profile, isLoading } = useGetProfileQuery();
+  const { data: calendar } = useGetStreakCalendarQuery(currentMonthIso());
 
-  const handleSubmit = async () => {
-    if (!name || !mobile || !dob || !college) {
-      alert("Please fill all fields");
-      return;
-    }
+  const monthLabel = useMemo(() => {
+    const d = new Date();
+    return d.toLocaleString("en-US", { month: "long", year: "numeric" });
+  }, []);
 
-    if (mobile.trim().length < 10 || mobile.trim().length > 20) {
-      alert("Mobile number must be 10 to 20 characters");
-      return;
-    }
+  if (isLoading) {
+    return <GamifiedMascotLoader title="Loading Profile..." />;
+  }
 
-    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dob.trim())) {
-      alert("Date of birth must be DD/MM/YYYY");
-      return;
-    }
-
-    try {
-      await submitOnboarding({
-        name: name.trim(),
-        mobile: mobile.trim(),
-        dob: dob.trim(),
-        college: college.trim(),
-      }).unwrap();
-
-      await setProfileCompletedInSession(true);
-      alert("Profile created successfully");
-      router.replace("/read");
-    } catch (error) {
-      if ((error as { status?: number })?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
-        return;
-      }
-
-      alert(
-        getApiErrorMessage(error, "Unable to save onboarding details right now. Please try again."),
-      );
-    }
-  };
+  const settingsRows = [
+    {
+      icon: "user" as const,
+      label: "Personal Details",
+      onPress: () => router.push("/profile/edit" as never),
+    },
+    {
+      icon: "file-text" as const,
+      label: "My Resume",
+      onPress: () => router.push("/profile/resume" as never),
+    },
+    {
+      icon: "globe" as const,
+      label: "Language",
+      onPress: () => router.push("/profile/language" as never),
+    },
+    { icon: "lock" as const, label: "Passwords", onPress: () => {} },
+    { icon: "moon" as const, label: "Mode", onPress: () => {} },
+    { icon: "bell" as const, label: "Notifications", onPress: () => {} },
+  ];
 
   return (
-    <ImageBackground
-      source={{
-        uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
-      }}
-      className="flex-1"
-      resizeMode="cover"
-    >
-      <ScrollView className="flex-1" contentContainerClassName="flex-1 justify-center py-10">
-        <View className="flex-1 justify-center items-center px-6">
-          <View className="w-full max-w-[420px] bg-white/95 rounded-[32px] p-8 border border-slate-300/25 shadow-2xl backdrop-blur-xl">
-            <View className="items-center mb-4">
-              <View className="w-16 h-1 bg-indigo-600 rounded mb-4" />
-              <Text className="text-4xl font-black text-center tracking-tight text-slate-900">
-                Complete Profile
-              </Text>
-            </View>
-            <Text className="text-base text-center mb-16 text-slate-600 font-bold leading-relaxed">
-              Help us personalize your learning experience
-            </Text>
-
-            <View className="space-y-3.5 mb-6">
-              <TextInput
-                placeholder="Full Name"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={name}
-                onChangeText={setName}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-
-              <TextInput
-                placeholder="Mobile Number"
-                keyboardType="number-pad"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={mobile}
-                onChangeText={setMobile}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-
-              <TextInput
-                placeholder="Date of Birth (DD/MM/YYYY)"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={dob}
-                onChangeText={setDob}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-
-              <TextInput
-                placeholder="College/University"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={college}
-                onChangeText={setCollege}
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`rounded-2xl py-4 items-center mb-5.5 bg-indigo-600 ${isLoading ? "opacity-75" : ""}`}
-              disabled={isLoading}
-              onPress={handleSubmit}
-            >
-              <Text className="text-white text-base font-bold">
-                {isLoading ? "Processing..." : "Continue"}
-              </Text>
-            </TouchableOpacity>
-          </View>
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <View className="flex-row items-center px-4 py-3 border-b border-slate-50">
+          <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
+            <Feather name="chevron-left" size={22} color="#0f172a" />
+          </Pressable>
+          <Text className="flex-1 text-center font-bold text-slate-900">Profile</Text>
+          <Pressable onPress={logout} className="w-9 h-9 items-center justify-center">
+            <Feather name="settings" size={20} color="#0f172a" />
+          </Pressable>
         </View>
-      </ScrollView>
-    </ImageBackground>
+
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ padding: 20, paddingBottom: 120, flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="items-center mb-6">
+            <Pressable onPress={() => router.push("/profile/avatar" as never)} className="relative">
+              <View className="w-24 h-24 rounded-full bg-slate-200 items-center justify-center overflow-hidden">
+                {profile?.avatar_id ? (
+                  <Image
+                    source={{
+                      uri: `https://stpowerup.blob.core.windows.net/avatars/${profile.avatar_id}.png`,
+                    }}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <Feather name="user" size={36} color="#94a3b8" />
+                )}
+              </View>
+              <View className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-slate-900 items-center justify-center">
+                <Feather name="edit-2" size={12} color="#fff" />
+              </View>
+            </Pressable>
+            <Text className="text-slate-900 text-xl font-extrabold mt-3">
+              {profile?.nickname ?? profile?.name ?? "—"}
+            </Text>
+            <Text className="text-slate-500 text-xs">LVL {profile?.current_level ?? 1}</Text>
+          </View>
+
+          <View className="flex-row mb-6" style={{ gap: 8 }}>
+            <View className="flex-1 bg-slate-100 rounded-2xl p-3 items-center">
+              <Text className="text-slate-900 font-extrabold text-lg">
+                {profile?.streak_count ?? 0}
+              </Text>
+              <Text className="text-slate-500 text-xs">Daily Streak</Text>
+            </View>
+            <View className="flex-1 bg-slate-100 rounded-2xl p-3 items-center">
+              <Text className="text-slate-900 font-extrabold text-lg">
+                {profile?.total_xp ?? 0}
+              </Text>
+              <Text className="text-slate-500 text-xs">XP Points</Text>
+            </View>
+            <View className="flex-1 bg-slate-100 rounded-2xl p-3 items-center">
+              <Text className="text-slate-900 font-extrabold text-lg">0</Text>
+              <Text className="text-slate-500 text-xs">Friends</Text>
+            </View>
+          </View>
+
+          <View className="flex-row mb-4" style={{ gap: 8 }}>
+            {(["stats", "space"] as const).map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => setTab(t)}
+                className={`px-4 py-1.5 rounded-full ${tab === t ? "bg-slate-900" : "bg-slate-100"}`}
+              >
+                <Text
+                  className={`text-xs font-bold ${tab === t ? "text-white" : "text-slate-600"}`}
+                >
+                  {t === "stats" ? "My Stats" : "My Space"}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {tab === "stats" ? (
+            <>
+              <Pressable
+                onPress={() => router.push("/subscription" as never)}
+                className="bg-slate-50 rounded-3xl p-4 flex-row items-center mb-5 border border-slate-100"
+              >
+                <View className="w-10 h-10 rounded-2xl bg-slate-900 items-center justify-center mr-3">
+                  <Feather name="zap" size={18} color="#fff" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-slate-900 font-bold">Pro Subscription</Text>
+                  <Text className="text-slate-500 text-xs">See plans + upgrade</Text>
+                </View>
+                <Feather name="chevron-right" size={18} color="#94a3b8" />
+              </Pressable>
+
+              <View className="bg-slate-50 rounded-3xl p-4 border border-slate-100">
+                <View className="flex-row justify-between items-center mb-3">
+                  <Text className="text-slate-900 font-bold">Streak Calendar</Text>
+                  <Text className="text-slate-500 text-xs">{monthLabel}</Text>
+                </View>
+                <View className="flex-row flex-wrap" style={{ gap: 6 }}>
+                  {(calendar?.days ?? []).map((d) => {
+                    const day = parseInt(d.date.slice(-2), 10);
+                    return (
+                      <View
+                        key={d.date}
+                        className={`w-8 h-8 rounded-lg items-center justify-center ${d.active ? "bg-slate-900" : "bg-white border border-slate-200"}`}
+                      >
+                        <Text
+                          className={`text-xs font-semibold ${d.active ? "text-white" : "text-slate-400"}`}
+                        >
+                          {day}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <Text className="text-slate-500 text-xs mt-3 text-center">
+                  {calendar?.total_active_days ?? 0} active days this month
+                </Text>
+              </View>
+            </>
+          ) : (
+            <View className="bg-slate-50 rounded-3xl border border-slate-100 overflow-hidden">
+              {settingsRows.map((row, i) => (
+                <Pressable
+                  key={row.label}
+                  onPress={row.onPress}
+                  className="flex-row items-center px-4 py-3"
+                  style={{ borderTopWidth: i === 0 ? 0 : 1, borderColor: "#e2e8f0" }}
+                >
+                  <View className="w-9 h-9 rounded-xl bg-white items-center justify-center mr-3">
+                    <Feather name={row.icon} size={16} color="#475569" />
+                  </View>
+                  <Text className="flex-1 text-slate-900 font-semibold">{row.label}</Text>
+                  <Feather name="chevron-right" size={16} color="#94a3b8" />
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

@@ -15,6 +15,9 @@ export default [
       ...reactHooksPlugin.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
       "react/prop-types": "off",
+      // Not meaningful in React Native <Text> — apostrophes/quotes in copy
+      // render literally; this is an HTML-entity concern.
+      "react/no-unescaped-entities": "off",
     },
     settings: {
       react: { version: "detect" },

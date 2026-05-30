@@ -20,6 +20,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
         {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+        <style dangerouslySetInnerHTML={{ __html: rootFullHeight }} />
         {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
       <body>{children}</body>
@@ -36,3 +37,25 @@ body {
     background-color: #000;
   }
 }`;
+
+const rootFullHeight = `
+html, body, #__next, #root, #app, #expo-root, #__expo {
+  height: 100%;
+}
+html, body {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#root, #__next, #app, #expo-root, #__expo {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+`;

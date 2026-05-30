@@ -1,3 +1,3 @@
-export { OnboardingScreen } from "./OnboardingScreen";
-export { OnboardingStep } from "./components/OnboardingStep";
-export { useOnboarding } from "./hooks/useOnboarding";
+export { default as OnboardingScreen } from "./OnboardingScreen";
+export { ProfileCard } from "./components/ProfileCard";
+export { useProfile } from "./hooks/useProfile";

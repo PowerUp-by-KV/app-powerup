@@ -17,10 +17,12 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "turbo": "^2",
-    "prettier": "^3",
+    "@types/react": "~19.2.10",
     "husky": "^9",
-    "lint-staged": "^15"
+    "lint-staged": "^15",
+    "prettier": "^3",
+    "turbo": "^2",
+    "typescript": "~5.9.2"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md,css}": [
@@ -29,6 +31,6 @@
   },
   "packageManager": "pnpm@10.32.1",
   "engines": {
-    "node": ">=22"
+    "node": "22.x"
   }
 }

@@ -1,3 +1,5 @@
 export { ProfileScreen } from "./ProfileScreen";
-export { ProfileCard } from "./components/ProfileCard";
-export { useProfile } from "./hooks/useProfile";
+export { EditProfileScreen } from "./EditProfileScreen";
+export { AvatarPickerScreen } from "./AvatarPickerScreen";
+export { LanguagePickerScreen } from "./LanguagePickerScreen";
+export { ProfileResumeScreen } from "./ProfileResumeScreen";

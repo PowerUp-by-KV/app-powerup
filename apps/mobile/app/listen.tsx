@@ -1,5 +1,7 @@
-import { ListeningScreen } from "@/features/listen";
+import { useLocalSearchParams } from "expo-router";
+import { ListeningScreen } from "@/features/pre-assessment";
 
 export default function ListenRoute() {
-  return <ListeningScreen />;
+  const { session_id } = useLocalSearchParams<{ session_id: string }>();
+  return <ListeningScreen sessionId={session_id} />;
 }

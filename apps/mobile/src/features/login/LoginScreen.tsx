@@ -1,221 +1,271 @@
-import { useGoogleAuth } from "@/hooks/use-google-auth";
-import { clearAuthState, getApiErrorMessage, setAuthToken } from "@/services/auth-service";
-import { AuthResponse, saveAuthSession } from "@/services/auth-storage";
-import { useLoginMutation } from "@/services/auth-api";
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
+  ActivityIndicator,
   Alert,
-  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { GoogleLogo } from "@/components/svg";
+
+import { Feather, AntDesign } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+
+import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import { getApiErrorMessage } from "@/utils/error-message";
+import {
+  clearAuthSession,
+  saveAuthSession,
+  clearStaleLocalFlagsIfUserChanged,
+  saveLastLoggedInEmail,
+} from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
 export function LoginScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { request, isAuthenticating, authenticateWithGoogle } = useGoogleAuth();
   const [login] = useLoginMutation();
+  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
-  const handlePostAuthNavigation = (profileCompleted: boolean) => {
-    if (profileCompleted) {
-      router.replace("/(tabs)");
-      return;
+  // Prefetch onboarding questions in the background during the authentication handshake
+  React.useEffect(() => {
+    prefetchOnboarding();
+  }, [prefetchOnboarding]);
+
+  const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
+    try {
+      await saveAuthSession(auth);
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
+      // If a different email has logged in on this device, wipe stale local flags
+      // so they don't mistakenly mark the new user's onboarding/assessment as done.
+      await clearStaleLocalFlagsIfUserChanged(loginEmail);
+      // Persist the current email for future login comparisons
+      await saveLastLoggedInEmail(loginEmail);
+
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      try {
+        const status = await getOnboardingStatus(auth.user?.id || "").unwrap();
+        if (status?.answers_present) {
+          router.replace("/(tabs)/my-learning" as never);
+        } else {
+          router.replace("/onboarding" as never);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch onboarding status, falling back to /onboarding:", err);
+        router.replace("/onboarding" as never);
+      }
+    } catch (err) {
+      Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }
-
-    router.replace("/google-success");
-  };
-
-  const persistAuthAndNavigate = async (auth: AuthResponse) => {
-    await saveAuthSession(auth);
-    setAuthToken(auth.access_token);
-    handlePostAuthNavigation(auth.profile_completed);
   };
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Error", "Enter email and password");
+    const email_value = email.trim();
+    const password_value = password.trim();
+
+    if (!email_value) {
+      Alert.alert("Error", "Email is required");
+      return;
+    }
+
+    if (!password_value) {
+      Alert.alert("Error", "Password is required");
       return;
     }
 
     try {
       setIsLoading(true);
 
-      const response = await login({
-        email: email.trim(),
-        password,
+      const payload: LoginRequest = {
+        password: password_value,
         remember_me: rememberMe,
-      }).unwrap();
+      };
 
-      await persistAuthAndNavigate(response);
+      if (email_value.includes("@")) {
+        payload.email = email_value.toLowerCase();
+      } else {
+        payload.identifier = email_value;
+      }
+
+      const response = await login(payload).unwrap();
+      // Pass the email so we can detect if a different user has logged in on this device
+      const resolvedEmail = payload.email ?? payload.identifier ?? "";
+      await persistAuthAndNavigate(response, resolvedEmail);
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
+      const apiError = error as { status?: number; data?: { message?: string } };
+      if (apiError?.status === 401) {
+        await clearAuthSession();
+        Alert.alert("Error", "Invalid credentials");
         return;
       }
 
-      Alert.alert(
-        "Login Failed",
-        getApiErrorMessage(error, "Unable to login right now. Please try again."),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      setIsLoading(true);
-      const result = await authenticateWithGoogle();
-
-      if (result.status === "error") {
-        Alert.alert("Google Login Failed", result.message);
-        return;
-      }
-
-      if (result.status !== "success") {
-        return;
-      }
-
-      const oauthEmail = result.oauth.email ?? email.trim();
-
-      if (!oauthEmail) {
-        Alert.alert(
-          "Google Login Failed",
-          "Unable to resolve email from Google account. Enter your email and try again.",
-        );
-        return;
-      }
-
-      if (!result.oauth.oauth_id_token) {
-        Alert.alert("Google Login Failed", "Google did not return an ID token for backend login.");
-        return;
-      }
-
-      const response = await login({
-        email: oauthEmail,
-        oauth_id_token: result.oauth.oauth_id_token,
-      }).unwrap();
-
-      await persistAuthAndNavigate(response);
-    } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 401) {
-        await clearAuthState();
-        router.replace("/login");
-        return;
-      }
-
-      Alert.alert(
-        "Google Login Failed",
-        getApiErrorMessage(error, "Unable to login with Google right now. Please try again."),
-      );
+      const errorMessage =
+        apiError?.data?.message ||
+        getApiErrorMessage(error, "Unable to login right now. Please try again.");
+      Alert.alert("Login Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <ImageBackground
-      source={{
-        uri: "https://images.unsplash.com/photo-1508780709619-79562169bc64",
-      }}
-      className="flex-1"
-      resizeMode="cover"
-    >
-      <ScrollView className="flex-1" contentContainerClassName="grow justify-center py-10">
-        <View className="grow justify-center items-center px-6">
-          <View className="w-full max-w-[420px] bg-white/95 rounded-[32px] p-8 border border-slate-300/25 shadow-2xl backdrop-blur-xl">
-            <View className="items-center mb-4">
-              <View className="w-16 h-1 bg-indigo-600 rounded mb-4" />
-              <Text className="text-4xl font-black text-center tracking-tight text-slate-900">
-                Welcome Back
-              </Text>
-            </View>
-            <Text className="text-base text-center mb-16 text-slate-600 font-bold leading-relaxed">
-              Sign in to your account and continue learning.
-            </Text>
-
-            <View className="space-y-3.5 mb-6">
-              <TextInput
-                placeholder="Email"
-                keyboardType="email-address"
-                className="border border-slate-200 bg-white rounded-2xl px-4 py-3.5 text-slate-900 text-base"
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                placeholderTextColor="#94A3B8"
-                editable={!isLoading}
-              />
-
-              <View className="flex-row items-center border border-slate-200 rounded-2xl bg-white pr-4 overflow-hidden">
-                <TextInput
-                  placeholder="Password"
-                  secureTextEntry={!showPassword}
-                  className="flex-1 text-base text-slate-900 py-3.5 pl-4"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholderTextColor="#94A3B8"
-                  editable={!isLoading}
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword((prev) => !prev)}
-                  className="px-3 py-2.5"
-                  disabled={isLoading}
-                >
-                  <Text className="text-lg">{showPassword ? "👁️" : "👁️‍🗨️"}</Text>
-                </TouchableOpacity>
-              </View>
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            alignItems: "center",
+            paddingBottom: 60,
+            paddingTop: Platform.OS === "android" ? 48 : 16,
+          }}
+          style={{ flex: 1 }}
+          className="px-6"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="w-full max-w-md py-8">
+            <View className="items-center mb-6">
+              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
+              <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
+              <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
 
-            <TouchableOpacity
-              className={`rounded-2xl py-4 items-center mb-5.5 bg-indigo-600 ${isLoading ? "opacity-75" : ""}`}
-              disabled={isLoading}
-              onPress={handleLogin}
-            >
-              <Text className="text-white text-base font-bold">
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Text>
-            </TouchableOpacity>
-
-            <View className="flex-row items-center mb-5.5">
-              <View className="flex-1 h-px bg-slate-200" />
-              <Text className="mx-3 text-slate-400 text-[11px] font-semibold tracking-[0.32em]">
-                OR
-              </Text>
-              <View className="flex-1 h-px bg-slate-200" />
-            </View>
-
-            <TouchableOpacity
-              className={`flex-row items-center justify-center border border-slate-200 rounded-2xl py-3.5 mb-4.5 bg-slate-50 ${isLoading || isAuthenticating || !request ? "opacity-60" : ""}`}
-              onPress={handleGoogleLogin}
-              disabled={isLoading || isAuthenticating || !request}
-            >
-              <View className="mr-3">
-                <GoogleLogo width={22} height={22} />
-              </View>
-              <Text className="text-slate-900 text-base font-bold">
-                {isAuthenticating ? "Signing in..." : "Continue with Google"}
-              </Text>
-            </TouchableOpacity>
-
-            <View className="flex-row justify-center items-center">
-              <Text className="text-slate-600 text-sm">Don&apos;t have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/register")} disabled={isLoading}>
-                <Text className="text-indigo-600 text-sm font-bold">Sign Up</Text>
+            <View className="flex-row justify-between w-full mt-2">
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
+                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
+                <AntDesign name="github" size={18} color="#333" className="mr-2" />
+                <Text className="text-slate-700 font-bold text-sm">Github</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity
+              onPress={() => router.push("/login-otp")}
+              className="mt-5 mb-2 rounded-full py-4 items-center justify-center border-2 border-slate-300"
+            >
+              <Text className="text-sm font-bold text-slate-800">Login with OTP</Text>
+            </TouchableOpacity>
+
+            <View className="flex-row items-center my-4 w-full">
+              <View className="h-px bg-slate-100 flex-1" />
+              <Text className="mx-4 text-sm text-slate-400">or</Text>
+              <View className="h-px bg-slate-100 flex-1" />
+            </View>
+
+            <View className="space-y-4 w-full">
+              <View className="w-full">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <Feather name="mail" size={16} color="#94A3B8" className="mr-3" />
+                  <TextInput
+                    placeholder="Your@email.com"
+                    keyboardType="email-address"
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                </View>
+              </View>
+
+              <View className="w-full mt-3">
+                <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
+                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
+                  <TextInput
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
+                    className="flex-1 text-sm text-slate-900 py-2.5"
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholderTextColor="#94A3B8"
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((p) => !p)}
+                    disabled={isLoading}
+                    className="ml-2 py-1"
+                  >
+                    <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View className="flex-row items-center justify-between w-full mt-5 mb-2">
+                <TouchableOpacity
+                  onPress={() => setRememberMe(!rememberMe)}
+                  className="flex-row items-center"
+                >
+                  <View
+                    className={`w-5 h-5 rounded mr-3 items-center justify-center ${
+                      rememberMe ? "bg-slate-400" : "bg-slate-200"
+                    }`}
+                  >
+                    {rememberMe && <Feather name="check" size={12} color="white" />}
+                  </View>
+                  <Text className="text-sm font-bold text-slate-600">Remember me</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => {}}>
+                  <Text className="text-sm text-blue-500 font-medium">Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
+                  isLoading ? "opacity-75" : ""
+                }`}
+                disabled={isLoading}
+                onPress={handleLogin}
+              >
+                {isLoading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text className="text-white text-sm font-bold">Sign in</Text>
+                )}
+              </TouchableOpacity>
+
+              <View className="items-center mt-1">
+                <Text className="text-sm text-slate-500">
+                  Don&apos;t have an account?{" "}
+                  <Text
+                    className="text-blue-600 font-bold"
+                    onPress={() => router.push("/register")}
+                  >
+                    Sign up
+                  </Text>
+                </Text>
+              </View>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </ImageBackground>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }

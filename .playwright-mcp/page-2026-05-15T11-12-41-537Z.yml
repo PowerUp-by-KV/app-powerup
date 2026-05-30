@@ -1,0 +1,144 @@
+- generic [ref=e8]:
+  - generic [ref=e11]:
+    - heading "My Learning" [level=1] [ref=e13]
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e19]: Hi, Test!
+        - generic [ref=e20]: My Learning
+        - generic [ref=e21]: Track where you're headed
+      - generic [ref=e22] [cursor=pointer]:
+        - generic [ref=e25]: 
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]:
+              - generic [ref=e30]: Free Content
+              - generic [ref=e31]: The Fundamentals of Communication
+            - generic [ref=e33]: Completed
+          - generic [ref=e35]:
+            - generic [ref=e36]: 8 lessons completed · 350 XP
+            - generic [ref=e37]: 100%
+      - generic [ref=e40] [cursor=pointer]:
+        - generic [ref=e43]: 
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - generic [ref=e48]: Trial Content
+              - generic [ref=e49]: Behaviour in Workplace
+            - generic [ref=e51]: Completed
+          - generic [ref=e53]:
+            - generic [ref=e54]: 7 lessons completed · 250 XP
+            - generic [ref=e55]: 100%
+      - generic [ref=e58] [cursor=pointer]:
+        - generic [ref=e61]: 
+        - generic [ref=e63]:
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - generic [ref=e66]: Diagnostic Assessment
+              - generic [ref=e67]: Assessing your skills
+            - generic [ref=e69]: B1-B2
+          - generic [ref=e71]:
+            - generic [ref=e72]: Complete
+            - generic [ref=e73]: 100%
+      - generic [ref=e76] [cursor=pointer]:
+        - generic [ref=e79]: 
+        - generic [ref=e83]:
+          - generic [ref=e84]: Day 1
+          - generic [ref=e85]: Tap to start
+      - generic:
+        - generic [ref=e88]: 
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - generic [ref=e93]: Day 2
+            - generic [ref=e94]: Complete previous stages to unlock
+          - generic [ref=e96]: Locked
+      - generic:
+        - generic [ref=e99]: 
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - generic [ref=e104]: Day 3
+            - generic [ref=e105]: Complete previous stages to unlock
+          - generic [ref=e107]: Locked
+      - generic:
+        - generic [ref=e110]: 
+        - generic [ref=e113]:
+          - generic [ref=e114]:
+            - generic [ref=e115]: Day 4
+            - generic [ref=e116]: Complete previous stages to unlock
+          - generic [ref=e118]: Locked
+      - generic:
+        - generic [ref=e121]: 
+        - generic [ref=e124]:
+          - generic [ref=e125]:
+            - generic [ref=e126]: Day 5
+            - generic [ref=e127]: Complete previous stages to unlock
+          - generic [ref=e129]: Locked
+      - generic:
+        - generic [ref=e132]: 
+        - generic [ref=e135]:
+          - generic [ref=e136]:
+            - generic [ref=e137]: Day 6
+            - generic [ref=e138]: Complete previous stages to unlock
+          - generic [ref=e140]: Locked
+      - generic:
+        - generic [ref=e143]: 
+        - generic [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148]: Day 7
+            - generic [ref=e149]: Complete previous stages to unlock
+          - generic [ref=e151]: Locked
+      - generic:
+        - generic [ref=e154]: 
+        - generic [ref=e157]:
+          - generic [ref=e158]:
+            - generic [ref=e159]: Day 8
+            - generic [ref=e160]: Complete previous stages to unlock
+          - generic [ref=e162]: Locked
+      - generic:
+        - generic [ref=e165]: 
+        - generic [ref=e168]:
+          - generic [ref=e169]:
+            - generic [ref=e170]: Day 9
+            - generic [ref=e171]: Complete previous stages to unlock
+          - generic [ref=e173]: Locked
+      - generic:
+        - generic [ref=e176]: 
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - generic [ref=e181]: Day 10
+            - generic [ref=e182]: Complete previous stages to unlock
+          - generic [ref=e184]: Locked
+      - generic:
+        - generic [ref=e187]: 
+        - generic [ref=e190]:
+          - generic [ref=e191]:
+            - generic [ref=e192]: Day 11
+            - generic [ref=e193]: Complete previous stages to unlock
+          - generic [ref=e195]: Locked
+      - generic:
+        - generic [ref=e198]: 
+        - generic [ref=e200]:
+          - generic [ref=e201]:
+            - generic [ref=e202]: Day 12
+            - generic [ref=e203]: Complete previous stages to unlock
+          - generic [ref=e205]: Locked
+  - tablist [ref=e207]:
+    - tab "  Home" [ref=e209] [cursor=pointer]:
+      - generic [ref=e210]:
+        - generic [ref=e212]: 
+        - generic [ref=e214]: 
+      - generic [ref=e215]: Home
+    - tab "  My Learning" [selected] [ref=e217] [cursor=pointer]:
+      - generic [ref=e218]:
+        - generic [ref=e220]: 
+        - generic [ref=e222]: 
+      - generic [ref=e223]: My Learning
+    - tab "  Achievements" [ref=e225] [cursor=pointer]:
+      - generic [ref=e226]:
+        - generic [ref=e228]: 
+        - generic [ref=e230]: 
+      - generic [ref=e231]: Achievements
+    - tab "  Leader Board" [ref=e233] [cursor=pointer]:
+      - generic [ref=e234]:
+        - generic [ref=e236]: 
+        - generic [ref=e238]: 
+      - generic [ref=e239]: Leader Board
