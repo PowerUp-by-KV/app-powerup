@@ -3,17 +3,10 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 
 // NOTE: Client-side password gate. This is a low-trust web-only barrier — the
 // real authorization must be enforced server-side on every admin endpoint.
-// The variable is intentionally non-EXPO_PUBLIC: it is read at runtime on web
-// where `process.env` is substituted at build time, and is required to be
-// supplied via the build environment. Missing config throws immediately so the
-// app never silently falls back to an empty/default password.
-const ADMIN_PASSWORD: string = (() => {
-  const value = process.env.ADMIN_PANEL_PASSWORD;
-  if (Platform.OS === "web" && !value) {
-    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the web build environment.");
-  }
-  return value ?? "";
-})();
+// EXPO_PUBLIC_ADMIN_PANEL_PASSWORD is the correct Expo-safe variable name;
+// only EXPO_PUBLIC_* vars are injected into the client bundle by Expo/Metro.
+// Validation is deferred to render time so a missing env never crashes at import.
+const ADMIN_PASSWORD: string = process.env.EXPO_PUBLIC_ADMIN_PANEL_PASSWORD ?? "";
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
@@ -54,6 +47,34 @@ export default function AdminPowerupPage() {
         <Text style={{ fontSize: 16, color: "#475569", textAlign: "center" }}>
           The admin panel is only available on the web build.
         </Text>
+      </View>
+    );
+  }
+
+  if (!ADMIN_PASSWORD) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <View
+          style={{
+            width: 400,
+            maxWidth: "100%",
+            backgroundColor: "#fff7ed",
+            borderWidth: 1,
+            borderColor: "#fed7aa",
+            borderRadius: 12,
+            padding: 24,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "800", color: "#9a3412", marginBottom: 8 }}>
+            Admin panel not configured
+          </Text>
+          <Text style={{ fontSize: 14, color: "#7c2d12", lineHeight: 22 }}>
+            <Text style={{ fontFamily: "monospace" }}>EXPO_PUBLIC_ADMIN_PANEL_PASSWORD</Text> is not
+            set in your environment.{"\n\n"}Add it to{" "}
+            <Text style={{ fontFamily: "monospace" }}>apps/mobile/.env</Text> and restart the dev
+            server with <Text style={{ fontFamily: "monospace" }}>pnpm start:clean</Text>.
+          </Text>
+        </View>
       </View>
     );
   }

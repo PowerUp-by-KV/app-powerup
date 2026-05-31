@@ -1,17 +1,28 @@
 import { api } from "@/services/api";
-import { ResumeBuddyResponse } from "../types";
+import type {
+  ResumeBuddyAnalyzeRequest,
+  ResumeBuddyResponse,
+  ResumeBuddyHistoryResponse,
+} from "../types";
 
 export const resumeBuddyApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    analyzeResume: builder.mutation<ResumeBuddyResponse, FormData>({
-      query: (formData) => ({
+    analyzeResume: builder.mutation<ResumeBuddyResponse, ResumeBuddyAnalyzeRequest>({
+      query: (body) => ({
         url: "/v1/resume/buddy/analyze",
         method: "POST",
-        body: formData,
+        body,
+      }),
+    }),
+
+    getResumeBuddyHistory: builder.query<ResumeBuddyHistoryResponse, void>({
+      query: () => ({
+        url: "/v1/resume/buddy/history",
+        method: "GET",
       }),
     }),
   }),
 });
 
-export const { useAnalyzeResumeMutation } = resumeBuddyApi;
+export const { useAnalyzeResumeMutation, useGetResumeBuddyHistoryQuery } = resumeBuddyApi;

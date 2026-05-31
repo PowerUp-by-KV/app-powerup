@@ -83,7 +83,7 @@ export function ScoreAnalysisStep({
           onPress={onDone}
           className="bg-slate-900 active:bg-slate-800 rounded-2xl py-4 items-center justify-center shadow-sm"
         >
-          <Text className="text-white font-bold text-sm">Done</Text>
+          <Text className="text-white font-bold text-sm">Next</Text>
         </Pressable>
       </View>
     </View>

@@ -1,3 +1,11 @@
+// ─── Analyze Request ──────────────────────────────────────────────────────────
+
+export interface ResumeBuddyAnalyzeRequest {
+  domain: string;
+}
+
+// ─── Analysis Response ────────────────────────────────────────────────────────
+
 export interface ResumeBuddyCriterionScore {
   key: string;
   label: string;
@@ -47,4 +55,33 @@ export interface ResumeBuddyResponse {
   resume_quality_summary: string;
 }
 
-export type ResumeBuddyStep = "upload" | "strengths" | "suggestions" | "scores";
+// ─── History ──────────────────────────────────────────────────────────────────
+
+export interface ResumeBuddyHistoryItem {
+  id: string;
+  overall_resume_score: number;
+  ats_score: number;
+  skills_match_percentage: number;
+  target_role: string;
+  created_at: string;
+  resume_quality_summary: string;
+  // Full analysis data for detail view
+  rule_based_score: number;
+  ai_semantic_score: number;
+  final_score_formula: string;
+  detected_sections: string[];
+  sections: Record<string, string>;
+  criteria_scores: ResumeBuddyCriterionScore[];
+  ats_analysis: ResumeBuddyAtsAnalysis;
+  skills_analysis: ResumeBuddySkillsMatch;
+  strengths: string[];
+  weaknesses: string[];
+  missing_skills: string[];
+  personalized_suggestions: string[];
+}
+
+export type ResumeBuddyHistoryResponse = ResumeBuddyHistoryItem[];
+
+// ─── Screen Step Machine ──────────────────────────────────────────────────────
+
+export type ResumeBuddyStep = "input" | "loading" | "strengths" | "suggestions" | "scores";
