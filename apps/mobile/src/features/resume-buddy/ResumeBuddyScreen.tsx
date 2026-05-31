@@ -1,63 +1,70 @@
-import React, { useState } from "react";
-import { SafeAreaView, View, Text, Pressable, Alert, Platform } from "react-native";
+import React, { useRef, useState } from "react";
+import { SafeAreaView, View, Text, Pressable, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import * as DocumentPicker from "expo-document-picker";
+import { useRouter } from "expo-router";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { useAnalyzeResumeMutation } from "./services/resume-buddy-api";
-import { ResumeBuddyResponse, ResumeBuddyStep } from "./types";
+import type { ResumeBuddyResponse, ResumeBuddyStep } from "./types";
 
-import { ResumeUploadStep } from "./components/ResumeUploadStep";
+import { DomainInputStep } from "./components/DomainInputStep";
+import { AnalysisLoadingStep } from "./components/AnalysisLoadingStep";
 import { StrengthWeaknessStep } from "./components/StrengthWeaknessStep";
 import { SuggestionsStep } from "./components/SuggestionsStep";
 import { ScoreAnalysisStep } from "./components/ScoreAnalysisStep";
 
 export function ResumeBuddyScreen() {
+  const router = useRouter();
   const safeBack = useSafeBack();
 
-  const [step, setStep] = useState<ResumeBuddyStep>("upload");
+  const [step, setStep] = useState<ResumeBuddyStep>("input");
   const [analysis, setAnalysis] = useState<ResumeBuddyResponse | null>(null);
 
   const [analyzeResume, { isLoading }] = useAnalyzeResumeMutation();
 
-  const handleAnalyze = async (file: DocumentPicker.DocumentPickerAsset, role: string) => {
+  // Guard against duplicate submissions
+  const submittingRef = useRef(false);
+
+  const handleAnalyze = async (domain: string) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setStep("loading");
+
     try {
-      const formData = new FormData();
-      formData.append("target_role", role);
-
-      if (Platform.OS === "web" && (file as any).file) {
-        // Standard Web browser FormData expects native File
-        formData.append("file", (file as any).file, file.name);
-      } else {
-        // Mobile (React Native) expects { uri, name, type } shape
-        const rnFile = {
-          uri: file.uri,
-          name: file.name,
-          type: file.mimeType ?? "application/pdf",
-        };
-        formData.append("file", rnFile as unknown as Blob, file.name);
-      }
-
-      const res = await analyzeResume(formData).unwrap();
+      const res = await analyzeResume({ domain }).unwrap();
       setAnalysis(res);
-      setStep("strengths");
+      setStep("scores");
     } catch (err) {
       console.error("Resume Buddy analysis failed:", err);
+      setStep("input");
       Alert.alert(
         "Analysis Failed",
-        getApiErrorMessage(err, "Failed to analyze your resume. Please check your connection."),
+        getApiErrorMessage(
+          err,
+          "Failed to analyze your resume. Please check your connection and try again.",
+        ),
       );
+    } finally {
+      submittingRef.current = false;
     }
   };
 
+  const handleHistory = () => {
+    router.push("/resume-buddy-history" as never);
+  };
+
   const handleBack = () => {
-    if (step === "scores") {
-      setStep("suggestions");
-    } else if (step === "suggestions") {
+    if (step === "loading") {
+      // Prevent navigation during analysis
+      return;
+    }
+    if (step === "suggestions") {
       setStep("strengths");
     } else if (step === "strengths") {
-      setStep("upload");
+      setStep("scores");
+    } else if (step === "scores") {
+      setStep("input");
     } else {
       safeBack();
     }
@@ -67,23 +74,44 @@ export function ResumeBuddyScreen() {
     safeBack();
   };
 
+  const isOnResultsStep = step === "strengths" || step === "suggestions" || step === "scores";
+
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
-      {/* Header control */}
+      {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable
           onPress={handleBack}
-          className="w-9 h-9 items-center justify-center active:opacity-60"
+          disabled={step === "loading"}
+          className={`w-9 h-9 items-center justify-center active:opacity-60 ${
+            step === "loading" ? "opacity-30" : ""
+          }`}
         >
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
         <Text className="flex-1 text-center font-bold text-slate-900 text-base">Resume Buddy</Text>
-        <View className="w-9" />
+        {/* Step indicator on result steps */}
+        {isOnResultsStep ? (
+          <Text className="text-xs text-slate-400 font-semibold w-9 text-right">
+            {step === "scores" ? "1/3" : step === "strengths" ? "2/3" : "3/3"}
+          </Text>
+        ) : (
+          <View className="w-9" />
+        )}
       </View>
 
       {/* Main step machine */}
       <View style={{ flex: 1 }}>
-        {step === "upload" && <ResumeUploadStep onAnalyze={handleAnalyze} isLoading={isLoading} />}
+        {step === "input" && (
+          <DomainInputStep
+            onAnalyze={handleAnalyze}
+            onHistory={handleHistory}
+            isLoading={isLoading}
+          />
+        )}
+
+        {step === "loading" && <AnalysisLoadingStep />}
+
         {step === "strengths" && analysis && (
           <StrengthWeaknessStep
             strengths={analysis.strengths}
@@ -91,15 +119,17 @@ export function ResumeBuddyScreen() {
             onNext={() => setStep("suggestions")}
           />
         )}
+
         {step === "suggestions" && analysis && (
           <SuggestionsStep
             missingSkills={analysis.missing_skills}
             recommendedTech={analysis.skills_analysis.recommended_technologies}
             atsFindings={analysis.ats_analysis.findings}
             suggestions={analysis.personalized_suggestions}
-            onNext={() => setStep("scores")}
+            onNext={handleDone}
           />
         )}
+
         {step === "scores" && analysis && (
           <ScoreAnalysisStep
             overallScore={analysis.overall_resume_score}
@@ -108,7 +138,7 @@ export function ResumeBuddyScreen() {
             ruleBasedScore={analysis.rule_based_score}
             criteriaScores={analysis.criteria_scores}
             qualitySummary={analysis.resume_quality_summary}
-            onDone={handleDone}
+            onDone={() => setStep("strengths")}
           />
         )}
       </View>

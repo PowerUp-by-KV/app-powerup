@@ -72,7 +72,7 @@ export function SuggestionsStep({
           onPress={onNext}
           className="bg-indigo-600 active:bg-indigo-500 rounded-2xl py-4 items-center justify-center shadow-sm"
         >
-          <Text className="text-white font-bold text-sm">Next</Text>
+          <Text className="text-white font-bold text-sm">Done</Text>
         </Pressable>
       </View>
     </View>
