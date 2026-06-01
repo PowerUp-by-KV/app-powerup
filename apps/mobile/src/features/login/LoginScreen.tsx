@@ -17,6 +17,7 @@ import { Feather, AntDesign } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
@@ -39,6 +40,7 @@ export function LoginScreen() {
   const [login] = useLoginMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
+  const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
 
   // Prefetch onboarding questions in the background during the authentication handshake
   React.useEffect(() => {
@@ -155,7 +157,18 @@ export function LoginScreen() {
             </View>
 
             <View className="flex-row justify-between w-full mt-2">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
+              <TouchableOpacity
+                className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2"
+                disabled={!googleRequest}
+                onPress={() => {
+                  promptGoogle().catch((err) =>
+                    Alert.alert(
+                      "Google Sign-In",
+                      "Could not open Google sign-in. Please try again.",
+                    ),
+                  );
+                }}
+              >
                 <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
                 <Text className="text-slate-700 font-bold text-sm">Google</Text>
               </TouchableOpacity>
