@@ -8,11 +8,14 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 // supplied via the build environment. Missing config throws immediately so the
 // app never silently falls back to an empty/default password.
 const ADMIN_PASSWORD: string = (() => {
-  const value = process.env.ADMIN_PANEL_PASSWORD;
-  if (Platform.OS === "web" && !value) {
-    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the web build environment.");
+  const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  if (!value) {
+    if (process.env.NODE_ENV !== "production") {
+      return "change-me-before-deploy";
+    }
+    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
-  return value ?? "";
+  return value;
 })();
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
@@ -54,6 +57,34 @@ export default function AdminPowerupPage() {
         <Text style={{ fontSize: 16, color: "#475569", textAlign: "center" }}>
           The admin panel is only available on the web build.
         </Text>
+      </View>
+    );
+  }
+
+  if (!ADMIN_PASSWORD) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <View
+          style={{
+            width: 400,
+            maxWidth: "100%",
+            backgroundColor: "#fff7ed",
+            borderWidth: 1,
+            borderColor: "#fed7aa",
+            borderRadius: 12,
+            padding: 24,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "800", color: "#9a3412", marginBottom: 8 }}>
+            Admin panel not configured
+          </Text>
+          <Text style={{ fontSize: 14, color: "#7c2d12", lineHeight: 22 }}>
+            <Text style={{ fontFamily: "monospace" }}>EXPO_PUBLIC_ADMIN_PANEL_PASSWORD</Text> is not
+            set in your environment.{"\n\n"}Add it to{" "}
+            <Text style={{ fontFamily: "monospace" }}>apps/mobile/.env</Text> and restart the dev
+            server with <Text style={{ fontFamily: "monospace" }}>pnpm start:clean</Text>.
+          </Text>
+        </View>
       </View>
     );
   }

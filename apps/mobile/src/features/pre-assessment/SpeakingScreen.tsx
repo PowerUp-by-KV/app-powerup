@@ -143,6 +143,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }, 1000);
 
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached (double safety)
@@ -150,6 +151,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     if (isRecording && recordingDuration >= maxDuration) {
       stopRecording();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingDuration, isRecording, maxDuration]);
 
   useEffect(() => {

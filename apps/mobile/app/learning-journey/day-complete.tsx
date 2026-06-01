@@ -39,6 +39,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
       scale: Math.random() * 0.7 + 0.6,
       emoji: EMOJIS[i % EMOJIS.length],
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenWidth]);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -103,6 +104,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
 
       Animated.parallel(animations).start();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, screenHeight, particles]);
 
   const handleClose = () => {

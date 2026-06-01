@@ -226,8 +226,8 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   if (error) {
     return (
-      <SafeAreaView style={{ flex: 1 }} className="bg-slate-900 justify-center items-center px-6">
-        <View className="items-center mb-4 self-center" style={{ alignSelf: "center" }}>
+      <SafeAreaView className="flex-1 bg-slate-900 justify-center items-center px-6">
+        <View className="items-center mb-4 self-center">
           <LottieView
             source={require("../../../assets/mascot/Error 404.lottie")}
             autoPlay
@@ -244,14 +244,11 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         </View>
 
         {/* Playable Offline Game View */}
-        <View className="w-full max-w-sm mb-6 self-center" style={{ alignSelf: "center" }}>
+        <View className="w-full max-w-sm mb-6 self-center">
           <OfflineGameView />
         </View>
 
-        <View
-          className="flex-row gap-4 w-full max-w-sm justify-center self-center"
-          style={{ alignSelf: "center" }}
-        >
+        <View className="flex-row gap-4 w-full max-w-sm justify-center self-center">
           <TouchableOpacity
             className="flex-1 bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
             onPress={handleTryAgain}

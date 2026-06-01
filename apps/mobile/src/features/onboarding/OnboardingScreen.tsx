@@ -21,6 +21,8 @@ import {
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
+  useExtractOnboardingResumeMutation,
+  useConfirmOnboardingResumeMutation,
 } from "@/services/onboarding-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation } from "@/services/assessment-api";
@@ -28,12 +30,10 @@ import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
   setPreAssessmentCompletedInSession,
-  getAuthSession,
   clearCompletedSections,
   getProfileCompletedInSession,
   saveLocalOnboardingAnswers,
 } from "@/services/auth-storage";
-import { normalizeBaseUrlForRuntime } from "@/services/api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import LoaderScreen from "./components/LoaderScreen";
 import { OfflineGameView } from "@/components/OfflineGameView";
@@ -53,6 +53,8 @@ export default function OnboardingScreen() {
     refetch: refetchQuestions,
   } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
+  const [extractResume] = useExtractOnboardingResumeMutation();
+  const [confirmResume] = useConfirmOnboardingResumeMutation();
   const [, { isLoading: isStarting }] = useStartSessionMutation();
 
   const [isUploading, setIsUploading] = React.useState(false);
@@ -84,6 +86,7 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, isProfileLoading]);
 
   // Flatten the questions from the API for the step-by-step wizard
@@ -286,13 +289,6 @@ export default function OnboardingScreen() {
       if (!resumeUploaded) {
         setIsUploading(true);
         try {
-          const authSession = await getAuthSession();
-          const apiUrl = process.env.EXPO_PUBLIC_API_URL;
-          if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
-          const rawBase = apiUrl.replace(/\/$/, "");
-          const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-          const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
-
           const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
           const fd = new FormData();
 
@@ -308,31 +304,17 @@ export default function OnboardingScreen() {
             fd.append("file", rnFile as unknown as Blob, fileName);
           }
 
-          const response = await fetch(uploadUrl, {
-            method: "POST",
-            headers: authSession?.access_token
-              ? {
-                  Authorization: `Bearer ${authSession.access_token}`,
-                  "X-Tunnel-Skip-AntiPhishing-Page": "true",
-                }
-              : {
-                  "X-Tunnel-Skip-AntiPhishing-Page": "true",
-                },
-            body: fd,
-          });
+          // 1. Extract resume data and save file
+          const extractRes = await extractResume(fd).unwrap();
+          const resumeId = extractRes?.resume_id;
+          const parsedData = extractRes?.parsed_data;
 
-          // Treat anything outside 2xx as a failure so the user gets explicit
-          // feedback. 4xx → format/size/auth errors the user must fix; 5xx →
-          // backend issue, surface so they can retry rather than silently
-          // continuing with an unprocessed resume.
-          if (!response.ok) {
-            const errBody = await response.json().catch(() => ({ detail: "Upload failed" }));
-            const fallback =
-              response.status >= 500
-                ? `Server error (${response.status}). Please try again.`
-                : `Upload rejected (${response.status})`;
-            const msg = errBody?.detail || fallback;
-            throw new Error(msg);
+          // 2. Confirm immediately using the extracted parsed data
+          if (resumeId && parsedData) {
+            await confirmResume({
+              resume_id: resumeId,
+              confirmed_data: JSON.stringify(parsedData),
+            }).unwrap();
           }
 
           setResumeUploaded(true);
@@ -344,11 +326,11 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch {
+        } catch (err) {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",
-            "Could not upload resume. Please check your connection and try again.",
+            getApiErrorMessage(err, "Could not upload and extract your resume. Please try again."),
           );
           return;
         }

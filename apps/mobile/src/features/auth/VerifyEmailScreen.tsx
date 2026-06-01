@@ -15,10 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { OtpInput } from "./components/OtpInput";
 import { OtpResendTimer } from "./components/OtpResendTimer";
-import {
-  useSendEmailOtpMutation,
-  useVerifyEmailOtpMutation,
-} from "../../services/auth-api";
+import { useSendEmailOtpMutation, useVerifyEmailOtpMutation } from "../../services/auth-api";
 
 export function VerifyEmailScreen() {
   const router = useRouter();

@@ -1,63 +1,10 @@
 import { api } from "./api";
 
-export interface InterviewSession {
-  id: string;
-  status: "in_progress" | "completed" | "abandoned";
-  cefr_level: string | null;
-  domain: string | null;
-  total_questions: number;
-  questions_answered: number;
-  total_score: number | null;
-  started_at: string | null;
-  completed_at: string | null;
-}
-
-export interface CriteriaScore {
-  name: string;
-  score: number;
-  feedback: string;
-}
-
-export interface InterviewAnswer {
-  id: string;
-  question_id: string;
-  question_order: number;
-  transcript: string | null;
-  audio_url: string | null;
-  score: number | null;
-  feedback: string | null;
-  score_breakdown: {
-    criteria_scores: CriteriaScore[];
-    cefr_alignment: string;
-  } | null;
-  answered_at: string;
-}
-
-export interface NextQuestion {
-  question_id: string;
-  question_text: string;
-  question_type: string;
-  follow_up_prompts: string[];
-  question_order: number;
-}
-
-export interface SubmitAnswerResponse {
-  answer_id: string;
-  score: number | null;
-  feedback: string | null;
-  score_breakdown: {
-    criteria_scores: CriteriaScore[];
-    cefr_alignment: string;
-  } | null;
-  questions_remaining: number;
-  session_complete: boolean;
-}
-
-export interface InterviewResultResponse {
-  session: InterviewSession;
-  answers: InterviewAnswer[];
-  grade: "Needs Practice" | "Good" | "Very Good" | "Excellent";
-}
+// ---------------------------------------------------------------------------
+// Types — Practice / Interview History
+// These are the shapes returned by GET /api/v1/practice/history
+// Used by: interview-history feature screens and components
+// ---------------------------------------------------------------------------
 
 export interface PracticeResponse {
   response_id: string;
@@ -79,49 +26,19 @@ export interface PracticeSession {
 
 export type PracticeHistoryResponse = PracticeSession[];
 
-export const mockInterviewApi = api.injectEndpoints({
+// ---------------------------------------------------------------------------
+// RTK Query — Practice History endpoint
+//
+// NOTE: All mock-interview endpoints (startMockInterview, getNextQuestion,
+// submitMockAnswer, getMockInterviewResults, etc.) live exclusively in
+// mock-interview-api.ts. Do NOT add them here — duplicate injectEndpoints
+// calls for the same endpoint name on the same `api` instance cause a
+// runtime RTK Query warning and undefined behaviour.
+// ---------------------------------------------------------------------------
+
+export const practiceHistoryApi = api.injectEndpoints({
+  overrideExisting: false,
   endpoints: (builder) => ({
-    startMockInterview: builder.mutation<
-      InterviewSession,
-      { cefr_level: string; domain?: string; total_questions?: number }
-    >({
-      query: (body) => ({
-        url: "/v1/mock-interview/start",
-        method: "POST",
-        body: { domain: "general", total_questions: 8, ...body },
-      }),
-    }),
-
-    getNextQuestion: builder.query<NextQuestion | { complete: true }, string>({
-      query: (sessionId) => `/v1/mock-interview/${sessionId}/next`,
-    }),
-
-    submitMockAnswer: builder.mutation<
-      SubmitAnswerResponse,
-      { sessionId: string; formData: FormData }
-    >({
-      query: ({ sessionId, formData }) => ({
-        url: `/v1/mock-interview/${sessionId}/answers`,
-        method: "POST",
-        body: formData,
-      }),
-    }),
-
-    getMockInterviewResults: builder.query<InterviewResultResponse, string>({
-      query: (sessionId) => `/v1/mock-interview/${sessionId}/results`,
-    }),
-
-    getMockInterviewHistory: builder.query<InterviewSession[], void>({
-      query: () => "/v1/mock-interview/history",
-    }),
-
-    abandonMockInterview: builder.mutation<InterviewSession, string>({
-      query: (sessionId) => ({
-        url: `/v1/mock-interview/${sessionId}/abandon`,
-        method: "POST",
-      }),
-    }),
-
     getPracticeHistory: builder.query<PracticeHistoryResponse, void>({
       query: () => ({
         url: "/v1/practice/history",
@@ -130,18 +47,6 @@ export const mockInterviewApi = api.injectEndpoints({
       providesTags: ["PracticeHistory"],
     }),
   }),
-  overrideExisting: false,
 });
 
-export const {
-  useStartMockInterviewMutation,
-  useGetNextQuestionQuery,
-  useLazyGetNextQuestionQuery,
-  useSubmitMockAnswerMutation,
-  useGetMockInterviewResultsQuery,
-  useGetMockInterviewHistoryQuery,
-  useAbandonMockInterviewMutation,
-  useGetPracticeHistoryQuery,
-} = mockInterviewApi;
-
-export const interviewApi = mockInterviewApi;
+export const { useGetPracticeHistoryQuery } = practiceHistoryApi;

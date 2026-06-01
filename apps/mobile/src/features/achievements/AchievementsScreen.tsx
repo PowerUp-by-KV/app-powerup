@@ -1,14 +1,18 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useGetProfileQuery } from "@/services/auth-api";
-import {
-  useGetSkillsQuery,
-  useListAchievementsQuery,
-  type Achievement,
-} from "@/services/gamification-api";
+import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
 
 import { StatTile } from "./components/StatTile";
 
@@ -56,9 +60,6 @@ export function AchievementsScreen() {
   const [tab, setTab] = useState<"achievements" | "skills">("achievements");
   const { data: profile } = useGetProfileQuery();
   const { data: list, isLoading: listLoading } = useListAchievementsQuery();
-  const { data: skills, isLoading: skillsLoading } = useGetSkillsQuery(undefined, {
-    skip: tab !== "skills",
-  });
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
@@ -150,33 +151,13 @@ export function AchievementsScreen() {
               )}
             </>
           )
-        ) : skillsLoading ? (
-          <ActivityIndicator color="#6366f1" />
         ) : (
-          <View className="bg-white rounded-3xl p-6 border border-slate-100">
-            <Text className="text-slate-900 font-bold mb-1">
-              Skills {skills?.unlocked_count ?? 0}/{skills?.total_count ?? 0} unlocked
-            </Text>
-            <Text className="text-slate-500 text-xs mb-4">Tap a node to view skill details</Text>
-            <View className="flex-row flex-wrap" style={{ gap: 10 }}>
-              {skills?.nodes.map((n) => (
-                <View
-                  key={n.id}
-                  className={`w-20 h-20 rounded-2xl items-center justify-center ${n.unlocked ? "bg-slate-900" : "bg-slate-100"}`}
-                >
-                  <Feather
-                    name={n.unlocked ? "check-circle" : "lock"}
-                    size={18}
-                    color={n.unlocked ? "#fff" : "#64748b"}
-                  />
-                  <Text
-                    className={`text-xs font-semibold mt-1 ${n.unlocked ? "text-white" : "text-slate-500"}`}
-                  >
-                    {n.title}
-                  </Text>
-                </View>
-              ))}
-            </View>
+          <View className="bg-white rounded-3xl p-1 border border-slate-100 overflow-hidden shadow-sm items-center justify-center">
+            <Image
+              source={require("../../../assets/images/skills-graph.png")}
+              style={{ width: "100%", height: 260 }}
+              resizeMode="contain"
+            />
           </View>
         )}
       </ScrollView>
