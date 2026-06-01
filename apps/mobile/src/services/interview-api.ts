@@ -47,7 +47,6 @@ export const practiceHistoryApi = api.injectEndpoints({
       providesTags: ["PracticeHistory"],
     }),
   }),
-  overrideExisting: true,
 });
 
 export const { useGetPracticeHistoryQuery } = practiceHistoryApi;
