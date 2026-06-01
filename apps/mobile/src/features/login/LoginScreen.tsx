@@ -161,7 +161,7 @@ export function LoginScreen() {
                 className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2"
                 disabled={!googleRequest}
                 onPress={() => {
-                  promptGoogle().catch((err) =>
+                  promptGoogle().catch(() =>
                     Alert.alert(
                       "Google Sign-In",
                       "Could not open Google sign-in. Please try again.",
