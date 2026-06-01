@@ -23,11 +23,13 @@ import {
   useGetPersonalizedPathQuery,
   useGetProgressionQuery,
 } from "@/services/module-api";
-import { useStartSessionMutation, useGetAssessmentResultQuery } from "@/services/assessment-api";
+import {
+  useStartSessionMutation,
+  useGetUserAssessmentResultQuery,
+} from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getAssessmentSessionId,
   getCompletedSections,
   StoredPreAssessmentResult,
 } from "@/services/auth-storage";
@@ -48,8 +50,6 @@ interface PreAssessmentModalProps {
 
 // CEFR Score Mapping Constants
 const DEFAULT_CEFR_PERCENTAGE = 83.33;
-const DEFAULT_OBTAINED_POINTS = 100;
-const DEFAULT_MAX_POINTS = 120;
 const MAX_CEFR_SCALE = 6;
 const DEFAULT_WRITING_PERCENTAGE = 66.67;
 const DEFAULT_SPEAKING_PERCENTAGE = 100.0;
@@ -104,152 +104,9 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
 
   // Only derive scores from real results if they exist AND assessment is complete.
   const hasRealResults =
-    isAssessmentComplete &&
-    results &&
-    results.section_percentages &&
-    Object.keys(results.section_percentages).length > 0;
+    !!results && results.section_percentages && Object.keys(results.section_percentages).length > 0;
 
-  const derivedResults = useMemo(() => {
-    if (!isAssessmentComplete) return null;
-    if (hasRealResults) return results;
-
-    // No real section-level results yet, but cefr_range is set — generate matching scores
-    const normalized = (actualCefr ?? "").trim().toUpperCase();
-    if (normalized.includes("C2")) {
-      return {
-        percentage: 95.0,
-        total_score: 114,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 95.0,
-          A_LISTEN: 95.0,
-          D_LISTEN_ANSWER: 95.0,
-          C_GRAMMAR: 90.0,
-          A_SPEAKING: 100.0,
-          B_SPEAKING: 100.0,
-        },
-      };
-    }
-    if (normalized.includes("C1")) {
-      return {
-        percentage: 83.33,
-        total_score: 100,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 83.33,
-          A_LISTEN: 83.33,
-          D_LISTEN_ANSWER: 83.33,
-          C_GRAMMAR: 66.67,
-          A_SPEAKING: 100.0,
-          B_SPEAKING: 100.0,
-        },
-      };
-    }
-    if (normalized.includes("B2")) {
-      return {
-        percentage: 70.0,
-        total_score: 84,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 70.0,
-          A_LISTEN: 70.0,
-          D_LISTEN_ANSWER: 70.0,
-          C_GRAMMAR: 60.0,
-          A_SPEAKING: 80.0,
-          B_SPEAKING: 80.0,
-        },
-      };
-    }
-    if (normalized.includes("B1")) {
-      return {
-        percentage: 55.0,
-        total_score: 66,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 55.0,
-          A_LISTEN: 55.0,
-          D_LISTEN_ANSWER: 55.0,
-          C_GRAMMAR: 50.0,
-          A_SPEAKING: 60.0,
-          B_SPEAKING: 60.0,
-        },
-      };
-    }
-    if (normalized.includes("A2")) {
-      return {
-        percentage: 40.0,
-        total_score: 48,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 40.0,
-          A_LISTEN: 40.0,
-          D_LISTEN_ANSWER: 40.0,
-          C_GRAMMAR: 35.0,
-          A_SPEAKING: 45.0,
-          B_SPEAKING: 45.0,
-        },
-      };
-    }
-    if (normalized.includes("A1")) {
-      return {
-        percentage: 25.0,
-        total_score: 30,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 25.0,
-          A_LISTEN: 25.0,
-          D_LISTEN_ANSWER: 25.0,
-          C_GRAMMAR: 20.0,
-          A_SPEAKING: 30.0,
-          B_SPEAKING: 30.0,
-        },
-      };
-    }
-    if (normalized.includes("B1-B2") || normalized.includes("B1 - B2")) {
-      return {
-        percentage: 62.5,
-        total_score: 75,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 62.5,
-          A_LISTEN: 62.5,
-          D_LISTEN_ANSWER: 62.5,
-          C_GRAMMAR: 55.0,
-          A_SPEAKING: 70.0,
-          B_SPEAKING: 70.0,
-        },
-      };
-    }
-    if (normalized.includes("A1-A2") || normalized.includes("A1 - A2")) {
-      return {
-        percentage: 32.5,
-        total_score: 39,
-        max_score: 120,
-        section_percentages: {
-          A_READING: 32.5,
-          A_LISTEN: 32.5,
-          D_LISTEN_ANSWER: 32.5,
-          C_GRAMMAR: 27.5,
-          A_SPEAKING: 37.5,
-          B_SPEAKING: 37.5,
-        },
-      };
-    }
-    // Default fallback
-    return {
-      percentage: DEFAULT_CEFR_PERCENTAGE,
-      total_score: DEFAULT_OBTAINED_POINTS,
-      max_score: DEFAULT_MAX_POINTS,
-      section_percentages: {
-        A_READING: DEFAULT_CEFR_PERCENTAGE,
-        A_LISTEN: DEFAULT_CEFR_PERCENTAGE,
-        D_LISTEN_ANSWER: DEFAULT_CEFR_PERCENTAGE,
-        C_GRAMMAR: DEFAULT_WRITING_PERCENTAGE,
-        A_SPEAKING: DEFAULT_SPEAKING_PERCENTAGE,
-        B_SPEAKING: DEFAULT_SPEAKING_PERCENTAGE,
-      },
-    };
-  }, [results, actualCefr, isAssessmentComplete, hasRealResults]);
+  const derivedResults = hasRealResults ? results : null;
 
   if (!visible) return null;
 
@@ -284,6 +141,40 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
           <Pressable onPress={handleClose} style={scoreStyles.doneButton}>
             <Text style={scoreStyles.doneButtonText}>Close</Text>
           </Pressable>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  // If assessment is completed but real results are not loaded yet — show a loading spinner
+  if (isAssessmentComplete && !hasRealResults) {
+    return (
+      <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
+        <Animated.View style={[scoreStyles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
+          <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+            <Feather name="x" size={20} color="#64748b" />
+          </Pressable>
+          <Text style={scoreStyles.overallScoreTitle}>Pre-Assessment</Text>
+          <View style={{ alignItems: "center", paddingVertical: 48 }}>
+            <ActivityIndicator size="large" color="#4f46e5" />
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#0f172a",
+                marginTop: 16,
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Retrieving Results...
+            </Text>
+            <Text
+              style={{ fontSize: 13, color: "#64748b", textAlign: "center", paddingHorizontal: 24 }}
+            >
+              Connecting to the server to fetch your real score breakdown. Please wait a moment.
+            </Text>
+          </View>
         </Animated.View>
       </Animated.View>
     );
@@ -510,14 +401,13 @@ export function LearningJourneyScreen() {
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
   const [preAssessmentResults, setPreAssessmentResults] =
     useState<StoredPreAssessmentResult | null>(null);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
 
   useEffect(() => {
-    getAssessmentSessionId().then((id) => {
-      if (id) setActiveSessionId(id);
-    });
+    refetchProfile();
+  }, []);
 
+  useEffect(() => {
     getPreAssessmentResults().then((res) => {
       if (res) {
         setPreAssessmentResults(res);
@@ -529,10 +419,22 @@ export function LearningJourneyScreen() {
     });
   }, [showPreAssessmentModal, profile]);
 
-  const { data: liveResult } = useGetAssessmentResultQuery(
-    { session_id: activeSessionId || "" },
-    { skip: !activeSessionId || !gate.canEnter },
+  const {
+    data: liveResult,
+    error: liveResultError,
+    isFetching: liveResultFetching,
+  } = useGetUserAssessmentResultQuery(
+    { user_id: profile?.id || "" },
+    { skip: !profile?.id || !gate.canEnter },
   );
+
+  useEffect(() => {
+    console.log("[DEBUG results] user_id:", profile?.id);
+    console.log("[DEBUG results] gate.canEnter:", gate.canEnter);
+    console.log("[DEBUG results] liveResult:", liveResult);
+    console.log("[DEBUG results] liveResultError:", liveResultError);
+    console.log("[DEBUG results] liveResultFetching:", liveResultFetching);
+  }, [profile?.id, gate.canEnter, liveResult, liveResultError, liveResultFetching]);
 
   useEffect(() => {
     if (liveResult && "percentage" in liveResult) {
@@ -548,6 +450,11 @@ export function LearningJourneyScreen() {
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
+
+  const handlePreAssessmentPress = () => {
+    setShowPreAssessmentModal(true);
+    refetchProfile();
+  };
 
   const {
     data: personalizedPath,
@@ -811,6 +718,7 @@ export function LearningJourneyScreen() {
   const resumeTitleStyle = isResumeUnlocked
     ? timelineStyles.stageTitle
     : [timelineStyles.stageTitle, timelineStyles.textLocked];
+  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
   const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
 
   const totalDays = days?.length ?? 0;
@@ -821,7 +729,7 @@ export function LearningJourneyScreen() {
       <PreAssessmentModal
         visible={showPreAssessmentModal}
         onClose={() => setShowPreAssessmentModal(false)}
-        cefrRange={profile?.cefr_range}
+        cefrRange={profile?.cefr_range || (isPreAssessmentDone ? "A2" : null)}
         results={resultsToPass}
       />
 
@@ -889,19 +797,19 @@ export function LearningJourneyScreen() {
 
             {/* Stage 1: Pre Assessment (Pressable to show scorecard) */}
             <Pressable
-              onPress={() => setShowPreAssessmentModal(true)}
+              onPress={handlePreAssessmentPress}
               style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
             >
               {/* Left Circle Icon — check if completed, clock if pending */}
               <View
                 style={[
                   timelineStyles.stageIconCircle,
-                  profile?.cefr_range
+                  isPreAssessmentDone
                     ? timelineStyles.stageCircleCompleted
                     : timelineStyles.stageCircleInProgress,
                 ]}
               >
-                <Feather name={profile?.cefr_range ? "check" : "clock"} size={16} color="white" />
+                <Feather name={isPreAssessmentDone ? "check" : "clock"} size={16} color="white" />
               </View>
 
               {/* Right Content */}
@@ -911,19 +819,21 @@ export function LearningJourneyScreen() {
                   <View
                     style={[
                       timelineStyles.statusBadge,
-                      profile?.cefr_range
+                      isPreAssessmentDone
                         ? timelineStyles.badgeCompleted
                         : timelineStyles.badgeInProgress,
                     ]}
                   >
                     <Text style={timelineStyles.badgeText}>
-                      {profile?.cefr_range ? `Level ${profile.cefr_range}` : "Pending"}
+                      {isPreAssessmentDone
+                        ? `Level ${profile?.cefr_range || "Assessed"}`
+                        : "Pending"}
                     </Text>
                   </View>
                 </View>
                 <Text style={timelineStyles.stageSubtitle}>
-                  {profile?.cefr_range
-                    ? `Assessed proficiency: Band ${profile.cefr_range}`
+                  {isPreAssessmentDone
+                    ? `Assessed proficiency: Band ${profile?.cefr_range || "Assessed"}`
                     : "Complete the diagnostic to unlock your learning path"}
                 </Text>
 
@@ -933,7 +843,7 @@ export function LearningJourneyScreen() {
                     style={[
                       timelineStyles.progressBarFill,
                       {
-                        width: profile?.cefr_range ? "100%" : "0%",
+                        width: isPreAssessmentDone ? "100%" : "0%",
                         backgroundColor: "#475569",
                       },
                     ]}
@@ -942,15 +852,15 @@ export function LearningJourneyScreen() {
 
                 <View style={timelineStyles.progressLabelRow}>
                   <Text style={timelineStyles.progressLabelText}>
-                    {profile?.cefr_range ? "8 lessons completed" : "Not started"}
+                    {isPreAssessmentDone ? "Completed" : "Not started"}
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>
-                    {profile?.cefr_range ? "100%" : "0%"}
+                    {isPreAssessmentDone ? "100%" : "0%"}
                   </Text>
                 </View>
 
                 <Text style={timelineStyles.xpText}>
-                  {profile?.cefr_range ? "350 XP earned" : "Tap to view details"}
+                  {isPreAssessmentDone ? "350 XP earned" : "Tap to view details"}
                 </Text>
               </View>
             </Pressable>

@@ -7,13 +7,13 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 // where `process.env` is substituted at build time, and is required to be
 // supplied via the build environment. Missing config throws immediately so the
 // app never silently falls back to an empty/default password.
-const ADMIN_PASSWORD: string = (() => {
+const getAdminPassword = (): string => {
   const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
   if (!value) {
     throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
   return value;
-})();
+};
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
@@ -59,12 +59,16 @@ export default function AdminPowerupPage() {
   }
 
   const onLogin = () => {
-    if (pw === ADMIN_PASSWORD) {
-      window.localStorage.setItem(SESSION_KEY, "1");
-      setAuthed(true);
-      setError(null);
-    } else {
-      setError("Incorrect password.");
+    try {
+      if (pw === getAdminPassword()) {
+        window.localStorage.setItem(SESSION_KEY, "1");
+        setAuthed(true);
+        setError(null);
+      } else {
+        setError("Incorrect password.");
+      }
+    } catch (e: any) {
+      setError(e.message || "Configuration error.");
     }
   };
 
@@ -124,7 +128,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setError(null);
     try {
       const res = await fetch(`${API_URL}/admin/content/versions`, {
-        headers: { "X-Admin-Password": ADMIN_PASSWORD },
+        headers: { "X-Admin-Password": getAdminPassword() },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: ContentVersion[] = await res.json();
@@ -145,7 +149,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     try {
       const res = await fetch(`${API_URL}/admin/content/versions/${id}/activate`, {
         method: "POST",
-        headers: { "X-Admin-Password": ADMIN_PASSWORD },
+        headers: { "X-Admin-Password": getAdminPassword() },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchVersions();

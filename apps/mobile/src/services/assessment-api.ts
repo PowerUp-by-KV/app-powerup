@@ -256,6 +256,11 @@ export const assessmentApi = api.injectEndpoints({
       query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
       providesTags: ["Assessment"],
     }),
+
+    getUserAssessmentResult: builder.query<AssessmentResultResponse, { user_id: string }>({
+      query: ({ user_id }) => `/v1/assessment/user/${user_id}/result`,
+      providesTags: ["Assessment"],
+    }),
   }),
 });
 
@@ -298,4 +303,6 @@ export const {
   useLazyGetAssessmentStatusQuery,
   useGetAssessmentResultQuery,
   useLazyGetAssessmentResultQuery,
+  useGetUserAssessmentResultQuery,
+  useLazyGetUserAssessmentResultQuery,
 } = assessmentApi;
