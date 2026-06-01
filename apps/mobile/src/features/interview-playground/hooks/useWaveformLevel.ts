@@ -50,7 +50,6 @@ export function useWaveformLevel(isSpeaking: {
         bar.value = withSpring(SILENT_HEIGHT, { damping: 10 });
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   return { barHeights };

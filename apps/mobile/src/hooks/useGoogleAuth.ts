@@ -37,7 +37,7 @@ export function useGoogleAuth() {
     if (!idToken) return;
 
     void handleGoogleToken(idToken);
-  }, [response]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [response]);
 
   const handleGoogleToken = async (idToken: string) => {
     try {
