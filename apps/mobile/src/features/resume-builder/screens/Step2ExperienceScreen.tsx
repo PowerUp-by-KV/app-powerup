@@ -15,6 +15,7 @@ import { DynamicFieldList } from "@/features/resume/components/DynamicFieldList"
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 import type { BuilderExperience, BuilderEducation } from "../types/resume-builder.types";
 import { useAutoSave } from "../hooks/useAutoSave";
+import { DatePicker } from "../components/DatePicker";
 
 export function Step2ExperienceScreen() {
   const dispatch = useAppDispatch();
@@ -37,6 +38,7 @@ export function Step2ExperienceScreen() {
     description: "",
     highlights: [],
     technologies: [],
+    currentlyWorking: false,
   });
   const [expErrors, setExpErrors] = useState<Record<string, string>>({});
 
@@ -61,6 +63,38 @@ export function Step2ExperienceScreen() {
   // Helper unique keys builder
   const makeId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+  const resetExpForm = () => {
+    setExpForm({
+      company: "",
+      role: "",
+      location: "",
+      startDate: "",
+      endDate: "",
+      description: "",
+      highlights: [],
+      technologies: [],
+      currentlyWorking: false,
+    });
+    setEditingExpId(null);
+    setExpErrors({});
+  };
+
+  const resetEduForm = () => {
+    setEduForm({
+      institution: "",
+      degree: "",
+      field: "",
+      startDate: "",
+      endDate: "",
+      startYear: "",
+      endYear: "",
+      gpa: "",
+      location: "",
+    });
+    setEditingEduId(null);
+    setEduErrors({});
+  };
+
   // Experience Handlers
   const validateExp = () => {
     const errs: Record<string, string> = {};
@@ -75,28 +109,23 @@ export function Step2ExperienceScreen() {
     if (!validateExp()) return;
 
     let updated: BuilderExperience[];
+    const finalExpForm = {
+      ...expForm,
+      endDate: expForm.currentlyWorking ? "" : expForm.endDate || "",
+    };
+
     if (editingExpId) {
       updated = experience.map((item) =>
-        item.id === editingExpId ? ({ ...item, ...expForm } as BuilderExperience) : item,
+        item.id === editingExpId ? ({ ...item, ...finalExpForm } as BuilderExperience) : item,
       );
     } else {
-      updated = [...experience, { ...expForm, id: makeId() } as BuilderExperience];
+      updated = [...experience, { ...finalExpForm, id: makeId() } as BuilderExperience];
     }
 
     dispatch(updateExperience(updated));
     setShowExpModal(false);
     setEditingExpId(null);
-    setExpForm({
-      company: "",
-      role: "",
-      location: "",
-      startDate: "",
-      endDate: "",
-      description: "",
-      highlights: [],
-      technologies: [],
-    });
-    setExpErrors({});
+    resetExpForm();
   };
 
   // Education Handlers
@@ -175,7 +204,10 @@ export function Step2ExperienceScreen() {
               }}
               onEdit={(item) => {
                 setEditingExpId(item.id);
-                setExpForm(item);
+                setExpForm({
+                  ...item,
+                  currentlyWorking: !item.endDate || item.endDate === "Present",
+                });
                 setShowExpModal(true);
               }}
               addButtonLabel="Add Work Experience"
@@ -254,7 +286,10 @@ export function Step2ExperienceScreen() {
         visible={showExpModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowExpModal(false)}
+        onRequestClose={() => {
+          setShowExpModal(false);
+          resetExpForm();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -263,7 +298,12 @@ export function Step2ExperienceScreen() {
                 <Text style={styles.modalTitle}>
                   {editingExpId ? "Edit Work Experience" : "Add Work Experience"}
                 </Text>
-                <Pressable onPress={() => setShowExpModal(false)}>
+                <Pressable
+                  onPress={() => {
+                    setShowExpModal(false);
+                    resetExpForm();
+                  }}
+                >
                   <MaterialIcons name="close" size={20} color="#374151" />
                 </Pressable>
               </View>
@@ -295,23 +335,49 @@ export function Step2ExperienceScreen() {
 
               <View style={styles.row}>
                 <View style={{ flex: 1, marginRight: 8 }}>
-                  <TextInput
+                  <DatePicker
                     label="Start Date"
                     required
-                    placeholder="e.g., Oct 2022"
-                    value={expForm.startDate}
-                    onChangeText={(text) => setExpForm({ ...expForm, startDate: text })}
+                    placeholder="Select Date"
+                    value={expForm.startDate || ""}
+                    onChange={(date) => {
+                      setExpForm((prev) => ({ ...prev, startDate: date }));
+                      if (expErrors.startDate) setExpErrors((prev) => ({ ...prev, startDate: "" }));
+                    }}
                     error={expErrors.startDate}
                   />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <TextInput
-                    label="End Date"
-                    placeholder="e.g., Present"
-                    value={expForm.endDate}
-                    onChangeText={(text) => setExpForm({ ...expForm, endDate: text })}
-                  />
-                </View>
+                {!expForm.currentlyWorking && (
+                  <View style={{ flex: 1 }}>
+                    <DatePicker
+                      label="End Date"
+                      placeholder="Select Date"
+                      value={expForm.endDate || ""}
+                      onChange={(date) => {
+                        setExpForm((prev) => ({ ...prev, endDate: date }));
+                      }}
+                    />
+                  </View>
+                )}
+              </View>
+
+              <View style={styles.checkboxRow}>
+                <Pressable
+                  onPress={() => {
+                    const isCurrent = !expForm.currentlyWorking;
+                    setExpForm((prev) => ({
+                      ...prev,
+                      currentlyWorking: isCurrent,
+                      endDate: isCurrent ? "" : prev.endDate || "",
+                    }));
+                  }}
+                  style={[styles.checkbox, !!expForm.currentlyWorking && styles.checkboxActive]}
+                >
+                  {!!expForm.currentlyWorking && (
+                    <MaterialIcons name="check" size={14} color="white" />
+                  )}
+                </Pressable>
+                <Text style={styles.checkboxLabel}>I currently work in this role</Text>
               </View>
 
               <TextInput
@@ -336,7 +402,10 @@ export function Step2ExperienceScreen() {
         visible={showEduModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowEduModal(false)}
+        onRequestClose={() => {
+          setShowEduModal(false);
+          resetEduForm();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -345,7 +414,12 @@ export function Step2ExperienceScreen() {
                 <Text style={styles.modalTitle}>
                   {editingEduId ? "Edit Education History" : "Add Education History"}
                 </Text>
-                <Pressable onPress={() => setShowEduModal(false)}>
+                <Pressable
+                  onPress={() => {
+                    setShowEduModal(false);
+                    resetEduForm();
+                  }}
+                >
                   <MaterialIcons name="close" size={20} color="#374151" />
                 </Pressable>
               </View>
@@ -594,5 +668,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "white",
+  },
+  checkboxRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    marginTop: 4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 8,
+  },
+  checkboxActive: {
+    backgroundColor: "#2563eb",
+  },
+  checkboxLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#374151",
   },
 });
