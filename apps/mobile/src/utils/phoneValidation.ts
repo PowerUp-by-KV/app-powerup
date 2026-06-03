@@ -33,18 +33,18 @@ export function validatePhoneDigits(
   // Strip country code prefix from phone number if prepended
   let phoneWithoutCode = phone.trim();
   const cleanCode = code.replace(/\D/g, ""); // e.g. "+91" -> "91"
+  const expected = getExpectedDigitCount(code);
+  const digitsOnly = phoneWithoutCode.replace(/\D/g, "");
 
   if (phoneWithoutCode.startsWith("+")) {
     if (phoneWithoutCode.startsWith(code)) {
       phoneWithoutCode = phoneWithoutCode.slice(code.length).trim();
     }
-  } else if (cleanCode && phoneWithoutCode.replace(/\D/g, "").startsWith(cleanCode)) {
-    const digitsOnly = phoneWithoutCode.replace(/\D/g, "");
+  } else if (cleanCode && digitsOnly.startsWith(cleanCode) && digitsOnly.length > expected) {
     phoneWithoutCode = digitsOnly.slice(cleanCode.length);
   }
 
   const cleaned = phoneWithoutCode.replace(/\D/g, "");
-  const expected = getExpectedDigitCount(code);
 
   if (!cleaned) {
     return { isValid: false, message: "Phone number is required" };

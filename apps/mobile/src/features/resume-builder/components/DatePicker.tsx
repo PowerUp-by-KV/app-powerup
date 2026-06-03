@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Pressable, Platform } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { TextInput } from "@/features/resume/components/TextInput";
 
 interface DatePickerProps {
@@ -24,9 +24,17 @@ export function DatePicker({
 
   const getDateValue = () => {
     if (value) {
-      const parsed = Date.parse(value);
-      if (!isNaN(parsed)) {
-        return new Date(parsed);
+      const parts = value.split("-");
+      const part0 = parts[0];
+      const part1 = parts[1];
+      const part2 = parts[2];
+      if (part0 && part1 && part2) {
+        const year = parseInt(part0, 10);
+        const month = parseInt(part1, 10) - 1;
+        const day = parseInt(part2, 10);
+        if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+          return new Date(year, month, day);
+        }
       }
     }
     return new Date();
@@ -39,7 +47,7 @@ export function DatePicker({
     return `${year}-${month}-${day}`;
   };
 
-  const onDateChange = (event: any, selectedDate?: Date) => {
+  const onDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowPicker(false);
     }

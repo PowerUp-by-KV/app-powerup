@@ -8,7 +8,6 @@ import {
   Modal,
   FlatList,
   Alert,
-  Platform,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -91,11 +90,13 @@ export function Step1ContactScreen() {
     return null;
   });
 
+  const lastSyncedPhoneRef = React.useRef(contact.phone || "");
+
   // Sync state if Redux draft phone updates (e.g. after async loading or reset)
   React.useEffect(() => {
-    const currentCombined = `${selectedCountryCode} ${phoneNumber}`.trim();
     const reduxPhone = (contact.phone || "").trim();
-    if (reduxPhone !== currentCombined) {
+    if (reduxPhone !== lastSyncedPhoneRef.current) {
+      lastSyncedPhoneRef.current = reduxPhone;
       if (reduxPhone) {
         const parts = reduxPhone.split(" ");
         let code = "+91";
@@ -124,7 +125,7 @@ export function Step1ContactScreen() {
         setPhoneValidation(null);
       }
     }
-  }, [contact.phone, selectedCountryCode, phoneNumber]);
+  }, [contact.phone]);
 
   const handleCancel = () => {
     const title = "Exit Resume Builder";
@@ -138,21 +139,14 @@ export function Step1ContactScreen() {
       }
     };
 
-    if (Platform.OS === "web") {
-      const confirmExit = window.confirm(`${title}\n\n${message}`);
-      if (confirmExit) {
-        performExit();
-      }
-    } else {
-      Alert.alert(title, message, [
-        { text: "Continue Editing", style: "cancel" },
-        {
-          text: "Exit",
-          style: "destructive",
-          onPress: performExit,
-        },
-      ]);
-    }
+    Alert.alert(title, message, [
+      { text: "Continue Editing", style: "cancel" },
+      {
+        text: "Exit",
+        style: "destructive",
+        onPress: performExit,
+      },
+    ]);
   };
 
   // Hook up debounced auto-save
@@ -288,7 +282,9 @@ export function Step1ContactScreen() {
                   onChangeText={(text) => {
                     const cleaned = text.replace(/[^\d]/g, "");
                     setPhoneNumber(cleaned);
-                    dispatch(updateContact({ phone: `${selectedCountryCode} ${cleaned}` }));
+                    const combined = `${selectedCountryCode} ${cleaned}`.trim();
+                    lastSyncedPhoneRef.current = combined;
+                    dispatch(updateContact({ phone: combined }));
                     if (errors.phone) setErrors({ ...errors, phone: "" });
 
                     if (cleaned.trim().length > 0) {
@@ -458,7 +454,9 @@ export function Step1ContactScreen() {
                     setPhoneValidation(null);
                     setShowCountryCodeModal(false);
                     setCountryCodeSearch("");
-                    dispatch(updateContact({ phone: `${item.code} ` }));
+                    const combined = `${item.code} `.trim();
+                    lastSyncedPhoneRef.current = combined;
+                    dispatch(updateContact({ phone: combined }));
                   }}
                 >
                   <Text style={styles.countryCode}>{item.code}</Text>

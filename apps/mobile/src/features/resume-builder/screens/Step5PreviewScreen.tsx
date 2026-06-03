@@ -70,7 +70,9 @@ export function Step5PreviewScreen() {
       try {
         await updateBuiltResume(draftResume).unwrap();
       } catch (error) {
-        console.warn("Final save before exit failed:", error);
+        console.error("Final save before exit failed:", error);
+        Alert.alert("Save Failed", "We could not save your resume changes. Please try again.");
+        return; // Halt navigation and state reset
       }
     }
     dispatch(resetBuilderState());
