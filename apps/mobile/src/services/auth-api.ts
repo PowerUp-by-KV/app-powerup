@@ -29,6 +29,24 @@ export interface AuthRegisterResponse {
   refresh_token?: string;
 }
 
+// Matches AuthLoginResponse from the API: POST /api/v1/auth/social/google
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
+export interface SocialAuthLoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string | null;
+    name: string;
+    phone_number?: string | null;
+    cefr_range?: string | null;
+    profile_completed?: boolean;
+  };
+}
+
 export interface UserProfile {
   id: string;
   email: string | null;
@@ -143,6 +161,15 @@ export const authApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Auth"],
     }),
+
+    googleAuth: builder.mutation<SocialAuthLoginResponse, GoogleAuthRequest>({
+      query: (body) => ({
+        url: "/v1/auth/social/google",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
   }),
 });
 
@@ -154,4 +181,5 @@ export const {
   usePatchProfileMutation,
   useSendEmailOtpMutation,
   useVerifyEmailOtpMutation,
+  useGoogleAuthMutation,
 } = authApi;

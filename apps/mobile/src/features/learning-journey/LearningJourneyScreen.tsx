@@ -99,12 +99,12 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? null;
 
   // Only show real data — do NOT generate mock/derived scores if assessment is not completed.
-  // The assessment is considered completed only when cefr_range is set on the profile.
+  // assessment is considered completed only when cefr_range is set on the profile.
   const isAssessmentComplete = !!actualCefr;
 
-  // Only derive scores from real results if they exist AND assessment is complete.
+  // Only derive scores from real results if section_scores is present (always required per API).
   const hasRealResults =
-    !!results && results.section_percentages && Object.keys(results.section_percentages).length > 0;
+    !!results && results.section_scores && Object.keys(results.section_scores).length > 0;
 
   const derivedResults = hasRealResults ? results : null;
 
@@ -189,23 +189,44 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
-  // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
-  const readingPct = safeResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
+  // Safely format a completed_at date for display
+  const completedDate = safeResults.completed_at
+    ? new Date(safeResults.completed_at).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
+
+  // Reading Score: A_READING — prefer section_percentages, fall back to section_scores
+  const sectionPct = safeResults.section_percentages ?? {};
+  const sectionScr = safeResults.section_scores ?? {};
+  const toPct = (score: number, max = 100) => (score / max) * 100;
+
+  const readingPct =
+    sectionPct["A_READING"] ?? toPct(sectionScr["A_READING"] ?? 0) ?? DEFAULT_CEFR_PERCENTAGE;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
-  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
-  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
+  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER
+  const listen1 =
+    sectionPct["A_LISTEN"] ?? toPct(sectionScr["A_LISTEN"] ?? 0) ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen2 =
+    sectionPct["D_LISTEN_ANSWER"] ??
+    toPct(sectionScr["D_LISTEN_ANSWER"] ?? 0) ??
+    DEFAULT_CEFR_PERCENTAGE;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
-  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
+  // Writing Score: C_GRAMMAR
+  const writingPct =
+    sectionPct["C_GRAMMAR"] ?? toPct(sectionScr["C_GRAMMAR"] ?? 0) ?? DEFAULT_WRITING_PERCENTAGE;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
-  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
-  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  // Speaking Score: average of A_SPEAKING and B_SPEAKING
+  const speak1 =
+    sectionPct["A_SPEAKING"] ?? toPct(sectionScr["A_SPEAKING"] ?? 0) ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak2 =
+    sectionPct["B_SPEAKING"] ?? toPct(sectionScr["B_SPEAKING"] ?? 0) ?? DEFAULT_SPEAKING_PERCENTAGE;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
@@ -233,7 +254,19 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         </View>
 
         <Text style={scoreStyles.cefrTitle}>CEFR: {actualCefr}</Text>
-
+        {completedDate ? (
+          <Text
+            style={{
+              fontSize: 11,
+              color: "#94a3b8",
+              textAlign: "center",
+              marginBottom: 4,
+              marginTop: -4,
+            }}
+          >
+            Completed on {completedDate}
+          </Text>
+        ) : null}
         {/* 2. Grid breakdown (2x2) */}
         <View style={scoreStyles.gridContainer}>
           {/* Row 1 */}
@@ -419,22 +452,11 @@ export function LearningJourneyScreen() {
     });
   }, [showPreAssessmentModal, profile]);
 
-  const {
-    data: liveResult,
-    error: liveResultError,
-    isFetching: liveResultFetching,
-  } = useGetUserAssessmentResultQuery(
-    { user_id: profile?.id || "" },
-    { skip: !profile?.id || !gate.canEnter },
+  const { data: liveResult, isFetching: liveResultFetching } = useGetUserAssessmentResultQuery(
+    { user_id: profile?.id ?? "" },
+    // Fetch as soon as we have a user ID — the modal handles empty/loading/complete states
+    { skip: !profile?.id },
   );
-
-  useEffect(() => {
-    console.log("[DEBUG results] user_id:", profile?.id);
-    console.log("[DEBUG results] gate.canEnter:", gate.canEnter);
-    console.log("[DEBUG results] liveResult:", liveResult);
-    console.log("[DEBUG results] liveResultError:", liveResultError);
-    console.log("[DEBUG results] liveResultFetching:", liveResultFetching);
-  }, [profile?.id, gate.canEnter, liveResult, liveResultError, liveResultFetching]);
 
   useEffect(() => {
     if (liveResult && "percentage" in liveResult) {
@@ -611,7 +633,7 @@ export function LearningJourneyScreen() {
             <View className="w-full gap-3 mt-4">
               <Pressable
                 onPress={handleRetry}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </Pressable>

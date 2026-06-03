@@ -14,9 +14,15 @@ import {
 } from "react-native";
 
 import { Feather, AntDesign } from "@expo/vector-icons";
+import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
 
-import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import {
+  AuthResponse,
+  LoginRequest,
+  useLoginMutation,
+  useGoogleAuthMutation,
+} from "@/services/auth-api";
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
@@ -27,6 +33,10 @@ import {
 import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export function LoginScreen() {
   const router = useRouter();
@@ -37,8 +47,55 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
+  const [googleAuth] = useGoogleAuthMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
+
+  // Standard Google OAuth client configuration
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+      "YOUR_GOOGLE_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+    iosClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+      "YOUR_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com",
+    webClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+      "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com",
+  });
+
+  // Handle successful Google Authentication callback
+  React.useEffect(() => {
+    if (response?.type === "success" && response.authentication?.idToken) {
+      handleGoogleAuthExchange(response.authentication.idToken);
+    }
+  }, [response]);
+
+  const handleGoogleAuthExchange = async (idToken: string) => {
+    try {
+      setIsLoading(true);
+      const res = await googleAuth({ id_token: idToken }).unwrap();
+      const mappedAuth: AuthResponse = {
+        access_token: res.access_token,
+        refresh_token: res.refresh_token,
+        user: {
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email ?? undefined,
+          phone_number: res.user.phone_number ?? undefined,
+          profile_completed: res.user.profile_completed,
+        },
+      };
+      await persistAuthAndNavigate(mappedAuth, res.user.email || "");
+    } catch (err) {
+      Alert.alert(
+        "Google Authentication Failed",
+        getApiErrorMessage(err, "Unable to sign in with Google."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Prefetch onboarding questions in the background during the authentication handshake
   React.useEffect(() => {
@@ -145,128 +202,202 @@ export function LoginScreen() {
           contentContainerStyle={{
             alignItems: "center",
             paddingBottom: 60,
-            paddingTop: Platform.OS === "android" ? 48 : 16,
+            paddingTop: Platform.OS === "android" ? 48 : 24,
           }}
           style={{ flex: 1 }}
           className="px-6"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="w-full max-w-md py-8">
+          <View className="w-full max-w-sm py-4">
+            {/* Top Logo Icon */}
             <View className="items-center mb-6">
-              <View className="w-14 h-14 rounded-2xl bg-slate-500 mb-3 shadow-sm" />
-              <Text className="text-2xl font-bold text-slate-900">Welcome Back</Text>
-              <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
+              {/* Lumino Logo Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 38,
+                    fontWeight: "900",
+                    color: "#3b82f6",
+                    letterSpacing: -1.5,
+                    marginRight: 1,
+                  }}
+                >
+                  lumin
+                </Text>
+
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 3,
+                  }}
+                >
+                  <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                    <Defs>
+                      <LinearGradient id="gradientOLoginForm" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor="#86efac" />
+                        <Stop offset="50%" stopColor="#22d3ee" />
+                        <Stop offset="100%" stopColor="#3b82f6" />
+                      </LinearGradient>
+                    </Defs>
+                    <Circle cx="24" cy="24" r="22" fill="url(#gradientOLoginForm)" />
+                  </Svg>
+
+                  <View style={{ position: "absolute", transform: [{ rotate: "45deg" }] }}>
+                    <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                      <Path
+                        d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
+                        fill="#ffffff"
+                      />
+                    </Svg>
+                  </View>
+                </View>
+              </View>
+
+              <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
+                Welcome Back
+              </Text>
+              <Text className="text-xs text-slate-400 text-center mb-6 px-4">
+                Sign in to your Lumino account to continue your learning journey
+              </Text>
+
+              {/* Social Login Buttons */}
+              <View className="flex-row gap-4 w-full">
+                <TouchableOpacity
+                  onPress={() => promptAsync()}
+                  disabled={isLoading || !request}
+                  className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
+                    isLoading || !request ? "opacity-50" : ""
+                  }`}
+                  activeOpacity={0.7}
+                >
+                  <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
+                  <Text className="text-slate-800 font-bold text-sm">Google</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {}}
+                  className="flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm"
+                  activeOpacity={0.7}
+                >
+                  <AntDesign name="github" size={18} color="#333333" style={{ marginRight: 8 }} />
+                  <Text className="text-slate-800 font-bold text-sm">Github</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
-            <View className="flex-row justify-between w-full mt-2">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
-                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
-                <Text className="text-slate-700 font-bold text-sm">Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
-                <AntDesign name="github" size={18} color="#333" className="mr-2" />
-                <Text className="text-slate-700 font-bold text-sm">Github</Text>
-              </TouchableOpacity>
-            </View>
-
+            {/* OTP Option */}
             <TouchableOpacity
-              onPress={() => router.push("/login-otp")}
-              className="mt-5 mb-2 rounded-full py-4 items-center justify-center border-2 border-slate-300"
+              onPress={() => router.push("/verify-phone")}
+              className="w-full py-3.5 bg-white border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm mb-2"
+              activeOpacity={0.7}
             >
-              <Text className="text-sm font-bold text-slate-800">Login with OTP</Text>
+              <Feather name="shield" size={16} color="#475569" style={{ marginRight: 8 }} />
+              <Text className="text-slate-800 font-bold text-sm">Login with OTP</Text>
             </TouchableOpacity>
 
-            <View className="flex-row items-center my-4 w-full">
-              <View className="h-px bg-slate-100 flex-1" />
-              <Text className="mx-4 text-sm text-slate-400">or</Text>
-              <View className="h-px bg-slate-100 flex-1" />
+            {/* OR Separator */}
+            <View className="flex-row items-center mb-6 mt-4">
+              <View className="flex-1 h-px bg-slate-200" />
+              <Text className="mx-4 text-xs font-medium text-slate-400">or</Text>
+              <View className="flex-1 h-px bg-slate-200" />
             </View>
 
-            <View className="space-y-4 w-full">
-              <View className="w-full">
-                <Text className="text-sm font-bold text-slate-700 mb-1.5">Email</Text>
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
-                  <Feather name="mail" size={16} color="#94A3B8" className="mr-3" />
-                  <TextInput
-                    placeholder="Your@email.com"
-                    keyboardType="email-address"
-                    className="flex-1 text-sm text-slate-900 py-2.5"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    placeholderTextColor="#94A3B8"
-                    editable={!isLoading}
-                  />
-                </View>
+            {/* Form Fields */}
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-700 mb-1.5">Email</Text>
+              <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center">
+                <Feather name="mail" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Your@email.com"
+                  keyboardType="email-address"
+                  className="flex-1 text-sm text-slate-900"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  placeholderTextColor="#94A3B8"
+                  editable={!isLoading}
+                />
               </View>
+            </View>
 
-              <View className="w-full mt-3">
-                <Text className="text-sm font-bold text-slate-700 mb-1.5">Password</Text>
-                <View className="flex-row items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-1">
-                  <TextInput
-                    placeholder="Enter your password"
-                    secureTextEntry={!showPassword}
-                    className="flex-1 text-sm text-slate-900 py-2.5"
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholderTextColor="#94A3B8"
-                    editable={!isLoading}
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword((p) => !p)}
-                    disabled={isLoading}
-                    className="ml-2 py-1"
-                  >
-                    <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <View className="flex-row items-center justify-between w-full mt-5 mb-2">
+            <View className="mb-4">
+              <Text className="text-xs font-bold text-slate-700 mb-1.5">Password</Text>
+              <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center">
+                <Feather name="lock" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
+                <TextInput
+                  placeholder="Enter your password"
+                  secureTextEntry={!showPassword}
+                  className="flex-1 text-sm text-slate-900"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholderTextColor="#94A3B8"
+                  editable={!isLoading}
+                />
                 <TouchableOpacity
-                  onPress={() => setRememberMe(!rememberMe)}
-                  className="flex-row items-center"
+                  onPress={() => setShowPassword((p) => !p)}
+                  disabled={isLoading}
+                  style={{ marginLeft: 8 }}
                 >
-                  <View
-                    className={`w-5 h-5 rounded mr-3 items-center justify-center ${
-                      rememberMe ? "bg-slate-400" : "bg-slate-200"
-                    }`}
-                  >
-                    {rememberMe && <Feather name="check" size={12} color="white" />}
-                  </View>
-                  <Text className="text-sm font-bold text-slate-600">Remember me</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => {}}>
-                  <Text className="text-sm text-blue-500 font-medium">Forgot password?</Text>
+                  <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="#94A3B8" />
                 </TouchableOpacity>
               </View>
+            </View>
 
+            {/* Remember Me & Forgot Password */}
+            <View className="flex-row items-center justify-between w-full mt-4 mb-6">
               <TouchableOpacity
-                className={`rounded-2xl py-3.5 px-16 items-center justify-center self-center mt-3 mb-4 bg-slate-600 shadow-sm ${
-                  isLoading ? "opacity-75" : ""
-                }`}
-                disabled={isLoading}
-                onPress={handleLogin}
+                onPress={() => setRememberMe(!rememberMe)}
+                className="flex-row items-center"
+                activeOpacity={0.8}
               >
-                {isLoading ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Text className="text-white text-sm font-bold">Sign in</Text>
-                )}
+                <View
+                  className={`w-5 h-5 border rounded mr-3 items-center justify-center ${
+                    rememberMe ? "bg-[#3b82f6] border-[#3b82f6]" : "border-slate-300"
+                  }`}
+                >
+                  {rememberMe && <Feather name="check" size={14} color="white" />}
+                </View>
+                <Text className="text-xs font-medium text-slate-600">Remember me</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
+                <Text className="text-xs text-blue-600 font-medium">Forgot password?</Text>
+              </TouchableOpacity>
+            </View>
 
-              <View className="items-center mt-1">
-                <Text className="text-sm text-slate-500">
-                  Don&apos;t have an account?{" "}
-                  <Text
-                    className="text-blue-600 font-bold"
-                    onPress={() => router.push("/register")}
-                  >
-                    Sign up
-                  </Text>
+            {/* Action Sign In Button */}
+            <TouchableOpacity
+              className={`bg-[#3b82f6] py-4 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 mb-6 ${
+                isLoading ? "opacity-75" : ""
+              }`}
+              disabled={isLoading}
+              onPress={handleLogin}
+              activeOpacity={0.8}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text className="text-white font-bold text-sm">Sign in</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Footer Link */}
+            <View className="items-center mb-8">
+              <Text className="text-xs text-slate-500">
+                Don&apos;t have an account?{" "}
+                <Text className="text-blue-600 font-bold" onPress={() => router.push("/register")}>
+                  Sign up
                 </Text>
-              </View>
+              </Text>
             </View>
           </View>
         </ScrollView>

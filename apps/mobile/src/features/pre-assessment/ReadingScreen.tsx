@@ -60,6 +60,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const readingData = sectionData as ReadingSectionResponse | undefined;
   const questions =
     readingData?.questions ||
+    (readingData?.passages && readingData.passages.flatMap((p) => p.questions)) ||
     readingData?.sentences ||
     readingData?.items ||
     readingData?.prompts ||
@@ -125,7 +126,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             <View className="w-full gap-3 mt-2">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
@@ -222,6 +223,26 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     setCurrentQuestionIndex((prev) => prev + 1);
   };
 
+  // Find active paragraph for current question from its parent passage, if passages are defined
+  const getActiveParagraph = () => {
+    if (readingData?.passages && currentQuestion) {
+      const qId = currentQuestion.id || currentQuestion.question_id;
+      const matchingPassage = readingData.passages.find((p) =>
+        p.questions?.some((q) => q.id === qId || q.question_id === qId),
+      );
+      if (matchingPassage) {
+        return matchingPassage.paragraph;
+      }
+    }
+    return (
+      readingData?.paragraph ||
+      (readingData as any)?.passage_text ||
+      (readingData as any)?.text ||
+      ""
+    );
+  };
+  const activeParagraph = getActiveParagraph();
+
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
       <KeyboardAvoidingView
@@ -245,18 +266,8 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               stopTimer={isSubmitting || isFinished}
             />
 
-            {(readingData?.paragraph ||
-              (readingData as any)?.passage_text ||
-              (readingData as any)?.text) && (
-              <ParagraphDisplay
-                paragraph={
-                  readingData?.paragraph ||
-                  (readingData as any)?.passage_text ||
-                  (readingData as any)?.text ||
-                  ""
-                }
-                topic="Reading Comprehension"
-              />
+            {!!activeParagraph && (
+              <ParagraphDisplay paragraph={activeParagraph} topic="Reading Comprehension" />
             )}
 
             <ReadingQuestionComponent
@@ -297,7 +308,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             <View className="flex-row justify-between mt-8 gap-4 mb-8">
               <TouchableOpacity
                 className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
-                  isSubmitting ? "bg-slate-400" : "bg-slate-800"
+                  isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
                 }`}
                 onPress={handleNext}
                 disabled={isSubmitting}

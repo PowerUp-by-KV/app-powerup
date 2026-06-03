@@ -23,9 +23,11 @@ import {
   useSubmitOnboardingMutation,
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
+  useGetOnboardingStatusQuery,
 } from "@/services/onboarding-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation } from "@/services/assessment-api";
+import { LinearGradient } from "expo-linear-gradient";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
@@ -38,6 +40,8 @@ import { getApiErrorMessage } from "@/utils/error-message";
 import LoaderScreen from "./components/LoaderScreen";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import LottieView from "lottie-react-native";
+import { Feather } from "@expo/vector-icons";
+import companyEmployees from "../../../assets/mascot/company-employees.json";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -57,19 +61,23 @@ export default function OnboardingScreen() {
   const [confirmResume] = useConfirmOnboardingResumeMutation();
   const [, { isLoading: isStarting }] = useStartSessionMutation();
 
+  const { data: onboardingStatus, isLoading: isOnboardingStatusLoading } =
+    useGetOnboardingStatusQuery(profile?.id ?? "", {
+      skip: !profile?.id,
+    });
+
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
   const [isCheckingResume, setIsCheckingResume] = React.useState(true);
 
   React.useEffect(() => {
-    if (isProfileLoading) return;
+    if (isProfileLoading || isOnboardingStatusLoading) return;
 
     const checkResumeAssessment = async () => {
       try {
-        const localOnboardingDone = await getProfileCompletedInSession();
-        const isOnboardingComplete = profile?.profile_completed || localOnboardingDone;
+        const isOnboardingComplete = onboardingStatus?.answers_present ?? false;
 
-        // If the user profile is not loaded or onboarding is not completed, DO NOT start any assessment session!
+        // If the user profile is not loaded or onboarding is not completed, let them stay
         if (!profile || !isOnboardingComplete) {
           setIsCheckingResume(false);
           return;
@@ -87,7 +95,7 @@ export default function OnboardingScreen() {
 
     checkResumeAssessment();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, isProfileLoading]);
+  }, [profile, isProfileLoading, onboardingStatus, isOnboardingStatusLoading]);
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -123,7 +131,7 @@ export default function OnboardingScreen() {
             <View className="w-full gap-3">
               <TouchableOpacity
                 onPress={() => refetchQuestions()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
@@ -134,7 +142,7 @@ export default function OnboardingScreen() {
     );
   }
 
-  if (isCheckingResume || isFetching || isProfileLoading) {
+  if (isCheckingResume || isFetching || isProfileLoading || isOnboardingStatusLoading) {
     return <LoaderScreen />;
   }
 
@@ -388,28 +396,51 @@ export default function OnboardingScreen() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Progress Track Header */}
-        <View className="w-32 h-1.5 bg-slate-200 rounded-full mt-2 mb-2 overflow-hidden">
-          <View className="h-full bg-slate-600 rounded-full" style={{ width: `${progress}%` }} />
+        {/* Top Navigation & Progress Bar Row */}
+        <View className="flex-row items-center w-full max-w-md px-1 mb-6">
+          <TouchableOpacity
+            onPress={handleBack}
+            className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-80"
+          >
+            <Feather name="arrow-left" size={18} color="#64748b" />
+          </TouchableOpacity>
+          <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+            <LinearGradient
+              colors={["#3b82f6", "#22c55e"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ width: `${progress}%` }}
+              className="h-full rounded-full"
+            />
+          </View>
         </View>
 
         {/* Section Title */}
-        <Text className="text-sm font-bold text-slate-800 text-center mb-6">
+        <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5">
           {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
         </Text>
 
-        {/* Question & Options Card Container */}
-        <View
-          className={`bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 w-full max-w-md ${
-            isFileQuestion ? "mb-4" : "mb-8"
-          }`}
-        >
-          {!isFileQuestion && (
-            <Text className="text-base font-bold text-slate-900 mb-4 leading-relaxed">
-              {question?.question_text}
-            </Text>
-          )}
+        {/* Question Text */}
+        {!isFileQuestion && (
+          <Text className="text-[20px] font-extrabold text-slate-900 text-center px-4 mb-4 leading-snug max-w-md">
+            {question?.question_text}
+          </Text>
+        )}
 
+        {/* Loopable Mascot Animation */}
+        {!isFileQuestion && (
+          <View className="items-center justify-center my-2">
+            <LottieView
+              source={companyEmployees}
+              autoPlay
+              loop
+              style={{ width: 220, height: 160 }}
+            />
+          </View>
+        )}
+
+        {/* Main Options / Input Fields */}
+        <View className={`w-full mb-6 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
           {question && (
             <DynamicOnboardingForm
               questions={[question]}
@@ -422,7 +453,7 @@ export default function OnboardingScreen() {
 
         {/* Description paragraph specific to file upload step */}
         {isFileQuestion && (
-          <Text className="text-sm text-slate-500 text-center px-4 mb-6 leading-relaxed max-w-md">
+          <Text className="text-sm font-semibold text-slate-400 text-center px-6 mb-8 leading-relaxed max-w-xl">
             Upload your resume to analyze and enhance your professional profile
           </Text>
         )}
@@ -431,19 +462,19 @@ export default function OnboardingScreen() {
         <TouchableOpacity
           onPress={handleNext}
           disabled={isSubmitting || isStarting || isUploading}
-          className={`py-3.5 px-16 rounded-2xl items-center justify-center shadow-sm ${
-            isSubmitting || isStarting || isUploading ? "bg-slate-400" : "bg-slate-700"
-          }`}
+          className={`py-4 w-full rounded-2xl items-center justify-center shadow-md active:opacity-90 transition-all ${
+            isFileQuestion ? "max-w-xl" : "max-w-md"
+          } ${isSubmitting || isStarting || isUploading ? "bg-slate-300" : "bg-blue-500"}`}
         >
           {isSubmitting || isStarting || isUploading ? (
             <View className="flex-row items-center">
               <ActivityIndicator color="white" size="small" className="mr-2" />
-              <Text className="text-white font-bold text-sm">
+              <Text className="text-white font-extrabold text-sm">
                 {isUploading ? "Uploading..." : "Processing..."}
               </Text>
             </View>
           ) : (
-            <Text className="text-white font-bold text-sm">
+            <Text className="text-white font-extrabold text-sm">
               {isFileQuestion && resumeUploaded
                 ? "Upload Successful - Continue"
                 : isFileQuestion
@@ -453,14 +484,12 @@ export default function OnboardingScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Dynamic Secondary Action Link */}
+        {/* Secondary Navigation Actions */}
         {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Skip for now</Text>
-          </TouchableOpacity>
-        ) : stepNumber > 1 ? (
-          <TouchableOpacity onPress={handleBack} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Go Back</Text>
+          <TouchableOpacity onPress={handleSkip} className="mt-5 py-2">
+            <Text className="text-sm font-bold text-slate-400 hover:text-slate-500 transition-colors">
+              Skip for now
+            </Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>

@@ -3,3 +3,4 @@ export { EditProfileScreen } from "./EditProfileScreen";
 export { AvatarPickerScreen } from "./AvatarPickerScreen";
 export { LanguagePickerScreen } from "./LanguagePickerScreen";
 export { ProfileResumeScreen } from "./ProfileResumeScreen";
+export { ReadyPlayerMe } from "./components/ReadyPlayerMe";

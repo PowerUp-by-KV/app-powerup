@@ -110,7 +110,7 @@ export function SpeakingFeedbackPlayback({
         {/* Playback Button */}
         <View className="items-center">
           <TouchableOpacity
-            className="bg-[#0b132b] w-16 h-16 rounded-full items-center justify-center shadow-md border border-slate-700/20 active:opacity-90"
+            className="bg-blue-500 active:bg-blue-600 w-16 h-16 rounded-full items-center justify-center shadow-md border border-blue-600/20"
             onPress={handlePlayback}
             activeOpacity={0.8}
           >
@@ -140,7 +140,7 @@ export function SpeakingFeedbackPlayback({
       {/* Submit/Next Button - Conditionally styled and clickable */}
       <TouchableOpacity
         className={`w-11/12 py-4 rounded-2xl items-center justify-center shadow-md ${
-          isSubmitting ? "bg-slate-400" : "bg-[#0b132b]"
+          isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
         }`}
         onPress={onSubmit}
         disabled={isSubmitting}

@@ -6,6 +6,7 @@ import {
   getAuthSession,
   saveAssessmentSessionId,
   getAssessmentSessionId,
+  getProfileCompletedInSession,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 
@@ -22,6 +23,7 @@ export function useLearningJourneyGate(): LearningJourneyGate {
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
   const [localSessionId, setLocalSessionId] = useState<string | null>(null);
+  const [localProfileCompleted, setLocalProfileCompleted] = useState<boolean>(false);
   const [isLocalReady, setIsLocalReady] = useState(false);
 
   useEffect(() => {
@@ -37,6 +39,8 @@ export function useLearningJourneyGate(): LearningJourneyGate {
         if (savedId) {
           setLocalSessionId(savedId);
         }
+        const profileComp = await getProfileCompletedInSession();
+        setLocalProfileCompleted(profileComp);
       } catch (err) {
         console.warn("Failed to load local session in gate:", err);
       } finally {
@@ -65,7 +69,7 @@ export function useLearningJourneyGate(): LearningJourneyGate {
 
   // profileDone only requires answers_present — resume upload is optional
   const isCefrDone = !!profile?.cefr_range;
-  const profileDone = onboardingStatus?.answers_present ?? false;
+  const profileDone = localProfileCompleted || (onboardingStatus?.answers_present ?? false);
 
   // Query session status from session/start endpoint manually inside useEffect
   useEffect(() => {

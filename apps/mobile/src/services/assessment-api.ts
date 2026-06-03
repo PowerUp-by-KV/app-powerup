@@ -46,6 +46,12 @@ export interface ListeningStory {
   questions: AssessmentQuestion[];
 }
 
+export interface ReadingPassage {
+  passage_no: number;
+  paragraph: string;
+  questions: AssessmentQuestion[];
+}
+
 export interface ReadingSectionResponse {
   section: string;
   paragraph?: string;
@@ -55,6 +61,7 @@ export interface ReadingSectionResponse {
   items?: AssessmentQuestion[];
   prompts?: AssessmentQuestion[];
   stories?: ListeningStory[];
+  passages?: ReadingPassage[];
 }
 
 export interface SpeakingSentence {
@@ -163,14 +170,23 @@ export interface AssessmentScoringStatusResponse {
 }
 
 export interface AssessmentResultResponse {
+  // Core score fields (always present)
   total_score: number;
   max_score: number;
   percentage: number;
   cefr_range: string;
-  cefr_level?: string | null;
   section_scores: Record<string, number>;
-  section_percentages: Record<string, number>;
-  aggregated_scores: Record<string, number>;
+
+  // Optional enrichment fields
+  cefr_level?: string | null;
+  section_percentages?: Record<string, number>;
+  aggregated_scores?: Record<string, number>;
+
+  // Timestamp fields returned by /user/{user_id}/result
+  started_at?: string | null;
+  last_submitted_at?: string | null;
+  completed_at?: string | null;
+  time_taken_seconds?: number | null;
 }
 
 export const assessmentApi = api.injectEndpoints({

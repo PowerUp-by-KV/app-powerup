@@ -17,6 +17,7 @@ import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
 import { useLogout } from "@/utils/auth";
+import { getAvatarUri } from "@/utils/avatar";
 
 function currentMonthIso(): string {
   const d = new Date();
@@ -45,11 +46,6 @@ export function ProfileScreen() {
       icon: "user" as const,
       label: "Personal Details",
       onPress: () => router.push("/profile/edit" as never),
-    },
-    {
-      icon: "file-text" as const,
-      label: "My Resume",
-      onPress: () => router.push("/profile/resume" as never),
     },
     {
       icon: "globe" as const,
@@ -85,26 +81,33 @@ export function ProfileScreen() {
         >
           <View className="items-center mb-6">
             <Pressable onPress={() => router.push("/profile/avatar" as never)} className="relative">
-              <View className="w-24 h-24 rounded-full bg-slate-200 items-center justify-center overflow-hidden">
-                {profile?.avatar_id ? (
-                  <Image
-                    source={{
-                      uri: `https://stpowerup.blob.core.windows.net/avatars/${profile.avatar_id}.png`,
-                    }}
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <Feather name="user" size={36} color="#94a3b8" />
-                )}
+              <View className="w-24 h-24 rounded-full bg-slate-200 items-center justify-center overflow-hidden border-2 border-slate-100 shadow-sm">
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  className="w-full h-full"
+                />
               </View>
-              <View className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-slate-900 items-center justify-center">
+              <View className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-slate-900 items-center justify-center border-2 border-white shadow-sm">
                 <Feather name="edit-2" size={12} color="#fff" />
               </View>
             </Pressable>
             <Text className="text-slate-900 text-xl font-extrabold mt-3">
               {profile?.nickname ?? profile?.name ?? "—"}
             </Text>
-            <Text className="text-slate-500 text-xs">LVL {profile?.current_level ?? 1}</Text>
+            <Text className="text-slate-500 text-xs text-center">
+              LVL {profile?.current_level ?? 1}
+            </Text>
+
+            <Pressable
+              onPress={() => router.push("/profile/ready-player-me" as never)}
+              className="mt-3 px-4 py-2 rounded-full bg-indigo-600 active:bg-indigo-700 flex-row items-center shadow-sm"
+              style={{ gap: 6 }}
+            >
+              <Feather name="user" size={14} color="#fff" />
+              <Text className="text-white text-xs font-bold">Create 3D Avatar</Text>
+            </Pressable>
           </View>
 
           <View className="flex-row mb-6" style={{ gap: 8 }}>

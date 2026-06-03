@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -158,7 +159,7 @@ export function ModuleScreen() {
           <View className="w-full gap-3">
             <Pressable
               onPress={handleRetry}
-              className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
             >
               <Text className="text-white font-extrabold text-sm">Try Again</Text>
             </Pressable>
@@ -199,7 +200,13 @@ export function ModuleScreen() {
         </Pressable>
         <View className="flex-1 mx-4">
           <View className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <View className="h-full bg-slate-900" style={{ width: `${progressPct}%` }} />
+            <LinearGradient
+              colors={["#3b82f6", "#22c55e"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ width: `${progressPct}%` }}
+              className="h-full rounded-full"
+            />
           </View>
         </View>
         <Text className="text-xs text-slate-500 w-12 text-right">

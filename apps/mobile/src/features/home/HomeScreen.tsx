@@ -1,9 +1,9 @@
 import React, { useMemo } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
 
 import { useGetProfileQuery } from "@/services/auth-api";
+import { getAvatarUri } from "@/utils/avatar";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
   useGetProgressionQuery,
@@ -100,9 +100,12 @@ export function HomeScreen() {
           </View>
           <Pressable
             onPress={() => router.push("/profile" as never)}
-            className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center"
+            className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
           >
-            <Feather name="user" size={20} color="#475569" />
+            <Image
+              source={{ uri: getAvatarUri(profile?.avatar_id, profile?.id) }}
+              className="w-full h-full"
+            />
           </Pressable>
         </View>
 

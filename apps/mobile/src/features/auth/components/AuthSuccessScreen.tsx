@@ -13,14 +13,14 @@ export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessSc
   return (
     <SafeAreaView className="flex-1 bg-white">
       <View className="flex-1 items-center justify-center px-8">
-        <View className="w-16 h-16 rounded-full bg-slate-900 items-center justify-center mb-6">
+        <View className="w-16 h-16 rounded-full bg-[#3b82f6] items-center justify-center mb-6 shadow-md shadow-blue-100">
           <Feather name="check" size={28} color="#fff" />
         </View>
         <Text className="text-slate-900 text-3xl font-extrabold mb-3 text-center">{title}</Text>
-        <Text className="text-slate-500 text-base text-center mb-12">{subtitle}</Text>
+        <Text className="text-slate-500 text-base text-center mb-12 px-6">{subtitle}</Text>
         <Pressable
           onPress={onCta}
-          className="bg-slate-700 rounded-full py-4 items-center w-full active:opacity-85"
+          className="bg-[#3b82f6] rounded-2xl py-4 items-center w-full active:opacity-85 shadow-lg shadow-blue-200"
         >
           <Text className="text-white font-bold text-base">{cta}</Text>
         </Pressable>

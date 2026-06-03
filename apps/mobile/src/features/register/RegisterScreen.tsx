@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { Feather, AntDesign } from "@expo/vector-icons";
+import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
 
 import { getApiErrorMessage } from "@/utils/error-message";
@@ -24,8 +25,15 @@ import {
   saveLastLoggedInEmail,
   clearPreAssessmentResults,
 } from "@/services/auth-storage";
-import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
+import { AuthResponse, useRegisterMutation, useGoogleAuthMutation } from "@/services/auth-api";
 import { onboardingApi } from "@/services/onboarding-api";
+import * as WebBrowser from "expo-web-browser";
+import { useDispatch } from "react-redux";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import * as Google from "expo-auth-session/providers/google";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
@@ -44,6 +52,7 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
 
 export function RegisterScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,7 +61,86 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [register] = useRegisterMutation();
+  const [googleAuth] = useGoogleAuthMutation();
+  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
+
+  // Standard Google OAuth client configuration
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
+      "YOUR_GOOGLE_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+    iosClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+      "YOUR_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com",
+    webClientId:
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+      "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com",
+  });
+
+  // Handle successful Google Authentication callback
+  React.useEffect(() => {
+    if (response?.type === "success" && response.authentication?.idToken) {
+      handleGoogleAuthExchange(response.authentication.idToken);
+    }
+  }, [response]);
+
+  const handleGoogleAuthExchange = async (idToken: string) => {
+    try {
+      setIsLoading(true);
+      const res = await googleAuth({ id_token: idToken }).unwrap();
+
+      const mappedAuth: AuthResponse = {
+        access_token: res.access_token,
+        refresh_token: res.refresh_token,
+        user: {
+          id: res.user.id,
+          name: res.user.name,
+          email: res.user.email ?? undefined,
+          phone_number: res.user.phone_number ?? undefined,
+          profile_completed: res.user.profile_completed,
+        },
+      };
+
+      // Save session
+      await saveAuthSession(mappedAuth);
+      await clearProfileCompletedInSession();
+      await clearCompletedSections();
+      await clearAssessmentSessionId();
+      await clearAssessmentStartTime();
+      await saveLastLoggedInEmail(res.user.email || "");
+      await clearPreAssessmentResults();
+
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
+      // Check onboarding status and navigate
+      const userId = res.user?.id;
+      if (!userId) {
+        router.replace("/onboarding" as never);
+        return;
+      }
+      try {
+        const status = await getOnboardingStatus(userId).unwrap();
+        if (status?.answers_present) {
+          router.replace("/(tabs)/my-learning" as never);
+        } else {
+          router.replace("/onboarding" as never);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch onboarding status, falling back to /onboarding:", err);
+        router.replace("/onboarding" as never);
+      }
+    } catch (err) {
+      Alert.alert(
+        "Google Authentication Failed",
+        getApiErrorMessage(err, "Unable to sign in with Google."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Prefetch onboarding questions in the background during the registration handshake
   React.useEffect(() => {
@@ -132,6 +220,10 @@ export function RegisterScreen() {
       await saveLastLoggedInEmail(email.trim());
       await clearPreAssessmentResults();
 
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
       Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
     } catch (error: any) {
@@ -175,19 +267,73 @@ export function RegisterScreen() {
           <View className="w-full max-w-sm py-4">
             {/* Top Logo Icon */}
             <View className="items-center mb-6">
-              <View className="w-14 h-14 rounded-2xl bg-slate-600 mb-4 items-center justify-center shadow-sm" />
+              {/* Lumino Logo Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 38,
+                    fontWeight: "900",
+                    color: "#3b82f6",
+                    letterSpacing: -1.5,
+                    marginRight: 1,
+                  }}
+                >
+                  lumin
+                </Text>
+
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 3,
+                  }}
+                >
+                  <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                    <Defs>
+                      <LinearGradient id="gradientORegForm" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor="#86efac" />
+                        <Stop offset="50%" stopColor="#22d3ee" />
+                        <Stop offset="100%" stopColor="#3b82f6" />
+                      </LinearGradient>
+                    </Defs>
+                    <Circle cx="24" cy="24" r="22" fill="url(#gradientORegForm)" />
+                  </Svg>
+
+                  <View style={{ position: "absolute", transform: [{ rotate: "45deg" }] }}>
+                    <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                      <Path
+                        d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
+                        fill="#ffffff"
+                      />
+                    </Svg>
+                  </View>
+                </View>
+              </View>
+
               <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
-                Welcome to Powerup
+                Welcome to Lumino
               </Text>
-              <Text className="text-xs text-slate-500 text-center mb-6">
-                Join powerup to start your learning journey
+              <Text className="text-xs text-slate-400 text-center mb-6 px-4">
+                Join Hexaware Lumino to start your learning journey
               </Text>
 
               {/* Social Login Buttons */}
               <View className="flex-row gap-4 w-full">
                 <TouchableOpacity
-                  onPress={() => {}}
-                  className="flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm"
+                  onPress={() => promptAsync()}
+                  disabled={isLoading || !request}
+                  className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
+                    isLoading || !request ? "opacity-50" : ""
+                  }`}
                   activeOpacity={0.7}
                 >
                   <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
@@ -204,8 +350,18 @@ export function RegisterScreen() {
               </View>
             </View>
 
+            {/* OTP Option */}
+            <TouchableOpacity
+              onPress={() => router.push("/verify-phone")}
+              className="w-full py-3.5 bg-white border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm mb-2"
+              activeOpacity={0.7}
+            >
+              <Feather name="shield" size={16} color="#475569" style={{ marginRight: 8 }} />
+              <Text className="text-slate-800 font-bold text-sm">Sign up with OTP</Text>
+            </TouchableOpacity>
+
             {/* OR Separator */}
-            <View className="flex-row items-center mb-6">
+            <View className="flex-row items-center mb-6 mt-4">
               <View className="flex-1 h-px bg-slate-200" />
               <Text className="mx-4 text-xs font-medium text-slate-400">or</Text>
               <View className="flex-1 h-px bg-slate-200" />
@@ -410,7 +566,7 @@ export function RegisterScreen() {
                 <View
                   className={`w-5 h-5 border rounded mr-3 items-center justify-center ${
                     agreedToTerms
-                      ? "bg-slate-700 border-slate-700"
+                      ? "bg-[#3b82f6] border-[#3b82f6]"
                       : errors.terms
                         ? "border-red-400"
                         : "border-slate-300"
@@ -429,7 +585,7 @@ export function RegisterScreen() {
 
             {/* Action Sign Up Button */}
             <TouchableOpacity
-              className={`bg-slate-700 py-4 rounded-2xl items-center justify-center shadow-lg shadow-slate-300 mb-6 ${
+              className={`bg-[#3b82f6] py-4 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 mb-6 ${
                 isLoading ? "opacity-75" : ""
               }`}
               disabled={isLoading}
