@@ -48,6 +48,18 @@ export function Step3SkillsScreen() {
   // Helper unique keys builder
   const makeId = () => `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+  const resetProjForm = () => {
+    setProjForm({
+      name: "",
+      date: "",
+      description: "",
+      technologies: [],
+    });
+    setEditingProjId(null);
+    setProjErrors({});
+    setTechInput("");
+  };
+
   // Project Handlers
   const validateProj = () => {
     const errs: Record<string, string> = {};
@@ -237,7 +249,10 @@ export function Step3SkillsScreen() {
         visible={showProjModal}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowProjModal(false)}
+        onRequestClose={() => {
+          setShowProjModal(false);
+          resetProjForm();
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -246,7 +261,12 @@ export function Step3SkillsScreen() {
                 <Text style={styles.modalTitle}>
                   {editingProjId ? "Edit Project Details" : "Add Project Details"}
                 </Text>
-                <Pressable onPress={() => setShowProjModal(false)}>
+                <Pressable
+                  onPress={() => {
+                    setShowProjModal(false);
+                    resetProjForm();
+                  }}
+                >
                   <MaterialIcons name="close" size={20} color="#374151" />
                 </Pressable>
               </View>

@@ -30,13 +30,27 @@ export function validatePhoneDigits(
   code: string,
   phone: string,
 ): { isValid: boolean; message: string } {
-  const cleaned = phone.replace(/\D/g, "");
+  // Strip country code prefix from phone number if prepended
+  let phoneWithoutCode = phone.trim();
+  const cleanCode = code.replace(/\D/g, ""); // e.g. "+91" -> "91"
+
+  if (phoneWithoutCode.startsWith("+")) {
+    if (phoneWithoutCode.startsWith(code)) {
+      phoneWithoutCode = phoneWithoutCode.slice(code.length).trim();
+    }
+  } else if (cleanCode && phoneWithoutCode.replace(/\D/g, "").startsWith(cleanCode)) {
+    const digitsOnly = phoneWithoutCode.replace(/\D/g, "");
+    phoneWithoutCode = digitsOnly.slice(cleanCode.length);
+  }
+
+  const cleaned = phoneWithoutCode.replace(/\D/g, "");
   const expected = getExpectedDigitCount(code);
+
   if (!cleaned) {
     return { isValid: false, message: "Phone number is required" };
   }
-  if (cleaned.length < expected - 1 || cleaned.length > expected + 1) {
-    return { isValid: false, message: `Expected approx ${expected} digits for ${code}` };
+  if (cleaned.length !== expected) {
+    return { isValid: false, message: `Expected exactly ${expected} digits for ${code}` };
   }
   return { isValid: true, message: "Valid phone number format" };
 }

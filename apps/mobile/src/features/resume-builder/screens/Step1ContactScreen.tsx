@@ -7,6 +7,8 @@ import {
   TextInput as RNTextInput,
   Modal,
   FlatList,
+  Alert,
+  Platform,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -31,8 +33,10 @@ import {
 } from "@/utils/phoneValidation";
 import { getLocationSuggestions, type LocationSuggestion } from "@/utils/locationAutocomplete";
 import { useAutoSave } from "../hooks/useAutoSave";
+import { useRouter } from "expo-router";
 
 export function Step1ContactScreen() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const photoUrl = useAppSelector(selectBuilderPhotoUrl);
@@ -43,18 +47,13 @@ export function Step1ContactScreen() {
   const summary = draftResume.summary;
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [selectedCountryCode, setSelectedCountryCode] = useState("+91");
-  const [phoneValidation, setPhoneValidation] = useState<{
-    message: string;
-    isValid: boolean;
-  } | null>(null);
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   const [showCountryCodeModal, setShowCountryCodeModal] = useState(false);
   const [countryCodeSearch, setCountryCodeSearch] = useState("");
 
   // Extract phone number suffix if it already contains the country code
-  const getInitialPhone = () => {
+  const getInitialPhone = (): string => {
     if (!contact.phone) return "";
     const parts = contact.phone.split(" ");
     if (parts.length > 1) {
@@ -62,7 +61,99 @@ export function Step1ContactScreen() {
     }
     return contact.phone;
   };
-  const [phoneNumber, setPhoneNumber] = useState(getInitialPhone());
+
+  // Extract country code if present, default to +91
+  const getInitialCountryCode = (): string => {
+    if (!contact.phone) return "+91";
+    const parts = contact.phone.split(" ");
+    if (parts.length > 1 && parts[0]?.startsWith("+")) {
+      return parts[0] || "+91";
+    }
+    if (contact.phone.startsWith("+")) {
+      const match = getCountryCodesList().find((item) => contact.phone.startsWith(item.code));
+      if (match) return match.code;
+    }
+    return "+91";
+  };
+
+  const initialCountryCode = getInitialCountryCode();
+  const initialPhone = getInitialPhone();
+
+  const [selectedCountryCode, setSelectedCountryCode] = useState<string>(initialCountryCode);
+  const [phoneNumber, setPhoneNumber] = useState<string>(initialPhone);
+  const [phoneValidation, setPhoneValidation] = useState<{
+    message: string;
+    isValid: boolean;
+  } | null>(() => {
+    if (initialPhone.trim().length > 0) {
+      return validatePhoneDigits(initialCountryCode, initialPhone);
+    }
+    return null;
+  });
+
+  // Sync state if Redux draft phone updates (e.g. after async loading or reset)
+  React.useEffect(() => {
+    const currentCombined = `${selectedCountryCode} ${phoneNumber}`.trim();
+    const reduxPhone = (contact.phone || "").trim();
+    if (reduxPhone !== currentCombined) {
+      if (reduxPhone) {
+        const parts = reduxPhone.split(" ");
+        let code = "+91";
+        let num = reduxPhone;
+        if (parts.length > 1 && parts[0]?.startsWith("+")) {
+          code = parts[0] || "+91";
+          num = parts.slice(1).join(" ");
+        } else if (reduxPhone.startsWith("+")) {
+          const match = getCountryCodesList().find((item) => reduxPhone.startsWith(item.code));
+          if (match) {
+            code = match.code;
+            num = reduxPhone.slice(match.code.length).trim();
+          }
+        }
+        setSelectedCountryCode(code);
+        setPhoneNumber(num);
+        if (num.trim().length > 0) {
+          setPhoneValidation(validatePhoneDigits(code, num));
+        } else {
+          setPhoneValidation(null);
+        }
+      } else {
+        // Redux phone is empty (e.g. after reset) - clear local input state
+        setSelectedCountryCode("+91");
+        setPhoneNumber("");
+        setPhoneValidation(null);
+      }
+    }
+  }, [contact.phone, selectedCountryCode, phoneNumber]);
+
+  const handleCancel = () => {
+    const title = "Exit Resume Builder";
+    const message = "Are you sure you want to exit? Your progress is saved as a draft.";
+
+    const performExit = () => {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace("/");
+      }
+    };
+
+    if (Platform.OS === "web") {
+      const confirmExit = window.confirm(`${title}\n\n${message}`);
+      if (confirmExit) {
+        performExit();
+      }
+    } else {
+      Alert.alert(title, message, [
+        { text: "Continue Editing", style: "cancel" },
+        {
+          text: "Exit",
+          style: "destructive",
+          onPress: performExit,
+        },
+      ]);
+    }
+  };
 
   // Hook up debounced auto-save
   useAutoSave();
@@ -219,7 +310,7 @@ export function Step1ContactScreen() {
                   {phoneValidation.isValid ? "✓ " : "ℹ "} {phoneValidation.message}
                 </Text>
               )}
-              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+              {!!errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
             </View>
 
             {/* Location Autocomplete input */}
@@ -319,7 +410,10 @@ export function Step1ContactScreen() {
 
           {/* Navigation Buttons footer */}
           <View style={styles.footerRow}>
-            <View style={{ flex: 1 }} />
+            <Pressable onPress={handleCancel} style={styles.backButton}>
+              <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
+              <Text style={styles.backButtonText}>Cancel</Text>
+            </Pressable>
             <Pressable onPress={handleNext} style={styles.nextButton}>
               <Text style={styles.nextButtonText}>Next Screen</Text>
               <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
@@ -364,6 +458,7 @@ export function Step1ContactScreen() {
                     setPhoneValidation(null);
                     setShowCountryCodeModal(false);
                     setCountryCodeSearch("");
+                    dispatch(updateContact({ phone: `${item.code} ` }));
                   }}
                 >
                   <Text style={styles.countryCode}>{item.code}</Text>
@@ -574,6 +669,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     color: "white",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#374151",
   },
   modalBackdrop: {
     flex: 1,

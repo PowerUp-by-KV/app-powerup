@@ -55,7 +55,7 @@ export function useAutoSave() {
         clearTimeout(timerRef.current);
       }
     };
-  }, [isDirty, performSave]);
+  }, [isDirty, draftResume, performSave]);
 
   return { isSaving: isLoading };
 }

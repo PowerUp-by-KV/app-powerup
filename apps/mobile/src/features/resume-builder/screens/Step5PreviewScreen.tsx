@@ -15,6 +15,7 @@ import {
   selectBuilderDraft,
   selectBuilderIsSaving,
   selectBuilderLastSavedAt,
+  selectBuilderIsDirty,
   setCurrentStep,
   updateSummary,
   updateExperience,
@@ -35,6 +36,7 @@ export function Step5PreviewScreen() {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
+  const isDirty = useAppSelector(selectBuilderIsDirty);
   const lastSavedAt = useAppSelector(selectBuilderLastSavedAt);
 
   const [triggerExport, { isFetching: isExporting }] = useLazyExportBuiltResumePdfQuery();
@@ -63,7 +65,14 @@ export function Step5PreviewScreen() {
     }
   };
 
-  const handleDone = () => {
+  const handleDone = async () => {
+    if (isDirty) {
+      try {
+        await updateBuiltResume(draftResume).unwrap();
+      } catch (error) {
+        console.warn("Final save before exit failed:", error);
+      }
+    }
     dispatch(resetBuilderState());
     router.replace("/");
   };
@@ -343,9 +352,22 @@ export function Step5PreviewScreen() {
               <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
               <Text style={styles.backButtonText}>Back</Text>
             </Pressable>
-            <Pressable onPress={handleDone} style={styles.doneButton}>
-              <Text style={styles.doneButtonText}>Finish Wizard</Text>
-              <Feather name="check" size={16} color="white" style={{ marginLeft: 6 }} />
+            <Pressable
+              onPress={handleDone}
+              disabled={isExporting || isForceSaving}
+              style={[
+                styles.doneButton,
+                (isExporting || isForceSaving) && styles.doneButtonDisabled,
+              ]}
+            >
+              {isForceSaving ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <Text style={styles.doneButtonText}>Finish Wizard</Text>
+                  <Feather name="check" size={16} color="white" style={{ marginLeft: 6 }} />
+                </>
+              )}
             </Pressable>
           </View>
         </View>
@@ -652,6 +674,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
+  },
+  doneButtonDisabled: {
+    backgroundColor: "#93c5fd",
   },
   doneButtonText: {
     fontSize: 14,

@@ -2,10 +2,12 @@ import React, { useEffect } from "react";
 import { View, ActivityIndicator, StyleSheet, SafeAreaView } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useLocalSearchParams } from "expo-router";
 import {
   selectBuilderCurrentStep,
   hydrateResume,
   setCurrentStep,
+  resetBuilderState,
 } from "@/store/slices/resume-builder.slice";
 import { useGetBuiltResumeQuery } from "@/services/resume-builder-api";
 import { StepWizard } from "../components/StepWizard";
@@ -18,18 +20,29 @@ import { Step5PreviewScreen } from "./Step5PreviewScreen";
 export function ResumeBuilderWizard() {
   const dispatch = useAppDispatch();
   const currentStep = useAppSelector(selectBuilderCurrentStep);
+  const { mode } = useLocalSearchParams<{ mode?: "scratch" | "draft" }>();
+  const isScratchMode = mode === "scratch";
 
-  // Trigger hydration from GET /api/v1/resume-builder
-  const { data: draft, isLoading } = useGetBuiltResumeQuery();
+  // Reset builder state if starting from scratch
+  useEffect(() => {
+    if (isScratchMode) {
+      dispatch(resetBuilderState());
+    }
+  }, [isScratchMode, dispatch]);
+
+  // Trigger hydration from GET /api/v1/resume-builder (skip if in scratch mode)
+  const { data: draft, isLoading } = useGetBuiltResumeQuery(undefined, {
+    skip: isScratchMode,
+  });
 
   useEffect(() => {
-    if (draft) {
+    if (!isScratchMode && draft) {
       dispatch(hydrateResume(draft));
     }
-  }, [draft, dispatch]);
+  }, [draft, isScratchMode, dispatch]);
 
   // If loading, show standard premium spinner
-  if (isLoading) {
+  if (!isScratchMode && isLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2563eb" />
