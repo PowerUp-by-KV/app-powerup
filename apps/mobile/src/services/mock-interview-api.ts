@@ -108,7 +108,7 @@ export interface GetInterviewResultsResponse {
 // ---------------------------------------------------------------------------
 
 const mockInterviewApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     // ── 1. Start a new session ─────────────────────────────────────────────
     startInterview: builder.mutation<StartInterviewResponse, StartInterviewRequest>({

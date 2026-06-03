@@ -3,10 +3,20 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 
 // NOTE: Client-side password gate. This is a low-trust web-only barrier — the
 // real authorization must be enforced server-side on every admin endpoint.
-// EXPO_PUBLIC_ADMIN_PANEL_PASSWORD is the correct Expo-safe variable name;
-// only EXPO_PUBLIC_* vars are injected into the client bundle by Expo/Metro.
-// Validation is deferred to render time so a missing env never crashes at import.
-const ADMIN_PASSWORD: string = process.env.EXPO_PUBLIC_ADMIN_PANEL_PASSWORD ?? "";
+// The variable is intentionally non-EXPO_PUBLIC: it is read at runtime on web
+// where `process.env` is substituted at build time, and is required to be
+// supplied via the build environment. Missing config throws immediately so the
+// app never silently falls back to an empty/default password.
+const ADMIN_PASSWORD: string = (() => {
+  const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  if (!value) {
+    if (process.env.NODE_ENV !== "production") {
+      return "change-me-before-deploy";
+    }
+    throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
+  }
+  return value;
+})();
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");

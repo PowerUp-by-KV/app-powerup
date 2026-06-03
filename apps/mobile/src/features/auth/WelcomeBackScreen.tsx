@@ -1,18 +1,23 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 
-import { useGetProfileQuery } from "@/services/auth-api";
-import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
+import { getAuthSession } from "@/services/auth-storage";
 import { AuthSuccessScreen } from "./components/AuthSuccessScreen";
 
 export function WelcomeBackScreen() {
   const router = useRouter();
-  const { data: profile } = useGetProfileQuery();
-  const { data: onboardingStatus } = useGetOnboardingStatusQuery(profile?.id ?? "", {
-    skip: !profile?.id,
-  });
-  const name = profile?.name?.split(" ")[0] ?? "there";
-  const isComplete = onboardingStatus?.profile_completed || profile?.profile_completed;
+  const [userName, setUserName] = useState("there");
+
+  useEffect(() => {
+    getAuthSession().then(async (session) => {
+      if (session?.user) {
+        const firstName = session.user.name?.split(" ")[0] ?? "there";
+        setUserName(firstName);
+      }
+    });
+  }, []);
+
+  const name = userName;
 
   return (
     <AuthSuccessScreen
@@ -20,11 +25,7 @@ export function WelcomeBackScreen() {
       subtitle={`Good to see you again, ${name}. You've successfully signed in.`}
       cta="Get Started"
       onCta={() => {
-        if (isComplete) {
-          router.replace("/my-learning" as any);
-        } else {
-          router.replace("/onboarding");
-        }
+        router.replace("/(tabs)/my-learning" as never);
       }}
     />
   );

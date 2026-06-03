@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import type { ActivityQuestion } from "@powerup/shared";
 
 import { AnswerResultSheet } from "./AnswerResultSheet";
+import { SpeedMatchingGame } from "./SpeedMatchingGame";
 
 export interface McqActivityResult {
   /** Whether the user passed the activity overall (≥ 70% correct). */
@@ -33,6 +34,11 @@ function asOption(opt: unknown): { id: string; text: string } {
  * Builds an aggregate pass/fail across the question set when the user finishes.
  */
 export function McqActivity({ questions, onComplete, isNested = false }: McqActivityProps) {
+  const isSpeedMatching = useMemo(
+    () => questions.some((q) => q.question_type === "speed_matching"),
+    [questions],
+  );
+
   const mcqs = useMemo(
     () =>
       questions.filter(
@@ -98,6 +104,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
       isParsed: false,
     };
   }, [current]);
+
+  if (isSpeedMatching) {
+    return <SpeedMatchingGame questions={questions} onComplete={onComplete} />;
+  }
 
   if (!current) {
     return (

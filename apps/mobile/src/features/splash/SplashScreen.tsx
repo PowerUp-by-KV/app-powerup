@@ -22,7 +22,7 @@ export function SplashScreen() {
         }),
       ]),
     ).start();
-  }, []);
+  }, [floatAnim]);
 
   const handleStart = () => {
     router.replace("/login");
