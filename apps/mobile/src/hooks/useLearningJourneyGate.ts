@@ -83,11 +83,13 @@ export function useLearningJourneyGate(): LearningJourneyGate {
 
   // Pre-assessment completion status is determined by:
   // - Populated cefr_range on live user profile (already finished and scored)
-  // - Backend session's not_completed_sections list being empty
+  // - Backend session has no remaining sections AND at least one completed section
+  //   (empty not_completed alone is not enough — a brand-new session also returns [] for both)
   let assessmentDone = isCefrDone;
   if (!isCefrDone && assessmentSession) {
     const notCompleted = assessmentSession.not_completed_sections || [];
-    assessmentDone = notCompleted.length === 0;
+    const completed = assessmentSession.completed_sections || [];
+    assessmentDone = notCompleted.length === 0 && completed.length > 0;
   }
 
   const canEnter = profileDone && assessmentDone;
