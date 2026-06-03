@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { StageStatus } from "../types";
 
 const STAGES = [
   { label: "Reading Resume Data", icon: "file-text" as const, durationMs: 1200 },
@@ -11,13 +12,82 @@ const STAGES = [
   { label: "Finalizing Report", icon: "check-circle" as const, durationMs: 1000 },
 ];
 
-type StageStatus = "pending" | "active" | "done";
+function getLoadingMessage(stage: string, status: string, score?: number): string {
+  const s = stage.toLowerCase();
+  const st = status.toLowerCase();
 
-export function AnalysisLoadingStep() {
-  const [stageStatuses, setStageStatuses] = useState<StageStatus[]>(
-    STAGES.map((_, i) => (i === 0 ? "active" : "pending")),
-  );
+  if (s === "extraction") {
+    if (st === "started") {
+      return "Extracting resume content and identifying sections...";
+    }
+    return "Resume content extracted successfully.";
+  }
+  if (s === "ats") {
+    if (st === "started") {
+      return "Running ATS compatibility analysis...";
+    }
+    return `ATS analysis completed • Score ${score ?? 0}/20`;
+  }
+  if (s === "ai") {
+    if (st === "started") {
+      return "Evaluating resume quality with AI...";
+    }
+    return "Generating personalized recommendations...";
+  }
+  if (s === "done") {
+    return "Analysis complete. Preparing your report...";
+  }
+  return "Analyzing resume...";
+}
 
+function getProgress(stage: string, status: string): number {
+  const s = stage.toLowerCase();
+  const st = status.toLowerCase();
+
+  if (s === "extraction") {
+    return st === "started" ? 10 : 25;
+  }
+  if (s === "ats") {
+    return st === "started" ? 35 : 55;
+  }
+  if (s === "ai") {
+    return st === "started" ? 70 : 90;
+  }
+  if (s === "done") {
+    return 100;
+  }
+  return 10;
+}
+
+function getStageBadgeText(stage: string): string {
+  const s = stage.toLowerCase();
+  if (s === "extraction") return "RESUME EXTRACTION";
+  if (s === "ats") return "ATS ANALYSIS";
+  if (s === "ai") return "AI ANALYSIS";
+  if (s === "done") return "FINALIZING REPORT";
+  return "ANALYZING";
+}
+
+function getStatusBadgeText(status: string): string {
+  const st = status.toLowerCase();
+  if (st === "started") return "Started";
+  if (st === "completed") return "Completed";
+  return "Processing";
+}
+
+interface AnalysisLoadingStepProps {
+  stageStatuses: StageStatus[];
+  stage: string;
+  status: string;
+  score?: number;
+}
+
+export function AnalysisLoadingStep({
+  stageStatuses,
+  stage,
+  status,
+  score,
+}: AnalysisLoadingStepProps) {
   // Pulse animation for the active stage dot
   const pulse = React.useRef(new Animated.Value(1)).current;
 
@@ -32,30 +102,31 @@ export function AnalysisLoadingStep() {
     return () => anim.stop();
   }, [pulse]);
 
-  // Staged timer: advance each stage after its duration
+  const targetProgress = getProgress(stage, status);
+  const animatedProgress = React.useRef(new Animated.Value(targetProgress)).current;
+  const [displayPercent, setDisplayPercent] = React.useState(targetProgress);
+
   useEffect(() => {
-    let current = 0;
-    let timeout: ReturnType<typeof setTimeout>;
+    Animated.timing(animatedProgress, {
+      toValue: targetProgress,
+      duration: 800,
+      useNativeDriver: false,
+    }).start();
+  }, [targetProgress, animatedProgress]);
 
-    const advance = () => {
-      if (current >= STAGES.length - 1) return;
-      const stageDuration = STAGES[current]?.durationMs ?? 1000;
-      timeout = setTimeout(() => {
-        current++;
-        setStageStatuses((prev) =>
-          prev.map((s, i) => {
-            if (i < current) return "done";
-            if (i === current) return "active";
-            return "pending";
-          }),
-        );
-        advance();
-      }, stageDuration);
+  useEffect(() => {
+    const id = animatedProgress.addListener(({ value }) => {
+      setDisplayPercent(Math.round(value));
+    });
+    return () => {
+      animatedProgress.removeListener(id);
     };
+  }, [animatedProgress]);
 
-    advance();
-    return () => clearTimeout(timeout);
-  }, []);
+  const progressWidth = animatedProgress.interpolate({
+    inputRange: [0, 100],
+    outputRange: ["0%", "100%"],
+  });
 
   const activeIndex = stageStatuses.findIndex((s) => s === "active");
 
@@ -72,15 +143,55 @@ export function AnalysisLoadingStep() {
       <Text style={styles.title}>Analyzing Resume</Text>
       <Text style={styles.subtitle}>Our AI is scanning your resume against your target domain</Text>
 
+      {/* Dynamic Progress and Messages Area */}
+      <View style={styles.progressContainer}>
+        <View style={styles.badgeRow}>
+          <View style={styles.stageBadge}>
+            <Text style={styles.stageBadgeText}>{getStageBadgeText(stage)}</Text>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              status.toLowerCase() === "completed"
+                ? styles.statusBadgeCompleted
+                : styles.statusBadgeProcessing,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusBadgeText,
+                status.toLowerCase() === "completed"
+                  ? styles.statusBadgeTextCompleted
+                  : styles.statusBadgeTextProcessing,
+              ]}
+            >
+              {getStatusBadgeText(status)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressLabel}>Progress</Text>
+            <Text style={styles.percentageText}>{displayPercent}%</Text>
+          </View>
+          <View style={styles.progressBarBg}>
+            <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+          </View>
+        </View>
+
+        <Text style={styles.loadingMessage}>{getLoadingMessage(stage, status, score)}</Text>
+      </View>
+
       {/* Stages list */}
       <View style={styles.stagesList}>
-        {STAGES.map((stage, idx) => {
-          const status = stageStatuses[idx];
-          const isDone = status === "done";
-          const isActive = status === "active";
+        {STAGES.map((stageItem, idx) => {
+          const statusVal = stageStatuses[idx];
+          const isDone = statusVal === "done";
+          const isActive = statusVal === "active";
 
           return (
-            <View key={stage.label} style={styles.stageRow}>
+            <View key={stageItem.label} style={styles.stageRow}>
               {/* Status indicator */}
               <View
                 style={[
@@ -103,7 +214,12 @@ export function AnalysisLoadingStep() {
                 <View
                   style={[
                     styles.connectorLine,
-                    idx < (activeIndex >= 0 ? activeIndex : 0) && styles.connectorLineDone,
+                    idx <
+                      (activeIndex >= 0
+                        ? activeIndex
+                        : stageStatuses[STAGES.length - 1] === "done"
+                          ? STAGES.length
+                          : 0) && styles.connectorLineDone,
                   ]}
                 />
               )}
@@ -116,7 +232,7 @@ export function AnalysisLoadingStep() {
                   isActive && styles.stageLabelActive,
                 ]}
               >
-                {stage.label}
+                {stageItem.label}
               </Text>
             </View>
           );
@@ -172,8 +288,103 @@ const styles = StyleSheet.create({
     color: "#64748b",
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 36,
+    marginBottom: 20,
     maxWidth: 280,
+  },
+  progressContainer: {
+    width: "100%",
+    maxWidth: 340,
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    marginBottom: 24,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
+  stageBadge: {
+    backgroundColor: "rgba(79, 70, 229, 0.08)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  stageBadgeText: {
+    color: "#4f46e5",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  statusBadgeProcessing: {
+    backgroundColor: "#f1f5f9",
+    borderColor: "#e2e8f0",
+  },
+  statusBadgeCompleted: {
+    backgroundColor: "#d1fae5",
+    borderColor: "#a7f3d0",
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  statusBadgeTextProcessing: {
+    color: "#64748b",
+  },
+  statusBadgeTextCompleted: {
+    color: "#065f46",
+  },
+  progressSection: {
+    marginBottom: 12,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  progressLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748b",
+  },
+  percentageText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#4f46e5",
+  },
+  progressBarBg: {
+    height: 6,
+    backgroundColor: "#e2e8f0",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: "#4f46e5",
+    borderRadius: 3,
+  },
+  loadingMessage: {
+    fontSize: 13,
+    color: "#334155",
+    fontWeight: "500",
+    lineHeight: 18,
+    textAlign: "center",
+    marginTop: 4,
   },
   stagesList: {
     width: "100%",

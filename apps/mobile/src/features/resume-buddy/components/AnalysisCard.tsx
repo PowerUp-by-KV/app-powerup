@@ -9,6 +9,7 @@ interface AnalysisCardProps {
 }
 
 export function AnalysisCard({ items, type, title }: AnalysisCardProps) {
+  const itemsVal = items ?? [];
   const isStrength = type === "strength";
   const isWeakness = type === "weakness";
 
@@ -44,10 +45,10 @@ export function AnalysisCard({ items, type, title }: AnalysisCardProps) {
           {title}
         </Text>
       </View>
-      {items.length === 0 ? (
+      {itemsVal.length === 0 ? (
         <Text className="text-slate-400 text-sm italic">None detected</Text>
       ) : (
-        items.map((item, idx) => (
+        itemsVal.map((item, idx) => (
           <View key={`${item}-${idx}`} className="flex-row items-start mt-2">
             <Feather name="arrow-right" size={12} color={iconColor} style={{ marginTop: 4 }} />
             <Text className={`text-sm ml-2 flex-1 leading-5 ${textColor}`}>{item}</Text>

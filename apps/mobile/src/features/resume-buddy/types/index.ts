@@ -4,6 +4,12 @@ export interface ResumeBuddyAnalyzeRequest {
   domain: string;
 }
 
+export interface ResumeBuddyAnalyzeResponse {
+  job_id: string;
+}
+
+export type StageStatus = "pending" | "active" | "done";
+
 // ─── Analysis Response ────────────────────────────────────────────────────────
 
 export interface ResumeBuddyCriterionScore {

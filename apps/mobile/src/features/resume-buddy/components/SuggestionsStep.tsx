@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { SkillChip } from "./SkillChip";
 import { AnalysisCard } from "./AnalysisCard";
 
@@ -8,6 +9,7 @@ interface SuggestionsStepProps {
   recommendedTech: string[];
   atsFindings: string[];
   suggestions: string[];
+  qualitySummary?: string;
   onNext: () => void;
 }
 
@@ -16,8 +18,16 @@ export function SuggestionsStep({
   recommendedTech,
   atsFindings,
   suggestions,
+  qualitySummary,
   onNext,
 }: SuggestionsStepProps) {
+  // Defensive fallbacks
+  const missingSkillsVal = missingSkills ?? [];
+  const recommendedTechVal = recommendedTech ?? [];
+  const atsFindingsVal = atsFindings ?? [];
+  const suggestionsVal = suggestions ?? [];
+  const qualitySummaryVal = qualitySummary ?? "";
+
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -31,16 +41,30 @@ export function SuggestionsStep({
           Personalized skill alignments and ATS layout diagnostics
         </Text>
 
+        {/* Resume Quality Summary */}
+        {qualitySummaryVal ? (
+          <View className="bg-indigo-50 border border-indigo-100 rounded-3xl p-5 mb-5 shadow-sm">
+            <View className="flex-row items-center mb-2.5">
+              <Feather name="award" size={20} color="#4f46e5" />
+              <Text className="text-slate-900 font-extrabold text-base ml-2">
+                Resume Quality Summary
+              </Text>
+            </View>
+            <Text className="text-slate-700 text-sm leading-5">{qualitySummaryVal}</Text>
+          </View>
+        ) : null}
+
         {/* Missing Skills Section */}
         <View className="bg-white border border-slate-200/60 rounded-3xl p-5 mb-5 shadow-sm">
           <Text className="text-slate-900 font-extrabold text-base mb-3">Missing Skills</Text>
-          {missingSkills.length === 0 ? (
-            <Text className="text-slate-400 text-sm italic">All target skills are matched!</Text>
+          {missingSkillsVal.length === 0 ? (
+            <Text className="text-slate-400 text-sm italic">No critical skills missing.</Text>
           ) : (
             <View className="flex-row flex-wrap">
-              {missingSkills.map((s, idx) => (
-                <SkillChip key={`${s}-${idx}`} label={s} variant="missing" />
-              ))}
+              {missingSkillsVal.map((s, idx) => {
+                if (!s) return null;
+                return <SkillChip key={`${s}-${idx}`} label={s} variant="missing" />;
+              })}
             </View>
           )}
         </View>
@@ -50,20 +74,25 @@ export function SuggestionsStep({
           <Text className="text-slate-900 font-extrabold text-base mb-3">
             Recommended Tech Stack
           </Text>
-          {recommendedTech.length === 0 ? (
+          {recommendedTechVal.length === 0 ? (
             <Text className="text-slate-400 text-sm italic">No extra tech stack recommended</Text>
           ) : (
             <View className="flex-row flex-wrap">
-              {recommendedTech.map((t, idx) => (
-                <SkillChip key={`${t}-${idx}`} label={t} variant="recommended" />
-              ))}
+              {recommendedTechVal.map((t, idx) => {
+                if (!t) return null;
+                return <SkillChip key={`${t}-${idx}`} label={t} variant="recommended" />;
+              })}
             </View>
           )}
         </View>
 
         {/* ATS Findings and Suggestions list */}
-        <AnalysisCard items={atsFindings} type="finding" title="ATS Layout Findings" />
-        <AnalysisCard items={suggestions} type="suggestion" title="Personalized Suggestions" />
+        {atsFindingsVal.length > 0 && (
+          <AnalysisCard items={atsFindingsVal} type="finding" title="ATS Layout Findings" />
+        )}
+        {suggestionsVal.length > 0 && (
+          <AnalysisCard items={suggestionsVal} type="suggestion" title="Personalized Suggestions" />
+        )}
       </ScrollView>
 
       {/* Sticky footer */}
