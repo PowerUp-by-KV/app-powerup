@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
@@ -7,7 +7,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import type { Activity } from "@powerup/shared";
 
 import {
   useCompleteActivityMutation,
@@ -33,22 +32,16 @@ export function ModuleScreen() {
   } = useGetDayActivitiesQuery(dayId, {
     skip: !dayId,
   });
-  const [activitiesToPlay, setActivitiesToPlay] = useState<Activity[]>([]);
+  const activitiesToPlay = useMemo(() => {
+    const incomplete = activities.filter((act) => !act.passed);
+    return incomplete.length > 0 ? incomplete : activities;
+  }, [activities]);
+
   const [activityIdx, setActivityIdx] = useState(0);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (activities.length > 0 && !isInitialized) {
-      const incomplete = activities.filter((act) => !act.passed);
-      if (incomplete.length > 0) {
-        setActivitiesToPlay(incomplete);
-      } else {
-        setActivitiesToPlay(activities);
-      }
-      setActivityIdx(0);
-      setIsInitialized(true);
-    }
-  }, [activities, isInitialized]);
+    setActivityIdx(0);
+  }, [activities]);
 
   const currentActivity = activitiesToPlay[activityIdx];
 
@@ -186,8 +179,7 @@ export function ModuleScreen() {
     actsFetching ||
     qFetching ||
     isCompleting ||
-    !currentActivity ||
-    (activitiesToPlay.length > 0 && !isInitialized)
+    !currentActivity
   ) {
     return <GamifiedMascotLoader title="Loading Activities..." />;
   }

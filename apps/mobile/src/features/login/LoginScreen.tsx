@@ -13,7 +13,7 @@ import {
   View,
 } from "react-native";
 
-import { Feather, AntDesign } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
@@ -154,16 +154,7 @@ export function LoginScreen() {
               <Text className="text-sm text-slate-400 mt-1">Sign in to continue your learning</Text>
             </View>
 
-            <View className="flex-row justify-between w-full mt-2">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm mr-2">
-                <AntDesign name="google" size={18} color="#DB4437" className="mr-2" />
-                <Text className="text-slate-700 font-bold text-sm">Google</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center bg-white border border-slate-200 rounded-xl py-3.5 shadow-sm ml-2">
-                <AntDesign name="github" size={18} color="#333" className="mr-2" />
-                <Text className="text-slate-700 font-bold text-sm">Github</Text>
-              </TouchableOpacity>
-            </View>
+
 
             <TouchableOpacity
               onPress={() => router.push("/login-otp")}

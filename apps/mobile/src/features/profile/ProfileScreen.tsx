@@ -128,10 +128,17 @@ export function ProfileScreen() {
     const weekEnd = displayedDays[6];
     if (!weekStart || !weekEnd) return "";
 
-    const startMonth = new Date(weekStart.date).toLocaleString("en-US", { month: "short" });
-    const endMonth = new Date(weekEnd.date).toLocaleString("en-US", { month: "short" });
-    const startDay = new Date(weekStart.date).getDate();
-    const endDay = new Date(weekEnd.date).getDate();
+    const parseLocalDate = (dateStr: string) => {
+      return new Date(dateStr.replace(/-/g, "/"));
+    };
+
+    const startDate = parseLocalDate(weekStart.date);
+    const endDate = parseLocalDate(weekEnd.date);
+
+    const startMonth = startDate.toLocaleString("en-US", { month: "short" });
+    const endMonth = endDate.toLocaleString("en-US", { month: "short" });
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
 
     if (startMonth === endMonth) {
       return `${startMonth} ${startDay} – ${endDay}`;

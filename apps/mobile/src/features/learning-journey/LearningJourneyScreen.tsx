@@ -39,8 +39,7 @@ import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
 
-import { CefrProgressBar } from "./components/CefrProgressBar";
-import { TimelineRow } from "./components/TimelineRow";
+
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -386,12 +385,10 @@ export function LearningJourneyScreen() {
   // - Level 2: showModules === true && selectedModuleId === null (Modules list view)
   // - Level 3: selectedModuleId !== null (Days list view)
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-  const [showModules, setShowModules] = useState(false);
 
   useEffect(() => {
     if (params?.module_id) {
       setSelectedModuleId(params.module_id);
-      setShowModules(true);
     }
   }, [params?.module_id]);
   const {
@@ -450,10 +447,7 @@ export function LearningJourneyScreen() {
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
 
-  const handlePreAssessmentPress = () => {
-    setShowPreAssessmentModal(true);
-    refetchProfile();
-  };
+
 
   const {
     data: personalizedPath,
@@ -492,9 +486,7 @@ export function LearningJourneyScreen() {
     return null;
   }, [personalizedPath?.modules, selectedModuleId]);
 
-  const filteredModules = useMemo(() => {
-    return personalizedPath?.modules.filter((m) => m.module_no !== 0) ?? [];
-  }, [personalizedPath?.modules]);
+
 
   const activeModule = useMemo(() => {
     if (!progression?.unlocked_modules?.length) return null;
@@ -506,12 +498,6 @@ export function LearningJourneyScreen() {
     if (firstUnlocked) return firstUnlocked;
     // Fallback to first module
     return progression.unlocked_modules[0];
-  }, [progression?.unlocked_modules]);
-
-  // Derived state for the dynamically updated CEFR learning stage:
-  const isCefrCompleted = useMemo(() => {
-    if (!progression?.unlocked_modules?.length) return false;
-    return progression.unlocked_modules.every((m) => m.completed);
   }, [progression?.unlocked_modules]);
 
   const activeModuleId = selectedModule?.id || activeModule?.module_id || "";
@@ -526,12 +512,12 @@ export function LearningJourneyScreen() {
     skip: !targetModuleIdForDays,
   });
 
-  const { data: moduleProgress, refetch: refetchProgress } = useGetModuleProgressQuery(
+  const { refetch: refetchProgress } = useGetModuleProgressQuery(
     activeModuleId,
     { skip: !activeModuleId },
   );
 
-  const { data: engagement, refetch: refetchEngagement } = useGetModuleEngagementQuery(
+  const { refetch: refetchEngagement } = useGetModuleEngagementQuery(
     activeModuleId,
     { skip: !activeModuleId },
   );
@@ -684,55 +670,7 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const cefrBadgeLabel = isCefrCompleted ? "Completed" : "In Progress";
-  const cefrBadgeStyle = isCefrCompleted
-    ? timelineStyles.badgeCompleted
-    : timelineStyles.badgeInProgress;
-  const cefrCircleStyle = isCefrCompleted
-    ? timelineStyles.stageCircleCompleted
-    : timelineStyles.stageCircleInProgress;
-  const cefrIcon = isCefrCompleted ? ("check" as const) : ("edit-2" as const);
-  const cefrProgressPercent = moduleProgress?.progress_percentage ?? 0;
-  const cefrProgressLabel = isCefrCompleted
-    ? "All modules completed"
-    : moduleProgress
-      ? `${moduleProgress.completed_activities} of ${moduleProgress.total_activities} activities done`
-      : "0 activities done";
-  const cefrSubtitle = isCefrCompleted
-    ? "All modules mastered successfully!"
-    : activeModule
-      ? `Active: ${activeModule.title}`
-      : "Challenge yourself";
-  const cefrXpText = `${engagement?.xp_earned ?? 0} XP earned in this module`;
-
-  const isPostUnlocked = isCefrCompleted;
-  const postCircleStyle = isPostUnlocked
-    ? timelineStyles.stageCircleInProgress
-    : timelineStyles.stageCircleLocked;
-  const postBadgeLabel = isPostUnlocked ? "Available" : "Locked";
-  const postBadgeStyle = isPostUnlocked
-    ? timelineStyles.badgeInProgress
-    : timelineStyles.badgeLocked;
-  const postTitleStyle = isPostUnlocked
-    ? timelineStyles.stageTitle
-    : [timelineStyles.stageTitle, timelineStyles.textLocked];
-  const postIcon = isPostUnlocked ? ("edit-2" as const) : ("lock" as const);
-
-  const isResumeUnlocked = isCefrCompleted;
-  const resumeCircleStyle = isResumeUnlocked
-    ? timelineStyles.stageCircleInProgress
-    : timelineStyles.stageCircleLocked;
-  const resumeBadgeLabel = isResumeUnlocked ? "Available" : "Locked";
-  const resumeBadgeStyle = isResumeUnlocked
-    ? timelineStyles.badgeInProgress
-    : timelineStyles.badgeLocked;
-  const resumeTitleStyle = isResumeUnlocked
-    ? timelineStyles.stageTitle
-    : [timelineStyles.stageTitle, timelineStyles.textLocked];
   const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
-  const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
-
-  const totalDays = days?.length ?? 0;
 
   // Diagnostic Assessment complete flag
   const isDiagnosticComplete = isPreAssessmentDone;
@@ -1035,9 +973,11 @@ export function LearningJourneyScreen() {
                 onPress={() => {
                   if (item.isLocked) {
                     Alert.alert("Locked Day", "Please complete your Diagnostic Assessment to unlock your personalized learning path!");
+                  } else if (!item.dayObj?.id) {
+                    Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
                   } else {
                     router.push({
-                      pathname: `/learning-journey/module/${item.dayObj?.id}` as never,
+                      pathname: `/learning-journey/module/${item.dayObj.id}` as never,
                       params: {
                         module_id: targetModuleIdForDays,
                         day_number: String(item.dayNumber),
@@ -1146,13 +1086,17 @@ export function LearningJourneyScreen() {
                   {item.isInProgress && (
                     <Pressable
                       onPress={() => {
-                        router.push({
-                          pathname: `/learning-journey/module/${item.dayObj?.id}` as never,
-                          params: {
-                            module_id: targetModuleIdForDays,
-                            day_number: String(item.dayNumber),
-                          },
-                        });
+                        if (!item.dayObj?.id) {
+                          Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+                        } else {
+                          router.push({
+                            pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+                            params: {
+                              module_id: targetModuleIdForDays,
+                              day_number: String(item.dayNumber),
+                            },
+                          });
+                        }
                       }}
                       style={timelineStyles.continueButton}
                     >

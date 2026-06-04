@@ -402,7 +402,7 @@ export function MedalsScreen() {
               ))}
             </View>
 
-            {/* level up yor Medal Section */}
+            {/* Level Up Your Medal Section */}
             {medalsData &&
               medalsData.level_up_progress &&
               medalsData.level_up_progress.length > 0 && (
@@ -410,7 +410,7 @@ export function MedalsScreen() {
                   <Text
                     style={{ fontSize: 18, fontWeight: "900", color: "#000000", marginBottom: 16 }}
                   >
-                    level up yor Medal
+                    Level Up Your Medal
                   </Text>
 
                   {medalsData.level_up_progress.map((p) => {

@@ -7,8 +7,8 @@ import type {
   ModuleVariant,
 } from "@powerup/shared";
 
-import { api, API_BASE_URL } from "./api";
-import { getAuthSession, saveAuthSession } from "./auth-storage";
+import { api, API_BASE_URL, refreshAccessToken } from "./api";
+import { getAuthSession } from "./auth-storage";
 
 export interface PersonalizedModuleItem {
   id: string;
@@ -186,27 +186,14 @@ export const moduleApi = api.injectEndpoints({
           });
 
           if (response.status === 401) {
-            const currentSession = await getAuthSession();
-            if (currentSession?.refresh_token) {
-              const refreshResp = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              headers["Authorization"] = `Bearer ${newToken}`;
+              response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ refresh_token: currentSession.refresh_token }),
+                headers,
+                body: formData,
               });
-              if (refreshResp.ok) {
-                const refreshed = await refreshResp.json();
-                await saveAuthSession({
-                  ...currentSession,
-                  access_token: refreshed.access_token,
-                  refresh_token: refreshed.refresh_token ?? currentSession.refresh_token,
-                });
-                headers["Authorization"] = `Bearer ${refreshed.access_token}`;
-                response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
-                  method: "POST",
-                  headers,
-                  body: formData,
-                });
-              }
             }
           }
 
