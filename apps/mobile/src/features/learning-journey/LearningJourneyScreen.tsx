@@ -655,7 +655,7 @@ export function LearningJourneyScreen() {
     return <GamifiedMascotLoader title="Loading daily roadmap..." />;
   }
 
-  if (!gate.canEnter && gate.blockedReason) {
+  if (!gate.canEnter && gate.blockedReason === "onboarding") {
     return (
       <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
@@ -695,26 +695,65 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const cefrBadgeLabel = isCefrCompleted ? "Completed" : "In Progress";
-  const cefrBadgeStyle = isCefrCompleted
-    ? timelineStyles.badgeCompleted
-    : timelineStyles.badgeInProgress;
-  const cefrCircleStyle = isCefrCompleted
-    ? timelineStyles.stageCircleCompleted
-    : timelineStyles.stageCircleInProgress;
-  const cefrIcon = isCefrCompleted ? ("check" as const) : ("edit-2" as const);
+  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
+  const completedCount = completedSections.length;
+  const totalSections = 6;
+  const progressPct = Math.round((completedCount / totalSections) * 100);
+
+  const handleStartResumeAssessment = async () => {
+    setIsStartingSession(true);
+    try {
+      const session = await startSession().unwrap();
+      router.push({
+        pathname: "/assessment-entry" as any,
+        params: { session_id: session.session_id },
+      });
+    } catch (err: any) {
+      console.error("Start/resume assessment session failed:", err);
+      Alert.alert("Error", "Could not start assessment. Please try again.");
+    } finally {
+      setIsStartingSession(false);
+    }
+  };
+
+  const cefrBadgeLabel = !isPreAssessmentDone
+    ? "Locked"
+    : isCefrCompleted
+      ? "Completed"
+      : "In Progress";
+  const cefrBadgeStyle = !isPreAssessmentDone
+    ? timelineStyles.badgeLocked
+    : isCefrCompleted
+      ? timelineStyles.badgeCompleted
+      : timelineStyles.badgeInProgress;
+  const cefrCircleStyle = !isPreAssessmentDone
+    ? timelineStyles.stageCircleLocked
+    : isCefrCompleted
+      ? timelineStyles.stageCircleCompleted
+      : timelineStyles.stageCircleInProgress;
+  const cefrIcon = !isPreAssessmentDone
+    ? ("lock" as const)
+    : isCefrCompleted
+      ? ("check" as const)
+      : ("edit-2" as const);
   const cefrProgressPercent = moduleProgress?.progress_percentage ?? 0;
-  const cefrProgressLabel = isCefrCompleted
-    ? "All modules completed"
-    : moduleProgress
-      ? `${moduleProgress.completed_activities} of ${moduleProgress.total_activities} activities done`
-      : "0 activities done";
-  const cefrSubtitle = isCefrCompleted
-    ? "All modules mastered successfully!"
-    : activeModule
-      ? `Active: ${activeModule.title}`
-      : "Challenge yourself";
-  const cefrXpText = `${engagement?.xp_earned ?? 0} XP earned in this module`;
+  const cefrProgressLabel = !isPreAssessmentDone
+    ? "Pre-assessment required"
+    : isCefrCompleted
+      ? "All modules completed"
+      : moduleProgress
+        ? `${moduleProgress.completed_activities} of ${moduleProgress.total_activities} activities done`
+        : "0 activities done";
+  const cefrSubtitle = !isPreAssessmentDone
+    ? "Complete pre-assessment to unlock"
+    : isCefrCompleted
+      ? "All modules mastered successfully!"
+      : activeModule
+        ? `Active: ${activeModule.title}`
+        : "Challenge yourself";
+  const cefrXpText = !isPreAssessmentDone
+    ? "0 XP earned"
+    : `${engagement?.xp_earned ?? 0} XP earned in this module`;
 
   const isPostUnlocked = isCefrCompleted;
   const postCircleStyle = isPostUnlocked
@@ -740,7 +779,6 @@ export function LearningJourneyScreen() {
   const resumeTitleStyle = isResumeUnlocked
     ? timelineStyles.stageTitle
     : [timelineStyles.stageTitle, timelineStyles.textLocked];
-  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
   const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
 
   const totalDays = days?.length ?? 0;
@@ -817,75 +855,116 @@ export function LearningJourneyScreen() {
             {/* Vertical timeline connector line */}
             <View style={timelineStyles.timelineVerticalLine} />
 
-            {/* Stage 1: Pre Assessment (Pressable to show scorecard) */}
-            <Pressable
-              onPress={handlePreAssessmentPress}
-              style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
-            >
-              {/* Left Circle Icon — check if completed, clock if pending */}
-              <View
-                style={[
-                  timelineStyles.stageIconCircle,
-                  isPreAssessmentDone
-                    ? timelineStyles.stageCircleCompleted
-                    : timelineStyles.stageCircleInProgress,
-                ]}
+            {/* Stage 1: Pre Assessment (Pressable to show scorecard if done, else View with action button) */}
+            {isPreAssessmentDone ? (
+              <Pressable
+                onPress={handlePreAssessmentPress}
+                style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
               >
-                <Feather name={isPreAssessmentDone ? "check" : "clock"} size={16} color="white" />
-              </View>
+                {/* Left Circle Icon — check if completed, clock if pending */}
+                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
+                  <Feather name="check" size={16} color="white" />
+                </View>
 
-              {/* Right Content */}
-              <View style={timelineStyles.stageContent}>
-                <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
-                  <View
-                    style={[
-                      timelineStyles.statusBadge,
-                      isPreAssessmentDone
-                        ? timelineStyles.badgeCompleted
-                        : timelineStyles.badgeInProgress,
-                    ]}
-                  >
-                    <Text style={timelineStyles.badgeText}>
-                      {isPreAssessmentDone
-                        ? `Level ${profile?.cefr_range || "Assessed"}`
-                        : "Pending"}
-                    </Text>
+                {/* Right Content */}
+                <View style={timelineStyles.stageContent}>
+                  <View style={timelineStyles.stageHeaderRow}>
+                    <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
+                    <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                      <Text style={timelineStyles.badgeText}>
+                        {`Level ${profile?.cefr_range || "Assessed"}`}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-                <Text style={timelineStyles.stageSubtitle}>
-                  {isPreAssessmentDone
-                    ? `Assessed proficiency: Band ${profile?.cefr_range || "Assessed"}`
-                    : "Complete the diagnostic to unlock your learning path"}
-                </Text>
-
-                {/* Thick Progress Bar */}
-                <View style={timelineStyles.progressBarBg}>
-                  <View
-                    style={[
-                      timelineStyles.progressBarFill,
-                      {
-                        width: isPreAssessmentDone ? "100%" : "0%",
-                        backgroundColor: "#475569",
-                      },
-                    ]}
-                  />
-                </View>
-
-                <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>
-                    {isPreAssessmentDone ? "Completed" : "Not started"}
+                  <Text style={timelineStyles.stageSubtitle}>
+                    {`Assessed proficiency: Band ${profile?.cefr_range || "Assessed"}`}
                   </Text>
-                  <Text style={timelineStyles.progressLabelPercent}>
-                    {isPreAssessmentDone ? "100%" : "0%"}
-                  </Text>
+
+                  {/* Thick Progress Bar */}
+                  <View style={timelineStyles.progressBarBg}>
+                    <View
+                      style={[
+                        timelineStyles.progressBarFill,
+                        {
+                          width: "100%",
+                          backgroundColor: "#475569",
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={timelineStyles.progressLabelRow}>
+                    <Text style={timelineStyles.progressLabelText}>Completed</Text>
+                    <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                  </View>
+
+                  <Text style={timelineStyles.xpText}>350 XP earned</Text>
+                </View>
+              </Pressable>
+            ) : (
+              <View style={timelineStyles.stageRow}>
+                {/* Left Circle Icon — check if completed, clock if pending */}
+                <View
+                  style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleInProgress]}
+                >
+                  <Feather name="clock" size={16} color="white" />
                 </View>
 
-                <Text style={timelineStyles.xpText}>
-                  {isPreAssessmentDone ? "350 XP earned" : "Tap to view details"}
-                </Text>
+                {/* Right Content */}
+                <View style={timelineStyles.stageContent}>
+                  <View style={timelineStyles.stageHeaderRow}>
+                    <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
+                    <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
+                      <Text style={timelineStyles.badgeText}>
+                        {completedCount > 0 ? "In Progress" : "Pending"}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={timelineStyles.stageSubtitle}>
+                    Complete the diagnostic to unlock your learning path
+                  </Text>
+
+                  {/* Thick Progress Bar */}
+                  <View style={timelineStyles.progressBarBg}>
+                    <View
+                      style={[
+                        timelineStyles.progressBarFill,
+                        {
+                          width: `${progressPct}%`,
+                          backgroundColor: "#475569",
+                        },
+                      ]}
+                    />
+                  </View>
+
+                  <View style={timelineStyles.progressLabelRow}>
+                    <Text style={timelineStyles.progressLabelText}>
+                      {`${completedCount} of ${totalSections} completed`}
+                    </Text>
+                    <Text style={timelineStyles.progressLabelPercent}>{progressPct}%</Text>
+                  </View>
+
+                  <Text style={timelineStyles.xpText}>
+                    {completedCount > 0 ? `${completedCount * 50} XP earned` : "0 XP earned"}
+                  </Text>
+
+                  {/* Continue/Resume Assessment Button */}
+                  <Pressable
+                    onPress={handleStartResumeAssessment}
+                    disabled={isStartingSession}
+                    style={timelineStyles.continueButton}
+                  >
+                    {isStartingSession ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text style={timelineStyles.continueButtonText}>
+                        {completedCount > 0 ? "Resume Assessment" : "Start Assessment"}
+                      </Text>
+                    )}
+                  </Pressable>
+                </View>
               </View>
-            </Pressable>
+            )}
 
             {/* Stage 2: CEFR Score */}
             <View style={timelineStyles.stageRow}>
@@ -921,15 +1000,17 @@ export function LearningJourneyScreen() {
 
                 <Text style={timelineStyles.xpText}>{cefrXpText}</Text>
 
-                {/* Continue Learning CTA */}
-                <Pressable
-                  onPress={() => setShowModules(true)}
-                  style={timelineStyles.continueButton}
-                >
-                  <Text style={timelineStyles.continueButtonText}>
-                    {isCefrCompleted ? "Review Modules" : "Continue Learning"}
-                  </Text>
-                </Pressable>
+                {/* Continue Learning CTA — only visible if pre-assessment is done */}
+                {isPreAssessmentDone && (
+                  <Pressable
+                    onPress={() => setShowModules(true)}
+                    style={timelineStyles.continueButton}
+                  >
+                    <Text style={timelineStyles.continueButtonText}>
+                      {isCefrCompleted ? "Review Modules" : "Continue Learning"}
+                    </Text>
+                  </Pressable>
+                )}
               </View>
             </View>
 
