@@ -206,12 +206,9 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const completed = statusData?.completed_answers || 0;
   const pending = statusData?.pending_answers ?? -1;
 
-  let loaderTitle = "Analyzing your responses...";
-  if (total > 0) {
-    loaderTitle = `Scoring: ${completed}/${total} answers completed...`;
-    if (pending === 0 || completed === total) {
-      loaderTitle = "Calculating your CEFR results...";
-    }
+  let loaderTitle = "Analyzing your response...";
+  if (total > 0 && (pending === 0 || completed === total)) {
+    loaderTitle = "Calculating your CEFR results...";
   }
 
   if (isLoading || isPolling) {
