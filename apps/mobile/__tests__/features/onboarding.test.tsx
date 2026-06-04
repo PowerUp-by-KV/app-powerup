@@ -22,6 +22,11 @@ jest.mock("@/services/onboarding-api", () => ({
     isError: false,
     refetch: jest.fn(),
   }),
+  useGetOnboardingStatusQuery: () => ({
+    data: undefined,
+    isLoading: true,
+    isError: false,
+  }),
   useSubmitOnboardingMutation: () => [jest.fn(), { isLoading: false }],
   useExtractOnboardingResumeMutation: () => [jest.fn(), { isLoading: false }],
   useConfirmOnboardingResumeMutation: () => [jest.fn(), { isLoading: false }],
