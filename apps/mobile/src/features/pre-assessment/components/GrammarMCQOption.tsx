@@ -8,7 +8,7 @@ interface MCQOptionProps {
   onSelect: () => void;
 }
 
-export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps) {
+export function MCQOption({ label: _label, text, isSelected, onSelect }: MCQOptionProps) {
   return (
     <TouchableOpacity
       className={`flex-row items-center p-4 mb-2 rounded-xl border-2 ${

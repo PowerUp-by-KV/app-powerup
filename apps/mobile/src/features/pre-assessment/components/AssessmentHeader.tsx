@@ -38,7 +38,7 @@ export function AssessmentHeader({
   skillName,
   currentQuestion,
   totalQuestions,
-  onFinishTest,
+  onFinishTest: _onFinishTest,
   sessionId,
   stopTimer,
 }: AssessmentHeaderProps) {

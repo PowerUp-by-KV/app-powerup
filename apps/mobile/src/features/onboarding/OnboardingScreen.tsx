@@ -33,7 +33,6 @@ import {
   setProfileCompletedInSession,
   setPreAssessmentCompletedInSession,
   clearCompletedSections,
-  getProfileCompletedInSession,
   saveLocalOnboardingAnswers,
 } from "@/services/auth-storage";
 import { getApiErrorMessage } from "@/utils/error-message";

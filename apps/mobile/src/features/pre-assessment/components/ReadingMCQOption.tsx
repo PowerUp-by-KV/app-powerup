@@ -8,7 +8,7 @@ interface MCQOptionProps {
   onSelect: () => void;
 }
 
-export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps) {
+export function MCQOption({ label: _label, text, isSelected, onSelect }: MCQOptionProps) {
   return (
     <Pressable onPress={onSelect} className="mb-3">
       <View
