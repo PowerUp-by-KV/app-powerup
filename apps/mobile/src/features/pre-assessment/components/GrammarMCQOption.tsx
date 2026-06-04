@@ -8,10 +8,10 @@ interface MCQOptionProps {
   onSelect: () => void;
 }
 
-export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps) {
+export function MCQOption({ label: _label, text, isSelected, onSelect }: MCQOptionProps) {
   return (
     <TouchableOpacity
-      className={`flex-row items-center p-3 mb-2 rounded-lg border-2 ${
+      className={`flex-row items-center p-4 mb-2 rounded-xl border-2 ${
         isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"
       }`}
       onPress={onSelect}
@@ -23,9 +23,7 @@ export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps)
       >
         {isSelected && <Text className="text-white font-bold">✓</Text>}
       </View>
-      <Text className="flex-1 text-gray-800">
-        <Text className="font-bold text-blue-600">{label}</Text> {text}
-      </Text>
+      <Text className="flex-1 text-gray-800 text-sm font-semibold leading-relaxed">{text}</Text>
     </TouchableOpacity>
   );
 }

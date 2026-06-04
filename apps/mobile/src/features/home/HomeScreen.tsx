@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
+import { getAvatarUri } from "@/utils/avatar";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
   useGetProgressionQuery,
@@ -43,9 +44,7 @@ export function HomeScreen() {
 
   const activeProgressionModule = useMemo(() => {
     if (!progression?.unlocked_modules || !activeModule) return null;
-    return progression.unlocked_modules.find(
-      (m) => m.module_id === activeModule.module_id
-    );
+    return progression.unlocked_modules.find((m) => m.module_id === activeModule.module_id);
   }, [progression?.unlocked_modules, activeModule]);
 
   const unlockedDays = useMemo(() => {
@@ -123,22 +122,37 @@ export function HomeScreen() {
             <View>
               <Text className="text-2xl font-black tracking-tight">
                 <Text style={{ color: "#4f46e5" }}>Hi, </Text>
-                <Text style={{ color: "#94a3b8" }}>{(firstName?.toUpperCase() || "").slice(0, 2)}</Text>
-                <Text style={{ color: "#84cc16" }}>{(firstName?.toUpperCase() || "").slice(2)}!</Text>
+                <Text style={{ color: "#94a3b8" }}>
+                  {(firstName?.toUpperCase() || "").slice(0, 2)}
+                </Text>
+                <Text style={{ color: "#84cc16" }}>
+                  {(firstName?.toUpperCase() || "").slice(2)}!
+                </Text>
               </Text>
-              <Text className="text-slate-400 text-sm mt-1 font-semibold">Ready to learn something new?</Text>
+              <Text className="text-slate-400 text-sm mt-1 font-semibold">
+                Ready to learn something new?
+              </Text>
             </View>
             <Pressable
               onPress={() => router.push("/profile" as never)}
               className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
             >
               <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                <Feather name="user" size={20} color="#4f46e5" />
+                {profile?.avatar_id ? (
+                  <Image
+                    source={{ uri: getAvatarUri(profile.avatar_id, profile.id) }}
+                    className="w-full h-full"
+                  />
+                ) : (
+                  <Feather name="user" size={20} color="#4f46e5" />
+                )}
               </View>
             </Pressable>
           </View>
 
-          {profile && profile.email_verified === false && <VerifyEmailBanner email={profile.email} />}
+          {profile && profile.email_verified === false && (
+            <VerifyEmailBanner email={profile.email} />
+          )}
 
           <WeeklyStreak days={profile?.weekly_streak} />
 

@@ -406,12 +406,8 @@ export function MedalsScreen() {
             {medalsData &&
               medalsData.level_up_progress &&
               medalsData.level_up_progress.length > 0 && (
-                <View style={{ marginTop: 36, width: "100%" }}>
-                  <Text
-                    style={{ fontSize: 18, fontWeight: "900", color: "#000000", marginBottom: 16 }}
-                  >
-                    Level Up Your Medal
-                  </Text>
+                <View className="mt-9 w-full">
+                  <Text className="text-lg font-black text-black mb-4">Level up your Medal</Text>
 
                   {medalsData.level_up_progress.map((p) => {
                     const percent = Math.min(100, Math.round(p.progress * 100));

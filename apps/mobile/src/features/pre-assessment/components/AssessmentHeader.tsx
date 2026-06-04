@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import { getCompletedSections } from "@/services/auth-storage";
 import { useGetAssessmentStatusQuery } from "@/services/assessment-api";
 
@@ -36,10 +38,11 @@ export function AssessmentHeader({
   skillName,
   currentQuestion,
   totalQuestions,
-  onFinishTest,
+  onFinishTest: _onFinishTest,
   sessionId,
   stopTimer,
 }: AssessmentHeaderProps) {
+  const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
   const [secondsElapsed, setSecondsElapsed] = useState(0);
   const [completedSections, setCompletedSections] = useState<string[]>([]);
@@ -80,11 +83,17 @@ export function AssessmentHeader({
 
   const handleFinishPress = () => {
     Alert.alert(
-      "Finish Test",
-      "Are you sure you want to submit your assessment and finish the test?",
+      "Exit Assessment",
+      "Are you sure you want to exit the assessment? You can resume it later from where you left off.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Finish", style: "destructive", onPress: onFinishTest },
+        {
+          text: "Exit",
+          style: "destructive",
+          onPress: () => {
+            router.replace("/(tabs)/my-learning" as any);
+          },
+        },
       ],
     );
   };
@@ -109,47 +118,47 @@ export function AssessmentHeader({
   const progressPercent = totalQuestions > 0 ? ((currentQuestion + 1) / totalQuestions) * 100 : 0;
 
   return (
-    <View className="mb-6 pt-2">
-      <View className="flex-row justify-between items-center mb-4">
-        <View className="bg-slate-100 px-4 py-2.5 rounded-full border border-slate-200 flex-row items-center shadow-sm">
-          <Feather name="clock" size={14} color="#64748B" className="mr-2" />
-          <Text className="text-xs font-bold text-slate-700">
-            Test Time: {formatTime(secondsElapsed)}
-          </Text>
-        </View>
-
+    <View className="mb-5 pt-1">
+      {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
+      <View className="flex-row items-center w-full px-1 mb-5">
         <TouchableOpacity
           onPress={handleFinishPress}
-          className="bg-slate-100 px-5 py-2.5 rounded-full border border-slate-200 shadow-sm"
+          className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-85"
         >
-          <Text className="text-xs font-bold text-slate-800">Finish Test</Text>
+          <Feather name="x" size={20} color="#0f172a" />
         </TouchableOpacity>
+        <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+          <LinearGradient
+            colors={["#3b82f6", "#22c55e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
+            className="h-full rounded-full"
+          />
+        </View>
       </View>
 
-      <View className="flex-row justify-between items-center mb-3">
-        <View className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
-          <Text className="text-xs font-bold text-slate-700">{sectionName}</Text>
+      {/* Section details with Category title, Timer and Dropdown trigger */}
+      <View className="flex-row items-center justify-between px-1 mb-2">
+        <View className="flex-row items-center">
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase mr-2.5">
+            {sectionName}
+          </Text>
+          <View className="bg-slate-100/60 px-2 py-0.5 rounded-md border border-slate-200/20">
+            <Text className="text-[10px] font-extrabold text-slate-500">
+              🕒 {formatTime(secondsElapsed)}
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
-          className="bg-slate-100 px-4 py-2 rounded-full border border-slate-200 flex-row items-center shadow-sm"
+          className="flex-row items-center bg-slate-100/80 active:bg-slate-200/60 px-3.5 py-1.5 rounded-full border border-slate-200/40 shadow-xs"
+          activeOpacity={0.7}
         >
-          <Text className="text-xs font-bold text-slate-900 mr-1.5">{skillName}</Text>
-          <Feather name="chevron-down" size={14} color="#0F172A" />
+          <Text className="text-[11px] font-extrabold text-slate-700 mr-1.5">{skillName}</Text>
+          <Feather name="chevron-down" size={11} color="#334155" />
         </TouchableOpacity>
-      </View>
-
-      <View className="mb-1">
-        <View className="h-2.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
-          <View
-            className="h-full bg-slate-800 rounded-full shadow-sm"
-            style={{ width: `${Math.min(100, Math.max(0, progressPercent))}%` }}
-          />
-        </View>
-        <Text className="text-xs font-bold text-slate-400 text-right">
-          {currentQuestion + 1}/{totalQuestions}
-        </Text>
       </View>
 
       <Modal

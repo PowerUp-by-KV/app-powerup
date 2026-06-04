@@ -27,7 +27,10 @@ import {
   useGetPersonalizedPathQuery,
   useGetProgressionQuery,
 } from "@/services/module-api";
-import { useStartSessionMutation, useGetUserAssessmentResultQuery } from "@/services/assessment-api";
+import {
+  useStartSessionMutation,
+  useGetUserAssessmentResultQuery,
+} from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
@@ -38,8 +41,6 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-
-
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -105,8 +106,8 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   // Only derive scores from real results if they exist AND assessment is complete.
   const hasRealResults =
     !!results &&
-    results.section_percentages &&
-    Object.keys(results.section_percentages).length > 0;
+    ((results.section_percentages && Object.keys(results.section_percentages).length > 0) ||
+      (results.section_scores && Object.keys(results.section_scores).length > 0));
 
   const derivedResults = hasRealResults ? results : null;
 
@@ -419,10 +420,11 @@ export function LearningJourneyScreen() {
     });
   }, [showPreAssessmentModal, profile]);
 
-  const { data: liveResult, error: liveResultError, isFetching: liveResultFetching } = useGetUserAssessmentResultQuery(
-    { user_id: profile?.id || "" },
-    { skip: !profile?.id },
-  );
+  const {
+    data: liveResult,
+    error: liveResultError,
+    isFetching: liveResultFetching,
+  } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !profile?.id });
 
   useEffect(() => {
     console.log("[DEBUG results] user_id:", profile?.id);
@@ -446,8 +448,6 @@ export function LearningJourneyScreen() {
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
-
-
 
   const {
     data: personalizedPath,
@@ -486,8 +486,6 @@ export function LearningJourneyScreen() {
     return null;
   }, [personalizedPath?.modules, selectedModuleId]);
 
-
-
   const activeModule = useMemo(() => {
     if (!progression?.unlocked_modules?.length) return null;
     // Find the first module that is unlocked (!locked) and not completed
@@ -512,29 +510,27 @@ export function LearningJourneyScreen() {
     skip: !targetModuleIdForDays,
   });
 
-  const { refetch: refetchProgress } = useGetModuleProgressQuery(
-    activeModuleId,
-    { skip: !activeModuleId },
-  );
+  const { refetch: refetchProgress } = useGetModuleProgressQuery(activeModuleId, {
+    skip: !activeModuleId,
+  });
 
-  const { refetch: refetchEngagement } = useGetModuleEngagementQuery(
-    activeModuleId,
-    { skip: !activeModuleId },
-  );
+  const { refetch: refetchEngagement } = useGetModuleEngagementQuery(activeModuleId, {
+    skip: !activeModuleId,
+  });
 
   const firstIncompleteDayNumber = useMemo(() => {
     if (!days) return 1;
     const sortedDays = [...days].sort((a, b) => a.day_number - b.day_number);
     const firstIncomplete = sortedDays.find((d) => !d.is_completed);
-    return firstIncomplete ? firstIncomplete.day_number : (sortedDays[sortedDays.length - 1]?.day_number ?? 12) + 1;
+    return firstIncomplete
+      ? firstIncomplete.day_number
+      : (sortedDays[sortedDays.length - 1]?.day_number ?? 12) + 1;
   }, [days]);
 
   // Find progression details for the active/selected module
   const activeProgressionModule = useMemo(() => {
     if (!progression?.unlocked_modules || !targetModuleIdForDays) return null;
-    return progression.unlocked_modules.find(
-      (m) => m.module_id === targetModuleIdForDays
-    );
+    return progression.unlocked_modules.find((m) => m.module_id === targetModuleIdForDays);
   }, [progression?.unlocked_modules, targetModuleIdForDays]);
 
   const unlockedDays = activeProgressionModule?.unlocked_days ?? [1, 2, 3, 4, 5, 6];
@@ -676,7 +672,9 @@ export function LearningJourneyScreen() {
   const isDiagnosticComplete = isPreAssessmentDone;
 
   // Calculate dynamic Diagnostic Assessment details
-  const diagProgress = isDiagnosticComplete ? 100 : Math.round((completedSections.length / 6) * 100);
+  const diagProgress = isDiagnosticComplete
+    ? 100
+    : Math.round((completedSections.length / 6) * 100);
   const diagLessonsCompleted = isDiagnosticComplete ? 6 : completedSections.length;
   const diagXp = isDiagnosticComplete ? 150 : completedSections.length * 25;
 
@@ -693,7 +691,7 @@ export function LearningJourneyScreen() {
     "Project Showcase",
     "Mock Interview I",
     "Mock Interview II",
-    "Final Module Check"
+    "Final Module Check",
   ];
 
   // Resolve day items for current phase
@@ -726,7 +724,7 @@ export function LearningJourneyScreen() {
       isLocked,
       xp: isCompleted ? 50 : 0,
       durationMinutes: minutes,
-      dayObj
+      dayObj,
     });
   }
 
@@ -780,9 +778,7 @@ export function LearningJourneyScreen() {
 
         {/* Section title header */}
         <View style={{ marginBottom: 16, marginTop: 8 }}>
-          <Text style={{ fontSize: 22, fontWeight: "800", color: "#0f172a" }}>
-            My Learning
-          </Text>
+          <Text style={{ fontSize: 22, fontWeight: "800", color: "#0f172a" }}>My Learning</Text>
           <Text style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
             Track where you're headed
           </Text>
@@ -792,7 +788,9 @@ export function LearningJourneyScreen() {
         <View style={timelineStyles.stagesCard}>
           {/* Item 1: Free Content */}
           <Pressable
-            onPress={() => Alert.alert("Free Content", "This free module is completed! Continue down your path.")}
+            onPress={() =>
+              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
+            }
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
             <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
@@ -840,7 +838,12 @@ export function LearningJourneyScreen() {
 
           {/* Item 2: Trial Content */}
           <Pressable
-            onPress={() => Alert.alert("Trial Content", "This trial module is completed! Continue down your path.")}
+            onPress={() =>
+              Alert.alert(
+                "Trial Content",
+                "This trial module is completed! Continue down your path.",
+              )
+            }
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
             <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
@@ -888,7 +891,11 @@ export function LearningJourneyScreen() {
 
           {/* Item 3: Diagnostic Assessment */}
           <Pressable
-            onPress={isDiagnosticComplete ? () => setShowPreAssessmentModal(true) : handleStartOrResumeAssessment}
+            onPress={
+              isDiagnosticComplete
+                ? () => setShowPreAssessmentModal(true)
+                : handleStartOrResumeAssessment
+            }
             disabled={isStartingSession}
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
@@ -922,11 +929,20 @@ export function LearningJourneyScreen() {
                 <View
                   style={[
                     timelineStyles.statusBadge,
-                    isDiagnosticComplete ? timelineStyles.badgeCompleted : timelineStyles.badgeInProgress,
+                    isDiagnosticComplete
+                      ? timelineStyles.badgeCompleted
+                      : timelineStyles.badgeInProgress,
                   ]}
                 >
-                  <Text style={[timelineStyles.badgeText, { color: isDiagnosticComplete ? "#15803d" : "#a16207" }]}>
-                    {isDiagnosticComplete ? `Level ${profile?.cefr_range || "Assessed"}` : "In Progress"}
+                  <Text
+                    style={[
+                      timelineStyles.badgeText,
+                      { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
+                    ]}
+                  >
+                    {isDiagnosticComplete
+                      ? `Level ${profile?.cefr_range || "Assessed"}`
+                      : "In Progress"}
                   </Text>
                 </View>
               </View>
@@ -937,16 +953,25 @@ export function LearningJourneyScreen() {
                   colors={["#3b82f6", "#22c55e", "#84cc16"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={[timelineStyles.progressBarFill, { width: isDiagnosticComplete ? "100%" : `${diagProgress}%` }]}
+                  style={[
+                    timelineStyles.progressBarFill,
+                    { width: isDiagnosticComplete ? "100%" : `${diagProgress}%` },
+                  ]}
                 />
               </View>
 
               <View style={timelineStyles.progressLabelRow}>
-                <Text style={timelineStyles.progressLabelText}>{diagLessonsCompleted} of 6 sections completed</Text>
+                <Text style={timelineStyles.progressLabelText}>
+                  {diagLessonsCompleted} of 6 sections completed
+                </Text>
                 <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
               </View>
               <Text style={timelineStyles.xpText}>
-                {isStartingSession ? "Launching..." : isDiagnosticComplete ? "150 XP earned" : `${diagXp} XP earned`}
+                {isStartingSession
+                  ? "Launching..."
+                  : isDiagnosticComplete
+                    ? "150 XP earned"
+                    : `${diagXp} XP earned`}
               </Text>
 
               {/* Continue learning CTA button inside active card */}
@@ -965,16 +990,22 @@ export function LearningJourneyScreen() {
           {/* Items 4-15: Days 1 to 12 */}
           {dayItems.map((item, idx) => {
             const isLast = idx === dayItems.length - 1;
-            const lineBgColor = (item.isCompleted || item.isInProgress) ? "#3b82f6" : "#cbd5e1";
+            const lineBgColor = item.isCompleted || item.isInProgress ? "#3b82f6" : "#cbd5e1";
 
             return (
               <Pressable
                 key={item.id}
                 onPress={() => {
                   if (item.isLocked) {
-                    Alert.alert("Locked Day", "Please complete your Diagnostic Assessment to unlock your personalized learning path!");
+                    Alert.alert(
+                      "Locked Day",
+                      "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
+                    );
                   } else if (!item.dayObj?.id) {
-                    Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+                    Alert.alert(
+                      "Error",
+                      "Day content is not available yet. Please try refreshing.",
+                    );
                   } else {
                     router.push({
                       pathname: `/learning-journey/module/${item.dayObj.id}` as never,
@@ -990,7 +1021,7 @@ export function LearningJourneyScreen() {
                   {
                     opacity: pressed ? 0.8 : 1,
                     marginBottom: isLast ? 0 : 32,
-                  }
+                  },
                 ]}
               >
                 <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
@@ -1027,7 +1058,12 @@ export function LearningJourneyScreen() {
                 </View>
                 <View style={timelineStyles.stageContent}>
                   <View style={timelineStyles.stageHeaderRow}>
-                    <Text style={[timelineStyles.stageTitle, item.isLocked && timelineStyles.textLocked]}>
+                    <Text
+                      style={[
+                        timelineStyles.stageTitle,
+                        item.isLocked && timelineStyles.textLocked,
+                      ]}
+                    >
                       {item.title}
                     </Text>
                     {item.isLocked && (
@@ -1037,57 +1073,69 @@ export function LearningJourneyScreen() {
                     )}
                     {item.isCompleted && (
                       <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                        <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                        <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>
+                          Completed
+                        </Text>
                       </View>
                     )}
                     {item.isInProgress && (
                       <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
-                        <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>In Progress</Text>
+                        <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
+                          In Progress
+                        </Text>
                       </View>
                     )}
                   </View>
-                  <Text style={[timelineStyles.stageSubtitle, item.isLocked && { color: "#cbd5e1" }]}>
+                  <Text
+                    style={[timelineStyles.stageSubtitle, item.isLocked && { color: "#cbd5e1" }]}
+                  >
                     {item.subtitle}
                   </Text>
 
-                  {!item.isLocked && (() => {
-                    const totalAct = item.dayObj?.total_activities ?? 0;
-                    const compAct = item.dayObj?.completed_activities ?? 0;
-                    const pct = item.isCompleted ? 100 : (item.dayObj?.progress_percentage ?? 0);
-                    
-                    const progressLabelText = item.isCompleted
-                      ? "Completed"
-                      : compAct > 0
-                        ? `${compAct} of ${totalAct} activities completed`
-                        : "Not started";
-                        
-                    return (
-                      <>
-                        <View style={timelineStyles.progressBarBg}>
-                          <LinearGradient
-                            colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}
-                          />
-                        </View>
-                        <View style={timelineStyles.progressLabelRow}>
-                          <Text style={timelineStyles.progressLabelText}>{progressLabelText}</Text>
-                          <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
-                        </View>
-                        <Text style={timelineStyles.xpText}>
-                          {item.isCompleted ? "50 XP earned" : "50 XP potential"}
-                        </Text>
-                      </>
-                    );
-                  })()}
+                  {!item.isLocked &&
+                    (() => {
+                      const totalAct = item.dayObj?.total_activities ?? 0;
+                      const compAct = item.dayObj?.completed_activities ?? 0;
+                      const pct = item.isCompleted ? 100 : (item.dayObj?.progress_percentage ?? 0);
+
+                      const progressLabelText = item.isCompleted
+                        ? "Completed"
+                        : compAct > 0
+                          ? `${compAct} of ${totalAct} activities completed`
+                          : "Not started";
+
+                      return (
+                        <>
+                          <View style={timelineStyles.progressBarBg}>
+                            <LinearGradient
+                              colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}
+                            />
+                          </View>
+                          <View style={timelineStyles.progressLabelRow}>
+                            <Text style={timelineStyles.progressLabelText}>
+                              {progressLabelText}
+                            </Text>
+                            <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
+                          </View>
+                          <Text style={timelineStyles.xpText}>
+                            {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                          </Text>
+                        </>
+                      );
+                    })()}
 
                   {/* Continue learning CTA button inside active day card */}
                   {item.isInProgress && (
                     <Pressable
                       onPress={() => {
                         if (!item.dayObj?.id) {
-                          Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+                          Alert.alert(
+                            "Error",
+                            "Day content is not available yet. Please try refreshing.",
+                          );
                         } else {
                           router.push({
                             pathname: `/learning-journey/module/${item.dayObj.id}` as never,

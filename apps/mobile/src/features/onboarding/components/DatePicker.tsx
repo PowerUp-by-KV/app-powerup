@@ -21,8 +21,8 @@ export const DatePicker: React.FC<Props> = ({ date, show, onDateChange, onPress,
         <Text className={`text-lg ${displayDate ? "text-slate-900" : "text-slate-400"}`}>
           {displayDate || "YYYY-MM-DD"}
         </Text>
-        <View className="bg-indigo-50 p-2 rounded-lg">
-          <Text className="text-indigo-600 font-bold text-xs">SELECT</Text>
+        <View className="bg-blue-50 p-2 rounded-lg">
+          <Text className="text-blue-600 font-bold text-xs">SELECT</Text>
         </View>
       </TouchableOpacity>
       {show && (

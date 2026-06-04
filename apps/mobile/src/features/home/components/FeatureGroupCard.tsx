@@ -63,4 +63,3 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
     </View>
   );
 }
-

@@ -30,4 +30,3 @@ export function ContinueLearningCard({ title, subtitle, onPress }: ContinueLearn
     </Pressable>
   );
 }
-

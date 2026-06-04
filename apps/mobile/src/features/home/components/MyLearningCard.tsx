@@ -28,9 +28,7 @@ function StatTile({
       className="flex-1 items-center rounded-3xl py-4 mx-1 shadow-sm"
     >
       <Text className="text-white font-extrabold text-4xl tracking-tight">{value}</Text>
-      <Text className="text-indigo-100 text-[11px] font-semibold mt-1">
-        {label}
-      </Text>
+      <Text className="text-indigo-100 text-[11px] font-semibold mt-1">{label}</Text>
     </LinearGradient>
   );
 }
@@ -44,33 +42,17 @@ export function MyLearningCard({
   onTrack,
 }: MyLearningCardProps) {
   const pct =
-    totalDays != null && totalDays > 0
-      ? Math.round((daysCompleted / totalDays) * 100)
-      : 0;
+    totalDays != null && totalDays > 0 ? Math.round((daysCompleted / totalDays) * 100) : 0;
 
   const tileColors: readonly [string, string, ...string[]] = ["#4f46e5", "#3b82f6"];
 
   return (
     <View className="bg-white rounded-3xl p-5 border border-slate-100/60 shadow-sm shadow-slate-100 mb-6">
-      <Text className="text-slate-900 text-base font-bold mb-4 text-center">
-        Daily Progress
-      </Text>
+      <Text className="text-slate-900 text-base font-bold mb-4 text-center">Daily Progress</Text>
       <View className="flex-row -mx-1 mb-5">
-        <StatTile
-          value={streakCount}
-          label="Streaks"
-          colors={tileColors}
-        />
-        <StatTile
-          value={xpPoints}
-          label="Xp points"
-          colors={tileColors}
-        />
-        <StatTile
-          value={badgesCount}
-          label="Badges"
-          colors={tileColors}
-        />
+        <StatTile value={streakCount} label="Streaks" colors={tileColors} />
+        <StatTile value={xpPoints} label="Xp points" colors={tileColors} />
+        <StatTile value={badgesCount} label="Badges" colors={tileColors} />
       </View>
       <View className="mb-5">
         <View className="flex-row justify-between mb-2">
@@ -96,12 +78,9 @@ export function MyLearningCard({
           end={{ x: 1, y: 0 }}
           className="py-3.5 items-center justify-center shadow-md shadow-indigo-100/20"
         >
-          <Text className="text-white font-bold text-base tracking-wide">
-            Track my Learning
-          </Text>
+          <Text className="text-white font-bold text-base tracking-wide">Track my Learning</Text>
         </LinearGradient>
       </Pressable>
     </View>
   );
 }
-
