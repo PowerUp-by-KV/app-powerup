@@ -22,23 +22,6 @@ export function ScoreAnalysisStep({
   qualitySummary,
   onDone,
 }: ScoreAnalysisStepProps) {
-  // Defensive fallback values
-  const overallScoreVal = overallScore ?? 0;
-  const atsScoreVal = atsScore ?? 0;
-  const semanticScoreVal = semanticScore ?? 0;
-  const ruleBasedScoreVal = ruleBasedScore ?? 0;
-  const criteriaScoresVal = criteriaScores ?? [];
-  const qualitySummaryVal = qualitySummary ?? "";
-
-  // Scoring mapping
-  const basicInfo = Math.round(Math.max(0, Math.min(100, ruleBasedScoreVal * 0.2)));
-  const atsPercentage = Math.round(Math.max(0, Math.min(100, (atsScoreVal / 20) * 100)));
-  const sectionCompleteness = Math.round(Math.max(0, Math.min(100, ruleBasedScoreVal)));
-  const resumeQuality = Math.round(Math.max(0, Math.min(100, semanticScoreVal)));
-  const professionalSummary = Math.round(
-    Math.max(0, Math.min(100, (semanticScoreVal + ruleBasedScoreVal) / 2)),
-  );
-
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -54,64 +37,44 @@ export function ScoreAnalysisStep({
 
         {/* Large Score Ring */}
         <View className="items-center mb-8 bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
-          <ScoreRing score={overallScoreVal} maxScore={100} label="Overall Score" />
-          {qualitySummaryVal ? (
-            <Text className="text-slate-500 text-xs mt-3 text-center px-4 leading-5 italic">
-              {qualitySummaryVal}
-            </Text>
-          ) : null}
+          <ScoreRing score={overallScore} maxScore={100} label="Overall Score" />
+          <Text className="text-slate-500 text-xs mt-3 text-center px-4 leading-5 italic">
+            {qualitySummary}
+          </Text>
         </View>
 
-        {/* Sub Score Rings (5 Circular Metrics in Wrap layout) */}
-        <Text className="text-slate-950 font-extrabold text-base mb-4">Score Breakdown</Text>
-        <View
-          className="flex-row flex-wrap justify-center mb-8 px-2 bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm"
-          style={{ gap: 16 }}
-        >
-          <ScoreRing score={basicInfo} maxScore={100} label="Basic Information" />
-          <ScoreRing score={atsPercentage} maxScore={100} label="ATS" />
-          <ScoreRing score={sectionCompleteness} maxScore={100} label="Section Completeness" />
-          <ScoreRing score={resumeQuality} maxScore={100} label="Resume Quality" />
-          <ScoreRing score={professionalSummary} maxScore={100} label="Professional Summary" />
+        {/* Sub Score Rings */}
+        <View className="flex-row justify-between mb-8 px-2 bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+          <ScoreRing score={atsScore} maxScore={20} label="ATS Score" />
+          <ScoreRing score={semanticScore} maxScore={10} label="Semantic Score" />
+          <ScoreRing score={ruleBasedScore} maxScore={10} label="Rule-Based" />
         </View>
 
         {/* Criteria Breakdown list */}
-        {criteriaScoresVal.length > 0 && (
-          <>
-            <Text className="text-slate-900 font-extrabold text-base mb-4">
-              Detailed Criteria Metrics
-            </Text>
-            {criteriaScoresVal.map((c, idx) => {
-              if (!c) return null;
-              const maxScoreVal = c.max_score || 100;
-              const scoreVal = c.score || 0;
-              const pct = Math.min((scoreVal / maxScoreVal) * 100, 100);
-              return (
-                <View
-                  key={`${c.key ?? idx}-${idx}`}
-                  className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm"
-                >
-                  <View className="flex-row justify-between items-center mb-2.5">
-                    <Text className="text-slate-900 font-bold text-sm">{c.label ?? "Metric"}</Text>
-                    <Text className="text-slate-500 font-bold text-xs">
-                      {scoreVal}/{maxScoreVal}
-                    </Text>
-                  </View>
-                  {/* Progress Bar */}
-                  <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
-                    <View
-                      className="h-full bg-indigo-500 rounded-full"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </View>
-                  {c.feedback ? (
-                    <Text className="text-slate-500 text-xs leading-5">{c.feedback}</Text>
-                  ) : null}
-                </View>
-              );
-            })}
-          </>
-        )}
+        <Text className="text-slate-900 font-extrabold text-base mb-4">
+          Detailed Criteria Metrics
+        </Text>
+        {criteriaScores.map((c, idx) => {
+          const pct = Math.min((c.score / c.max_score) * 100, 100);
+          return (
+            <View
+              key={`${c.key}-${idx}`}
+              className="bg-white border border-slate-100 rounded-2xl p-5 mb-4 shadow-sm"
+            >
+              <View className="flex-row justify-between items-center mb-2.5">
+                <Text className="text-slate-900 font-bold text-sm">{c.label}</Text>
+                <Text className="text-slate-500 font-bold text-xs">
+                  {c.score}/{c.max_score}
+                </Text>
+              </View>
+              {/* Progress Bar */}
+              <View className="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+                <View className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
+              </View>
+              <Text className="text-slate-500 text-xs leading-5">{c.feedback}</Text>
+            </View>
+          );
+        })}
       </ScrollView>
 
       {/* Sticky footer */}

@@ -1,5 +1,7 @@
 import { useRouter } from "expo-router";
 
+import { store } from "@/store";
+import { api } from "@/services/api";
 import {
   clearAssessmentSessionId,
   clearAuthSession,
@@ -14,6 +16,7 @@ export const useLogout = () => {
       await clearAuthSession();
       await clearAssessmentSessionId();
       await clearProfileCompletedInSession();
+      store.dispatch(api.util.resetApiState());
       router.replace("/login");
     } catch {}
   };

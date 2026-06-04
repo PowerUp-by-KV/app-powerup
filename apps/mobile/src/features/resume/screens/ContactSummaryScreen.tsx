@@ -216,7 +216,7 @@ export function ContactSummaryScreen() {
                 </Text>
               )}
 
-              {!!errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+              {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
             </View>
 
             {/* Country Code Selector Modal */}

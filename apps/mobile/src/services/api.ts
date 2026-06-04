@@ -120,7 +120,6 @@ export const api = createApi({
     "Subscription",
     "Avatars",
     "PracticeHistory",
-    "InterviewPlayground",
   ] as const,
   endpoints: () => ({}),
 });
