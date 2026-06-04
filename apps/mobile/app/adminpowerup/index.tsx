@@ -57,11 +57,8 @@ export default function AdminPowerupPage() {
       </View>
     );
   }
-
-  const hasAdminPassword = !!(
-    process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD
-  );
-  if (!hasAdminPassword) {
+  const adminPassword = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  if (!adminPassword) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
         <View
