@@ -9,9 +9,6 @@ interface StrengthWeaknessStepProps {
 }
 
 export function StrengthWeaknessStep({ strengths, weaknesses, onNext }: StrengthWeaknessStepProps) {
-  const strengthsVal = strengths ?? [];
-  const weaknessesVal = weaknesses ?? [];
-
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
@@ -25,8 +22,8 @@ export function StrengthWeaknessStep({ strengths, weaknesses, onNext }: Strength
           Detailed diagnostic breakdown of your parsed resume structure
         </Text>
 
-        <AnalysisCard items={strengthsVal} type="strength" title="Key Strengths" />
-        <AnalysisCard items={weaknessesVal} type="weakness" title="Areas to Improve" />
+        <AnalysisCard items={strengths} type="strength" title="Key Strengths" />
+        <AnalysisCard items={weaknesses} type="weakness" title="Areas to Improve" />
       </ScrollView>
 
       {/* Sticky footer */}

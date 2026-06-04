@@ -47,6 +47,32 @@ export function resolveApiAssetUrl(url?: string | null): string | null {
   }
 }
 
+export async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const currentSession = await getAuthSession();
+    if (currentSession?.refresh_token) {
+      const refreshResp = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: currentSession.refresh_token }),
+      });
+      if (refreshResp.ok) {
+        const refreshed = await refreshResp.json();
+        const newAccessToken = refreshed.access_token;
+        await saveAuthSession({
+          ...currentSession,
+          access_token: newAccessToken,
+          refresh_token: refreshed.refresh_token ?? currentSession.refresh_token,
+        });
+        return newAccessToken;
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to refresh access token:", error);
+  }
+  return null;
+}
+
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: async (headers) => {

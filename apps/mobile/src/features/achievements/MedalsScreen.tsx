@@ -402,7 +402,7 @@ export function MedalsScreen() {
               ))}
             </View>
 
-            {/* level up your Medal Section */}
+            {/* Level Up Your Medal Section */}
             {medalsData &&
               medalsData.level_up_progress &&
               medalsData.level_up_progress.length > 0 && (
