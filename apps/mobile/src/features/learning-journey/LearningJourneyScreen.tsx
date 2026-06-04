@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect, useRef } from "react"
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -15,6 +16,9 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+
+import { resolveApiAssetUrl } from "@/services/api";
 
 import {
   useGetModuleDaysQuery,
@@ -37,9 +41,6 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-
-import { CefrProgressBar } from "./components/CefrProgressBar";
-import { TimelineRow } from "./components/TimelineRow";
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -99,12 +100,14 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? null;
 
   // Only show real data — do NOT generate mock/derived scores if assessment is not completed.
-  // assessment is considered completed only when cefr_range is set on the profile.
+  // The assessment is considered completed only when cefr_range is set on the profile.
   const isAssessmentComplete = !!actualCefr;
 
-  // Only derive scores from real results if section_scores is present (always required per API).
+  // Only derive scores from real results if they exist AND assessment is complete.
   const hasRealResults =
-    !!results && results.section_scores && Object.keys(results.section_scores).length > 0;
+    !!results &&
+    ((results.section_percentages && Object.keys(results.section_percentages).length > 0) ||
+      (results.section_scores && Object.keys(results.section_scores).length > 0));
 
   const derivedResults = hasRealResults ? results : null;
 
@@ -183,50 +186,29 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   // derivedResults is guaranteed non-null here because isAssessmentComplete is true
   // (we early-returned above when !isAssessmentComplete where derivedResults === null)
   const safeResults = derivedResults!;
-  const percentage = safeResults.percentage ?? 0;
-  const obtainedPoints = Math.round(safeResults.total_score ?? 0);
-  const totalPoints = Math.round(safeResults.max_score ?? 0);
+  const percentage = safeResults.percentage;
+  const obtainedPoints = Math.round(safeResults.total_score);
+  const totalPoints = Math.round(safeResults.max_score);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
-  // Safely format a completed_at date for display
-  const completedDate = safeResults.completed_at
-    ? new Date(safeResults.completed_at).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-    : null;
-
-  // Reading Score: A_READING — prefer section_percentages, fall back to section_scores
-  const sectionPct = safeResults.section_percentages ?? {};
-  const sectionScr = safeResults.section_scores ?? {};
-  const toPct = (score: number, max = 100) => (score / max) * 100;
-
-  const readingPct =
-    sectionPct["A_READING"] ?? toPct(sectionScr["A_READING"] ?? 0) ?? DEFAULT_CEFR_PERCENTAGE;
+  // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
+  const readingPct = safeResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER
-  const listen1 =
-    sectionPct["A_LISTEN"] ?? toPct(sectionScr["A_LISTEN"] ?? 0) ?? DEFAULT_CEFR_PERCENTAGE;
-  const listen2 =
-    sectionPct["D_LISTEN_ANSWER"] ??
-    toPct(sectionScr["D_LISTEN_ANSWER"] ?? 0) ??
-    DEFAULT_CEFR_PERCENTAGE;
+  // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
+  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Writing Score: C_GRAMMAR
-  const writingPct =
-    sectionPct["C_GRAMMAR"] ?? toPct(sectionScr["C_GRAMMAR"] ?? 0) ?? DEFAULT_WRITING_PERCENTAGE;
+  // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
+  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
-  // Speaking Score: average of A_SPEAKING and B_SPEAKING
-  const speak1 =
-    sectionPct["A_SPEAKING"] ?? toPct(sectionScr["A_SPEAKING"] ?? 0) ?? DEFAULT_SPEAKING_PERCENTAGE;
-  const speak2 =
-    sectionPct["B_SPEAKING"] ?? toPct(sectionScr["B_SPEAKING"] ?? 0) ?? DEFAULT_SPEAKING_PERCENTAGE;
+  // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
+  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
@@ -254,19 +236,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         </View>
 
         <Text style={scoreStyles.cefrTitle}>CEFR: {actualCefr}</Text>
-        {completedDate ? (
-          <Text
-            style={{
-              fontSize: 11,
-              color: "#94a3b8",
-              textAlign: "center",
-              marginBottom: 4,
-              marginTop: -4,
-            }}
-          >
-            Completed on {completedDate}
-          </Text>
-        ) : null}
+
         {/* 2. Grid breakdown (2x2) */}
         <View style={scoreStyles.gridContainer}>
           {/* Row 1 */}
@@ -416,12 +386,10 @@ export function LearningJourneyScreen() {
   // - Level 2: showModules === true && selectedModuleId === null (Modules list view)
   // - Level 3: selectedModuleId !== null (Days list view)
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-  const [showModules, setShowModules] = useState(false);
 
   useEffect(() => {
     if (params?.module_id) {
       setSelectedModuleId(params.module_id);
-      setShowModules(true);
     }
   }, [params?.module_id]);
   const {
@@ -452,11 +420,19 @@ export function LearningJourneyScreen() {
     });
   }, [showPreAssessmentModal, profile]);
 
-  const { data: liveResult, isFetching: liveResultFetching } = useGetUserAssessmentResultQuery(
-    { user_id: profile?.id ?? "" },
-    // Fetch as soon as we have a user ID — the modal handles empty/loading/complete states
-    { skip: !profile?.id },
-  );
+  const {
+    data: liveResult,
+    error: liveResultError,
+    isFetching: liveResultFetching,
+  } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !profile?.id });
+
+  useEffect(() => {
+    console.log("[DEBUG results] user_id:", profile?.id);
+    console.log("[DEBUG results] gate.canEnter:", gate.canEnter);
+    console.log("[DEBUG results] liveResult:", liveResult);
+    console.log("[DEBUG results] liveResultError:", liveResultError);
+    console.log("[DEBUG results] liveResultFetching:", liveResultFetching);
+  }, [profile?.id, gate.canEnter, liveResult, liveResultError, liveResultFetching]);
 
   useEffect(() => {
     if (liveResult && "percentage" in liveResult) {
@@ -472,11 +448,6 @@ export function LearningJourneyScreen() {
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
-
-  const handlePreAssessmentPress = () => {
-    setShowPreAssessmentModal(true);
-    refetchProfile();
-  };
 
   const {
     data: personalizedPath,
@@ -502,7 +473,7 @@ export function LearningJourneyScreen() {
       refetchPath();
       refetchProgression();
     }
-    if (selectedModule) {
+    if (targetModuleIdForDays) {
       refetchDays();
     }
   };
@@ -514,10 +485,6 @@ export function LearningJourneyScreen() {
     }
     return null;
   }, [personalizedPath?.modules, selectedModuleId]);
-
-  const filteredModules = useMemo(() => {
-    return personalizedPath?.modules.filter((m) => m.module_no !== 0) ?? [];
-  }, [personalizedPath?.modules]);
 
   const activeModule = useMemo(() => {
     if (!progression?.unlocked_modules?.length) return null;
@@ -531,38 +498,42 @@ export function LearningJourneyScreen() {
     return progression.unlocked_modules[0];
   }, [progression?.unlocked_modules]);
 
-  // Derived state for the dynamically updated CEFR learning stage:
-  const isCefrCompleted = useMemo(() => {
-    if (!progression?.unlocked_modules?.length) return false;
-    return progression.unlocked_modules.every((m) => m.completed);
-  }, [progression?.unlocked_modules]);
-
   const activeModuleId = selectedModule?.id || activeModule?.module_id || "";
+  const targetModuleIdForDays = selectedModule?.id || activeModule?.module_id || "";
 
   const {
     data: days,
     isLoading: daysLoading,
     isError: daysError,
     refetch: refetchDays,
-  } = useGetModuleDaysQuery(selectedModule?.id ?? "", {
-    skip: !selectedModule,
+  } = useGetModuleDaysQuery(targetModuleIdForDays, {
+    skip: !targetModuleIdForDays,
   });
 
-  const { data: moduleProgress, refetch: refetchProgress } = useGetModuleProgressQuery(
-    activeModuleId,
-    { skip: !activeModuleId },
-  );
+  const { refetch: refetchProgress } = useGetModuleProgressQuery(activeModuleId, {
+    skip: !activeModuleId,
+  });
 
-  const { data: engagement, refetch: refetchEngagement } = useGetModuleEngagementQuery(
-    activeModuleId,
-    { skip: !activeModuleId },
-  );
+  const { refetch: refetchEngagement } = useGetModuleEngagementQuery(activeModuleId, {
+    skip: !activeModuleId,
+  });
 
-  const firstIncompleteIdx = useMemo(() => {
-    if (!days) return 0;
-    const idx = days.findIndex((d) => !d.is_completed);
-    return idx === -1 ? days.length : idx;
+  const firstIncompleteDayNumber = useMemo(() => {
+    if (!days) return 1;
+    const sortedDays = [...days].sort((a, b) => a.day_number - b.day_number);
+    const firstIncomplete = sortedDays.find((d) => !d.is_completed);
+    return firstIncomplete
+      ? firstIncomplete.day_number
+      : (sortedDays[sortedDays.length - 1]?.day_number ?? 12) + 1;
   }, [days]);
+
+  // Find progression details for the active/selected module
+  const activeProgressionModule = useMemo(() => {
+    if (!progression?.unlocked_modules || !targetModuleIdForDays) return null;
+    return progression.unlocked_modules.find((m) => m.module_id === targetModuleIdForDays);
+  }, [progression?.unlocked_modules, targetModuleIdForDays]);
+
+  const unlockedDays = activeProgressionModule?.unlocked_days ?? [1, 2, 3, 4, 5, 6];
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -572,7 +543,7 @@ export function LearningJourneyScreen() {
         await Promise.all([refetchPath(), refetchProgression()]);
       }
       if (selectedModule) {
-        await Promise.all([refetchProgress(), refetchEngagement()]);
+        await Promise.all([refetchProgress(), refetchEngagement(), refetchDays()]);
       }
     } finally {
       setRefreshing(false);
@@ -582,9 +553,26 @@ export function LearningJourneyScreen() {
     refetchProgression,
     refetchProgress,
     refetchEngagement,
+    refetchDays,
     selectedModule,
     gate.canEnter,
   ]);
+
+  const handleStartOrResumeAssessment = async () => {
+    setIsStartingSession(true);
+    try {
+      const session = await startSession().unwrap();
+      router.push({
+        pathname: "/assessment-entry" as any,
+        params: { session_id: session.session_id },
+      });
+    } catch (err: any) {
+      console.error("Start/resume assessment session failed:", err);
+      Alert.alert("Error", "Could not start assessment. Please try again.");
+    } finally {
+      setIsStartingSession(false);
+    }
+  };
 
   const isError =
     (profileError ||
@@ -633,7 +621,7 @@ export function LearningJourneyScreen() {
             <View className="w-full gap-3 mt-4">
               <Pressable
                 onPress={handleRetry}
-                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
+                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </Pressable>
@@ -661,34 +649,17 @@ export function LearningJourneyScreen() {
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
           <View className="px-6 pt-12">
             <Text className="text-slate-500 text-sm">
-              Hi{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}!
+              Hi{profile?.name ? `, ${profile?.name?.split(" ")[0] || ""}` : ""}!
             </Text>
             <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
           </View>
           <GateEmptyState
-            reason={gate.blockedReason}
+            reason="onboarding"
             completedSections={completedSections}
-            onPrimary={async () => {
-              if (gate.blockedReason === "onboarding") {
-                router.push("/onboarding");
-                return;
-              }
-              setIsStartingSession(true);
-              try {
-                // Authoritatively start or resume the assessment session on the backend
-                const session = await startSession().unwrap();
-                router.push({
-                  pathname: "/assessment-entry" as any,
-                  params: { session_id: session.session_id },
-                });
-              } catch (err: any) {
-                console.error("Start/resume assessment session failed:", err);
-                Alert.alert("Error", "Could not start assessment. Please try again.");
-              } finally {
-                setIsStartingSession(false);
-              }
+            onPrimary={() => {
+              router.push("/onboarding");
             }}
-            isLoading={isStartingSession}
+            isLoading={false}
           />
         </ScrollView>
       </SafeAreaView>
@@ -696,92 +667,66 @@ export function LearningJourneyScreen() {
   }
 
   const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
-  const completedCount = completedSections.length;
-  const totalSections = 6;
-  const progressPct = Math.round((completedCount / totalSections) * 100);
 
-  const handleStartResumeAssessment = async () => {
-    setIsStartingSession(true);
-    try {
-      const session = await startSession().unwrap();
-      router.push({
-        pathname: "/assessment-entry" as any,
-        params: { session_id: session.session_id },
-      });
-    } catch (err: any) {
-      console.error("Start/resume assessment session failed:", err);
-      Alert.alert("Error", "Could not start assessment. Please try again.");
-    } finally {
-      setIsStartingSession(false);
-    }
-  };
+  // Diagnostic Assessment complete flag
+  const isDiagnosticComplete = isPreAssessmentDone;
 
-  const cefrBadgeLabel = !isPreAssessmentDone
-    ? "Locked"
-    : isCefrCompleted
-      ? "Completed"
-      : "In Progress";
-  const cefrBadgeStyle = !isPreAssessmentDone
-    ? timelineStyles.badgeLocked
-    : isCefrCompleted
-      ? timelineStyles.badgeCompleted
-      : timelineStyles.badgeInProgress;
-  const cefrCircleStyle = !isPreAssessmentDone
-    ? timelineStyles.stageCircleLocked
-    : isCefrCompleted
-      ? timelineStyles.stageCircleCompleted
-      : timelineStyles.stageCircleInProgress;
-  const cefrIcon = !isPreAssessmentDone
-    ? ("lock" as const)
-    : isCefrCompleted
-      ? ("check" as const)
-      : ("edit-2" as const);
-  const cefrProgressPercent = moduleProgress?.progress_percentage ?? 0;
-  const cefrProgressLabel = !isPreAssessmentDone
-    ? "Pre-assessment required"
-    : isCefrCompleted
-      ? "All modules completed"
-      : moduleProgress
-        ? `${moduleProgress.completed_activities} of ${moduleProgress.total_activities} activities done`
-        : "0 activities done";
-  const cefrSubtitle = !isPreAssessmentDone
-    ? "Complete pre-assessment to unlock"
-    : isCefrCompleted
-      ? "All modules mastered successfully!"
-      : activeModule
-        ? `Active: ${activeModule.title}`
-        : "Challenge yourself";
-  const cefrXpText = !isPreAssessmentDone
-    ? "0 XP earned"
-    : `${engagement?.xp_earned ?? 0} XP earned in this module`;
+  // Calculate dynamic Diagnostic Assessment details
+  const diagProgress = isDiagnosticComplete
+    ? 100
+    : Math.round((completedSections.length / 6) * 100);
+  const diagLessonsCompleted = isDiagnosticComplete ? 6 : completedSections.length;
+  const diagXp = isDiagnosticComplete ? 150 : completedSections.length * 25;
 
-  const isPostUnlocked = isCefrCompleted;
-  const postCircleStyle = isPostUnlocked
-    ? timelineStyles.stageCircleInProgress
-    : timelineStyles.stageCircleLocked;
-  const postBadgeLabel = isPostUnlocked ? "Available" : "Locked";
-  const postBadgeStyle = isPostUnlocked
-    ? timelineStyles.badgeInProgress
-    : timelineStyles.badgeLocked;
-  const postTitleStyle = isPostUnlocked
-    ? timelineStyles.stageTitle
-    : [timelineStyles.stageTitle, timelineStyles.textLocked];
-  const postIcon = isPostUnlocked ? ("edit-2" as const) : ("lock" as const);
+  // Topics for days 1 to 12
+  const STATIC_DAY_TOPICS = [
+    "First Impression",
+    "Personal Background",
+    "Educational Journey",
+    "Interests & Hobbies",
+    "Career Goals",
+    "Workplace Goals",
+    "Work Experience",
+    "Skill Highlights",
+    "Project Showcase",
+    "Mock Interview I",
+    "Mock Interview II",
+    "Final Module Check",
+  ];
 
-  const isResumeUnlocked = isCefrCompleted;
-  const resumeCircleStyle = isResumeUnlocked
-    ? timelineStyles.stageCircleInProgress
-    : timelineStyles.stageCircleLocked;
-  const resumeBadgeLabel = isResumeUnlocked ? "Available" : "Locked";
-  const resumeBadgeStyle = isResumeUnlocked
-    ? timelineStyles.badgeInProgress
-    : timelineStyles.badgeLocked;
-  const resumeTitleStyle = isResumeUnlocked
-    ? timelineStyles.stageTitle
-    : [timelineStyles.stageTitle, timelineStyles.textLocked];
-  const resumeIcon = isResumeUnlocked ? ("edit-2" as const) : ("lock" as const);
+  // Resolve day items for current phase
+  const dayItems = [];
+  for (const dayNumber of unlockedDays) {
+    if (dayNumber === undefined) continue;
+    const dayObj = days?.find((d) => d.day_number === dayNumber);
+    const isCompleted = isDiagnosticComplete && !!dayObj?.is_completed;
+    const isLocked = !isDiagnosticComplete || dayNumber > firstIncompleteDayNumber;
+    const isInProgress = isDiagnosticComplete && dayNumber === firstIncompleteDayNumber;
 
-  const totalDays = days?.length ?? 0;
+    const topic = dayObj?.topic || STATIC_DAY_TOPICS[dayNumber - 1] || "Daily Activities";
+    const hours = dayObj?.duration_hours ?? 0.25;
+    const minutes = Math.max(1, Math.round(hours * 60));
+
+    const title = `Day ${dayNumber}: ${topic}`;
+    const subtitle = isLocked
+      ? "Complete previous stages to unlock"
+      : isCompleted
+        ? `Done · ${minutes} min`
+        : `Tap to start · ~${minutes} min`;
+
+    dayItems.push({
+      id: dayObj?.id || `static_day_${dayNumber}`,
+      dayNumber,
+      title,
+      subtitle,
+      isCompleted,
+      isInProgress,
+      isLocked,
+      xp: isCompleted ? 50 : 0,
+      durationMinutes: minutes,
+      dayObj,
+    });
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
@@ -798,390 +743,419 @@ export function LearningJourneyScreen() {
         contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View className="mb-6">
-          <Text className="text-slate-500 text-sm">
-            Hi{profile?.name ? `, ${profile.name.split(" ")[0]}` : ""}!
-          </Text>
-          <Text className="text-slate-900 text-3xl font-extrabold mt-1">My Learning</Text>
-          <Text className="text-slate-500 mt-1">Track where you&apos;re headed</Text>
-        </View>
-
-        {/* Dynamic Back Navigation Bars */}
-        {selectedModule ? (
-          <Pressable
-            onPress={() => setSelectedModuleId(null)}
-            className="self-start bg-white border border-slate-200 px-4 py-2 rounded-xl mb-6 active:opacity-70 flex-row items-center gap-1.5 shadow-sm"
-          >
-            <Feather name="arrow-left" size={14} color="#475569" />
-            <Text className="text-slate-700 font-bold text-xs">Back to modules</Text>
-          </Pressable>
-        ) : showModules ? (
-          <Pressable
-            onPress={() => setShowModules(false)}
-            className="self-start bg-white border border-slate-200 px-4 py-2 rounded-xl mb-6 active:opacity-70 flex-row items-center gap-1.5 shadow-sm"
-          >
-            <Feather name="arrow-left" size={14} color="#475569" />
-            <Text className="text-slate-700 font-bold text-xs">Back to stages</Text>
-          </Pressable>
-        ) : null}
-
-        {selectedModule && engagement ? (
-          <View
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: 16,
-              padding: 16,
-              marginBottom: 24,
-              shadowColor: "#0f172a",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.04,
-              shadowRadius: 4,
-              elevation: 1,
-            }}
-          >
-            <CefrProgressBar
-              currentPct={engagement.cefr_progress_pct}
-              nextBand={engagement.next_cefr_band}
-              label="CEFR progress"
-            />
-          </View>
-        ) : null}
-
-        {/* ========================================== */}
-        {/* LEVEL 1: STAGES TIMELINE VIEW              */}
-        {/* ========================================== */}
-        {!selectedModule && !showModules && (
-          <View style={timelineStyles.stagesCard}>
-            {/* Vertical timeline connector line */}
-            <View style={timelineStyles.timelineVerticalLine} />
-
-            {/* Stage 1: Pre Assessment (Pressable to show scorecard if done, else View with action button) */}
-            {isPreAssessmentDone ? (
-              <Pressable
-                onPress={handlePreAssessmentPress}
-                style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
-              >
-                {/* Left Circle Icon — check if completed, clock if pending */}
-                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                  <Feather name="check" size={16} color="white" />
-                </View>
-
-                {/* Right Content */}
-                <View style={timelineStyles.stageContent}>
-                  <View style={timelineStyles.stageHeaderRow}>
-                    <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
-                    <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                      <Text style={timelineStyles.badgeText}>
-                        {`Level ${profile?.cefr_range || "Assessed"}`}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={timelineStyles.stageSubtitle}>
-                    {`Assessed proficiency: Band ${profile?.cefr_range || "Assessed"}`}
-                  </Text>
-
-                  {/* Thick Progress Bar */}
-                  <View style={timelineStyles.progressBarBg}>
-                    <View
-                      style={[
-                        timelineStyles.progressBarFill,
-                        {
-                          width: "100%",
-                          backgroundColor: "#475569",
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  <View style={timelineStyles.progressLabelRow}>
-                    <Text style={timelineStyles.progressLabelText}>Completed</Text>
-                    <Text style={timelineStyles.progressLabelPercent}>100%</Text>
-                  </View>
-
-                  <Text style={timelineStyles.xpText}>350 XP earned</Text>
-                </View>
-              </Pressable>
-            ) : (
-              <View style={timelineStyles.stageRow}>
-                {/* Left Circle Icon — check if completed, clock if pending */}
-                <View
-                  style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleInProgress]}
-                >
-                  <Feather name="clock" size={16} color="white" />
-                </View>
-
-                {/* Right Content */}
-                <View style={timelineStyles.stageContent}>
-                  <View style={timelineStyles.stageHeaderRow}>
-                    <Text style={timelineStyles.stageTitle}>Pre-Assessment</Text>
-                    <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
-                      <Text style={timelineStyles.badgeText}>
-                        {completedCount > 0 ? "In Progress" : "Pending"}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={timelineStyles.stageSubtitle}>
-                    Complete the diagnostic to unlock your learning path
-                  </Text>
-
-                  {/* Thick Progress Bar */}
-                  <View style={timelineStyles.progressBarBg}>
-                    <View
-                      style={[
-                        timelineStyles.progressBarFill,
-                        {
-                          width: `${progressPct}%`,
-                          backgroundColor: "#475569",
-                        },
-                      ]}
-                    />
-                  </View>
-
-                  <View style={timelineStyles.progressLabelRow}>
-                    <Text style={timelineStyles.progressLabelText}>
-                      {`${completedCount} of ${totalSections} completed`}
-                    </Text>
-                    <Text style={timelineStyles.progressLabelPercent}>{progressPct}%</Text>
-                  </View>
-
-                  <Text style={timelineStyles.xpText}>
-                    {completedCount > 0 ? `${completedCount * 50} XP earned` : "0 XP earned"}
-                  </Text>
-
-                  {/* Continue/Resume Assessment Button */}
-                  <Pressable
-                    onPress={handleStartResumeAssessment}
-                    disabled={isStartingSession}
-                    style={timelineStyles.continueButton}
-                  >
-                    {isStartingSession ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Text style={timelineStyles.continueButtonText}>
-                        {completedCount > 0 ? "Resume Assessment" : "Start Assessment"}
-                      </Text>
-                    )}
-                  </Pressable>
-                </View>
-              </View>
-            )}
-
-            {/* Stage 2: CEFR Score */}
-            <View style={timelineStyles.stageRow}>
-              {/* Left Circle Icon */}
-              <View style={[timelineStyles.stageIconCircle, cefrCircleStyle]}>
-                <Feather name={cefrIcon} size={14} color="white" />
-              </View>
-
-              {/* Right Content */}
-              <View style={timelineStyles.stageContent}>
-                <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={timelineStyles.stageTitle}>CEFR Score</Text>
-                  <View style={[timelineStyles.statusBadge, cefrBadgeStyle]}>
-                    <Text style={timelineStyles.badgeText}>{cefrBadgeLabel}</Text>
-                  </View>
-                </View>
-                <Text style={timelineStyles.stageSubtitle}>{cefrSubtitle}</Text>
-
-                {/* Thick Progress Bar */}
-                <View style={timelineStyles.progressBarBg}>
-                  <View
-                    style={[
-                      timelineStyles.progressBarFill,
-                      { width: `${cefrProgressPercent}%`, backgroundColor: "#475569" },
-                    ]}
-                  />
-                </View>
-
-                <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>{cefrProgressLabel}</Text>
-                  <Text style={timelineStyles.progressLabelPercent}>{cefrProgressPercent}%</Text>
-                </View>
-
-                <Text style={timelineStyles.xpText}>{cefrXpText}</Text>
-
-                {/* Continue Learning CTA — only visible if pre-assessment is done */}
-                {isPreAssessmentDone && (
-                  <Pressable
-                    onPress={() => setShowModules(true)}
-                    style={timelineStyles.continueButton}
-                  >
-                    <Text style={timelineStyles.continueButtonText}>
-                      {isCefrCompleted ? "Review Modules" : "Continue Learning"}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-
-            {/* Stage 3: Post Assessment */}
-            <View style={timelineStyles.stageRow}>
-              {/* Left Circle Icon */}
-              <View style={[timelineStyles.stageIconCircle, postCircleStyle]}>
-                <Feather name={postIcon} size={14} color="white" />
-              </View>
-
-              {/* Right Content */}
-              <View style={timelineStyles.stageContent}>
-                <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={postTitleStyle}>Post Assessment</Text>
-                  <View style={[timelineStyles.statusBadge, postBadgeStyle]}>
-                    <Text style={timelineStyles.badgeText}>{postBadgeLabel}</Text>
-                  </View>
-                </View>
-                <Text style={timelineStyles.stageSubtitle}>Craft effective messages</Text>
-                {!isPostUnlocked ? (
-                  <Text style={timelineStyles.lockedHintText}>
-                    Complete previous stages to unlock
-                  </Text>
-                ) : (
-                  <Pressable
-                    onPress={() => {
-                      Alert.alert(
-                        "Coming Soon",
-                        "Post-Assessment will be available in the next release!",
-                      );
-                    }}
-                    style={timelineStyles.continueButton}
-                  >
-                    <Text style={timelineStyles.continueButtonText}>Take Post-Assessment</Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-
-            {/* Stage 4: Resume option */}
-            <View style={[timelineStyles.stageRow, { marginBottom: 0 }]}>
-              {/* Left Circle Icon */}
-              <View style={[timelineStyles.stageIconCircle, resumeCircleStyle]}>
-                <Feather name={resumeIcon} size={14} color="white" />
-              </View>
-
-              {/* Right Content */}
-              <View style={timelineStyles.stageContent}>
-                <View style={timelineStyles.stageHeaderRow}>
-                  <Text style={resumeTitleStyle}>Resume option</Text>
-                  <View style={[timelineStyles.statusBadge, resumeBadgeStyle]}>
-                    <Text style={timelineStyles.badgeText}>{resumeBadgeLabel}</Text>
-                  </View>
-                </View>
-                <Text style={timelineStyles.stageSubtitle}>Optimize your Resume</Text>
-                {!isResumeUnlocked ? (
-                  <Text style={timelineStyles.lockedHintText}>
-                    Complete previous stages to unlock
-                  </Text>
-                ) : (
-                  <Pressable
-                    onPress={() => {
-                      router.push("/profile/resume");
-                    }}
-                    style={timelineStyles.continueButton}
-                  >
-                    <Text style={timelineStyles.continueButtonText}>Optimize Resume</Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-
-        {/* ========================================== */}
-        {/* LEVEL 2: CEFR MODULES LIST VIEW            */}
-        {/* ========================================== */}
-        {!selectedModule &&
-          showModules &&
-          (progression?.unlocked_modules?.length
-            ? progression.unlocked_modules.map((module, idx) => {
-                const isUnlocked = !module.locked;
-                const isCompleted = module.completed;
-                const state = isCompleted ? "completed" : isUnlocked ? "available" : "locked";
-                const badgeLabel = isCompleted
-                  ? "Completed"
-                  : isUnlocked
-                    ? "In progress"
-                    : "Locked";
-                const subtitle = isCompleted
-                  ? "Module fully completed!"
-                  : isUnlocked
-                    ? "Tap to view days and activities"
-                    : "Locked until previous module is complete";
-
-                return (
-                  <TimelineRow
-                    key={module.module_id}
-                    title={`Module ${module.module_no}: ${module.title}`}
-                    subtitle={subtitle}
-                    state={state}
-                    badgeLabel={badgeLabel}
-                    onPress={isUnlocked ? () => setSelectedModuleId(module.module_id) : undefined}
-                    isLast={idx === progression.unlocked_modules.length - 1}
-                  />
-                );
-              })
-            : filteredModules.map((module, idx) => {
-                const isUnlocked = module.is_unlocked || idx === 0;
-                return (
-                  <TimelineRow
-                    key={module.id}
-                    title={`Module ${module.module_no}: ${module.title}`}
-                    subtitle={
-                      isUnlocked
-                        ? "Tap to view days and activities"
-                        : "Locked until previous module is complete"
-                    }
-                    state={isUnlocked ? "available" : "locked"}
-                    badgeLabel={isUnlocked ? "In progress" : "Locked"}
-                    onPress={isUnlocked ? () => setSelectedModuleId(module.id) : undefined}
-                    isLast={idx === filteredModules.length - 1}
-                  />
-                );
-              }))}
-
-        {!selectedModule && showModules && personalizedPath && filteredModules.length === 0 ? (
-          <View className="bg-amber-50 rounded-2xl p-4 mt-2">
-            <Text className="text-amber-800 text-sm">
-              No modules are available yet. Pull to refresh once content is published.
+        {/* Top Header greeting with avatar */}
+        <View className="flex-row justify-between items-center mb-6">
+          <View className="flex-1">
+            <Text style={{ fontSize: 26, fontWeight: "900", color: "#4f46e5" }}>
+              Hi,{" "}
+              <Text style={{ color: "#94a3b8" }}>
+                {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(0, 2)}
+              </Text>
+              <Text style={{ color: "#84cc16" }}>
+                {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(2)}!
+              </Text>
+            </Text>
+            <Text style={{ fontSize: 14, color: "#94a3b8", marginTop: 4 }}>
+              Ready to learn something new?
             </Text>
           </View>
-        ) : null}
-
-        {/* ========================================== */}
-        {/* LEVEL 3: DAY ACTIVITIES CHECKLIST VIEW     */}
-        {/* ========================================== */}
-        {selectedModule &&
-          days?.slice(0, 12)?.map((day, idx) => {
-            const dayNumber = idx + 1;
-            const isCompleted = day.is_completed;
-            const isLocked = idx > firstIncompleteIdx;
-            const hours = day.duration_hours ?? 0.25;
-            const minutes = Math.max(1, Math.round(hours * 60));
-            const subtitle = isLocked
-              ? `~${minutes} min · locked`
-              : isCompleted
-                ? `Done · ${minutes} min`
-                : `Tap to start · ~${minutes} min`;
-            return (
-              <TimelineRow
-                key={day.id}
-                title={`Day ${dayNumber}`}
-                subtitle={subtitle}
-                state={isLocked ? "locked" : isCompleted ? "completed" : "in_progress"}
-                badgeLabel={isLocked ? "Locked" : undefined}
-                onPress={
-                  isLocked
-                    ? undefined
-                    : () =>
-                        router.push({
-                          pathname: `/learning-journey/module/${day.id}` as never,
-                          params: { module_id: selectedModule?.id ?? "" },
-                        })
-                }
-                isLast={idx === Math.min(11, totalDays - 1)}
+          <Pressable
+            onPress={() => router.push("/profile" as never)}
+            className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
+          >
+            {profile?.avatar_id ? (
+              <Image
+                source={{
+                  uri: resolveApiAssetUrl(`/static/avatars/${profile.avatar_id}.png`) ?? undefined,
+                }}
+                className="w-full h-full"
               />
+            ) : (
+              <Feather name="user" size={20} color="#94a3b8" />
+            )}
+          </Pressable>
+        </View>
+
+        {/* Section title header */}
+        <View style={{ marginBottom: 16, marginTop: 8 }}>
+          <Text style={{ fontSize: 22, fontWeight: "800", color: "#0f172a" }}>My Learning</Text>
+          <Text style={{ fontSize: 14, color: "#64748b", marginTop: 4 }}>
+            Track where you're headed
+          </Text>
+        </View>
+
+        {/* Timeline wrapper card */}
+        <View style={timelineStyles.stagesCard}>
+          {/* Item 1: Free Content */}
+          <Pressable
+            onPress={() =>
+              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
+            }
+            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+              <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
+                <Feather name="check" size={16} color="white" />
+              </View>
+              {/* Connector line segment going down */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 36,
+                  left: 17,
+                  width: 3,
+                  bottom: -32,
+                  backgroundColor: "#3b82f6",
+                  zIndex: 1,
+                }}
+              />
+            </View>
+            <View style={timelineStyles.stageContent}>
+              <View style={timelineStyles.stageHeaderRow}>
+                <Text style={timelineStyles.stageTitle}>Free Content</Text>
+                <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                  <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                </View>
+              </View>
+              <Text style={timelineStyles.stageSubtitle}>The Fundamentals of Communication</Text>
+
+              <View style={timelineStyles.progressBarBg}>
+                <LinearGradient
+                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                />
+              </View>
+
+              <View style={timelineStyles.progressLabelRow}>
+                <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
+                <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+              </View>
+              <Text style={timelineStyles.xpText}>350 XP earned</Text>
+            </View>
+          </Pressable>
+
+          {/* Item 2: Trial Content */}
+          <Pressable
+            onPress={() =>
+              Alert.alert(
+                "Trial Content",
+                "This trial module is completed! Continue down your path.",
+              )
+            }
+            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+              <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
+                <Feather name="check" size={16} color="white" />
+              </View>
+              {/* Connector line segment going down */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 36,
+                  left: 17,
+                  width: 3,
+                  bottom: -32,
+                  backgroundColor: "#3b82f6",
+                  zIndex: 1,
+                }}
+              />
+            </View>
+            <View style={timelineStyles.stageContent}>
+              <View style={timelineStyles.stageHeaderRow}>
+                <Text style={timelineStyles.stageTitle}>Trial Content</Text>
+                <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                  <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                </View>
+              </View>
+              <Text style={timelineStyles.stageSubtitle}>Behaviour in Workplace</Text>
+
+              <View style={timelineStyles.progressBarBg}>
+                <LinearGradient
+                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                />
+              </View>
+
+              <View style={timelineStyles.progressLabelRow}>
+                <Text style={timelineStyles.progressLabelText}>7 lessons completed</Text>
+                <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+              </View>
+              <Text style={timelineStyles.xpText}>250 XP earned</Text>
+            </View>
+          </Pressable>
+
+          {/* Item 3: Diagnostic Assessment */}
+          <Pressable
+            onPress={
+              isDiagnosticComplete
+                ? () => setShowPreAssessmentModal(true)
+                : handleStartOrResumeAssessment
+            }
+            disabled={isStartingSession}
+            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+          >
+            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+              <View
+                style={[
+                  timelineStyles.stageIconCircle,
+                  isDiagnosticComplete
+                    ? timelineStyles.stageCircleCompleted
+                    : timelineStyles.stageCircleInProgress,
+                ]}
+              >
+                <Feather name="check" size={16} color="white" />
+              </View>
+              {/* Connector line segment going down */}
+              <View
+                style={{
+                  position: "absolute",
+                  top: 36,
+                  left: 17,
+                  width: 3,
+                  bottom: -32,
+                  backgroundColor: "#3b82f6",
+                  zIndex: 1,
+                }}
+              />
+            </View>
+            <View style={timelineStyles.stageContent}>
+              <View style={timelineStyles.stageHeaderRow}>
+                <Text style={timelineStyles.stageTitle}>Diagnostic Assessment</Text>
+                <View
+                  style={[
+                    timelineStyles.statusBadge,
+                    isDiagnosticComplete
+                      ? timelineStyles.badgeCompleted
+                      : timelineStyles.badgeInProgress,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      timelineStyles.badgeText,
+                      { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
+                    ]}
+                  >
+                    {isDiagnosticComplete
+                      ? `Level ${profile?.cefr_range || "Assessed"}`
+                      : "In Progress"}
+                  </Text>
+                </View>
+              </View>
+              <Text style={timelineStyles.stageSubtitle}>Assessing your skills</Text>
+
+              <View style={timelineStyles.progressBarBg}>
+                <LinearGradient
+                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    timelineStyles.progressBarFill,
+                    { width: isDiagnosticComplete ? "100%" : `${diagProgress}%` },
+                  ]}
+                />
+              </View>
+
+              <View style={timelineStyles.progressLabelRow}>
+                <Text style={timelineStyles.progressLabelText}>
+                  {diagLessonsCompleted} of 6 sections completed
+                </Text>
+                <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
+              </View>
+              <Text style={timelineStyles.xpText}>
+                {isStartingSession
+                  ? "Launching..."
+                  : isDiagnosticComplete
+                    ? "150 XP earned"
+                    : `${diagXp} XP earned`}
+              </Text>
+
+              {/* Continue learning CTA button inside active card */}
+              {!isDiagnosticComplete && (
+                <Pressable
+                  onPress={handleStartOrResumeAssessment}
+                  disabled={isStartingSession}
+                  style={timelineStyles.continueButton}
+                >
+                  <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                </Pressable>
+              )}
+            </View>
+          </Pressable>
+
+          {/* Items 4-15: Days 1 to 12 */}
+          {dayItems.map((item, idx) => {
+            const isLast = idx === dayItems.length - 1;
+            const lineBgColor = item.isCompleted || item.isInProgress ? "#3b82f6" : "#cbd5e1";
+
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => {
+                  if (item.isLocked) {
+                    Alert.alert(
+                      "Locked Day",
+                      "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
+                    );
+                  } else if (!item.dayObj?.id) {
+                    Alert.alert(
+                      "Error",
+                      "Day content is not available yet. Please try refreshing.",
+                    );
+                  } else {
+                    router.push({
+                      pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+                      params: {
+                        module_id: targetModuleIdForDays,
+                        day_number: String(item.dayNumber),
+                      },
+                    });
+                  }
+                }}
+                style={({ pressed }) => [
+                  timelineStyles.stageRow,
+                  {
+                    opacity: pressed ? 0.8 : 1,
+                    marginBottom: isLast ? 0 : 32,
+                  },
+                ]}
+              >
+                <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+                  <View
+                    style={[
+                      timelineStyles.stageIconCircle,
+                      item.isCompleted
+                        ? timelineStyles.stageCircleCompleted
+                        : item.isInProgress
+                          ? timelineStyles.stageCircleInProgress
+                          : timelineStyles.stageCircleLocked,
+                    ]}
+                  >
+                    <Feather
+                      name={item.isCompleted ? "check" : item.isLocked ? "lock" : "play"}
+                      size={16}
+                      color={item.isCompleted || item.isInProgress ? "white" : "#b4b8da"}
+                    />
+                  </View>
+                  {/* Connector line segment going down */}
+                  {!isLast && (
+                    <View
+                      style={{
+                        position: "absolute",
+                        top: 36,
+                        left: 17,
+                        width: 3,
+                        bottom: -32,
+                        backgroundColor: lineBgColor,
+                        zIndex: 1,
+                      }}
+                    />
+                  )}
+                </View>
+                <View style={timelineStyles.stageContent}>
+                  <View style={timelineStyles.stageHeaderRow}>
+                    <Text
+                      style={[
+                        timelineStyles.stageTitle,
+                        item.isLocked && timelineStyles.textLocked,
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    {item.isLocked && (
+                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeLocked]}>
+                        <Text style={[timelineStyles.badgeText, { color: "#6366f1" }]}>Locked</Text>
+                      </View>
+                    )}
+                    {item.isCompleted && (
+                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                        <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>
+                          Completed
+                        </Text>
+                      </View>
+                    )}
+                    {item.isInProgress && (
+                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
+                        <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
+                          In Progress
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text
+                    style={[timelineStyles.stageSubtitle, item.isLocked && { color: "#cbd5e1" }]}
+                  >
+                    {item.subtitle}
+                  </Text>
+
+                  {!item.isLocked &&
+                    (() => {
+                      const totalAct = item.dayObj?.total_activities ?? 0;
+                      const compAct = item.dayObj?.completed_activities ?? 0;
+                      const pct = item.isCompleted ? 100 : (item.dayObj?.progress_percentage ?? 0);
+
+                      const progressLabelText = item.isCompleted
+                        ? "Completed"
+                        : compAct > 0
+                          ? `${compAct} of ${totalAct} activities completed`
+                          : "Not started";
+
+                      return (
+                        <>
+                          <View style={timelineStyles.progressBarBg}>
+                            <LinearGradient
+                              colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}
+                            />
+                          </View>
+                          <View style={timelineStyles.progressLabelRow}>
+                            <Text style={timelineStyles.progressLabelText}>
+                              {progressLabelText}
+                            </Text>
+                            <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
+                          </View>
+                          <Text style={timelineStyles.xpText}>
+                            {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                          </Text>
+                        </>
+                      );
+                    })()}
+
+                  {/* Continue learning CTA button inside active day card */}
+                  {item.isInProgress && (
+                    <Pressable
+                      onPress={() => {
+                        if (!item.dayObj?.id) {
+                          Alert.alert(
+                            "Error",
+                            "Day content is not available yet. Please try refreshing.",
+                          );
+                        } else {
+                          router.push({
+                            pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+                            params: {
+                              module_id: targetModuleIdForDays,
+                              day_number: String(item.dayNumber),
+                            },
+                          });
+                        }
+                      }}
+                      style={timelineStyles.continueButton}
+                    >
+                      <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                    </Pressable>
+                  )}
+                </View>
+              </Pressable>
             );
           })}
-
-        {/* Days empty state is handled via the error boundary to display the premium offline game */}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -1229,13 +1203,13 @@ const timelineStyles = StyleSheet.create({
     elevation: 1,
   },
   stageCircleCompleted: {
-    backgroundColor: "#475569",
+    backgroundColor: "#3b82f6",
   },
   stageCircleInProgress: {
-    backgroundColor: "#475569",
+    backgroundColor: "#3b82f6",
   },
   stageCircleLocked: {
-    backgroundColor: "#94a3b8",
+    backgroundColor: "#e2e5f5",
   },
   stageContent: {
     flex: 1,
@@ -1252,7 +1226,7 @@ const timelineStyles = StyleSheet.create({
     color: "#1e293b",
   },
   textLocked: {
-    color: "#64748b",
+    color: "#b4b8da",
   },
   statusBadge: {
     paddingVertical: 4,
@@ -1260,13 +1234,13 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 12,
   },
   badgeCompleted: {
-    backgroundColor: "#475569",
+    backgroundColor: "#dcfce7",
   },
   badgeInProgress: {
-    backgroundColor: "#475569",
+    backgroundColor: "#fef9c3",
   },
   badgeLocked: {
-    backgroundColor: "#475569",
+    backgroundColor: "#e0e7ff",
   },
   badgeText: {
     fontSize: 11,
@@ -1313,7 +1287,7 @@ const timelineStyles = StyleSheet.create({
     color: "#94a3b8",
   },
   continueButton: {
-    backgroundColor: "#475569",
+    backgroundColor: "#3b82f6",
     alignSelf: "flex-start",
     paddingVertical: 10,
     paddingHorizontal: 20,

@@ -125,7 +125,7 @@ export function RegisterScreen() {
         access_token: regResponse.access_token,
         refresh_token: regResponse.refresh_token,
         user: {
-          id: regResponse.user_id,
+          id: regResponse.user?.id || regResponse.user_id || "",
           name: fullName,
           email: email.trim(),
           phone_number: phone.trim(),

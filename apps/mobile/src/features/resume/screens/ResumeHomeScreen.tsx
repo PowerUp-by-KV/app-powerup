@@ -297,10 +297,7 @@ export function ResumeHomeScreen() {
   const handleBuildFromScratch = () => {
     dispatch(resetResume());
     dispatch(setCurrentStep(1));
-    router.push({
-      pathname: "/resume/builder",
-      params: { mode: "scratch" },
-    } as never);
+    router.push("/resume/builder" as never);
   };
 
   const handleEditResume = () => {

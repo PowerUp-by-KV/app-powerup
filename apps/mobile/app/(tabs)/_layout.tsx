@@ -2,15 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
 
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import { getAuthSession } from "@/services/auth-storage";
 
-const ACTIVE_COLOR = "#0f172a";
+const ACTIVE_COLOR = "#4f46e5";
 const INACTIVE_COLOR = "#94a3b8";
 
 export default function TabLayout() {
   const router = useRouter();
-  const headerShown = useClientOnlyValue(false, true);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -36,7 +34,7 @@ export default function TabLayout() {
           paddingBottom: 8,
           paddingTop: 6,
         },
-        headerShown,
+        headerShown: false,
       }}
     >
       <Tabs.Screen

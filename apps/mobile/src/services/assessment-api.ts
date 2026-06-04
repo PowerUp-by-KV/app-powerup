@@ -1,4 +1,4 @@
-import { api, API_BASE_URL } from "./api";
+import { api, API_BASE_URL, refreshAccessToken } from "./api";
 import { getAuthSession } from "./auth-storage";
 
 export interface StartSessionResponse {
@@ -235,11 +235,24 @@ export const assessmentApi = api.injectEndpoints({
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+          let response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
             method: "POST",
             headers,
             body: formData,
           });
+
+          if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              headers["Authorization"] = `Bearer ${newToken}`;
+              response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+                method: "POST",
+                headers,
+                body: formData,
+              });
+            }
+          }
+
           if (!response.ok) {
             const err = await response.json().catch(() => ({ detail: "Upload failed" }));
             return { error: { status: response.status, data: err } };
