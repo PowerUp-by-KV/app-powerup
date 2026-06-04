@@ -183,9 +183,9 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   // derivedResults is guaranteed non-null here because isAssessmentComplete is true
   // (we early-returned above when !isAssessmentComplete where derivedResults === null)
   const safeResults = derivedResults!;
-  const percentage = safeResults.percentage;
-  const obtainedPoints = Math.round(safeResults.total_score);
-  const totalPoints = Math.round(safeResults.max_score);
+  const percentage = safeResults.percentage ?? 0;
+  const obtainedPoints = Math.round(safeResults.total_score ?? 0);
+  const totalPoints = Math.round(safeResults.max_score ?? 0);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 

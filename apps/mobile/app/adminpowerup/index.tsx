@@ -58,6 +58,37 @@ export default function AdminPowerupPage() {
     );
   }
 
+  const hasAdminPassword = !!(
+    process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD
+  );
+  if (!hasAdminPassword) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <View
+          style={{
+            width: 400,
+            maxWidth: "100%",
+            backgroundColor: "#fff7ed",
+            borderWidth: 1,
+            borderColor: "#fed7aa",
+            borderRadius: 12,
+            padding: 24,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "800", color: "#9a3412", marginBottom: 8 }}>
+            Admin panel not configured
+          </Text>
+          <Text style={{ fontSize: 14, color: "#7c2d12", lineHeight: 22 }}>
+            <Text style={{ fontFamily: "monospace" }}>EXPO_PUBLIC_ADMIN_PANEL_PASSWORD</Text> is not
+            set in your environment.{"\n\n"}Add it to{" "}
+            <Text style={{ fontFamily: "monospace" }}>apps/mobile/.env</Text> and restart the dev
+            server with <Text style={{ fontFamily: "monospace" }}>pnpm start:clean</Text>.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   const onLogin = () => {
     try {
       if (pw === getAdminPassword()) {

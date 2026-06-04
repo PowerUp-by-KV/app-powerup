@@ -17,12 +17,8 @@ import { Feather, AntDesign } from "@expo/vector-icons";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
 
-import {
-  AuthResponse,
-  LoginRequest,
-  useLoginMutation,
-  useGoogleAuthMutation,
-} from "@/services/auth-api";
+import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
@@ -47,55 +43,9 @@ export function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
-  const [googleAuth] = useGoogleAuthMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
-
-  // Standard Google OAuth client configuration
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    androidClientId:
-      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-      "YOUR_GOOGLE_ANDROID_CLIENT_ID.apps.googleusercontent.com",
-    iosClientId:
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-      "YOUR_GOOGLE_IOS_CLIENT_ID.apps.googleusercontent.com",
-    webClientId:
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-      "YOUR_GOOGLE_WEB_CLIENT_ID.apps.googleusercontent.com",
-  });
-
-  // Handle successful Google Authentication callback
-  React.useEffect(() => {
-    if (response?.type === "success" && response.authentication?.idToken) {
-      handleGoogleAuthExchange(response.authentication.idToken);
-    }
-  }, [response]);
-
-  const handleGoogleAuthExchange = async (idToken: string) => {
-    try {
-      setIsLoading(true);
-      const res = await googleAuth({ id_token: idToken }).unwrap();
-      const mappedAuth: AuthResponse = {
-        access_token: res.access_token,
-        refresh_token: res.refresh_token,
-        user: {
-          id: res.user.id,
-          name: res.user.name,
-          email: res.user.email ?? undefined,
-          phone_number: res.user.phone_number ?? undefined,
-          profile_completed: res.user.profile_completed,
-        },
-      };
-      await persistAuthAndNavigate(mappedAuth, res.user.email || "");
-    } catch (err) {
-      Alert.alert(
-        "Google Authentication Failed",
-        getApiErrorMessage(err, "Unable to sign in with Google."),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
 
   // Prefetch onboarding questions in the background during the authentication handshake
   React.useEffect(() => {
@@ -274,10 +224,17 @@ export function LoginScreen() {
               {/* Social Login Buttons */}
               <View className="flex-row gap-4 w-full">
                 <TouchableOpacity
-                  onPress={() => promptAsync()}
-                  disabled={isLoading || !request}
+                  onPress={() => {
+                    promptGoogle().catch(() =>
+                      Alert.alert(
+                        "Google Sign-In",
+                        "Could not open Google sign-in. Please try again.",
+                      ),
+                    );
+                  }}
+                  disabled={isLoading || !googleRequest}
                   className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
-                    isLoading || !request ? "opacity-50" : ""
+                    isLoading || !googleRequest ? "opacity-50" : ""
                   }`}
                   activeOpacity={0.7}
                 >

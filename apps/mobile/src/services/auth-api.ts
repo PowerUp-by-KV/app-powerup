@@ -72,6 +72,10 @@ export interface UserProfile {
   email_verified?: boolean;
 }
 
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
 export interface SendEmailOtpRequest {
   email: string;
 }
@@ -162,7 +166,7 @@ export const authApi = api.injectEndpoints({
       invalidatesTags: ["Auth"],
     }),
 
-    googleAuth: builder.mutation<SocialAuthLoginResponse, GoogleAuthRequest>({
+    socialGoogleLogin: builder.mutation<AuthResponse, GoogleAuthRequest>({
       query: (body) => ({
         url: "/v1/auth/social/google",
         method: "POST",
@@ -181,5 +185,5 @@ export const {
   usePatchProfileMutation,
   useSendEmailOtpMutation,
   useVerifyEmailOtpMutation,
-  useGoogleAuthMutation,
+  useSocialGoogleLoginMutation,
 } = authApi;

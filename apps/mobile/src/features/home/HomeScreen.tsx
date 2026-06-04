@@ -161,7 +161,7 @@ export function HomeScreen() {
             {
               title: "Resume Buddy",
               subtitle: "Know what recruiters notice",
-              onPress: () => router.push("/resume" as never),
+              onPress: () => router.push("/resume-buddy" as never),
             },
             {
               title: "Craft your Resume",
