@@ -215,7 +215,11 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
               onPress={async () => {
                 try {
                   const res: any = await DocumentPicker.getDocumentAsync({
-                    type: "application/pdf",
+                    type: [
+                      "application/pdf",
+                      "application/msword",
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ],
                   });
                   if (res.assets && res.assets.length > 0) {
                     const asset = res.assets[0];

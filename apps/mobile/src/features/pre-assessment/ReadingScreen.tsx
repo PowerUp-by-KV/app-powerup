@@ -60,7 +60,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const readingData = sectionData as ReadingSectionResponse | undefined;
   const questions =
     readingData?.questions ||
-    (readingData?.passages && readingData.passages.flatMap((p) => p.questions)) ||
+    (readingData?.passages && readingData.passages.flatMap((p) => p.questions || [])) ||
     readingData?.sentences ||
     readingData?.items ||
     readingData?.prompts ||

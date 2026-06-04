@@ -36,12 +36,13 @@ const ALLOWED_BEFORE_ONBOARDING = [
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
+  const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
   const [localProfileCompleted, setLocalProfileCompleted] = useState<boolean>(false);
   const [isLocalReady, setIsLocalReady] = useState(false);
 
-  // Reload session and local completion status on route/segment changes
+  // Reload session and local completion status on top-level route group changes
   useEffect(() => {
     let active = true;
     const loadLocal = async () => {
@@ -64,7 +65,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [segments]);
+  }, [currentRoute]);
 
   const userId = session?.user?.id;
   const { data: onboardingStatus, isLoading: isOnboardingLoading } = useGetOnboardingStatusQuery(
@@ -77,7 +78,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLocalReady) return;
 
-    const currentRoute = segments[0] as string | undefined;
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
 
     if (!session) {
@@ -120,7 +120,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     router,
   ]);
 
-  const currentRoute = segments[0] as string | undefined;
   const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
   const isAllowedBeforeOnboarding =
     isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));

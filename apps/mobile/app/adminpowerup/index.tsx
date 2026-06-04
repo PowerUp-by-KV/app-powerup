@@ -43,8 +43,10 @@ export default function AdminPowerupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(SESSION_KEY) === "1") {
-      setAuthed(true);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      if (window.localStorage.getItem(SESSION_KEY) === "1") {
+        setAuthed(true);
+      }
     }
   }, []);
 
@@ -89,7 +91,9 @@ export default function AdminPowerupPage() {
   const onLogin = () => {
     try {
       if (pw === getAdminPassword()) {
-        window.localStorage.setItem(SESSION_KEY, "1");
+        if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(SESSION_KEY, "1");
+        }
         setAuthed(true);
         setError(null);
       } else {
@@ -101,7 +105,9 @@ export default function AdminPowerupPage() {
   };
 
   const onLogout = () => {
-    window.localStorage.removeItem(SESSION_KEY);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
     setAuthed(false);
     setPw("");
   };

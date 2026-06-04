@@ -391,6 +391,16 @@ export function ReadyPlayerMe() {
 
   const [activeCategory, setActiveCategory] = useState<Category>("skin");
 
+  // Synchronize state variables when asynchronously loaded profile initialSettings changes
+  useEffect(() => {
+    setSkin(initialSettings.skin);
+    setHair(initialSettings.hair);
+    setHairColor(initialSettings.hairColor);
+    setAccessories(initialSettings.accessories);
+    setClothing(initialSettings.clothing);
+    setBackground(initialSettings.background);
+  }, [initialSettings]);
+
   // Construct query string to store in profile DB
   const currentAvatarId = `rpm_custom?skinColor=${skin}&hair=${hair}&hairColor=${hairColor}&accessories=${accessories}&clothingColor=${clothing}&backgroundColor=${background}`;
 
@@ -418,6 +428,7 @@ export function ReadyPlayerMe() {
   // Push updates to 3D scene whenever parameters change
   useEffect(() => {
     update3DCanvas();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skin, hair, hairColor, accessories, clothing]);
 
   const handleSave = async () => {
