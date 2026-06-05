@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -15,7 +14,6 @@ import LottieView from "lottie-react-native";
 import {
   useCompleteSessionMutation,
   useGetAssessmentStatusQuery,
-  useLazyGetAssessmentResultQuery,
   useGetUserAssessmentResultQuery,
   AssessmentResultResponse,
   AssessmentScoringStatusResponse,
@@ -90,7 +88,6 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !shouldUseUserId });
 
   const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
-  const [triggerGetResult, { data: lazyResult }] = useLazyGetAssessmentResultQuery();
   const [hasTriggered, setHasTriggered] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
@@ -147,9 +144,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   };
 
-  const resultData = (rawResultData || lazyResult || userResultData) as
-    | AssessmentResultResponse
-    | undefined;
+  const resultData = (rawResultData || userResultData) as AssessmentResultResponse | undefined;
 
   useEffect(() => {
     if (resultData && "percentage" in resultData) {

@@ -36,7 +36,6 @@ import {
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getCompletedSections,
   StoredPreAssessmentResult,
   saveAssessmentSessionId,
   syncCompletedSections,

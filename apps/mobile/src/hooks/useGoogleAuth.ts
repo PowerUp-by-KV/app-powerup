@@ -18,15 +18,16 @@ import { resetOnboarding } from "@/store/slices/onboardingSlice";
 WebBrowser.maybeCompleteAuthSession();
 
 export function useGoogleAuth() {
-  const androidClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ||
-    "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com";
-  const iosClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-    "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com";
-  const webClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-    "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com";
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  if (!androidClientId || !iosClientId || !webClientId) {
+    throw new Error(
+      "Missing Google OAuth Client IDs. Please configure EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID, " +
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your environment.",
+    );
+  }
 
   const router = useRouter();
   const dispatch = useDispatch();
