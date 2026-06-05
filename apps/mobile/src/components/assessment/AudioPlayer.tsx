@@ -3,7 +3,6 @@ import { View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
 import { Feather } from "@expo/vector-icons";
 import { resolveApiAssetUrl } from "@/services/api";
-import { WaveformProgressBar } from "./WaveformProgressBar";
 
 interface AudioPlayerProps {
   audioUrl?: string | null;
@@ -39,7 +38,6 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     setIsPlaying(false);
     setCurrentTime(0);
     setActualDuration(duration ?? 30);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
@@ -121,17 +119,12 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, currentTime, actualDuration, resolvedAudioUrl]);
 
   return (
-    <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm w-full">
-      <Text className="text-slate-500 font-bold text-xs mb-3 uppercase tracking-wide">
-        {isLoading ? "Loading..." : isPlaying ? "Playing..." : "Tap to start"}
-      </Text>
-
+    <View className="flex-row items-center p-5 my-2.5 bg-slate-50 border border-slate-100/60 rounded-3xl shadow-sm w-full">
       <TouchableOpacity
-        className="bg-[#0b132b] w-20 h-20 rounded-full items-center justify-center shadow-lg mb-2 border border-slate-700/30"
+        className="bg-blue-500 active:bg-blue-600 w-14 h-14 rounded-full items-center justify-center shadow-md border border-blue-400/20"
         onPress={isPlaying ? handlePause : handlePlay}
         disabled={isLoading}
         activeOpacity={0.8}
@@ -139,16 +132,18 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
         {isLoading ? (
           <ActivityIndicator color="white" size="small" />
         ) : (
-          <Feather
-            name={isPlaying ? "pause" : "play"}
-            size={32}
-            color="white"
-            style={{ marginLeft: isPlaying ? 0 : 4 }}
-          />
+          <Feather name={isPlaying ? "square" : "volume-2"} size={22} color="white" />
         )}
       </TouchableOpacity>
 
-      <WaveformProgressBar currentTime={currentTime} duration={actualDuration} />
+      <View className="ml-5">
+        <Text className="text-slate-900 font-extrabold text-sm mb-0.5">
+          {isLoading ? "Loading Audio..." : isPlaying ? "Playing..." : "Play audio"}
+        </Text>
+        <Text className="text-slate-400 font-semibold text-xs">
+          Duration: {actualDuration}s {isPlaying ? `(${currentTime}s)` : ""}
+        </Text>
+      </View>
     </View>
   );
 }

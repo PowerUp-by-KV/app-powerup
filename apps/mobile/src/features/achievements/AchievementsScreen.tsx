@@ -155,7 +155,7 @@ export function AchievementsScreen() {
           <View className="bg-white rounded-3xl p-1 border border-slate-100 overflow-hidden shadow-sm items-center justify-center">
             <Image
               source={require("../../../assets/images/skills-graph.png")}
-              style={{ width: "100%", height: 260 }}
+              className="w-full h-[260px]"
               resizeMode="contain"
             />
           </View>

@@ -7,16 +7,13 @@ import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-na
 // where `process.env` is substituted at build time, and is required to be
 // supplied via the build environment. Missing config throws immediately so the
 // app never silently falls back to an empty/default password.
-const ADMIN_PASSWORD: string = (() => {
+const getAdminPassword = (): string => {
   const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
   if (!value) {
-    if (process.env.NODE_ENV !== "production") {
-      return "change-me-before-deploy";
-    }
     throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
   return value;
-})();
+};
 const SESSION_KEY = "powerup.adminpowerup.session";
 // Strip trailing /api suffix so we can prepend /api/v1 ourselves.
 const API_BASE = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(/\/api\/?$/, "");
@@ -46,8 +43,10 @@ export default function AdminPowerupPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem(SESSION_KEY) === "1") {
-      setAuthed(true);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      if (window.localStorage.getItem(SESSION_KEY) === "1") {
+        setAuthed(true);
+      }
     }
   }, []);
 
@@ -60,8 +59,8 @@ export default function AdminPowerupPage() {
       </View>
     );
   }
-
-  if (!ADMIN_PASSWORD) {
+  const adminPassword = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  if (!adminPassword) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
         <View
@@ -90,17 +89,25 @@ export default function AdminPowerupPage() {
   }
 
   const onLogin = () => {
-    if (pw === ADMIN_PASSWORD) {
-      window.localStorage.setItem(SESSION_KEY, "1");
-      setAuthed(true);
-      setError(null);
-    } else {
-      setError("Incorrect password.");
+    try {
+      if (pw === getAdminPassword()) {
+        if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+          window.localStorage.setItem(SESSION_KEY, "1");
+        }
+        setAuthed(true);
+        setError(null);
+      } else {
+        setError("Incorrect password.");
+      }
+    } catch (e: any) {
+      setError(e.message || "Configuration error.");
     }
   };
 
   const onLogout = () => {
-    window.localStorage.removeItem(SESSION_KEY);
+    if (Platform.OS === "web" && typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
     setAuthed(false);
     setPw("");
   };
@@ -155,7 +162,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     setError(null);
     try {
       const res = await fetch(`${API_URL}/admin/content/versions`, {
-        headers: { "X-Admin-Password": ADMIN_PASSWORD },
+        headers: { "X-Admin-Password": getAdminPassword() },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: ContentVersion[] = await res.json();
@@ -176,7 +183,7 @@ function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     try {
       const res = await fetch(`${API_URL}/admin/content/versions/${id}/activate`, {
         method: "POST",
-        headers: { "X-Admin-Password": ADMIN_PASSWORD },
+        headers: { "X-Admin-Password": getAdminPassword() },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       await fetchVersions();

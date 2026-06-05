@@ -143,7 +143,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached (double safety)
@@ -151,7 +150,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     if (isRecording && recordingDuration >= maxDuration) {
       stopRecording();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingDuration, isRecording, maxDuration]);
 
   useEffect(() => {
@@ -272,7 +270,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             <View className="w-full gap-3">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>

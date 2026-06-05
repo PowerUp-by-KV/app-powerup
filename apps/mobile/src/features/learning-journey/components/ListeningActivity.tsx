@@ -34,7 +34,9 @@ const WAVEFORM_BARS = [
  * learner starts playback the first time so they have to listen before answering.
  */
 export function ListeningActivity({ questions, onComplete }: ListeningActivityProps) {
-  const passage = questions.find((q) => !!q.audio_url);
+  const passage =
+    questions.find((q) => q.question_type === "passage" && !!q.audio_url) ||
+    questions.find((q) => !!q.audio_url);
   const mcqs = questions.filter((q) => q !== passage);
   const audioUrl = resolveApiAssetUrl(passage?.audio_url);
 
@@ -89,7 +91,6 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     } else {
       anims.forEach((anim) => anim.setValue(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   useEffect(() => {

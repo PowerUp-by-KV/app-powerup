@@ -92,7 +92,6 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   const selectAnswer = (questionId: string, value: string) => {
@@ -124,7 +123,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
             <View className="w-full gap-3 mt-2">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
@@ -270,7 +269,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
           <View className="flex-row justify-between mt-4 gap-4 mb-4">
             <TouchableOpacity
               className={`flex-1 py-4 rounded-2xl items-center justify-center shadow-md ${
-                isSubmitting ? "bg-slate-400" : "bg-slate-800"
+                isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
               }`}
               onPress={handleNext}
               disabled={isSubmitting}

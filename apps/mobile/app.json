@@ -16,13 +16,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.gowthamcoder.apppowerup",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false,
-        "NSMicrophoneUsageDescription": "PowerUp needs your microphone for the AI interview session."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.gowthamcoder.apppowerup",
-      "permissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -42,8 +40,7 @@
       "expo-font",
       "expo-secure-store",
       "expo-sharing",
-      "expo-web-browser",
-      "@config-plugins/react-native-webrtc"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

@@ -18,13 +18,26 @@ import { resetOnboarding } from "@/store/slices/onboardingSlice";
 WebBrowser.maybeCompleteAuthSession();
 
 export function useGoogleAuth() {
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  if (!androidClientId || !iosClientId || !webClientId) {
+    throw new Error(
+      "Missing Google OAuth Client IDs. Please configure EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID, " +
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your environment.",
+    );
+  }
+
   const router = useRouter();
   const dispatch = useDispatch();
   const [socialGoogleLogin] = useSocialGoogleLoginMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
 
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "",
+    androidClientId,
+    iosClientId,
+    webClientId,
   });
 
   useEffect(() => {

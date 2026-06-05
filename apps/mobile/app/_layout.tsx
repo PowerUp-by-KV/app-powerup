@@ -12,30 +12,135 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { getAuthSession } from "@/services/auth-storage";
+import { getAuthSession, StoredSession } from "@/services/auth-storage";
+import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_ROUTES = ["login", "register", "otp", "splash"];
+const PUBLIC_ROUTES = ["login", "register", "otp", "splash", "verify-email", "verify-phone"];
+const ALLOWED_BEFORE_ONBOARDING = [
+  "onboarding",
+  "onboarding-resume",
+  "verify-email",
+  "verify-phone",
+  "thank-you",
+  "welcome-back",
+  "success",
+  "profile",
+];
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
-  const [checked, setChecked] = useState(false);
+  const currentRoute = segments[0] as string | undefined;
+
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [isLocalReady, setIsLocalReady] = useState(false);
+
+  // Reload session on top-level route group changes
+  useEffect(() => {
+    let active = true;
+    const loadLocal = async () => {
+      try {
+        const sess = await getAuthSession();
+        if (active) {
+          setSession(sess);
+          setIsLocalReady(true);
+        }
+      } catch (err) {
+        console.warn("Failed to load session in guard:", err);
+        if (active) {
+          setIsLocalReady(true);
+        }
+      }
+    };
+    loadLocal();
+    return () => {
+      active = false;
+    };
+  }, [currentRoute]);
+
+  const userId = session?.user?.id;
+  const {
+    data: onboardingStatus,
+    isLoading: isOnboardingLoading,
+    isFetching: isOnboardingFetching,
+  } = useGetOnboardingStatusQuery(userId ?? "", {
+    skip: !userId,
+  });
 
   useEffect(() => {
-    getAuthSession().then((session) => {
-      const currentRoute = segments[0] as string | undefined;
-      const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-      if (!session && !isPublic) {
+    if (!isLocalReady) return;
+
+    // Wait if we're authenticated but still querying/loading onboarding status
+    const isQueryActive = !!userId;
+    if (
+      session &&
+      isQueryActive &&
+      (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
+    ) {
+      return;
+    }
+
+    const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+
+    if (!session) {
+      // User is not logged in: redirect to login if attempting to access private route
+      if (!isPublic) {
         router.replace("/login");
       }
-      setChecked(true);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+    } else {
+      // User is logged in: check onboarding status
+      const onboardingComplete = onboardingStatus?.answers_present ?? false;
+      const isAllowedBeforeOnboarding =
+        isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
-  if (!checked) return null;
+      if (!onboardingComplete) {
+        // If they are not onboarded, block access to tabs/dashboard
+        if (!isAllowedBeforeOnboarding) {
+          router.replace("/onboarding" as never);
+        }
+      } else {
+        // If they are onboarded, block access to onboarding/login/register pages
+        const routesToBlockAfterOnboarding = [
+          "login",
+          "register",
+          "onboarding",
+          "dynamic-onboarding",
+        ];
+        if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
+          router.replace("/(tabs)/my-learning" as never);
+        }
+      }
+    }
+  }, [
+    session,
+    isLocalReady,
+    userId,
+    onboardingStatus,
+    isOnboardingLoading,
+    isOnboardingFetching,
+    segments,
+    router,
+  ]);
+
+  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+  const isAllowedBeforeOnboarding =
+    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
+
+  const onboardingComplete = onboardingStatus?.answers_present ?? false;
+  const isQueryActive = !!userId;
+  const isQueryLoading =
+    isQueryActive &&
+    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
+
+  if (!isLocalReady) {
+    return null;
+  }
+
+  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
+    return null;
+  }
   return <>{children}</>;
 }
 

@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -15,10 +14,11 @@ import LottieView from "lottie-react-native";
 import {
   useCompleteSessionMutation,
   useGetAssessmentStatusQuery,
-  useLazyGetAssessmentResultQuery,
+  useGetUserAssessmentResultQuery,
   AssessmentResultResponse,
   AssessmentScoringStatusResponse,
 } from "@/services/assessment-api";
+import { useGetProfileQuery } from "@/services/auth-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import {
@@ -77,35 +77,20 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId]);
 
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
+  const shouldUseUserId = !!profile?.id && (!!profile?.cefr_range || !sessionId);
+
+  const {
+    data: userResultData,
+    isLoading: isUserResultLoading,
+    error: userResultError,
+    refetch: refetchUserResult,
+  } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !shouldUseUserId });
+
   const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
-  const [triggerGetResult, { data: lazyResult }] = useLazyGetAssessmentResultQuery();
   const [hasTriggered, setHasTriggered] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
-
-  const handleSkipAndCalculate = async () => {
-    setIsPolling(false);
-    if (sessionId) {
-      try {
-        await triggerGetResult({ session_id: sessionId }).unwrap();
-      } catch {
-        Alert.alert(
-          "Results Pending",
-          "Your speaking audios are still being processed on the backend. Please give it a few more seconds to prepare your initial CEFR calculation!",
-          [
-            {
-              text: "Wait",
-              onPress: () => setIsPolling(true),
-            },
-            {
-              text: "Go Home",
-              onPress: handleBack,
-            },
-          ],
-        );
-      }
-    }
-  };
 
   // Poll the status API every 3 seconds only when isPolling is true
   const { data: currentStatus } = useGetAssessmentStatusQuery(
@@ -114,11 +99,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   );
 
   useEffect(() => {
-    if (sessionId && !hasTriggered) {
+    if (isProfileLoading) return;
+    if (sessionId && !hasTriggered && !shouldUseUserId) {
       completeSession({ session_id: sessionId });
       setHasTriggered(true);
     }
-  }, [sessionId, hasTriggered, completeSession]);
+  }, [sessionId, hasTriggered, completeSession, shouldUseUserId, isProfileLoading]);
 
   // Handle status update from polling query
   useEffect(() => {
@@ -150,13 +136,15 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   };
 
   const handleTryAgain = () => {
-    if (sessionId) {
+    if (shouldUseUserId) {
+      refetchUserResult?.();
+    } else if (sessionId) {
       setIsPolling(true);
       completeSession({ session_id: sessionId });
     }
   };
 
-  const resultData = (rawResultData || lazyResult) as AssessmentResultResponse | undefined;
+  const resultData = (rawResultData || userResultData) as AssessmentResultResponse | undefined;
 
   useEffect(() => {
     if (resultData && "percentage" in resultData) {
@@ -198,7 +186,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         },
       ].map((item) => ({
         ...item,
-        score: resultData.section_percentages[item.key] ?? 0,
+        score: resultData.section_percentages?.[item.key] ?? 0,
       }))
     : [];
 
@@ -206,25 +194,21 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const completed = statusData?.completed_answers || 0;
   const pending = statusData?.pending_answers ?? -1;
 
-  let loaderTitle = "Analyzing your responses...";
-  if (total > 0) {
-    loaderTitle = `Scoring: ${completed}/${total} answers completed...`;
-    if (pending === 0 || completed === total) {
-      loaderTitle = "Calculating your CEFR results...";
-    }
+  let loaderTitle = "Analyzing your response...";
+  if (shouldUseUserId) {
+    loaderTitle = "Loading your CEFR results...";
+  } else if (total > 0 && (pending === 0 || completed === total)) {
+    loaderTitle = "Calculating your CEFR results...";
   }
 
-  if (isLoading || isPolling) {
-    return (
-      <GamifiedMascotLoader
-        title={loaderTitle}
-        buttonText={isPolling ? "Skip Wait & Show Results" : undefined}
-        onButtonPress={isPolling ? handleSkipAndCalculate : undefined}
-      />
-    );
+  const isFetchingResults = isLoading || isPolling || (shouldUseUserId && isUserResultLoading);
+  const hasError = error || (shouldUseUserId && userResultError);
+
+  if (isFetchingResults) {
+    return <GamifiedMascotLoader title={loaderTitle} />;
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <SafeAreaView className="flex-1 bg-slate-900 justify-center items-center px-6">
         <View className="items-center mb-4 self-center">
@@ -250,17 +234,17 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
         <View className="flex-row gap-4 w-full max-w-sm justify-center self-center">
           <TouchableOpacity
-            className="flex-1 bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
+            className="flex-1 bg-blue-500 active:bg-blue-600 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
             onPress={handleTryAgain}
           >
             <Text className="text-white font-bold text-base">Try Again</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="flex-1 bg-slate-800 active:bg-slate-700 py-3.5 rounded-2xl items-center border border-slate-700 active:scale-95"
+            className="flex-1 bg-white active:bg-slate-50 py-3.5 rounded-2xl items-center border border-slate-200 active:scale-95"
             onPress={handleBack}
           >
-            <Text className="text-slate-300 font-bold text-base">Back to Home</Text>
+            <Text className="text-slate-700 font-bold text-base">Back to Home</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -268,13 +252,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }
 
   if (!resultData || !("percentage" in resultData)) {
-    return (
-      <GamifiedMascotLoader
-        title={loaderTitle}
-        buttonText="Skip Wait & Show Results"
-        onButtonPress={handleSkipAndCalculate}
-      />
-    );
+    return <GamifiedMascotLoader title={loaderTitle} />;
   }
 
   return (
@@ -305,10 +283,10 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               cefr={resultData.cefr_level ?? resultData.cefr_range ?? "N/A"}
             />
             {timeTaken && (
-              <View className="flex-row items-center bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-2.5 mt-5">
-                <Feather name="clock" size={18} color="#4f46e5" className="mr-2" />
-                <Text className="text-indigo-900 font-bold text-sm">
-                  Total Time Taken: <Text className="text-indigo-600">{timeTaken}</Text>
+              <View className="flex-row items-center bg-blue-50 border border-blue-100 rounded-2xl px-4 py-2.5 mt-5">
+                <Feather name="clock" size={18} color="#3b82f6" className="mr-2" />
+                <Text className="text-blue-900 font-bold text-sm">
+                  Total Time Taken: <Text className="text-blue-600">{timeTaken}</Text>
                 </Text>
               </View>
             )}
@@ -327,7 +305,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
           </View>
 
           <TouchableOpacity
-            className="bg-slate-900 py-4 rounded-2xl items-center mt-12 mb-6 shadow-sm active:opacity-90"
+            className="bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center mt-12 mb-6 shadow-sm active:opacity-90"
             onPress={handleBack}
           >
             <Text className="text-white text-lg font-bold">Go to My Learning</Text>

@@ -17,6 +17,10 @@ export interface ModuleDay {
   day_number: number;
   duration_hours: number | null;
   is_completed: boolean;
+  topic?: string | null;
+  completed_activities?: number;
+  total_activities?: number;
+  progress_percentage?: number;
 }
 
 export interface Activity {

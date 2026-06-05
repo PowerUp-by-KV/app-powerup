@@ -30,8 +30,20 @@ export function validatePhoneDigits(
   code: string,
   phone: string,
 ): { isValid: boolean; message: string } {
-  const cleaned = phone.replace(/\D/g, "");
+  let phoneWithoutCode = phone.trim();
+  const cleanCode = code.replace(/\D/g, "");
   const expected = getExpectedDigitCount(code);
+
+  if (phoneWithoutCode.startsWith("+") && phoneWithoutCode.startsWith(code)) {
+    phoneWithoutCode = phoneWithoutCode.slice(code.length).trim();
+  } else {
+    const digitsOnly = phoneWithoutCode.replace(/\D/g, "");
+    if (cleanCode && digitsOnly.startsWith(cleanCode) && digitsOnly.length > expected) {
+      phoneWithoutCode = digitsOnly.slice(cleanCode.length);
+    }
+  }
+
+  const cleaned = phoneWithoutCode.replace(/\D/g, "");
   if (!cleaned) {
     return { isValid: false, message: "Phone number is required" };
   }

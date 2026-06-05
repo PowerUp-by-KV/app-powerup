@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Pressable, SafeAreaView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -19,7 +20,11 @@ import { ActivityRenderer, ActivityResult } from "./components/ActivityRenderer"
 export function ModuleScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
-  const params = useLocalSearchParams<{ day_id?: string; module_id?: string }>();
+  const params = useLocalSearchParams<{
+    day_id?: string;
+    module_id?: string;
+    day_number?: string;
+  }>();
   const dayId = params.day_id ?? "";
   const moduleId = params.module_id ?? "";
 
@@ -32,20 +37,18 @@ export function ModuleScreen() {
   } = useGetDayActivitiesQuery(dayId, {
     skip: !dayId,
   });
+  const activitiesToPlay = useMemo(() => {
+    const incomplete = activities.filter((act) => !act.passed);
+    return incomplete.length > 0 ? incomplete : activities;
+  }, [activities]);
+
   const [activityIdx, setActivityIdx] = useState(0);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    if (activities.length > 0 && !isInitialized) {
-      const firstIncompleteIdx = activities.findIndex((act) => !act.passed);
-      if (firstIncompleteIdx !== -1) {
-        setActivityIdx(firstIncompleteIdx);
-      }
-      setIsInitialized(true);
-    }
-  }, [activities, isInitialized]);
+    setActivityIdx(0);
+  }, [activities]);
 
-  const currentActivity = activities[activityIdx];
+  const currentActivity = activitiesToPlay[activityIdx];
 
   const {
     data: questions = [],
@@ -83,7 +86,7 @@ export function ModuleScreen() {
           // cast keeps TS happy until typegen catches up.
           pathname: "/learning-journey/day-complete" as never,
           params: {
-            day_number: String(res.module_check_result ? "12" : ""),
+            day_number: params.day_number || String(res.module_check_result ? "12" : ""),
             module_id: moduleId,
             xp_earned: String(res.xp_earned ?? 0),
             module_check_score: res.module_check_result
@@ -98,14 +101,14 @@ export function ModuleScreen() {
         return;
       }
 
-      if (activityIdx + 1 < activities.length) {
+      if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
         safeBack();
       }
     } catch {
       // Soft-fail: still advance the local UX so the user isn't stuck.
-      if (activityIdx + 1 < activities.length) {
+      if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
         safeBack();
@@ -158,7 +161,7 @@ export function ModuleScreen() {
           <View className="w-full gap-3">
             <Pressable
               onPress={handleRetry}
-              className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
             >
               <Text className="text-white font-extrabold text-sm">Try Again</Text>
             </Pressable>
@@ -175,19 +178,11 @@ export function ModuleScreen() {
     );
   }
 
-  if (
-    actsLoading ||
-    qLoading ||
-    actsFetching ||
-    qFetching ||
-    isCompleting ||
-    !currentActivity ||
-    (activities.length > 0 && !isInitialized)
-  ) {
+  if (actsLoading || qLoading || actsFetching || qFetching || isCompleting || !currentActivity) {
     return <GamifiedMascotLoader title="Loading Activities..." />;
   }
 
-  const totalSteps = activities.length;
+  const totalSteps = activitiesToPlay.length;
   const currentStep = activityIdx + 1;
   const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
 
@@ -199,7 +194,13 @@ export function ModuleScreen() {
         </Pressable>
         <View className="flex-1 mx-4">
           <View className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <View className="h-full bg-slate-900" style={{ width: `${progressPct}%` }} />
+            <LinearGradient
+              colors={["#3b82f6", "#22c55e"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ width: `${progressPct}%` }}
+              className="h-full rounded-full"
+            />
           </View>
         </View>
         <Text className="text-xs text-slate-500 w-12 text-right">
