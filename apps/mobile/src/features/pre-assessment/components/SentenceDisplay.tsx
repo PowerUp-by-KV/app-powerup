@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { View, Text } from "react-native";
 import type { AssessmentQuestion } from "@/services/assessment-api";

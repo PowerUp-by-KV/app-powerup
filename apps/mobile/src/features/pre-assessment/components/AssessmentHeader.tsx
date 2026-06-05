@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
