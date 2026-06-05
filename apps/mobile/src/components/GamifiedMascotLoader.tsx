@@ -15,12 +15,14 @@ interface GamifiedMascotLoaderProps {
   title?: string;
   buttonText?: string;
   onButtonPress?: () => void;
+  subtitle?: string;
 }
 
 export function GamifiedMascotLoader({
   title = "Preparing your session...",
   buttonText,
   onButtonPress,
+  subtitle,
 }: GamifiedMascotLoaderProps) {
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -69,7 +71,7 @@ export function GamifiedMascotLoader({
 
         {/* Floating pulse status text */}
         <Text className="text-indigo-600 font-extrabold text-xs uppercase tracking-widest mb-8">
-          Connecting.......
+          {subtitle || "Connecting......."}
         </Text>
 
         {/* Beautiful Floating glassmorphic Pro Tip Box */}
