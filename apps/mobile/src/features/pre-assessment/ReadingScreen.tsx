@@ -98,7 +98,6 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, timeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   if (isError) {

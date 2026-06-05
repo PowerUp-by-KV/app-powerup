@@ -38,7 +38,6 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     setIsPlaying(false);
     setCurrentTime(0);
     setActualDuration(duration ?? 30);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
@@ -120,7 +119,6 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, currentTime, actualDuration, resolvedAudioUrl]);
 
   return (

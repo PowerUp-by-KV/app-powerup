@@ -129,7 +129,6 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
         ]),
       ).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {

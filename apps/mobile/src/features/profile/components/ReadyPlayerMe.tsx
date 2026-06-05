@@ -428,7 +428,6 @@ export function ReadyPlayerMe() {
   // Push updates to 3D scene whenever parameters change
   useEffect(() => {
     update3DCanvas();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [skin, hair, hairColor, accessories, clothing]);
 
   const handleSave = async () => {

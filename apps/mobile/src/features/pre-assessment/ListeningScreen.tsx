@@ -92,7 +92,6 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   const selectAnswer = (questionId: string, value: string) => {

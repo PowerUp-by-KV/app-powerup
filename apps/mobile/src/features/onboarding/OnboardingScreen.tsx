@@ -93,7 +93,6 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, isProfileLoading, onboardingStatus, isOnboardingStatusLoading]);
 
   // Flatten the questions from the API for the step-by-step wizard

@@ -41,7 +41,6 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
         }),
       ]),
     ).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

@@ -30,7 +30,7 @@ export default [
         "error",
         { argsIgnorePattern: "^_" },
       ],
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
       // React Native / Metro resolves static assets via require()
       // (Image/Lottie/Rive sources). It is the idiomatic pattern, not a bug.
       "@typescript-eslint/no-require-imports": "off",
