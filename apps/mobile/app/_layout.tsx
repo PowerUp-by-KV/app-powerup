@@ -1,5 +1,5 @@
 import "../global.css";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
@@ -143,13 +143,9 @@ export default function AuthLayout() {
   });
 
   const [authChecked, setAuthChecked] = useState(false);
-  const [initialAuthenticated, setInitialAuthenticated] = useState(false);
 
   useEffect(() => {
     getAuthSession()
-      .then((session) => {
-        setInitialAuthenticated(!!session);
-      })
       .catch((err) => {
         console.warn("Failed to load session on mount:", err);
       })
