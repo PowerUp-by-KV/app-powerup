@@ -40,7 +40,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   // Reload session on top-level route group changes
   useEffect(() => {
     let active = true;
-    setIsLocalReady(false);
     const loadLocal = async () => {
       try {
         const sess = await getAuthSession();

@@ -18,7 +18,7 @@ export default [
       // Not meaningful in React Native <Text> — apostrophes/quotes in copy
       // render literally; this is an HTML-entity concern.
       "react/no-unescaped-entities": "off",
-      "react-hooks/exhaustive-deps": "off",
+      "react-hooks/exhaustive-deps": "warn",
     },
     settings: {
       react: { version: "detect" },

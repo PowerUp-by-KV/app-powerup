@@ -615,7 +615,7 @@ export function LearningJourneyScreen() {
       // If all sections are completed but cefr_range is not set yet, route directly to results!
       if (notCompleted.length === 0 && !profile?.cefr_range) {
         router.push({
-          pathname: "/results" as any,
+          pathname: "/results",
           params: { session_id: activeSessionId },
         });
         return;
@@ -648,7 +648,7 @@ export function LearningJourneyScreen() {
 
       const targetRoute = getNextRouteForSection(targetSec);
       router.push({
-        pathname: targetRoute as any,
+        pathname: targetRoute,
         params: { session_id: activeSessionId },
       });
     } catch (err: any) {

@@ -393,6 +393,7 @@ export function ReadyPlayerMe() {
 
   // Synchronize state variables when asynchronously loaded profile initialSettings changes
   useEffect(() => {
+    if (!initialSettings) return;
     setSkin(initialSettings.skin);
     setHair(initialSettings.hair);
     setHairColor(initialSettings.hairColor);
