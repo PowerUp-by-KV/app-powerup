@@ -12,45 +12,39 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import {
-  getAuthSession,
-  getProfileCompletedInSession,
-  StoredSession,
-} from "@/services/auth-storage";
+import { getAuthSession, StoredSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_ROUTES = ["login", "register", "otp", "splash"];
+const PUBLIC_ROUTES = ["login", "register", "otp", "splash", "verify-email", "verify-phone"];
 const ALLOWED_BEFORE_ONBOARDING = [
   "onboarding",
   "onboarding-resume",
-  "dynamic-onboarding",
   "verify-email",
   "verify-phone",
   "thank-you",
   "welcome-back",
   "success",
+  "profile",
 ];
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
+  const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
-  const [localProfileCompleted, setLocalProfileCompleted] = useState<boolean>(false);
   const [isLocalReady, setIsLocalReady] = useState(false);
 
-  // Reload session and local completion status on route/segment changes
+  // Reload session on top-level route group changes
   useEffect(() => {
     let active = true;
     const loadLocal = async () => {
       try {
         const sess = await getAuthSession();
-        const profileComp = await getProfileCompletedInSession();
         if (active) {
           setSession(sess);
-          setLocalProfileCompleted(profileComp);
           setIsLocalReady(true);
         }
       } catch (err) {
@@ -64,20 +58,30 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [segments]);
+  }, [currentRoute]);
 
   const userId = session?.user?.id;
-  const { data: onboardingStatus, isLoading: isOnboardingLoading } = useGetOnboardingStatusQuery(
-    userId ?? "",
-    {
-      skip: !userId || localProfileCompleted,
-    },
-  );
+  const {
+    data: onboardingStatus,
+    isLoading: isOnboardingLoading,
+    isFetching: isOnboardingFetching,
+  } = useGetOnboardingStatusQuery(userId ?? "", {
+    skip: !userId,
+  });
 
   useEffect(() => {
     if (!isLocalReady) return;
 
-    const currentRoute = segments[0] as string | undefined;
+    // Wait if we're authenticated but still querying/loading onboarding status
+    const isQueryActive = !!userId;
+    if (
+      session &&
+      isQueryActive &&
+      (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
+    ) {
+      return;
+    }
+
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
 
     if (!session) {
@@ -87,8 +91,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       }
     } else {
       // User is logged in: check onboarding status
-      const onboardingComplete =
-        localProfileCompleted || (onboardingStatus?.answers_present ?? false);
+      const onboardingComplete = onboardingStatus?.answers_present ?? false;
       const isAllowedBeforeOnboarding =
         isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
@@ -113,25 +116,29 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   }, [
     session,
     isLocalReady,
+    userId,
     onboardingStatus,
     isOnboardingLoading,
-    localProfileCompleted,
+    isOnboardingFetching,
     segments,
     router,
   ]);
 
-  const currentRoute = segments[0] as string | undefined;
   const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
   const isAllowedBeforeOnboarding =
     isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
-  const onboardingComplete = localProfileCompleted || (onboardingStatus?.answers_present ?? false);
+  const onboardingComplete = onboardingStatus?.answers_present ?? false;
+  const isQueryActive = !!userId;
+  const isQueryLoading =
+    isQueryActive &&
+    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
 
   if (!isLocalReady) {
     return null;
   }
 
-  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isOnboardingLoading) {
+  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
     return null;
   }
   return <>{children}</>;

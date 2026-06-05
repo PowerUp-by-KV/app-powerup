@@ -37,7 +37,6 @@ function ScoreCircle({ pct, label }: { pct: number; label: string }) {
       duration: 800,
       useNativeDriver: true,
     }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalised]);
 
   return (

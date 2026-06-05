@@ -30,12 +30,16 @@ import {
 import {
   useStartSessionMutation,
   useGetUserAssessmentResultQuery,
+  useCheckAssessmentStatusQuery,
+  getNextRouteForSection,
 } from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getCompletedSections,
   StoredPreAssessmentResult,
+  saveAssessmentSessionId,
+  syncCompletedSections,
+  getAssessmentSessionId,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
@@ -77,7 +81,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         }),
       ]).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -402,7 +405,34 @@ export function LearningJourneyScreen() {
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
   const [preAssessmentResults, setPreAssessmentResults] =
     useState<StoredPreAssessmentResult | null>(null);
-  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  // Live assessment status query from the backend (start endpoint)
+  const { data: assessmentSession, refetch: refetchAssessmentStatus } =
+    useCheckAssessmentStatusQuery(undefined, {
+      skip: !profile?.id,
+    });
+
+  const completedSections = useMemo(() => {
+    return assessmentSession?.completed_sections || [];
+  }, [assessmentSession?.completed_sections]);
+
+  // Check if we should block the user with the gating empty state
+  const isGated = useMemo(() => {
+    if (!gate.ready) return false;
+    // Gated if onboarding is not completed
+    if (gate.blockedReason === "onboarding") return true;
+    // Gated if assessment is not completed AND user has not completed at least 1 section yet
+    if (gate.blockedReason === "assessment" && completedSections.length === 0) return true;
+    return false;
+  }, [gate.ready, gate.blockedReason, completedSections.length]);
+
+  const isPreAssessmentDone = useMemo(() => {
+    if (profile?.cefr_range) return true;
+    if (assessmentSession) {
+      return (assessmentSession.not_completed_sections || []).length === 0;
+    }
+    return gate.canEnter;
+  }, [profile?.cefr_range, assessmentSession, gate.canEnter]);
 
   useEffect(() => {
     refetchProfile();
@@ -413,10 +443,6 @@ export function LearningJourneyScreen() {
       if (res) {
         setPreAssessmentResults(res);
       }
-    });
-
-    getCompletedSections().then((sections) => {
-      if (sections) setCompletedSections(sections);
     });
   }, [showPreAssessmentModal, profile]);
 
@@ -542,6 +568,10 @@ export function LearningJourneyScreen() {
       if (gate.canEnter) {
         await Promise.all([refetchPath(), refetchProgression()]);
       }
+      // Always refetch assessment status on refresh if not fully completed
+      if (profile?.id && !profile?.cefr_range) {
+        await refetchAssessmentStatus();
+      }
       if (selectedModule) {
         await Promise.all([refetchProgress(), refetchEngagement(), refetchDays()]);
       }
@@ -556,15 +586,70 @@ export function LearningJourneyScreen() {
     refetchDays,
     selectedModule,
     gate.canEnter,
+    profile?.id,
+    profile?.cefr_range,
+    refetchAssessmentStatus,
   ]);
 
   const handleStartOrResumeAssessment = async () => {
     setIsStartingSession(true);
     try {
-      const session = await startSession().unwrap();
+      const currentSessionId = assessmentSession?.session_id || (await getAssessmentSessionId());
+
+      // Cache-first: prioritize the pre-fetched session, fallback to startSession mutation
+      let session = assessmentSession;
+      if (!session) {
+        session = await startSession().unwrap();
+      }
+
+      const activeSessionId = session?.session_id || currentSessionId;
+      if (activeSessionId) {
+        await saveAssessmentSessionId(activeSessionId);
+      }
+
+      const backendCompleted = session?.completed_sections || [];
+      await syncCompletedSections(backendCompleted);
+
+      const notCompleted = session?.not_completed_sections || [];
+
+      // If all sections are completed but cefr_range is not set yet, route directly to results!
+      if (notCompleted.length === 0 && !profile?.cefr_range) {
+        router.push({
+          pathname: "/results",
+          params: { session_id: activeSessionId },
+        });
+        return;
+      }
+
+      const allSections = [
+        "A_READING",
+        "A_SPEAKING",
+        "A_LISTEN",
+        "B_SPEAKING",
+        "C_GRAMMAR",
+        "D_LISTEN_ANSWER",
+      ];
+      const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
+
+      let targetSec = activeNotCompleted[0];
+      if (!targetSec) {
+        if (session?.current_section && !backendCompleted.includes(session.current_section)) {
+          targetSec = session.current_section;
+        }
+      }
+      if (!targetSec) {
+        if (session?.first_section && !backendCompleted.includes(session.first_section)) {
+          targetSec = session.first_section;
+        }
+      }
+      if (!targetSec) {
+        targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
+      }
+
+      const targetRoute = getNextRouteForSection(targetSec);
       router.push({
-        pathname: "/assessment-entry" as any,
-        params: { session_id: session.session_id },
+        pathname: targetRoute,
+        params: { session_id: activeSessionId },
       });
     } catch (err: any) {
       console.error("Start/resume assessment session failed:", err);
@@ -643,7 +728,8 @@ export function LearningJourneyScreen() {
     return <GamifiedMascotLoader title="Loading daily roadmap..." />;
   }
 
-  if (!gate.canEnter && gate.blockedReason === "onboarding") {
+  if (isGated) {
+    const reason = gate.blockedReason === "onboarding" ? "onboarding" : "assessment";
     return (
       <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
@@ -654,19 +740,19 @@ export function LearningJourneyScreen() {
             <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
           </View>
           <GateEmptyState
-            reason="onboarding"
+            reason={reason}
             completedSections={completedSections}
-            onPrimary={() => {
-              router.push("/onboarding");
-            }}
-            isLoading={false}
+            onPrimary={
+              reason === "onboarding"
+                ? () => router.push("/onboarding")
+                : handleStartOrResumeAssessment
+            }
+            isLoading={isStartingSession}
           />
         </ScrollView>
       </SafeAreaView>
     );
   }
-
-  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
 
   // Diagnostic Assessment complete flag
   const isDiagnosticComplete = isPreAssessmentDone;
@@ -892,7 +978,7 @@ export function LearningJourneyScreen() {
           {/* Item 3: Diagnostic Assessment */}
           <Pressable
             onPress={
-              isDiagnosticComplete
+              profile?.cefr_range
                 ? () => setShowPreAssessmentModal(true)
                 : handleStartOrResumeAssessment
             }
@@ -929,7 +1015,7 @@ export function LearningJourneyScreen() {
                 <View
                   style={[
                     timelineStyles.statusBadge,
-                    isDiagnosticComplete
+                    profile?.cefr_range
                       ? timelineStyles.badgeCompleted
                       : timelineStyles.badgeInProgress,
                   ]}
@@ -937,12 +1023,14 @@ export function LearningJourneyScreen() {
                   <Text
                     style={[
                       timelineStyles.badgeText,
-                      { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
+                      { color: profile?.cefr_range ? "#15803d" : "#a16207" },
                     ]}
                   >
-                    {isDiagnosticComplete
-                      ? `Level ${profile?.cefr_range || "Assessed"}`
-                      : "In Progress"}
+                    {profile?.cefr_range
+                      ? `Level ${profile.cefr_range}`
+                      : (assessmentSession?.not_completed_sections || []).length === 0
+                        ? "Scoring"
+                        : "In Progress"}
                   </Text>
                 </View>
               </View>
@@ -962,7 +1050,11 @@ export function LearningJourneyScreen() {
 
               <View style={timelineStyles.progressLabelRow}>
                 <Text style={timelineStyles.progressLabelText}>
-                  {diagLessonsCompleted} of 6 sections completed
+                  {profile?.cefr_range
+                    ? "6 of 6 sections completed"
+                    : (assessmentSession?.not_completed_sections || []).length === 0
+                      ? "Answers submitted, scoring in progress"
+                      : `${diagLessonsCompleted} of 6 sections completed`}
                 </Text>
                 <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
               </View>
@@ -974,14 +1066,18 @@ export function LearningJourneyScreen() {
                     : `${diagXp} XP earned`}
               </Text>
 
-              {/* Continue learning CTA button inside active card */}
-              {!isDiagnosticComplete && (
+              {/* Continue learning or View results CTA button inside active card */}
+              {!profile?.cefr_range && (
                 <Pressable
                   onPress={handleStartOrResumeAssessment}
                   disabled={isStartingSession}
                   style={timelineStyles.continueButton}
                 >
-                  <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                  <Text style={timelineStyles.continueButtonText}>
+                    {(assessmentSession?.not_completed_sections || []).length === 0
+                      ? "View grading status"
+                      : "Continue learning"}
+                  </Text>
                 </Pressable>
               )}
             </View>

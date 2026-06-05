@@ -91,7 +91,6 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     } else {
       anims.forEach((anim) => anim.setValue(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   useEffect(() => {

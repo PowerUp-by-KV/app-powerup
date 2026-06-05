@@ -37,7 +37,6 @@ export function VerifyEmailScreen() {
     if (params.email && !otpSent) {
       void handleSendOtp(params.email);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.email]);
 
   const handleSendOtp = async (target?: string) => {

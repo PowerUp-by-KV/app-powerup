@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -15,10 +14,11 @@ import LottieView from "lottie-react-native";
 import {
   useCompleteSessionMutation,
   useGetAssessmentStatusQuery,
-  useLazyGetAssessmentResultQuery,
+  useGetUserAssessmentResultQuery,
   AssessmentResultResponse,
   AssessmentScoringStatusResponse,
 } from "@/services/assessment-api";
+import { useGetProfileQuery } from "@/services/auth-api";
 import { ScoreGauge } from "./components/ScoreGauge";
 import { ScoreCard } from "./components/ScoreCard";
 import {
@@ -77,35 +77,20 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [sessionId]);
 
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
+  const shouldUseUserId = !!profile?.id && (!!profile?.cefr_range || !sessionId);
+
+  const {
+    data: userResultData,
+    isLoading: isUserResultLoading,
+    error: userResultError,
+    refetch: refetchUserResult,
+  } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !shouldUseUserId });
+
   const [completeSession, { data: rawResultData, isLoading, error }] = useCompleteSessionMutation();
-  const [triggerGetResult, { data: lazyResult }] = useLazyGetAssessmentResultQuery();
   const [hasTriggered, setHasTriggered] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
-
-  const handleSkipAndCalculate = async () => {
-    setIsPolling(false);
-    if (sessionId) {
-      try {
-        await triggerGetResult({ session_id: sessionId }).unwrap();
-      } catch {
-        Alert.alert(
-          "Results Pending",
-          "Your speaking audios are still being processed on the backend. Please give it a few more seconds to prepare your initial CEFR calculation!",
-          [
-            {
-              text: "Wait",
-              onPress: () => setIsPolling(true),
-            },
-            {
-              text: "Go Home",
-              onPress: handleBack,
-            },
-          ],
-        );
-      }
-    }
-  };
 
   // Poll the status API every 3 seconds only when isPolling is true
   const { data: currentStatus } = useGetAssessmentStatusQuery(
@@ -114,11 +99,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   );
 
   useEffect(() => {
-    if (sessionId && !hasTriggered) {
+    if (isProfileLoading) return;
+    if (sessionId && !hasTriggered && !shouldUseUserId) {
       completeSession({ session_id: sessionId });
       setHasTriggered(true);
     }
-  }, [sessionId, hasTriggered, completeSession]);
+  }, [sessionId, hasTriggered, completeSession, shouldUseUserId, isProfileLoading]);
 
   // Handle status update from polling query
   useEffect(() => {
@@ -150,13 +136,15 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   };
 
   const handleTryAgain = () => {
-    if (sessionId) {
+    if (shouldUseUserId) {
+      refetchUserResult?.();
+    } else if (sessionId) {
       setIsPolling(true);
       completeSession({ session_id: sessionId });
     }
   };
 
-  const resultData = (rawResultData || lazyResult) as AssessmentResultResponse | undefined;
+  const resultData = (rawResultData || userResultData) as AssessmentResultResponse | undefined;
 
   useEffect(() => {
     if (resultData && "percentage" in resultData) {
@@ -207,21 +195,20 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const pending = statusData?.pending_answers ?? -1;
 
   let loaderTitle = "Analyzing your response...";
-  if (total > 0 && (pending === 0 || completed === total)) {
+  if (shouldUseUserId) {
+    loaderTitle = "Loading your CEFR results...";
+  } else if (total > 0 && (pending === 0 || completed === total)) {
     loaderTitle = "Calculating your CEFR results...";
   }
 
-  if (isLoading || isPolling) {
-    return (
-      <GamifiedMascotLoader
-        title={loaderTitle}
-        buttonText={isPolling ? "Skip Wait & Show Results" : undefined}
-        onButtonPress={isPolling ? handleSkipAndCalculate : undefined}
-      />
-    );
+  const isFetchingResults = isLoading || isPolling || (shouldUseUserId && isUserResultLoading);
+  const hasError = error || (shouldUseUserId && userResultError);
+
+  if (isFetchingResults) {
+    return <GamifiedMascotLoader title={loaderTitle} />;
   }
 
-  if (error) {
+  if (hasError) {
     return (
       <SafeAreaView className="flex-1 bg-slate-900 justify-center items-center px-6">
         <View className="items-center mb-4 self-center">
@@ -265,13 +252,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }
 
   if (!resultData || !("percentage" in resultData)) {
-    return (
-      <GamifiedMascotLoader
-        title={loaderTitle}
-        buttonText="Skip Wait & Show Results"
-        onButtonPress={handleSkipAndCalculate}
-      />
-    );
+    return <GamifiedMascotLoader title={loaderTitle} />;
   }
 
   return (

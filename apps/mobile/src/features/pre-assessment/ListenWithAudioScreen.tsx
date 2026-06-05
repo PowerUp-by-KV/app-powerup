@@ -154,7 +154,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached
@@ -162,7 +161,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     if (isRecording && recordingDuration >= maxDuration) {
       stopRecording();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingDuration, isRecording, maxDuration]);
 
   useEffect(() => {

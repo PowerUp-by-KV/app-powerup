@@ -113,7 +113,6 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
     } else {
       anims.forEach((anim) => anim.setValue(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaybackPlaying]);
 
   useEffect(() => {

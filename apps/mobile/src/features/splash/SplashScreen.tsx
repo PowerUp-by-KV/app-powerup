@@ -72,7 +72,7 @@ export function SplashScreen() {
     }, 4000);
 
     return () => clearTimeout(transitionTimer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Spin interpolation: 0 -> 1 maps to 0deg -> 45deg
   const spin = sparkRotation.interpolate({

@@ -391,6 +391,17 @@ export function ReadyPlayerMe() {
 
   const [activeCategory, setActiveCategory] = useState<Category>("skin");
 
+  // Synchronize state variables when asynchronously loaded profile initialSettings changes
+  useEffect(() => {
+    if (!initialSettings) return;
+    setSkin(initialSettings.skin);
+    setHair(initialSettings.hair);
+    setHairColor(initialSettings.hairColor);
+    setAccessories(initialSettings.accessories);
+    setClothing(initialSettings.clothing);
+    setBackground(initialSettings.background);
+  }, [initialSettings]);
+
   // Construct query string to store in profile DB
   const currentAvatarId = `rpm_custom?skinColor=${skin}&hair=${hair}&hairColor=${hairColor}&accessories=${accessories}&clothingColor=${clothing}&backgroundColor=${background}`;
 
