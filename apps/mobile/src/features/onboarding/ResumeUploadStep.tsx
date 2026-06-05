@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,13 @@ export function ResumeUploadStep() {
   const router = useRouter();
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    };
+  }, []);
   const [extractResume, { isLoading: isExtracting }] = useExtractOnboardingResumeMutation();
   const [confirmResume, { isLoading: isConfirming }] = useConfirmOnboardingResumeMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
@@ -82,7 +89,7 @@ export function ResumeUploadStep() {
 
       // Show success screen for 2 seconds, then navigate
       setUploadSuccess(true);
-      setTimeout(async () => {
+      navTimerRef.current = setTimeout(async () => {
         try {
           const session = await startSession().unwrap();
           router.replace(`/assessment-entry?session_id=${session.session_id}` as never);

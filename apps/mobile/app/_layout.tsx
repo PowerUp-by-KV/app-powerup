@@ -37,24 +37,19 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [isLocalReady, setIsLocalReady] = useState(false);
 
-  // Reload session on top-level route group changes
   useEffect(() => {
     let active = true;
-    const loadLocal = async () => {
-      try {
-        const sess = await getAuthSession();
-        if (active) {
-          setSession(sess);
-          setIsLocalReady(true);
-        }
-      } catch (err) {
+    getAuthSession()
+      .then((sess) => {
+        if (!active) return;
+        setSession(sess);
+      })
+      .catch((err) => {
         console.warn("Failed to load session in guard:", err);
-        if (active) {
-          setIsLocalReady(true);
-        }
-      }
-    };
-    loadLocal();
+      })
+      .finally(() => {
+        if (active) setIsLocalReady(true);
+      });
     return () => {
       active = false;
     };
@@ -72,7 +67,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLocalReady) return;
 
-    // Wait if we're authenticated but still querying/loading onboarding status
     const isQueryActive = !!userId;
     if (
       session &&
@@ -85,23 +79,17 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
 
     if (!session) {
-      // User is not logged in: redirect to login if attempting to access private route
-      if (!isPublic) {
-        router.replace("/login");
-      }
+      if (!isPublic) router.replace("/login");
     } else {
-      // User is logged in: check onboarding status
       const onboardingComplete = onboardingStatus?.answers_present ?? false;
       const isAllowedBeforeOnboarding =
         isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
       if (!onboardingComplete) {
-        // If they are not onboarded, block access to tabs/dashboard
         if (!isAllowedBeforeOnboarding) {
           router.replace("/onboarding" as never);
         }
       } else {
-        // If they are onboarded, block access to onboarding/login/register pages
         const routesToBlockAfterOnboarding = [
           "login",
           "register",
@@ -124,28 +112,28 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     router,
   ]);
 
+  // Only block render in the narrow window where we know the user is authenticated,
+  // haven't completed onboarding, and the onboarding status is still loading.
+  // In all other cases render children immediately — redirects fire via the effect above.
+  // Never return null while isLocalReady is false: the splash screen is still visible then.
   const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
   const isAllowedBeforeOnboarding =
     isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
-
   const onboardingComplete = onboardingStatus?.answers_present ?? false;
   const isQueryActive = !!userId;
   const isQueryLoading =
     isQueryActive &&
     (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
 
-  if (!isLocalReady) {
-    return null;
-  }
-
   if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
     return null;
   }
+
   return <>{children}</>;
 }
 
 export default function AuthLayout() {
-  const [loaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter: Inter_400Regular,
     "Inter-Regular": Inter_400Regular,
     "Inter-Medium": Inter_500Medium,
@@ -154,14 +142,29 @@ export default function AuthLayout() {
     "Inter-ExtraBold": Inter_800ExtraBold,
   });
 
+  const [authChecked, setAuthChecked] = useState(false);
+
   useEffect(() => {
-    if (loaded || error) {
+    getAuthSession()
+      .catch((err) => {
+        console.warn("Failed to load session on mount:", err);
+      })
+      .finally(() => {
+        // Always mark as checked even if SecureStore throws — prevents
+        // the app being permanently stuck on the splash screen.
+        setAuthChecked(true);
+      });
+  }, []);
+
+  // Only hide splash once BOTH fonts and the initial auth check are done.
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && authChecked) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [fontsLoaded, fontError, authChecked]);
 
-  if (!loaded && !error) {
-    return null;
+  if ((!fontsLoaded && !fontError) || !authChecked) {
+    return null; // Splash is still visible — no black frame.
   }
 
   return (
