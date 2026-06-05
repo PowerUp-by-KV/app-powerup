@@ -12,50 +12,122 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { getAuthSession } from "@/services/auth-storage";
+import { getAuthSession, StoredSession } from "@/services/auth-storage";
+import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_ROUTES = ["login", "register", "otp", "splash"];
+const PUBLIC_ROUTES = ["login", "register", "otp", "splash", "verify-email", "verify-phone"];
+const ALLOWED_BEFORE_ONBOARDING = [
+  "onboarding",
+  "onboarding-resume",
+  "verify-email",
+  "verify-phone",
+  "thank-you",
+  "welcome-back",
+  "success",
+  "profile",
+];
 
-function RouteGuard({
-  children,
-  initialAuthenticated,
-}: {
-  children: React.ReactNode;
-  initialAuthenticated: boolean;
-}) {
+function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
-  // Start with the value we already know from the pre-render auth check —
-  // this prevents the blank flash on first mount.
-  const [isAuthenticated, setIsAuthenticated] = useState(initialAuthenticated);
-  const hasMounted = useRef(false);
+  const currentRoute = segments[0] as string | undefined;
+
+  const [session, setSession] = useState<StoredSession | null>(null);
+  const [isLocalReady, setIsLocalReady] = useState(false);
 
   useEffect(() => {
-    // On first mount the auth state is already correct (passed from parent).
-    // On subsequent segment changes we re-validate in case the session expired.
-    if (!hasMounted.current) {
-      hasMounted.current = true;
-      const currentRoute = segments[0] as string | undefined;
-      const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-      if (!isAuthenticated && !isPublic) {
-        router.replace("/login");
-      }
+    let active = true;
+    getAuthSession()
+      .then((sess) => {
+        if (!active) return;
+        setSession(sess);
+      })
+      .catch((err) => {
+        console.warn("Failed to load session in guard:", err);
+      })
+      .finally(() => {
+        if (active) setIsLocalReady(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentRoute]);
+
+  const userId = session?.user?.id;
+  const {
+    data: onboardingStatus,
+    isLoading: isOnboardingLoading,
+    isFetching: isOnboardingFetching,
+  } = useGetOnboardingStatusQuery(userId ?? "", {
+    skip: !userId,
+  });
+
+  useEffect(() => {
+    if (!isLocalReady) return;
+
+    const isQueryActive = !!userId;
+    if (
+      session &&
+      isQueryActive &&
+      (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
+    ) {
       return;
     }
 
-    getAuthSession().then((session) => {
-      const authed = !!session;
-      setIsAuthenticated(authed);
-      const currentRoute = segments[0] as string | undefined;
-      const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-      if (!authed && !isPublic) {
-        router.replace("/login");
+    const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+
+    if (!session) {
+      if (!isPublic) router.replace("/login");
+    } else {
+      const onboardingComplete = onboardingStatus?.answers_present ?? false;
+      const isAllowedBeforeOnboarding =
+        isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
+
+      if (!onboardingComplete) {
+        if (!isAllowedBeforeOnboarding) {
+          router.replace("/onboarding" as never);
+        }
+      } else {
+        const routesToBlockAfterOnboarding = [
+          "login",
+          "register",
+          "onboarding",
+          "dynamic-onboarding",
+        ];
+        if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
+          router.replace("/(tabs)/my-learning" as never);
+        }
       }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+    }
+  }, [
+    session,
+    isLocalReady,
+    userId,
+    onboardingStatus,
+    isOnboardingLoading,
+    isOnboardingFetching,
+    segments,
+    router,
+  ]);
+
+  // Only block render in the narrow window where we know the user is authenticated,
+  // haven't completed onboarding, and the onboarding status is still loading.
+  // In all other cases render children immediately — redirects fire via the effect above.
+  // Never return null while isLocalReady is false: the splash screen is still visible then.
+  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+  const isAllowedBeforeOnboarding =
+    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
+  const onboardingComplete = onboardingStatus?.answers_present ?? false;
+  const isQueryActive = !!userId;
+  const isQueryLoading =
+    isQueryActive &&
+    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
+
+  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
+    return null;
+  }
 
   return <>{children}</>;
 }
@@ -74,15 +146,21 @@ export default function AuthLayout() {
   const [initialAuthenticated, setInitialAuthenticated] = useState(false);
 
   useEffect(() => {
-    getAuthSession().then((session) => {
-      setInitialAuthenticated(!!session);
-      setAuthChecked(true);
-    });
+    getAuthSession()
+      .then((session) => {
+        setInitialAuthenticated(!!session);
+      })
+      .catch((err) => {
+        console.warn("Failed to load session on mount:", err);
+      })
+      .finally(() => {
+        // Always mark as checked even if SecureStore throws — prevents
+        // the app being permanently stuck on the splash screen.
+        setAuthChecked(true);
+      });
   }, []);
 
-  // Only hide the splash once BOTH fonts and auth check are done.
-  // Previously hideAsync fired as soon as fonts loaded, leaving a black
-  // frame while the auth check was still in flight.
+  // Only hide splash once BOTH fonts and the initial auth check are done.
   useEffect(() => {
     if ((fontsLoaded || fontError) && authChecked) {
       SplashScreen.hideAsync();
@@ -90,12 +168,12 @@ export default function AuthLayout() {
   }, [fontsLoaded, fontError, authChecked]);
 
   if ((!fontsLoaded && !fontError) || !authChecked) {
-    return null; // Splash screen is still visible — no black frame.
+    return null; // Splash is still visible — no black frame.
   }
 
   return (
     <Provider store={store}>
-      <RouteGuard initialAuthenticated={initialAuthenticated}>
+      <RouteGuard>
         <Stack
           screenOptions={{
             headerShown: false,
