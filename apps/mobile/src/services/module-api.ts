@@ -261,6 +261,7 @@ export const {
   useGetModulesQuery,
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
+  useLazyGetModuleDaysQuery,
   useGetDayActivitiesQuery,
   useGetActivityQuestionsQuery,
   useSubmitReadingAnswerMutation,

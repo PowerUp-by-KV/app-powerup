@@ -1,16 +1,15 @@
 import React, { useMemo } from "react";
-import { Image, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
-import { getAvatarUri } from "@/utils/avatar";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
-  useGetProgressionQuery,
-  useGetModuleDaysQuery,
+  useLazyGetModuleDaysQuery,
   useGetDayProgressQuery,
+  useGetPersonalizedPathQuery,
 } from "@/services/module-api";
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
@@ -20,51 +19,108 @@ import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
 import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
 
+const PROGRESSION_WAVES = [
+  { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 2, modules: [1, 5, 9], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 3, modules: [2, 6, 10], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 4, modules: [2, 6, 10], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 5, modules: [3, 7, 11], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 6, modules: [3, 7, 11], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 7, modules: [4, 8, 12, 13], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 8, modules: [4, 8, 12, 13], days: [7, 8, 9, 10, 11, 12] },
+];
+
 export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
 
-  const { data: progression } = useGetProgressionQuery(undefined, {
+  const { data: personalizedPath } = useGetPersonalizedPathQuery(undefined, {
     skip: !gate.canEnter,
   });
 
-  const activeModule = useMemo(() => {
-    if (!progression?.unlocked_modules?.length) return null;
-    const current = progression.unlocked_modules.find((m) => !m.locked && !m.completed);
-    if (current) return current;
-    const firstUnlocked = progression.unlocked_modules.find((m) => !m.locked);
-    if (firstUnlocked) return firstUnlocked;
-    return progression.unlocked_modules[0];
-  }, [progression?.unlocked_modules]);
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [allDaysList, setAllDaysList] = React.useState<any[]>([]);
 
-  const { data: days } = useGetModuleDaysQuery(activeModule?.module_id ?? "", {
-    skip: !activeModule,
-  });
+  React.useEffect(() => {
+    if (!personalizedPath?.modules?.length) return;
 
-  const activeProgressionModule = useMemo(() => {
-    if (!progression?.unlocked_modules || !activeModule) return null;
-    return progression.unlocked_modules.find((m) => m.module_id === activeModule.module_id);
-  }, [progression?.unlocked_modules, activeModule]);
+    const fetchAllDays = async () => {
+      try {
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id).unwrap();
+            return { module: m, days: data };
+          } catch (e) {
+            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
+            return { module: m, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
 
-  const unlockedDays = useMemo(() => {
-    return activeProgressionModule?.unlocked_days ?? [1, 2, 3, 4, 5, 6];
-  }, [activeProgressionModule]);
+        const daysByModuleNo: Record<number, any[]> = {};
+        const moduleByNo: Record<number, any> = {};
 
-  const daysCompleted = useMemo(() => {
-    if (!days) return 0;
-    return days.filter((d) => unlockedDays.includes(d.day_number) && d.is_completed).length;
-  }, [days, unlockedDays]);
+        for (const res of results) {
+          daysByModuleNo[res.module.module_no] = res.days;
+          moduleByNo[res.module.module_no] = res.module;
+        }
 
-  const totalDays = useMemo(() => {
-    return unlockedDays.length;
-  }, [unlockedDays]);
+        const combined = [];
+        for (const waveConfig of PROGRESSION_WAVES) {
+          for (const mNo of waveConfig.modules) {
+            const moduleItem = moduleByNo[mNo];
+            if (!moduleItem) continue;
+
+            const moduleDays = daysByModuleNo[mNo] || [];
+            for (const dNum of waveConfig.days) {
+              const dayObj = moduleDays.find((d) => d.day_number === dNum);
+              if (dayObj) {
+                combined.push({
+                  ...dayObj,
+                  module_no: moduleItem.module_no,
+                  module_title: moduleItem.title,
+                  module_id: moduleItem.id,
+                });
+              }
+            }
+          }
+        }
+        setAllDaysList(combined);
+      } catch (err) {
+        console.error("Error fetching all days:", err);
+      }
+    };
+
+    fetchAllDays();
+  }, [personalizedPath, triggerGetModuleDays]);
+
+  const firstIncompleteIdx = useMemo(() => {
+    return allDaysList.findIndex((d) => !d.is_completed);
+  }, [allDaysList]);
 
   const activeDay = useMemo(() => {
-    if (!days) return null;
-    const firstIncomplete = days.find((d) => !d.is_completed);
-    return firstIncomplete ?? days[0] ?? null;
-  }, [days]);
+    if (allDaysList.length === 0) return null;
+    return firstIncompleteIdx !== -1
+      ? allDaysList[firstIncompleteIdx]
+      : allDaysList[allDaysList.length - 1];
+  }, [allDaysList, firstIncompleteIdx]);
+
+  const activeModule = useMemo(() => {
+    if (!activeDay) return null;
+    return {
+      module_id: activeDay.module_id,
+      title: activeDay.module_title,
+    };
+  }, [activeDay]);
+
+  const daysCompleted = useMemo(() => {
+    return firstIncompleteIdx !== -1 ? firstIncompleteIdx : allDaysList.length;
+  }, [allDaysList, firstIncompleteIdx]);
+
+  const totalDays = useMemo(() => {
+    return allDaysList.length || 156;
+  }, [allDaysList]);
 
   const { data: dayProgress } = useGetDayProgressQuery(activeDay?.id ?? "", {
     skip: !activeDay,
@@ -85,16 +141,22 @@ export function HomeScreen() {
     if (activeDay && activeModule) {
       router.push({
         pathname: `/learning-journey/module/${activeDay.id}` as never,
-        params: { module_id: activeModule.module_id },
+        params: {
+          module_id: activeModule.module_id,
+          day_number: String(
+            firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length,
+          ),
+        },
       });
     } else {
       router.push("/(tabs)/my-learning" as never);
     }
   };
 
-  const continueTitle = activeModule
-    ? `${activeModule.title} (Day ${activeDay?.day_number ?? 1})`
-    : "Continue Learning";
+  const continueTitle = useMemo(() => {
+    if (!activeDay || !activeModule) return "Continue Learning";
+    return `${activeModule.title} (Day ${firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length})`;
+  }, [activeDay, activeModule, firstIncompleteIdx, allDaysList.length]);
 
   const continueSubtitle = useMemo(() => {
     if (!activeDay) return "⏱ 15 min left";
@@ -138,14 +200,7 @@ export function HomeScreen() {
               className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
             >
               <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                {profile?.avatar_id ? (
-                  <Image
-                    source={{ uri: getAvatarUri(profile.avatar_id, profile.id) }}
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <Feather name="user" size={20} color="#4f46e5" />
-                )}
+                <Feather name="user" size={20} color="#4f46e5" />
               </View>
             </Pressable>
           </View>

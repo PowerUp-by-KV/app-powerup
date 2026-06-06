@@ -46,18 +46,8 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "deepakdev6055",
     "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "8e258e6f-4c10-4829-8d03-57983507bed1"
-      }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/8e258e6f-4c10-4829-8d03-57983507bed1"
+      "router": {}
     }
   }
 }
