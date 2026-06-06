@@ -92,12 +92,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           router.replace("/onboarding" as never);
         }
       } else {
-        const routesToBlockAfterOnboarding = [
-          "login",
-          "register",
-          "onboarding",
-          "dynamic-onboarding",
-        ];
+        const routesToBlockAfterOnboarding = ["onboarding"];
         if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
