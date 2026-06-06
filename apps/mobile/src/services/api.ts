@@ -22,15 +22,9 @@ export function normalizeBaseUrlForRuntime(url: string): string {
   }
 }
 
-const resolvedBaseUrl = rawBaseUrl || fallbackDevBaseUrl;
-const BASE_URL = resolvedBaseUrl ? normalizeBaseUrlForRuntime(resolvedBaseUrl) : undefined;
-
-if (!BASE_URL) {
-  throw new Error(
-    "EXPO_PUBLIC_API_URL environment variable is required. " +
-      "Please set it in your .env file. For local development, use: http://localhost:8000/api",
-  );
-}
+const productionFallbackUrl = "https://api-powerup.techwithdeepak.org/api";
+const resolvedBaseUrl = rawBaseUrl || fallbackDevBaseUrl || productionFallbackUrl;
+const BASE_URL = normalizeBaseUrlForRuntime(resolvedBaseUrl);
 
 export const API_BASE_URL = BASE_URL as string;
 
