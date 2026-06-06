@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -937,9 +938,14 @@ export function LearningJourneyScreen() {
                       { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
                     ]}
                   >
-                    {isDiagnosticComplete
-                      ? `Level ${profile?.cefr_range || "Assessed"}`
-                      : "In Progress"}
+                    {profile?.cefr_range
+                      ? `Level ${profile.cefr_range}`
+                      : isDiagnosticComplete
+                        ? "Assessed"
+                        : assessmentSession &&
+                            (assessmentSession.not_completed_sections || []).length === 0
+                          ? "Scoring"
+                          : "In Progress"}
                   </Text>
                 </View>
               </View>
@@ -959,7 +965,12 @@ export function LearningJourneyScreen() {
 
               <View style={timelineStyles.progressLabelRow}>
                 <Text style={timelineStyles.progressLabelText}>
-                  {diagLessonsCompleted} of 6 sections completed
+                  {isDiagnosticComplete
+                    ? "6 of 6 sections completed"
+                    : assessmentSession &&
+                        (assessmentSession.not_completed_sections || []).length === 0
+                      ? "Answers submitted, scoring in progress"
+                      : `${diagLessonsCompleted} of 6 sections completed`}
                 </Text>
                 <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
               </View>
@@ -978,7 +989,12 @@ export function LearningJourneyScreen() {
                   disabled={isStartingSession}
                   style={timelineStyles.continueButton}
                 >
-                  <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                  <Text style={timelineStyles.continueButtonText}>
+                    {assessmentSession &&
+                    (assessmentSession.not_completed_sections || []).length === 0
+                      ? "View grading status"
+                      : "Continue learning"}
+                  </Text>
                 </Pressable>
               )}
             </View>

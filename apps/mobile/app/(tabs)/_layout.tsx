@@ -19,7 +19,10 @@ export default function TabLayout() {
     });
   }, [router]);
 
-  if (isAuthed !== true) return null;
+  // Only block render if we've confirmed the user is NOT authenticated.
+  // While isAuthed is null (check still in flight) we render the tabs —
+  // the root RouteGuard has already verified auth before mounting this layout.
+  if (isAuthed === false) return null;
 
   return (
     <Tabs

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
+import * as SecureStore from "expo-secure-store";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
@@ -334,12 +335,19 @@ export function ProfileScreen() {
                     colors={["#3b82f6", "#a3e635"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={{ width: "70%", height: "100%" }}
+                    className="h-full"
+                    style={{
+                      width: profile?.total_modules
+                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as any)
+                        : "0%",
+                    }}
                   />
                 </View>
                 <View className="flex-row justify-between">
-                  <Text className="text-slate-500 text-[9px] font-semibold">Lesson Name</Text>
-                  <Text className="text-slate-800 text-[9px] font-black">7/10</Text>
+                  <Text className="text-slate-500 text-[9px] font-semibold">Modules Completed</Text>
+                  <Text className="text-slate-800 text-[9px] font-black">
+                    {profile?.modules_completed ?? 0}/{profile?.total_modules ?? 0}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -357,7 +365,7 @@ export function ProfileScreen() {
               </View>
               <View>
                 <Text className="text-slate-800 font-black text-sm leading-tight">
-                  {profile?.streak_count ?? 205}
+                  {profile?.streak_count ?? 0}
                 </Text>
                 <Text className="text-slate-400 text-[9px] font-bold">Daily Streak</Text>
               </View>
@@ -373,7 +381,7 @@ export function ProfileScreen() {
               </View>
               <View>
                 <Text className="text-slate-800 font-black text-sm leading-tight">
-                  {profile?.total_xp ?? 20}
+                  {profile?.total_xp ?? 0}
                 </Text>
                 <Text className="text-slate-400 text-[9px] font-bold">XP Points</Text>
               </View>
@@ -443,7 +451,9 @@ export function ProfileScreen() {
                 <SettingsCard
                   icon="sun"
                   label="Mode"
-                  rightElement={<CustomSwitch value={isDarkMode} onValueChange={setIsDarkMode} />}
+                  rightElement={
+                    <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
+                  }
                 />
 
                 <SettingsCard
@@ -452,7 +462,7 @@ export function ProfileScreen() {
                   rightElement={
                     <CustomSwitch
                       value={notificationsEnabled}
-                      onValueChange={setNotificationsEnabled}
+                      onValueChange={handleToggleNotifications}
                     />
                   }
                 />
