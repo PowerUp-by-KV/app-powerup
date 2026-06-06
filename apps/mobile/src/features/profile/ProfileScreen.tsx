@@ -29,6 +29,61 @@ export function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { data: profile, isLoading } = useGetProfileQuery();
 
+  // Load preferences from SecureStore/localStorage on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        let storedDarkMode: string | null = null;
+        let storedNotifications: string | null = null;
+
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined") {
+            storedDarkMode = window.localStorage.getItem("settings_dark_mode");
+            storedNotifications = window.localStorage.getItem("settings_notifications");
+          }
+        } else {
+          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+          storedNotifications = await SecureStore.getItemAsync("settings_notifications");
+        }
+
+        if (storedDarkMode !== null) {
+          setIsDarkMode(storedDarkMode === "true");
+        }
+        if (storedNotifications !== null) {
+          setNotificationsEnabled(storedNotifications === "true");
+        }
+      } catch (error) {
+        console.error("Failed to load settings from SecureStore/localStorage", error);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleToggleDarkMode = async (value: boolean) => {
+    setIsDarkMode(value);
+    try {
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_dark_mode", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_dark_mode", String(value));
+      }
+    } catch {}
+  };
+
+  const handleToggleNotifications = async (value: boolean) => {
+    setNotificationsEnabled(value);
+    try {
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_notifications", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_notifications", String(value));
+      }
+    } catch {}
+  };
   // Track the currently displayed date and view mode (weekly vs monthly)
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");
@@ -227,7 +282,9 @@ export function ProfileScreen() {
           >
             <Feather name="arrow-left" size={20} color="#0f172a" />
           </Pressable>
-          <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">Profile</Text>
+          <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">
+            Profile
+          </Text>
         </View>
 
         <ScrollView
@@ -291,7 +348,10 @@ export function ProfileScreen() {
           {/* Metrics section */}
           <View className="flex-row px-5 mb-5" style={{ gap: 8 }}>
             {/* Daily Streak */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <MaterialCommunityIcons name="fire" size={18} color="#fff" />
               </View>
@@ -304,7 +364,10 @@ export function ProfileScreen() {
             </View>
 
             {/* XP Points */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <Feather name="zap" size={16} color="#fff" />
               </View>
@@ -317,7 +380,10 @@ export function ProfileScreen() {
             </View>
 
             {/* Friends */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <Feather name="user" size={16} color="#fff" />
               </View>
@@ -334,11 +400,7 @@ export function ProfileScreen() {
               {(["space", "stats"] as const).map((t) => {
                 const isActive = tab === t;
                 return (
-                  <Pressable
-                    key={t}
-                    onPress={() => setTab(t)}
-                    className="py-3 relative"
-                  >
+                  <Pressable key={t} onPress={() => setTab(t)} className="py-3 relative">
                     <Text
                       className={`text-sm font-black ${
                         isActive ? "text-[#4a72f6]" : "text-slate-400"
@@ -376,21 +438,12 @@ export function ProfileScreen() {
                   onPress={() => router.push("/profile/language" as never)}
                 />
 
-                <SettingsCard
-                  icon="key"
-                  label="Passwords"
-                  onPress={() => {}}
-                />
+                <SettingsCard icon="key" label="Passwords" onPress={() => {}} />
 
                 <SettingsCard
                   icon="sun"
                   label="Mode"
-                  rightElement={
-                    <CustomSwitch
-                      value={isDarkMode}
-                      onValueChange={setIsDarkMode}
-                    />
-                  }
+                  rightElement={<CustomSwitch value={isDarkMode} onValueChange={setIsDarkMode} />}
                 />
 
                 <SettingsCard
@@ -406,15 +459,9 @@ export function ProfileScreen() {
 
                 {/* Second section */}
                 <View className="mt-4">
-                  <SettingsCard
-                    label="About Us"
-                    onPress={() => {}}
-                  />
+                  <SettingsCard label="About Us" onPress={() => {}} />
 
-                  <SettingsCard
-                    label="Privacy & Security"
-                    onPress={() => {}}
-                  />
+                  <SettingsCard label="Privacy & Security" onPress={() => {}} />
                 </View>
 
                 {/* Logout Card */}
