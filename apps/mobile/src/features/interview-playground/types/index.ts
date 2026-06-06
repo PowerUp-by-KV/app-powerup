@@ -15,6 +15,8 @@ export interface TranscriptTurn {
   timestamp: string;
 }
 
+export type InterviewMode = "buddy" | "playground";
+
 export interface StartInterviewResponse {
   session_id: string;
   derived_role: string;
@@ -23,6 +25,7 @@ export interface StartInterviewResponse {
   webrtc_sdp_url: string;
   model: string;
   expires_at: string;
+  mode: InterviewMode;
 }
 
 export interface CommunicationScores {

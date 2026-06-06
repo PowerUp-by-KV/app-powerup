@@ -24,9 +24,10 @@ import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
 
 interface InterviewRoomScreenProps {
   sessionId: string | undefined;
+  mode?: "buddy" | "playground";
 }
 
-export function InterviewRoomScreen({ sessionId }: InterviewRoomScreenProps) {
+export function InterviewRoomScreen({ sessionId, mode = "playground" }: InterviewRoomScreenProps) {
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState(activeSession.isSpeaking);
@@ -48,7 +49,7 @@ export function InterviewRoomScreen({ sessionId }: InterviewRoomScreenProps) {
 
   useEffect(() => {
     if (status === "done" && sessionId) {
-      router.replace({ pathname: "/interview-results", params: { session_id: sessionId } });
+      router.replace({ pathname: "/interview-results", params: { session_id: sessionId, mode } });
     } else if (status === "error") {
       Alert.alert("Interview Error", activeSession.errorMessage ?? "An error occurred.", [
         { text: "OK", onPress: () => router.back() },

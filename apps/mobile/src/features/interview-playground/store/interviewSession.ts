@@ -1,4 +1,4 @@
-import type { TranscriptTurn, InterviewStatus, EvaluationResult } from "../types";
+import type { TranscriptTurn, InterviewStatus, EvaluationResult, InterviewMode } from "../types";
 
 type StatusListener = (status: InterviewStatus) => void;
 type TranscriptListener = (turns: TranscriptTurn[]) => void;
@@ -11,6 +11,7 @@ interface ActiveSession {
   transcript: TranscriptTurn[];
   sessionId: string | null;
   derivedRole: string | null;
+  mode: InterviewMode;
   status: InterviewStatus;
   isSpeaking: { user: boolean; ai: boolean };
   evaluation: EvaluationResult | null;
@@ -30,6 +31,7 @@ export const activeSession: ActiveSession = {
   transcript: [],
   sessionId: null,
   derivedRole: null,
+  mode: "playground",
   status: "idle",
   isSpeaking: { user: false, ai: false },
   evaluation: null,
@@ -75,6 +77,7 @@ export function resetSession(): void {
   activeSession.transcript = [];
   activeSession.sessionId = null;
   activeSession.derivedRole = null;
+  activeSession.mode = "playground";
   activeSession.status = "idle";
   activeSession.isSpeaking = { user: false, ai: false };
   activeSession.evaluation = null;

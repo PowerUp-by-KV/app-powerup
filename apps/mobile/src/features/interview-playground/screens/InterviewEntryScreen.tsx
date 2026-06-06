@@ -54,7 +54,7 @@ export function InterviewEntryScreen() {
   const handleStart = useCallback(async () => {
     const sid = await startInterview();
     if (sid) {
-      router.push({ pathname: "/interview-room", params: { session_id: sid } });
+      router.push({ pathname: "/interview-room", params: { session_id: sid, mode: "playground" } });
     }
   }, [startInterview]);
 

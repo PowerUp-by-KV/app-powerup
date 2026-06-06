@@ -6,6 +6,7 @@ import {
 } from "@/services/interview-playground-api";
 import type {
   EvaluationResult,
+  InterviewMode,
   InterviewStatus,
   StartInterviewResponse,
   TranscriptTurn,
@@ -34,7 +35,7 @@ interface UseWebRTCInterviewReturn {
   endInterview: () => Promise<void>;
 }
 
-export function useWebRTCInterview(): UseWebRTCInterviewReturn {
+export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRTCInterviewReturn {
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState<{ user: boolean; ai: boolean }>(
@@ -188,7 +189,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
     let backendData: StartInterviewResponse;
 
     try {
-      const result = await startInterviewMutation().unwrap();
+      const result = await startInterviewMutation({ mode }).unwrap();
       backendData = result;
     } catch {
       handleError("Failed to start interview. Please try again.");
@@ -197,6 +198,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
 
     activeSession.sessionId = backendData.session_id;
     activeSession.derivedRole = backendData.derived_role;
+    activeSession.mode = backendData.mode ?? mode;
     if (isMountedRef.current) {
       setSessionId(backendData.session_id);
       setDerivedRole(backendData.derived_role);

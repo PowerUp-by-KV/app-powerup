@@ -1,187 +1,116 @@
-import React, { useState } from "react";
+import React, { useCallback } from "react";
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Pressable,
   SafeAreaView,
   ScrollView,
-  Pressable,
-  TextInput,
-  ActivityIndicator,
-  Alert,
   StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { router } from "expo-router";
+import type { Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
-import { useGetProfileQuery } from "@/services/auth-api";
-import { useGetResumeQuery } from "@/services/resume-api";
-import { api } from "@/services/api";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const ROUTE_RESUME = "/resume" as Href;
 
-interface AiSession {
-  id: string;
-  status: string;
-  total_questions: number;
-  questions_answered: number;
-}
+import { useGetProfileResumeQuery } from "@/services/resume-api";
+import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
+import { useWebRTCInterview } from "@/features/interview-playground/hooks/useWebRTCInterview";
+import { ConnectionBadge } from "@/features/interview-playground/components/ConnectionBadge";
+import type { InterviewSessionSummary } from "@/features/interview-playground/types";
 
-interface AiQuestion {
-  id: string;
-  question_text: string;
-  skill_keyword: string;
-  difficulty: string;
-}
-
-interface AiAnswerResult {
-  score: number | null;
-  feedback: string | null;
-  score_breakdown: {
-    criteria_scores: { name: string; score: number; feedback: string }[];
-  } | null;
-  questions_remaining: number;
-  session_complete: boolean;
-}
-
-type Screen = "gate" | "setup" | "question" | "answer_review" | "results";
-
-// ─── AI Interview Hooks (raw RTK Query calls via api.endpoints) ───────────────
-
-const aiInterviewApi = api.injectEndpoints({
-  endpoints: (builder) => ({
-    createAiSession: builder.mutation<AiSession, void>({
-      query: () => ({ url: "/v1/interviews/sessions", method: "POST", body: {} }),
-    }),
-    getAiSessionQuestion: builder.query<AiQuestion, string>({
-      query: (sessionId) => `/v1/interviews/session/${sessionId}/next`,
-    }),
-    submitAiAnswer: builder.mutation<AiAnswerResult, { sessionId: string; formData: FormData }>({
-      query: ({ sessionId, formData }) => ({
-        url: `/v1/interviews/sessions/${sessionId}/answer`,
-        method: "POST",
-        body: formData,
-      }),
-    }),
-    getAiResults: builder.query<
-      { session: AiSession; grade: string; answers: AiAnswerResult[] },
-      string
-    >({
-      query: (sessionId) => `/v1/interviews/session/${sessionId}/replay`,
-    }),
-  }),
-  overrideExisting: false,
-});
-
-const {
-  useCreateAiSessionMutation,
-  useLazyGetAiSessionQuestionQuery,
-  useSubmitAiAnswerMutation,
-  useGetAiResultsQuery,
-} = aiInterviewApi;
-
-// ─── Screen ────────────────────────────────────────────────────────────────────
-
-export default function AiInterviewScreen() {
-  const router = useRouter();
-  const { data: profile } = useGetProfileQuery();
-  const userId = (profile as { id?: string } | undefined)?.id ?? "";
-  const { data: resume, isLoading: resumeLoading } = useGetResumeQuery(userId, {
-    skip: !userId,
-  });
-
-  const [screen, setScreen] = useState<Screen>("gate");
-  const [session, setSession] = useState<AiSession | null>(null);
-  const [currentQuestion, setCurrentQuestion] = useState<AiQuestion | null>(null);
-  const [lastAnswer, setLastAnswer] = useState<AiAnswerResult | null>(null);
-  const [transcript, setTranscript] = useState("");
-
-  const hasSkills = resume?.parse_status === "completed" && (resume.skills?.length ?? 0) > 0;
-
-  const [createSession, { isLoading: creating }] = useCreateAiSessionMutation();
-  const [fetchQuestion] = useLazyGetAiSessionQuestionQuery();
-  const [submitAnswer, { isLoading: submitting }] = useSubmitAiAnswerMutation();
-
-  const { data: results } = useGetAiResultsQuery(session?.id ?? "", {
-    skip: !session || session.status !== "completed",
-  });
-
-  const handleStart = async () => {
-    try {
-      const s = await createSession().unwrap();
-      setSession(s);
-      const q = await fetchQuestion(s.id).unwrap();
-      setCurrentQuestion(q);
-      setScreen("question");
-    } catch (e: unknown) {
-      const msg =
-        typeof e === "object" && e !== null && "data" in e
-          ? (e as { data?: { detail?: string } }).data?.detail
-          : "Could not start interview. Make sure your resume is uploaded.";
-      Alert.alert("Error", msg ?? "Could not start interview.");
-    }
-  };
-
-  const handleSubmit = async () => {
-    if (!session || !currentQuestion || !transcript.trim()) {
-      Alert.alert("Empty answer", "Please type your answer before submitting.");
-      return;
-    }
-    try {
-      const fd = new FormData();
-      fd.append("question_id", currentQuestion.id);
-      fd.append("transcript", transcript.trim());
-      const result = await submitAnswer({ sessionId: session.id, formData: fd }).unwrap();
-      setLastAnswer(result);
-      setTranscript("");
-      if (result.session_complete) {
-        setSession((prev) => (prev ? { ...prev, status: "completed" } : prev));
+// ---------------------------------------------------------------------------
+// Past session card
+// ---------------------------------------------------------------------------
+function SessionCard({ item }: { item: InterviewSessionSummary }) {
+  return (
+    <Pressable
+      style={styles.sessionCard}
+      onPress={() =>
+        router.push({ pathname: "/interview-results", params: { session_id: item.session_id } })
       }
-      setScreen("answer_review");
-    } catch {
-      Alert.alert("Error", "Failed to submit. Please try again.");
-    }
-  };
+    >
+      <View style={styles.sessionHeader}>
+        <Text style={styles.sessionRole} numberOfLines={1}>
+          {item.derived_role || "Interview"}
+        </Text>
+        {item.grade && (
+          <View style={styles.gradeBadge}>
+            <Text style={styles.gradeText}>{item.grade}</Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.sessionMeta}>
+        <Text style={styles.sessionDate}>{new Date(item.started_at).toLocaleDateString()}</Text>
+        {item.final_score !== null && (
+          <Text style={styles.sessionScore}>{item.final_score}/100</Text>
+        )}
+      </View>
+    </Pressable>
+  );
+}
 
-  const handleNext = async () => {
-    if (!session) return;
-    if (lastAnswer?.session_complete) {
-      setScreen("results");
-      return;
-    }
-    try {
-      const q = await fetchQuestion(session.id).unwrap();
-      setCurrentQuestion(q);
-      setScreen("question");
-    } catch {
-      setScreen("results");
-    }
-  };
+// ---------------------------------------------------------------------------
+// Checklist row
+// ---------------------------------------------------------------------------
+function CheckRow({ label }: { label: string }) {
+  return (
+    <View style={styles.checkRow}>
+      <Feather name="check-circle" size={16} color="#4F46E5" style={styles.checkIcon} />
+      <Text style={styles.checkLabel}>{label}</Text>
+    </View>
+  );
+}
 
-  // ─── Gate: resume not uploaded ─────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// Main screen
+// ---------------------------------------------------------------------------
+export default function InterviewBuddyScreen() {
+  const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
+  const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery();
+  const { startInterview, status, errorMessage } = useWebRTCInterview("buddy");
 
-  if (resumeLoading) {
+  const hasResume = !!resume && resume.parse_status === "completed";
+  const candidateName = resume?.full_name ?? null;
+  const skills: string[] = (resume?.skills ?? [])
+    .slice(0, 5)
+    .map((s) => (typeof s === "string" ? s : ((s as { name?: string }).name ?? "")))
+    .filter(Boolean);
+  const isStarting = status === "starting" || status === "connecting";
+
+  const handleStart = useCallback(async () => {
+    const sid = await startInterview();
+    if (sid) {
+      router.push({ pathname: "/interview-room", params: { session_id: sid } });
+    }
+  }, [startInterview]);
+
+  if (isLoadingResume) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator style={{ marginTop: 80 }} />
+      <SafeAreaView style={styles.safe}>
+        <ActivityIndicator style={styles.loader} size="large" color="#4F46E5" />
       </SafeAreaView>
     );
   }
 
-  if (!hasSkills) {
+  // Resume gate
+  if (!hasResume) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.content}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color="#475569" />
           </Pressable>
-          <Text style={styles.heading}>Interview Buddy</Text>
+          <Text style={styles.title}>Interview Buddy</Text>
           <View style={styles.gateCard}>
-            <Feather name="file-text" size={40} color="#6366f1" />
+            <Feather name="file-text" size={48} color="#4F46E5" />
             <Text style={styles.gateTitle}>Upload your resume first</Text>
             <Text style={styles.gateSub}>
-              Interview Buddy generates questions from your real skills and experience. Upload your
-              resume during onboarding or from the Resume Studio.
+              Interview Buddy tailors every question to your real skills and experience. Upload your
+              resume to unlock your mock interview.
             </Text>
-            <Pressable style={styles.primaryBtn} onPress={() => router.push("/resume" as never)}>
+            <Pressable style={styles.primaryBtn} onPress={() => router.push(ROUTE_RESUME)}>
               <Text style={styles.primaryBtnText}>Go to Resume Studio</Text>
             </Pressable>
           </View>
@@ -190,181 +119,177 @@ export default function AiInterviewScreen() {
     );
   }
 
-  if (screen === "setup") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color="#475569" />
-          </Pressable>
-          <Text style={styles.heading}>Interview Buddy</Text>
-          <Text style={styles.sub}>
-            Questions are generated from your resume skills. Ready when you are.
-          </Text>
-
-          <View style={styles.card}>
-            <Text style={styles.label}>Resume skills loaded</Text>
-            <Text style={styles.cefrBadge}>
-              {resume?.skills?.slice(0, 5).join(", ") ?? "—"}
-              {(resume?.skills?.length ?? 0) > 5
-                ? ` +${(resume?.skills?.length ?? 0) - 5} more`
-                : ""}
-            </Text>
-          </View>
-
-          <Pressable
-            style={[styles.primaryBtn, creating && styles.primaryBtnDisabled]}
-            onPress={handleStart}
-            disabled={creating}
-          >
-            {creating ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.primaryBtnText}>Start Interview</Text>
-            )}
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // Default: show setup after gate passes
-  if (screen === "gate") {
-    setScreen("setup");
-    return null;
-  }
-
-  if (screen === "question" && currentQuestion) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.progressRow}>
-            <View>
-              <Text style={styles.progressText}>
-                Q{(session?.questions_answered ?? 0) + 1} of {session?.total_questions}
-              </Text>
-              <Text style={styles.skillChip}>{currentQuestion.skill_keyword}</Text>
-            </View>
-            <Pressable onPress={() => router.back()}>
-              <Feather name="x" size={22} color="#94a3b8" />
-            </Pressable>
-          </View>
-
-          <View style={styles.questionCard}>
-            <Text style={styles.questionText}>{currentQuestion.question_text}</Text>
-          </View>
-
-          <Text style={styles.label}>Your Answer</Text>
-          <TextInput
-            style={styles.answerInput}
-            multiline
-            placeholder="Type your answer here..."
-            placeholderTextColor="#94a3b8"
-            value={transcript}
-            onChangeText={setTranscript}
-          />
-
-          <Pressable
-            style={[styles.primaryBtn, submitting && styles.primaryBtnDisabled]}
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.primaryBtnText}>Submit Answer</Text>
-            )}
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  if (screen === "answer_review" && lastAnswer) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>Answer Scored</Text>
-
-          <View style={[styles.card, styles.scoreCard]}>
-            <Text style={styles.scoreNumber}>{(lastAnswer.score ?? 0).toFixed(1)}</Text>
-            <Text style={styles.scoreDenominator}>/10</Text>
-          </View>
-
-          {lastAnswer.score_breakdown?.criteria_scores.map((c, i) => (
-            <View key={i} style={styles.criteriaRow}>
-              <View style={styles.criteriaHeader}>
-                <Text style={styles.criteriaName}>{c.name}</Text>
-                <Text style={styles.criteriaScore}>{c.score.toFixed(1)}</Text>
-              </View>
-              <Text style={styles.criteriaFeedback}>{c.feedback}</Text>
-            </View>
-          ))}
-
-          {lastAnswer.feedback && (
-            <View style={styles.feedbackBox}>
-              <Text style={styles.feedbackLabel}>Overall Feedback</Text>
-              <Text style={styles.feedbackText}>{lastAnswer.feedback}</Text>
-            </View>
-          )}
-
-          <Pressable style={styles.primaryBtn} onPress={handleNext}>
-            <Text style={styles.primaryBtnText}>
-              {lastAnswer.session_complete ? "View Results" : "Next Question"}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  if (screen === "results") {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.heading}>Interview Complete!</Text>
-
-          {results && (
-            <View style={[styles.card, styles.scoreCard]}>
-              <Text style={styles.gradeText}>{results.grade}</Text>
-            </View>
-          )}
-
-          <Pressable style={styles.primaryBtn} onPress={() => router.back()}>
-            <Text style={styles.primaryBtnText}>Back to Home</Text>
-          </Pressable>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ActivityIndicator style={{ marginTop: 80 }} />
+    <SafeAreaView style={styles.safe}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Header */}
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color="#475569" />
+        </Pressable>
+
+        <View style={styles.titleRow}>
+          <View style={styles.iconCircle}>
+            <Feather name="user" size={22} color="#4F46E5" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Interview Buddy</Text>
+            <Text style={styles.subtitle}>Full mock interview simulation</Text>
+          </View>
+        </View>
+
+        {/* Candidate card */}
+        {candidateName && (
+          <View style={styles.candidateCard}>
+            <Text style={styles.candidateLabel}>Candidate</Text>
+            <Text style={styles.candidateName}>{candidateName}</Text>
+            {skills.length > 0 && (
+              <View style={styles.skillsRow}>
+                {skills.map((s) => (
+                  <View key={s} style={styles.skillChip}>
+                    <Text style={styles.skillText}>{s}</Text>
+                  </View>
+                ))}
+                {(resume?.skills?.length ?? 0) > 5 && (
+                  <View style={styles.skillChip}>
+                    <Text style={styles.skillText}>+{(resume?.skills?.length ?? 0) - 5} more</Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* What to expect */}
+        <View style={styles.expectCard}>
+          <Text style={styles.expectTitle}>What to expect</Text>
+          <CheckRow label="6–8 questions across Communication & Behavioral skills" />
+          <CheckRow label="Formal AI interviewer — no hints or coaching during session" />
+          <CheckRow label="Full score breakdown with grade (A–F) at the end" />
+          <CheckRow label="Strengths and improvement areas tailored to your answers" />
+        </View>
+
+        {/* Connection status */}
+        {status !== "idle" && status !== "done" && (
+          <View style={styles.badgeRow}>
+            <ConnectionBadge status={status} />
+          </View>
+        )}
+
+        {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
+
+        {/* Start button */}
+        <Pressable
+          style={[styles.primaryBtn, isStarting && styles.primaryBtnDisabled]}
+          onPress={handleStart}
+          disabled={isStarting}
+        >
+          {isStarting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <>
+              <Feather name="mic" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.primaryBtnText}>Start Interview</Text>
+            </>
+          )}
+        </Pressable>
+
+        <Text style={styles.hint}>
+          Make sure your microphone is enabled. The interview will begin immediately.
+        </Text>
+
+        {/* Past sessions */}
+        {(sessions?.length ?? 0) > 0 && (
+          <View style={styles.historySection}>
+            <Text style={styles.historyTitle}>Past Sessions</Text>
+            {isLoadingSessions && <ActivityIndicator style={{ marginTop: 12 }} />}
+            {(sessions ?? []).map((item) => (
+              <SessionCard key={item.session_id} item={item} />
+            ))}
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
-  content: { padding: 24, paddingBottom: 60 },
-  backBtn: { marginBottom: 16 },
-  heading: { fontSize: 24, fontWeight: "800", color: "#0f172a", marginBottom: 6 },
-  sub: { fontSize: 14, color: "#64748b", marginBottom: 24, lineHeight: 20 },
-  label: { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 8 },
-  card: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+  safe: { flex: 1, backgroundColor: "#F8FAFC" },
+  content: { padding: 20, paddingBottom: 60, gap: 16 },
+  loader: { marginTop: 80 },
+  backBtn: { marginBottom: 4 },
+
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#EEF2FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  title: { fontSize: 24, fontWeight: "800", color: "#0F172A" },
+  subtitle: { fontSize: 13, color: "#64748B", marginTop: 2 },
+
+  candidateCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 6,
+  },
+  candidateLabel: { fontSize: 11, color: "#94A3B8", fontWeight: "600", textTransform: "uppercase" },
+  candidateName: { fontSize: 18, fontWeight: "700", color: "#1E293B" },
+  skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
+  skillChip: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  skillText: { fontSize: 12, color: "#4F46E5", fontWeight: "600" },
+
+  expectCard: {
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    gap: 10,
+  },
+  expectTitle: { fontSize: 14, fontWeight: "700", color: "#1E293B", marginBottom: 2 },
+  checkRow: { flexDirection: "row", alignItems: "flex-start", gap: 8 },
+  checkIcon: { marginTop: 2 },
+  checkLabel: { fontSize: 13, color: "#475569", flex: 1, lineHeight: 20 },
+
+  badgeRow: { alignItems: "flex-start" },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 13,
+    backgroundColor: "#FEF2F2",
+    padding: 10,
+    borderRadius: 8,
+  },
+
+  primaryBtn: {
+    backgroundColor: "#4F46E5",
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  primaryBtnDisabled: { backgroundColor: "#A5B4FC" },
+  primaryBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+
+  hint: { fontSize: 12, color: "#94A3B8", textAlign: "center", marginTop: -4 },
+
   gateCard: {
-    backgroundColor: "white",
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 28,
     alignItems: "center",
@@ -374,89 +299,28 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  gateTitle: { fontSize: 20, fontWeight: "700", color: "#1e293b", textAlign: "center" },
-  gateSub: { fontSize: 14, color: "#64748b", textAlign: "center", lineHeight: 20 },
-  cefrBadge: { fontSize: 14, color: "#4f46e5", fontWeight: "600", marginTop: 4 },
-  primaryBtn: {
-    backgroundColor: "#4f46e5",
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-    marginTop: 8,
-    width: "100%",
-  },
-  primaryBtnDisabled: { opacity: 0.6 },
-  primaryBtnText: { color: "white", fontSize: 16, fontWeight: "700" },
-  progressRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 20,
-  },
-  progressText: { fontSize: 14, color: "#64748b", fontWeight: "600" },
-  skillChip: {
-    fontSize: 12,
-    color: "#6366f1",
-    fontWeight: "600",
-    backgroundColor: "#e0e7ff",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-    marginTop: 4,
-  },
-  questionCard: {
-    backgroundColor: "white",
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  questionText: { fontSize: 18, fontWeight: "600", color: "#1e293b", lineHeight: 28 },
-  answerInput: {
-    backgroundColor: "white",
+  gateTitle: { fontSize: 20, fontWeight: "700", color: "#1E293B", textAlign: "center" },
+  gateSub: { fontSize: 14, color: "#64748B", textAlign: "center", lineHeight: 22 },
+
+  historySection: { gap: 10, marginTop: 8 },
+  historyTitle: { fontSize: 16, fontWeight: "700", color: "#1E293B" },
+  sessionCard: {
+    backgroundColor: "#fff",
     borderRadius: 12,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    padding: 14,
-    fontSize: 15,
-    color: "#1e293b",
-    minHeight: 140,
-    textAlignVertical: "top",
-    marginBottom: 16,
+    borderColor: "#E2E8F0",
   },
-  scoreCard: { flexDirection: "row", alignItems: "flex-end", gap: 6 },
-  scoreNumber: { fontSize: 52, fontWeight: "800", color: "#4f46e5" },
-  scoreDenominator: { fontSize: 18, color: "#94a3b8", marginBottom: 8 },
-  gradeText: { fontSize: 28, fontWeight: "800", color: "#4f46e5" },
-  criteriaRow: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
+  sessionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  sessionRole: { fontSize: 14, fontWeight: "600", color: "#1E293B", flex: 1 },
+  gradeBadge: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
-  criteriaHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  criteriaName: { fontSize: 14, fontWeight: "700", color: "#1e293b" },
-  criteriaScore: { fontSize: 14, fontWeight: "700", color: "#4f46e5" },
-  criteriaFeedback: { fontSize: 13, color: "#64748b", lineHeight: 18 },
-  feedbackBox: {
-    backgroundColor: "#f0fdf4",
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  feedbackLabel: { fontSize: 12, fontWeight: "700", color: "#15803d", marginBottom: 6 },
-  feedbackText: { fontSize: 14, color: "#166534", lineHeight: 20 },
+  gradeText: { color: "#4F46E5", fontSize: 13, fontWeight: "700" },
+  sessionMeta: { flexDirection: "row", justifyContent: "space-between", marginTop: 4 },
+  sessionDate: { fontSize: 12, color: "#94A3B8" },
+  sessionScore: { fontSize: 12, color: "#64748B", fontWeight: "600" },
 });

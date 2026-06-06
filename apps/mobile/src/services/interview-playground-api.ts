@@ -10,11 +10,14 @@ import type {
 export const interviewPlaygroundApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
-    startInterview: builder.mutation<StartInterviewResponse, void>({
-      query: () => ({
+    startInterview: builder.mutation<
+      StartInterviewResponse,
+      { mode?: "buddy" | "playground" } | void
+    >({
+      query: (arg) => ({
         url: "/v1/interview/start",
         method: "POST",
-        body: {},
+        body: { mode: arg && "mode" in arg ? (arg.mode ?? "playground") : "playground" },
       }),
     }),
 
