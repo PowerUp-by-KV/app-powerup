@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "PowerUp",
-    "slug": "powerup",
+    "slug": "app-powerup",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -46,8 +46,18 @@
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "gowtham-coder",
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "708f1f89-75ee-4e54-8e0c-b5f31806935a"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/708f1f89-75ee-4e54-8e0c-b5f31806935a"
     }
   }
 }
