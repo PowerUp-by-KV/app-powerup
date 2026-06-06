@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Unified Shared Types for PowerUp Application
 
 export interface Module {

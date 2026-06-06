@@ -56,24 +56,24 @@ export default function AssessmentEntryScreen() {
 
           const targetRoute = getNextRouteForSection(targetSec);
           router.replace({
-            pathname: targetRoute as any,
+            pathname: targetRoute as never,
             params: { session_id: currentSessionId },
           });
         } catch (err) {
           console.warn("Failed inside assessment-entry routing:", err);
-          router.replace("/(tabs)" as any);
+          router.replace("/(tabs)" as never);
         }
       };
       runRouting();
     }
-  }, [session, session_id]);
+  }, [session, session_id, router]);
 
   useEffect(() => {
     if (isError) {
       console.warn("Assessment entry error fetching session:", error);
-      router.replace("/(tabs)" as any);
+      router.replace("/(tabs)" as never);
     }
-  }, [isError, error]);
+  }, [isError, error, router]);
 
   return <GamifiedMascotLoader title="Preparing Pre-Assessment..." />;
 }

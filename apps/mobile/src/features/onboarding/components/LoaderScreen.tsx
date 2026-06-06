@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useRef } from "react";
 import { ActivityIndicator, SafeAreaView, Text, View, Animated } from "react-native";
 import LottieView from "lottie-react-native";

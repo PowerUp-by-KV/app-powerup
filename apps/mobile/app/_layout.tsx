@@ -60,6 +60,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     data: onboardingStatus,
     isLoading: isOnboardingLoading,
     isFetching: isOnboardingFetching,
+    isError: isOnboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
   });
@@ -71,7 +72,10 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (
       session &&
       isQueryActive &&
-      (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
+      (isOnboardingLoading ||
+        isOnboardingFetching ||
+        onboardingStatus === undefined ||
+        isOnboardingError)
     ) {
       return;
     }
@@ -108,6 +112,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     onboardingStatus,
     isOnboardingLoading,
     isOnboardingFetching,
+    isOnboardingError,
+    currentRoute,
     segments,
     router,
   ]);

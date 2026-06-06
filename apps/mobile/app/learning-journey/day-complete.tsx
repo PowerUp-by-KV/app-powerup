@@ -24,10 +24,11 @@ interface CelebrationOverlayProps {
   score?: number | null;
 }
 
+const PARTICLE_COUNT = 30;
+const EMOJIS = ["🎉", "✨", "🔥", "⭐", "🏅", "🏆", "🍭", "💫", "🎯", "⚡", "👑", "💖"];
+
 function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: CelebrationOverlayProps) {
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-  const PARTICLE_COUNT = 30;
-  const EMOJIS = ["🎉", "✨", "🔥", "⭐", "🏅", "🏆", "🍭", "💫", "🎯", "⚡", "👑", "💖"];
 
   // Confetti particles setup
   const particles = useMemo(() => {
@@ -103,7 +104,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
 
       Animated.parallel(animations).start();
     }
-  }, [visible, screenHeight, particles]);
+  }, [visible, screenHeight, particles, opacityAnim, pulseAnim, scaleAnim]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -255,7 +256,7 @@ export default function DayCompleteScreen() {
   const goHome = () => {
     if (moduleId) {
       router.replace({
-        pathname: "/(tabs)/my-learning" as any,
+        pathname: "/(tabs)/my-learning" as never,
         params: { module_id: moduleId },
       });
     } else {

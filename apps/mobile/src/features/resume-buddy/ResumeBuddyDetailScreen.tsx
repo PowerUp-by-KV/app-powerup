@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";

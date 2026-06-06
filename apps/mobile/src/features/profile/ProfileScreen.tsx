@@ -261,7 +261,9 @@ export function ProfileScreen() {
           >
             <Feather name="arrow-left" size={20} color="#0f172a" />
           </Pressable>
-          <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">Profile</Text>
+          <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">
+            Profile
+          </Text>
         </View>
 
         <ScrollView
@@ -314,7 +316,7 @@ export function ProfileScreen() {
                     className="h-full"
                     style={{
                       width: profile?.total_modules
-                        ? `${(profile.modules_completed / profile.total_modules) * 100}%` as any
+                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as any)
                         : "0%",
                     }}
                   />
@@ -332,7 +334,10 @@ export function ProfileScreen() {
           {/* Metrics section */}
           <View className="flex-row px-5 mb-5" style={{ gap: 8 }}>
             {/* Daily Streak */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <MaterialCommunityIcons name="fire" size={18} color="#fff" />
               </View>
@@ -345,7 +350,10 @@ export function ProfileScreen() {
             </View>
 
             {/* XP Points */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <Feather name="zap" size={16} color="#fff" />
               </View>
@@ -358,7 +366,10 @@ export function ProfileScreen() {
             </View>
 
             {/* Friends */}
-            <View className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm" style={{ gap: 8 }}>
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
               <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
                 <Feather name="user" size={16} color="#fff" />
               </View>
@@ -375,11 +386,7 @@ export function ProfileScreen() {
               {(["space", "stats"] as const).map((t) => {
                 const isActive = tab === t;
                 return (
-                  <Pressable
-                    key={t}
-                    onPress={() => setTab(t)}
-                    className="py-3 relative"
-                  >
+                  <Pressable key={t} onPress={() => setTab(t)} className="py-3 relative">
                     <Text
                       className={`text-sm font-black ${
                         isActive ? "text-[#4a72f6]" : "text-slate-400"
@@ -417,20 +424,13 @@ export function ProfileScreen() {
                   onPress={() => router.push("/profile/language" as never)}
                 />
 
-                <SettingsCard
-                  icon="key"
-                  label="Passwords"
-                  onPress={() => {}}
-                />
+                <SettingsCard icon="key" label="Passwords" onPress={() => {}} />
 
                 <SettingsCard
                   icon="sun"
                   label="Mode"
                   rightElement={
-                    <CustomSwitch
-                      value={isDarkMode}
-                      onValueChange={handleToggleDarkMode}
-                    />
+                    <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
                   }
                 />
 
@@ -447,15 +447,9 @@ export function ProfileScreen() {
 
                 {/* Second section */}
                 <View className="mt-4">
-                  <SettingsCard
-                    label="About Us"
-                    onPress={() => {}}
-                  />
+                  <SettingsCard label="About Us" onPress={() => {}} />
 
-                  <SettingsCard
-                    label="Privacy & Security"
-                    onPress={() => {}}
-                  />
+                  <SettingsCard label="Privacy & Security" onPress={() => {}} />
                 </View>
 
                 {/* Logout Card */}

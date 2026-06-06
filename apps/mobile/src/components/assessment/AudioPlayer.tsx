@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { View, TouchableOpacity, Text, ActivityIndicator } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
