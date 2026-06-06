@@ -30,20 +30,31 @@ export function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { data: profile, isLoading } = useGetProfileQuery();
 
-  // Load preferences from SecureStore on mount
+  // Load preferences from SecureStore/localStorage on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+        let storedDarkMode: string | null = null;
+        let storedNotifications: string | null = null;
+
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined") {
+            storedDarkMode = window.localStorage.getItem("settings_dark_mode");
+            storedNotifications = window.localStorage.getItem("settings_notifications");
+          }
+        } else {
+          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+          storedNotifications = await SecureStore.getItemAsync("settings_notifications");
+        }
+
         if (storedDarkMode !== null) {
           setIsDarkMode(storedDarkMode === "true");
         }
-        const storedNotifications = await SecureStore.getItemAsync("settings_notifications");
         if (storedNotifications !== null) {
           setNotificationsEnabled(storedNotifications === "true");
         }
       } catch (error) {
-        console.error("Failed to load settings from SecureStore", error);
+        console.error("Failed to load settings from SecureStore/localStorage", error);
       }
     };
     loadSettings();
@@ -52,17 +63,28 @@ export function ProfileScreen() {
   const handleToggleDarkMode = async (value: boolean) => {
     setIsDarkMode(value);
     try {
-      await SecureStore.setItemAsync("settings_dark_mode", String(value));
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_dark_mode", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_dark_mode", String(value));
+      }
     } catch {}
   };
 
   const handleToggleNotifications = async (value: boolean) => {
     setNotificationsEnabled(value);
     try {
-      await SecureStore.setItemAsync("settings_notifications", String(value));
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_notifications", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_notifications", String(value));
+      }
     } catch {}
   };
-
   // Track the currently displayed date and view mode (weekly vs monthly)
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");

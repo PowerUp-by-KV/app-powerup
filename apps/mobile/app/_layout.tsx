@@ -122,6 +122,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isQueryActive = !!userId;
   const isQueryLoading =
     isQueryActive &&
+    !isOnboardingError &&
     (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
 
   if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
