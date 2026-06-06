@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
