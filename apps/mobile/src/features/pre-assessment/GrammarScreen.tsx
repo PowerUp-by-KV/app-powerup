@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   CGrammarSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { GrammarQuestion as GrammarQuestionComponent } from "./components/GrammarQuestion";
 import { MCQOption } from "./components/GrammarMCQOption";
@@ -54,6 +55,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -133,11 +135,33 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
         data: { answers: formattedAnswers },
       }).unwrap();
 
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+        if (status.pending_answers > 0) {
+          checkRetries--;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } else if (status.failed_answers > 0) {
+          throw new Error("Some answers failed to submit/score. Please try again.");
+        } else {
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
+      if (!isCompletedCorrectly) {
+        throw new Error("Submission timeout. Some answers are still processing.");
+      }
+
       await saveCompletedSection("C_GRAMMAR");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch {
-      Alert.alert("Error", "Could not submit answers.");
+    } catch (err: any) {
+      setIsFinished(false);
+      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      Alert.alert("Submission Failed", msg);
     }
   };
   const handleNext = () => {

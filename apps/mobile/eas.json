@@ -13,7 +13,10 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "http://localhost:9000/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_USE_PNPM": "1",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com"
       },
       "channel": "development"
     },
@@ -26,7 +29,10 @@
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_USE_PNPM": "1",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com"
       },
       "channel": "preview"
     },
@@ -35,7 +41,10 @@
       "node": "22.18.0",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
-        "EXPO_USE_PNPM": "1"
+        "EXPO_USE_PNPM": "1",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "706339525792-a47bm8ehfp87trk0g6loe2m0m8ddcul4.apps.googleusercontent.com"
       },
       "channel": "production"
     }

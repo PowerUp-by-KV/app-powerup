@@ -16,6 +16,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   AListenSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
@@ -83,6 +84,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -365,6 +367,26 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           if (retries === 0) throw err;
           await new Promise((res) => setTimeout(res, 1000));
         }
+      }
+
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+        if (status.pending_answers > 0) {
+          checkRetries--;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } else if (status.failed_answers > 0) {
+          throw new Error("Some answers failed to submit/score. Please try again.");
+        } else {
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
+      if (!isCompletedCorrectly) {
+        throw new Error("Submission timeout. Some answers are still processing.");
       }
 
       await saveCompletedSection("A_LISTEN");

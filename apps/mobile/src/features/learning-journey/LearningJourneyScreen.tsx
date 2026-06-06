@@ -790,22 +790,12 @@ export function LearningJourneyScreen() {
             }
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View className="z-[3] items-center w-[36px] mr-4 relative">
               <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
                 <Feather name="check" size={16} color="white" />
               </View>
               {/* Connector line segment going down */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
-                }}
-              />
+              <View className="absolute top-[36px] left-[16.5px] w-[3px] bottom-[-32px] bg-blue-500 z-10" />
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
@@ -843,22 +833,12 @@ export function LearningJourneyScreen() {
             }
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View className="z-[3] items-center w-[36px] mr-4 relative">
               <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
                 <Feather name="check" size={16} color="white" />
               </View>
               {/* Connector line segment going down */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
-                }}
-              />
+              <View className="absolute top-[36px] left-[16.5px] w-[3px] bottom-[-32px] bg-blue-500 z-10" />
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
@@ -896,7 +876,7 @@ export function LearningJourneyScreen() {
             disabled={isStartingSession}
             style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View className="z-[3] items-center w-[36px] mr-4 relative">
               <View
                 style={[
                   timelineStyles.stageIconCircle,
@@ -908,17 +888,7 @@ export function LearningJourneyScreen() {
                 <Feather name="check" size={16} color="white" />
               </View>
               {/* Connector line segment going down */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
-                }}
-              />
+              <View className="absolute top-[36px] left-[16.5px] w-[3px] bottom-[-32px] bg-blue-500 z-10" />
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
@@ -1021,7 +991,7 @@ export function LearningJourneyScreen() {
                   },
                 ]}
               >
-                <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+                <View className="z-[3] items-center w-[36px] mr-4 relative">
                   <View
                     style={[
                       timelineStyles.stageIconCircle,
@@ -1041,15 +1011,9 @@ export function LearningJourneyScreen() {
                   {/* Connector line segment going down */}
                   {!isLast && (
                     <View
-                      style={{
-                        position: "absolute",
-                        top: 36,
-                        left: 17,
-                        width: 3,
-                        bottom: -32,
-                        backgroundColor: lineBgColor,
-                        zIndex: 1,
-                      }}
+                      className={`absolute top-[36px] left-[16.5px] w-[3px] bottom-[-32px] z-10 ${
+                        lineBgColor === "#3b82f6" ? "bg-blue-500" : "bg-slate-300"
+                      }`}
                     />
                   )}
                 </View>
@@ -1192,7 +1156,6 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

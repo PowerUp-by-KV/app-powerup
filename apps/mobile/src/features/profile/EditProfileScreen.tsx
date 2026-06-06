@@ -319,8 +319,10 @@ export function EditProfileScreen() {
       // 1. Basic Profile
       addAnswer("name", name);
       addAnswer("education", education);
-      addAnswer("year_of_study", yearOfStudy);
-      addAnswer("branch", branch);
+      if (education === "Engineering Student") {
+        addAnswer("year_of_study", yearOfStudy);
+        addAnswer("branch", branch);
+      }
       addAnswer("dob", dob);
       addAnswer("country", country);
       addAnswer("native_language", nativeLanguage);

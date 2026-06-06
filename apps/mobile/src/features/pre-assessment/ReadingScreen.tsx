@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   ReadingSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ReadingQuestion as ReadingQuestionComponent } from "./components/ReadingQuestion";
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
@@ -55,6 +56,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
@@ -199,14 +201,36 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         }
       }
 
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+        if (status.pending_answers > 0) {
+          checkRetries--;
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        } else if (status.failed_answers > 0) {
+          throw new Error("Some answers failed to submit/score. Please try again.");
+        } else {
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
+      if (!isCompletedCorrectly) {
+        throw new Error("Submission timeout. Some answers are still processing.");
+      }
+
       // Brief delay to allow dev tunnel proxy socket to clean up before loading next route
       await new Promise((res) => setTimeout(res, 600));
 
       await saveCompletedSection("A_READING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch {
-      Alert.alert("Error", "Could not submit answers. Please try again.");
+    } catch (err: any) {
+      setIsFinished(false);
+      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      Alert.alert("Submission Failed", msg);
     }
   };
 
