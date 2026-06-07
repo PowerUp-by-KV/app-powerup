@@ -22,10 +22,15 @@ export function useGoogleAuth() {
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-  if (!androidClientId || !iosClientId || !webClientId) {
-    throw new Error(
-      "Missing Google OAuth Client IDs. Please configure EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID, " +
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your environment.",
+  // Missing client IDs must NOT crash the login screen. When they're absent
+  // (e.g. an EAS build whose env doesn't define them), Google.useAuthRequest
+  // returns a null `request`, which the UI uses to disable the Google button —
+  // email/password sign-in keeps working. Previously this threw and took the
+  // whole LoginScreen down, leaving the app stuck after the splash screen.
+  const hasGoogleConfig = !!androidClientId && !!iosClientId && !!webClientId;
+  if (!hasGoogleConfig) {
+    console.warn(
+      "Google OAuth client IDs not configured — Google sign-in disabled, email/password still works.",
     );
   }
 
