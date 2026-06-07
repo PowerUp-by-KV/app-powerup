@@ -4,6 +4,7 @@ import { router } from "expo-router";
 
 import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
+import { SessionInsights } from "../components/SessionInsights";
 import { TranscriptPanel } from "../components/TranscriptPanel";
 
 interface InterviewResultsScreenProps {
@@ -69,14 +70,19 @@ export function InterviewResultsScreen({
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
         <Text style={styles.title} numberOfLines={1}>
-          {session.derived_role ?? "Interview Results"}
+          {mode === "buddy" ? (session.derived_role ?? "Interview Results") : "Practice Session"}
         </Text>
         <Text style={styles.date}>{new Date(session.started_at).toLocaleDateString()}</Text>
       </View>
 
       <View style={styles.body}>
         {hasEvaluation ? (
-          <ScoreBreakdown evaluation={session.evaluation!} />
+          // Buddy = formal scored rubric. Playground = low-pressure recap, no grade.
+          mode === "buddy" ? (
+            <ScoreBreakdown evaluation={session.evaluation!} />
+          ) : (
+            <SessionInsights evaluation={session.evaluation!} />
+          )
         ) : (
           <View style={styles.noEvalContainer}>
             <Text style={styles.noEvalText}>

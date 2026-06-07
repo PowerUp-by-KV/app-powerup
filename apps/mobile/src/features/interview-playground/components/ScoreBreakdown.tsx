@@ -1,7 +1,13 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import type { EvaluationResult, Grade } from "../types";
+import type {
+  BehavioralScores,
+  CommunicationScores,
+  EvaluationResult,
+  Grade,
+  StarAnalysis,
+} from "../types";
 
 interface ScoreBreakdownProps {
   evaluation: EvaluationResult;
@@ -71,9 +77,43 @@ function SectionHeader({
   );
 }
 
+// Defaults guard against older sessions saved before the evaluation shape was
+// normalized, so a missing sub-object never crashes the results screen.
+const EMPTY_COMMUNICATION: CommunicationScores = {
+  clarity_articulation: 0,
+  listening_responsiveness: 0,
+  verbal_fluency: 0,
+  confidence_presence: 0,
+  structured_responses: 0,
+  overall: 0,
+};
+
+const EMPTY_BEHAVIORAL: BehavioralScores = {
+  emotional_intelligence: 0,
+  teamwork: 0,
+  problem_solving: 0,
+  adaptability: 0,
+  motivation: 0,
+  integrity: 0,
+  stress_management: 0,
+  culture_fit: 0,
+  overall: 0,
+};
+
+const EMPTY_STAR: StarAnalysis = {
+  situation: false,
+  task: false,
+  action: false,
+  result: false,
+  star_score: 0,
+  feedback: "",
+};
+
 export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
   const gradeColors = GRADE_COLORS[evaluation.grade] ?? GRADE_COLORS["F"];
-  const { communication, behavioral, star_analysis } = evaluation;
+  const communication = evaluation.communication ?? EMPTY_COMMUNICATION;
+  const behavioral = evaluation.behavioral ?? EMPTY_BEHAVIORAL;
+  const star_analysis = evaluation.star_analysis ?? EMPTY_STAR;
 
   const communicationItems: { label: string; value: number; weight: string }[] = [
     { label: "Clarity & Articulation", value: communication.clarity_articulation, weight: "15%" },

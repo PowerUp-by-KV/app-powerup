@@ -7,6 +7,7 @@ type SpeakingListener = (speaking: { user: boolean; ai: boolean }) => void;
 interface ActiveSession {
   pc: InstanceType<typeof globalThis.RTCPeerConnection> | null;
   stream: MediaStream | null;
+  remoteStream: MediaStream | null;
   dataChannel: RTCDataChannel | null;
   transcript: TranscriptTurn[];
   sessionId: string | null;
@@ -27,6 +28,7 @@ const listeners = {
 export const activeSession: ActiveSession = {
   pc: null,
   stream: null,
+  remoteStream: null,
   dataChannel: null,
   transcript: [],
   sessionId: null,
@@ -66,6 +68,7 @@ export function resetSession(): void {
     activeSession.stream.getTracks().forEach((t) => t.stop());
     activeSession.stream = null;
   }
+  activeSession.remoteStream = null;
   if (activeSession.pc) {
     try {
       activeSession.pc.close();

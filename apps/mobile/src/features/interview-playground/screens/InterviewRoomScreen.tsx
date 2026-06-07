@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -51,26 +52,40 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
     if (status === "done" && sessionId) {
       router.replace({ pathname: "/interview-results", params: { session_id: sessionId, mode } });
     } else if (status === "error") {
-      Alert.alert("Interview Error", activeSession.errorMessage ?? "An error occurred.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      const msg = activeSession.errorMessage ?? "An error occurred.";
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") window.alert(`Interview Error: ${msg}`);
+        router.back();
+      } else {
+        Alert.alert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
+      }
     }
   }, [status, sessionId]);
 
   const handleEnd = useCallback(async () => {
     if (isEnding) return;
 
+    const runEnd = async () => {
+      setIsEnding(true);
+      await endInterview();
+      setIsEnding(false);
+    };
+
+    // Alert.alert with action buttons is a no-op on React Native Web, so the
+    // confirmation never appears and the interview never ends. Use the native
+    // browser confirm there, and Alert on iOS/Android.
+    if (Platform.OS === "web") {
+      const confirmed =
+        typeof window !== "undefined"
+          ? window.confirm("Are you sure you want to end the interview?")
+          : true;
+      if (confirmed) await runEnd();
+      return;
+    }
+
     Alert.alert("End Interview?", "Are you sure you want to end the interview?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "End",
-        style: "destructive",
-        onPress: async () => {
-          setIsEnding(true);
-          await endInterview();
-          setIsEnding(false);
-        },
-      },
+      { text: "End", style: "destructive", onPress: runEnd },
     ]);
   }, [endInterview, isEnding]);
 

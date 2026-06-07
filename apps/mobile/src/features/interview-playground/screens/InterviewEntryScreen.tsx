@@ -18,33 +18,31 @@ import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
 
 function SessionItem({ item }: { item: InterviewSessionSummary }) {
   const handlePress = () => {
-    router.push({ pathname: "/interview-results", params: { session_id: item.session_id } });
+    router.push({
+      pathname: "/interview-results",
+      params: { session_id: item.session_id, mode: "playground" },
+    });
   };
 
   return (
     <Pressable style={styles.sessionCard} onPress={handlePress}>
       <View style={styles.sessionHeader}>
         <Text style={styles.sessionRole} numberOfLines={1}>
-          {item.derived_role || "Interview"}
+          {item.derived_role || "Practice Session"}
         </Text>
-        {item.grade && (
-          <View style={styles.gradeBadge}>
-            <Text style={styles.gradeText}>{item.grade}</Text>
-          </View>
-        )}
       </View>
       <View style={styles.sessionMeta}>
         <Text style={styles.sessionDate}>{new Date(item.started_at).toLocaleDateString()}</Text>
-        {item.final_score !== null && (
-          <Text style={styles.sessionScore}>{item.final_score}/100</Text>
-        )}
+        <Text style={styles.sessionRecapHint}>View recap →</Text>
       </View>
     </Pressable>
   );
 }
 
 export function InterviewEntryScreen() {
-  const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery();
+  const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
+    mode: "playground",
+  });
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
   const { startInterview, status, errorMessage } = useWebRTCInterview();
 
@@ -228,6 +226,11 @@ const styles = StyleSheet.create({
   sessionScore: {
     fontSize: 12,
     color: "#64748B",
+    fontWeight: "600",
+  },
+  sessionRecapHint: {
+    fontSize: 12,
+    color: "#4F46E5",
     fontWeight: "600",
   },
   loader: {

@@ -28,7 +28,10 @@ function SessionCard({ item }: { item: InterviewSessionSummary }) {
     <Pressable
       style={styles.sessionCard}
       onPress={() =>
-        router.push({ pathname: "/interview-results", params: { session_id: item.session_id } })
+        router.push({
+          pathname: "/interview-results",
+          params: { session_id: item.session_id, mode: "buddy" },
+        })
       }
     >
       <View style={styles.sessionHeader}>
@@ -68,7 +71,9 @@ function CheckRow({ label }: { label: string }) {
 // ---------------------------------------------------------------------------
 export default function InterviewBuddyScreen() {
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
-  const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery();
+  const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
+    mode: "buddy",
+  });
   const { startInterview, status, errorMessage } = useWebRTCInterview("buddy");
 
   const hasResume = !!resume && resume.parse_status === "completed";

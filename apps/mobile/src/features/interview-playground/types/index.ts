@@ -85,6 +85,7 @@ export interface InterviewSessionSummary {
   session_id: string;
   derived_role: string;
   status: string;
+  mode?: InterviewMode;
   started_at: string;
   ended_at: string | null;
   final_score: number | null;
