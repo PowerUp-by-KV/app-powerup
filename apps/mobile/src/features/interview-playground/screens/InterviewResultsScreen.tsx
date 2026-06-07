@@ -4,13 +4,19 @@ import { router } from "expo-router";
 
 import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
+import { SessionInsights } from "../components/SessionInsights";
 import { TranscriptPanel } from "../components/TranscriptPanel";
 
 interface InterviewResultsScreenProps {
   sessionId: string | undefined;
+  mode?: "buddy" | "playground";
 }
 
-export function InterviewResultsScreen({ sessionId }: InterviewResultsScreenProps) {
+export function InterviewResultsScreen({
+  sessionId,
+  mode = "playground",
+}: InterviewResultsScreenProps) {
+  const homeRoute = mode === "buddy" ? "/ai-interview" : "/interview-playground";
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
 
   const {
@@ -26,7 +32,7 @@ export function InterviewResultsScreen({ sessionId }: InterviewResultsScreenProp
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>No session ID provided.</Text>
-          <Pressable style={styles.backButton} onPress={() => router.push("/interview-playground")}>
+          <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
             <Text style={styles.backButtonText}>Back to Interviews</Text>
           </Pressable>
         </View>
@@ -50,7 +56,7 @@ export function InterviewResultsScreen({ sessionId }: InterviewResultsScreenProp
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load session results.</Text>
-          <Pressable style={styles.backButton} onPress={() => router.push("/interview-playground")}>
+          <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
             <Text style={styles.backButtonText}>Back to Interviews</Text>
           </Pressable>
         </View>
@@ -64,14 +70,19 @@ export function InterviewResultsScreen({ sessionId }: InterviewResultsScreenProp
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
         <Text style={styles.title} numberOfLines={1}>
-          {session.derived_role ?? "Interview Results"}
+          {mode === "buddy" ? (session.derived_role ?? "Interview Results") : "Practice Session"}
         </Text>
         <Text style={styles.date}>{new Date(session.started_at).toLocaleDateString()}</Text>
       </View>
 
       <View style={styles.body}>
         {hasEvaluation ? (
-          <ScoreBreakdown evaluation={session.evaluation!} />
+          // Buddy = formal scored rubric. Playground = low-pressure recap, no grade.
+          mode === "buddy" ? (
+            <ScoreBreakdown evaluation={session.evaluation!} />
+          ) : (
+            <SessionInsights evaluation={session.evaluation!} />
+          )
         ) : (
           <View style={styles.noEvalContainer}>
             <Text style={styles.noEvalText}>
@@ -103,13 +114,15 @@ export function InterviewResultsScreen({ sessionId }: InterviewResultsScreenProp
       <View style={styles.footer}>
         <Pressable
           style={[styles.footerButton, styles.secondaryButton]}
-          onPress={() => router.push("/interview-playground")}
+          onPress={() => router.push(homeRoute as never)}
         >
-          <Text style={styles.secondaryButtonText}>View History</Text>
+          <Text style={styles.secondaryButtonText}>
+            {mode === "buddy" ? "Back to Buddy" : "View History"}
+          </Text>
         </Pressable>
         <Pressable
           style={[styles.footerButton, styles.primaryButton]}
-          onPress={() => router.replace("/interview-playground")}
+          onPress={() => router.replace(homeRoute as never)}
         >
           <Text style={styles.primaryButtonText}>Try Again</Text>
         </Pressable>

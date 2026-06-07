@@ -8,13 +8,16 @@ import type {
 } from "@/features/interview-playground/types";
 
 export const interviewPlaygroundApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
-    startInterview: builder.mutation<StartInterviewResponse, void>({
-      query: () => ({
+    startWebRTCInterview: builder.mutation<
+      StartInterviewResponse,
+      { mode?: "buddy" | "playground" } | void
+    >({
+      query: (arg) => ({
         url: "/v1/interview/start",
         method: "POST",
-        body: {},
+        body: { mode: arg?.mode ?? "playground" },
       }),
     }),
 
@@ -30,8 +33,14 @@ export const interviewPlaygroundApi = api.injectEndpoints({
       invalidatesTags: ["InterviewPlayground"],
     }),
 
-    listInterviewSessions: builder.query<InterviewSessionSummary[], void>({
-      query: () => "/v1/interview/sessions",
+    listInterviewSessions: builder.query<
+      InterviewSessionSummary[],
+      { mode?: "buddy" | "playground" } | void
+    >({
+      query: (arg) => {
+        const mode = arg?.mode;
+        return mode ? `/v1/interview/sessions?mode=${mode}` : "/v1/interview/sessions";
+      },
       providesTags: ["InterviewPlayground"],
     }),
 
@@ -43,7 +52,7 @@ export const interviewPlaygroundApi = api.injectEndpoints({
 });
 
 export const {
-  useStartInterviewMutation,
+  useStartWebRTCInterviewMutation,
   useSaveInterviewSessionMutation,
   useListInterviewSessionsQuery,
   useGetInterviewSessionQuery,

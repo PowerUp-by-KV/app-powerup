@@ -100,7 +100,7 @@ export function ModuleScreen() {
             .some((d) => d > 6);
           if (anyNextDays) return true;
         }
-      } catch (e) {
+      } catch {
         // ignore and retry
       }
       // wait before next try
@@ -136,7 +136,7 @@ export function ModuleScreen() {
               // update the saved baseline for future days
               initialModuleXpRef.current = latestXp;
             }
-          } catch (e) {
+          } catch {
             // ignore — fall back to res.xp_earned (which may be 0)
           }
         }

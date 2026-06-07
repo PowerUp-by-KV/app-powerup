@@ -41,7 +41,14 @@
       "expo-font",
       "expo-secure-store",
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "PowerUp uses the camera for video interview practice.",
+          "microphonePermission": "PowerUp uses the microphone for your voice interview with the AI interviewer."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
