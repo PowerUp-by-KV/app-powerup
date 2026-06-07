@@ -35,7 +35,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
-  const [isLocalReady, setIsLocalReady] = useState(false);
+  // Tracks the route for which the session read has completed. We only make
+  // redirect decisions once the fresh read for the *current* route is done —
+  // otherwise, right after login navigates, the effect would run with a stale
+  // `session === null` and bounce the user straight back to /login.
+  const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -48,12 +52,16 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
         console.warn("Failed to load session in guard:", err);
       })
       .finally(() => {
-        if (active) setIsLocalReady(true);
+        if (active) setReadyForRoute(currentRoute);
       });
     return () => {
       active = false;
     };
   }, [currentRoute]);
+
+  // Stale while a navigation has changed the route but its session read has not
+  // resolved yet — redirect logic must wait for this to become true.
+  const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
   const {
@@ -100,6 +108,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     }
   }, [
     session,
+    readyForRoute,
     isLocalReady,
     userId,
     onboardingStatus,

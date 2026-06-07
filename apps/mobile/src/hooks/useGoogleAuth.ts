@@ -1,28 +1,104 @@
 // ---------------------------------------------------------------------------
-// Google sign-in is DISABLED for now.
+// Google sign-in via expo-auth-session.
 //
-// The real implementation called expo-auth-session's Google.useAuthRequest and
-// required EXPO_PUBLIC_GOOGLE_* client IDs. In EAS builds those env vars are not
-// defined (env comes from eas.json), which crashed the login/register screens
-// and left the app stuck after the splash screen.
+// Client IDs come from env (set per-profile in eas.json):
+//   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID      (required — also the id_token audience
+//                                           the backend validates against)
+//   EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID  (required for Android builds)
+//   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID      (optional — iOS only)
 //
-// Until proper native Android/iOS OAuth client IDs are configured in eas.json,
-// this is a no-op stub: it performs no auth-session work and returns a null
-// request so the UI keeps the Google button disabled/hidden. Email/password
-// sign-in is unaffected.
-//
-// To re-enable: restore the expo-auth-session implementation from git history
-// and add the Android + iOS client IDs to eas.json.
+// IMPORTANT: this hook must NEVER throw. The previous version threw when client
+// IDs were missing, which crashed the login/register screens and left the app
+// stuck on the splash. Instead, when the IDs required for the current platform
+// are absent, `request` comes back null and the caller keeps the Google button
+// hidden/disabled. Email/password sign-in is unaffected either way.
 // ---------------------------------------------------------------------------
 
-interface GoogleAuthHandle {
-  request: null;
-  promptAsync: () => Promise<{ type: "dismiss" }>;
-}
+import { useEffect } from "react";
 
-export function useGoogleAuth(): GoogleAuthHandle {
-  return {
-    request: null,
-    promptAsync: async () => ({ type: "dismiss" }),
+import * as Google from "expo-auth-session/providers/google";
+import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import { useDispatch } from "react-redux";
+
+import { useSocialGoogleLoginMutation } from "@/services/auth-api";
+import {
+  clearStaleLocalFlagsIfUserChanged,
+  saveAuthSession,
+  saveLastLoggedInEmail,
+} from "@/services/auth-storage";
+import { onboardingApi } from "@/services/onboarding-api";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
+
+WebBrowser.maybeCompleteAuthSession();
+
+export function useGoogleAuth() {
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+  const router = useRouter();
+  const dispatch = useDispatch();
+  const [socialGoogleLogin] = useSocialGoogleLoginMutation();
+  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
+
+  // useIdTokenAuthRequest (NOT useAuthRequest): the backend validates a Google
+  // **id_token**, so we must request one. On web this uses responseType=id_token
+  // (the plain useAuthRequest defaults to responseType=token → access token only,
+  // no id_token → nothing to send the backend → no redirect). On native it falls
+  // back to the auth-code flow with auto-exchange, which also yields an id_token.
+  //
+  // Called unconditionally to satisfy the rules of hooks. With no client IDs for
+  // the current platform, expo-auth-session returns `request === null` (no throw),
+  // and the caller keeps the button disabled.
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    androidClientId,
+    iosClientId,
+    webClientId,
+  });
+
+  useEffect(() => {
+    if (response?.type !== "success") return;
+
+    const idToken =
+      (response.authentication?.idToken as string | undefined) ??
+      (response.params as Record<string, string>)?.id_token;
+
+    if (!idToken) return;
+
+    void handleGoogleToken(idToken);
+  }, [response]);
+
+  const handleGoogleToken = async (idToken: string) => {
+    try {
+      const auth = await socialGoogleLogin({ id_token: idToken }).unwrap();
+
+      await saveAuthSession(auth);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      const email = auth.user?.email ?? "";
+      await clearStaleLocalFlagsIfUserChanged(email);
+      await saveLastLoggedInEmail(email);
+
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
+      try {
+        const status = await getOnboardingStatus(auth.user?.id ?? "").unwrap();
+        if (status?.answers_present) {
+          router.replace("/(tabs)/my-learning" as never);
+        } else {
+          router.replace("/onboarding" as never);
+        }
+      } catch {
+        router.replace("/onboarding" as never);
+      }
+    } catch (err) {
+      console.error("Google login failed:", err);
+      throw err;
+    }
   };
+
+  return { request, promptAsync };
 }
