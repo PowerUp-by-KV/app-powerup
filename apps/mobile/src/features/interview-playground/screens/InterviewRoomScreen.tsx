@@ -17,6 +17,7 @@ import {
   onSpeakingChange,
   onStatusChange,
   onTranscriptChange,
+  resetSession,
 } from "../store/interviewSession";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { TranscriptPanel } from "../components/TranscriptPanel";
@@ -61,6 +62,17 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
       }
     }
   }, [status, sessionId]);
+
+  // Safety net: if the user leaves the room without ending (back gesture,
+  // navigating away), tear down the WebRTC connection and stop the mic so we
+  // don't leak the peer connection or leave the microphone recording.
+  useEffect(() => {
+    return () => {
+      if (activeSession.status === "live" || activeSession.status === "connecting") {
+        resetSession();
+      }
+    };
+  }, []);
 
   const handleEnd = useCallback(async () => {
     if (isEnding) return;

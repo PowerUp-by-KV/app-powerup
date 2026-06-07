@@ -30,7 +30,9 @@ function barColor(value: number): string {
 }
 
 function ScoreBar({ label, value, weight }: { label: string; value: number; weight?: string }) {
-  const clamped = Math.min(100, Math.max(0, value));
+  // Guard against undefined/null/NaN from older evaluation payloads, which
+  // would otherwise produce an invalid "NaN%" width.
+  const clamped = Math.min(100, Math.max(0, value || 0));
   return (
     <View style={styles.barRow}>
       <View style={styles.barLabelWrap}>

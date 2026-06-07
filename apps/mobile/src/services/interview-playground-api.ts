@@ -17,7 +17,7 @@ export const interviewPlaygroundApi = api.injectEndpoints({
       query: (arg) => ({
         url: "/v1/interview/start",
         method: "POST",
-        body: { mode: arg && "mode" in arg ? (arg.mode ?? "playground") : "playground" },
+        body: { mode: arg?.mode ?? "playground" },
       }),
     }),
 
@@ -38,7 +38,7 @@ export const interviewPlaygroundApi = api.injectEndpoints({
       { mode?: "buddy" | "playground" } | void
     >({
       query: (arg) => {
-        const mode = arg && "mode" in arg ? arg.mode : undefined;
+        const mode = arg?.mode;
         return mode ? `/v1/interview/sessions?mode=${mode}` : "/v1/interview/sessions";
       },
       providesTags: ["InterviewPlayground"],
