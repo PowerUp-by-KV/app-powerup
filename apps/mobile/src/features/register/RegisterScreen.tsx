@@ -12,9 +12,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
+
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
@@ -58,6 +60,7 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [register] = useRegisterMutation();
+  const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the registration handshake
@@ -245,38 +248,31 @@ export function RegisterScreen() {
                 Join Hexaware Lumino to start your learning journey
               </Text>
 
-              {/* Social Login Buttons (Google/Github) disabled for now — Google
-                  OAuth is not configured for native EAS builds and was crashing
-                  the screen. Re-enable once eas.json has Android/iOS client IDs.
-              <View className="flex-row gap-4 w-full">
-                <TouchableOpacity
-                  onPress={() => {
-                    promptGoogle().catch(() =>
-                      Alert.alert(
-                        "Google Sign-In",
-                        "Could not open Google sign-in. Please try again.",
-                      ),
-                    );
-                  }}
-                  disabled={isLoading || !googleRequest}
-                  className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
-                    isLoading || !googleRequest ? "opacity-50" : ""
-                  }`}
-                  activeOpacity={0.7}
-                >
-                  <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
-                  <Text className="text-slate-800 font-bold text-sm">Google</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {}}
-                  className="flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm"
-                  activeOpacity={0.7}
-                >
-                  <AntDesign name="github" size={18} color="#333333" style={{ marginRight: 8 }} />
-                  <Text className="text-slate-800 font-bold text-sm">Github</Text>
-                </TouchableOpacity>
-              </View>
-              */}
+              {/* Google sign-in. Rendered only when a valid auth request could be
+                  built (i.e. the Google client IDs are configured for this build);
+                  otherwise it stays hidden so missing IDs can never crash the screen. */}
+              {googleRequest ? (
+                <View className="flex-row gap-4 w-full">
+                  <TouchableOpacity
+                    onPress={() => {
+                      promptGoogle().catch(() =>
+                        Alert.alert(
+                          "Google Sign-In",
+                          "Could not open Google sign-in. Please try again.",
+                        ),
+                      );
+                    }}
+                    disabled={isLoading || !googleRequest}
+                    className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
+                      isLoading || !googleRequest ? "opacity-50" : ""
+                    }`}
+                    activeOpacity={0.7}
+                  >
+                    <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
+                    <Text className="text-slate-800 font-bold text-sm">Google</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
             </View>
 
             {/* OTP Option */}
