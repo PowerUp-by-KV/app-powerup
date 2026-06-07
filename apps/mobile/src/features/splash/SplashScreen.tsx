@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import { useRouter } from "expo-router";

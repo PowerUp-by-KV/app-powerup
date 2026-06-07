@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -391,22 +392,24 @@ export function ReadyPlayerMe() {
 
   const [activeCategory, setActiveCategory] = useState<Category>("skin");
 
+  const hasInitialized = useRef(false);
   // Synchronize state variables when asynchronously loaded profile initialSettings changes
   useEffect(() => {
-    if (!initialSettings) return;
+    if (!initialSettings || hasInitialized.current) return;
     setSkin(initialSettings.skin);
     setHair(initialSettings.hair);
     setHairColor(initialSettings.hairColor);
     setAccessories(initialSettings.accessories);
     setClothing(initialSettings.clothing);
     setBackground(initialSettings.background);
+    hasInitialized.current = true;
   }, [initialSettings]);
 
   // Construct query string to store in profile DB
   const currentAvatarId = `rpm_custom?skinColor=${skin}&hair=${hair}&hairColor=${hairColor}&accessories=${accessories}&clothingColor=${clothing}&backgroundColor=${background}`;
 
   // Helper to push configuration updates into WebGL 3D Canvas
-  const update3DCanvas = () => {
+  const update3DCanvas = useCallback(() => {
     const config = {
       skinColor: skin.startsWith("#") ? skin : `#${skin}`,
       clothingColor: clothing.startsWith("#") ? clothing : `#${clothing}`,
@@ -424,12 +427,12 @@ export function ReadyPlayerMe() {
         webViewRef.current.injectJavaScript(`window.updateAvatar(${JSON.stringify(config)});`);
       }
     }
-  };
+  }, [skin, clothing, hair, hairColor, accessories]);
 
   // Push updates to 3D scene whenever parameters change
   useEffect(() => {
     update3DCanvas();
-  }, [skin, hair, hairColor, accessories, clothing]);
+  }, [update3DCanvas]);
 
   const handleSave = async () => {
     try {

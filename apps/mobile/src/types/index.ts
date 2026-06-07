@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { StyleProp, ViewStyle, FlatList } from "react-native";
 import React from "react";
 

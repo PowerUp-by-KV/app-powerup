@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -13,7 +14,7 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -21,30 +22,41 @@ import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";
 
 import {
-  useGetModuleDaysQuery,
-  useGetModuleEngagementQuery,
-  useGetModuleProgressQuery,
+  useLazyGetModuleDaysQuery,
   useGetPersonalizedPathQuery,
   useGetProgressionQuery,
+  PersonalizedModuleItem,
 } from "@/services/module-api";
+import { ModuleDay } from "@powerup/shared";
 import {
   useStartSessionMutation,
   useGetUserAssessmentResultQuery,
   useCheckAssessmentStatusQuery,
-  getNextRouteForSection,
 } from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
+  getCompletedSections,
   StoredPreAssessmentResult,
-  saveAssessmentSessionId,
-  syncCompletedSections,
-  getAssessmentSessionId,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+
+export interface CombinedModuleDay {
+  id: string;
+  day_number: number;
+  duration_hours: number | null;
+  is_completed: boolean;
+  topic?: string | null;
+  completed_activities?: number;
+  total_activities?: number;
+  progress_percentage?: number;
+  module_no: number;
+  module_title: string;
+  module_id: string;
+}
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -81,6 +93,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         }),
       ]).start();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -108,9 +121,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
 
   // Only derive scores from real results if they exist AND assessment is complete.
   const hasRealResults =
-    !!results &&
-    ((results.section_percentages && Object.keys(results.section_percentages).length > 0) ||
-      (results.section_scores && Object.keys(results.section_scores).length > 0));
+    !!results && results.section_percentages && Object.keys(results.section_percentages).length > 0;
 
   const derivedResults = hasRealResults ? results : null;
 
@@ -379,22 +390,21 @@ function GateEmptyState({
   );
 }
 
+const PROGRESSION_WAVES = [
+  { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 2, modules: [1, 5, 9], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 3, modules: [2, 6, 10], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 4, modules: [2, 6, 10], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 5, modules: [3, 7, 11], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 6, modules: [3, 7, 11], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 7, modules: [4, 8, 12, 13], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 8, modules: [4, 8, 12, 13], days: [7, 8, 9, 10, 11, 12] },
+];
+
 export function LearningJourneyScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ module_id?: string }>();
   const gate = useLearningJourneyGate();
 
-  // Navigation state management:
-  // - Level 1: showModules === false && selectedModuleId === null (Stages view)
-  // - Level 2: showModules === true && selectedModuleId === null (Modules list view)
-  // - Level 3: selectedModuleId !== null (Days list view)
-  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (params?.module_id) {
-      setSelectedModuleId(params.module_id);
-    }
-  }, [params?.module_id]);
   const {
     data: profile,
     isFetching: profileFetching,
@@ -405,34 +415,7 @@ export function LearningJourneyScreen() {
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
   const [preAssessmentResults, setPreAssessmentResults] =
     useState<StoredPreAssessmentResult | null>(null);
-
-  // Live assessment status query from the backend (start endpoint)
-  const { data: assessmentSession, refetch: refetchAssessmentStatus } =
-    useCheckAssessmentStatusQuery(undefined, {
-      skip: !profile?.id,
-    });
-
-  const completedSections = useMemo(() => {
-    return assessmentSession?.completed_sections || [];
-  }, [assessmentSession?.completed_sections]);
-
-  // Check if we should block the user with the gating empty state
-  const isGated = useMemo(() => {
-    if (!gate.ready) return false;
-    // Gated if onboarding is not completed
-    if (gate.blockedReason === "onboarding") return true;
-    // Gated if assessment is not completed AND user has not completed at least 1 section yet
-    if (gate.blockedReason === "assessment" && completedSections.length === 0) return true;
-    return false;
-  }, [gate.ready, gate.blockedReason, completedSections.length]);
-
-  const isPreAssessmentDone = useMemo(() => {
-    if (profile?.cefr_range) return true;
-    if (assessmentSession) {
-      return (assessmentSession.not_completed_sections || []).length === 0;
-    }
-    return gate.canEnter;
-  }, [profile?.cefr_range, assessmentSession, gate.canEnter]);
+  const [completedSections, setCompletedSections] = useState<string[]>([]);
 
   useEffect(() => {
     refetchProfile();
@@ -444,6 +427,10 @@ export function LearningJourneyScreen() {
         setPreAssessmentResults(res);
       }
     });
+
+    getCompletedSections().then((sections) => {
+      if (sections) setCompletedSections(sections);
+    });
   }, [showPreAssessmentModal, profile]);
 
   const {
@@ -451,6 +438,10 @@ export function LearningJourneyScreen() {
     error: liveResultError,
     isFetching: liveResultFetching,
   } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !profile?.id });
+
+  const { data: assessmentSession } = useCheckAssessmentStatusQuery(undefined, {
+    skip: !profile?.id || !!profile?.cefr_range,
+  });
 
   useEffect(() => {
     console.log("[DEBUG results] user_id:", profile?.id);
@@ -498,158 +489,107 @@ export function LearningJourneyScreen() {
     if (gate.canEnter) {
       refetchPath();
       refetchProgression();
-    }
-    if (targetModuleIdForDays) {
-      refetchDays();
+      fetchAllDays(true);
     }
   };
 
-  const selectedModule = useMemo(() => {
-    if (!personalizedPath?.modules.length) return null;
-    if (selectedModuleId) {
-      return personalizedPath.modules.find((m) => m.id === selectedModuleId) ?? null;
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
+  const [loadingAllDays, setLoadingAllDays] = useState(false);
+
+  const fetchAllDays = useCallback(
+    async (force = false) => {
+      if (!personalizedPath?.modules?.length) return;
+      setLoadingAllDays(true);
+      try {
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id, !force).unwrap();
+            return { moduleId: m.id, days: data };
+          } catch (e) {
+            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
+            return { moduleId: m.id, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+
+        const nextData: Record<string, ModuleDay[]> = {};
+        for (const res of results) {
+          nextData[res.moduleId] = res.days;
+        }
+        setModuleDaysData(nextData);
+      } catch (err) {
+        console.error("Error fetching all days:", err);
+      } finally {
+        setLoadingAllDays(false);
+      }
+    },
+    [personalizedPath, triggerGetModuleDays],
+  );
+
+  useEffect(() => {
+    if (gate.canEnter) {
+      fetchAllDays(false);
     }
-    return null;
-  }, [personalizedPath?.modules, selectedModuleId]);
+  }, [fetchAllDays, gate.canEnter]);
 
-  const activeModule = useMemo(() => {
-    if (!progression?.unlocked_modules?.length) return null;
-    // Find the first module that is unlocked (!locked) and not completed
-    const current = progression.unlocked_modules.find((m) => !m.locked && !m.completed);
-    if (current) return current;
-    // Fallback to first unlocked module
-    const firstUnlocked = progression.unlocked_modules.find((m) => !m.locked);
-    if (firstUnlocked) return firstUnlocked;
-    // Fallback to first module
-    return progression.unlocked_modules[0];
-  }, [progression?.unlocked_modules]);
+  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
+    if (!personalizedPath?.modules?.length) return [];
+    const combined: CombinedModuleDay[] = [];
+    const daysByModuleNo: Record<number, ModuleDay[]> = {};
+    const moduleByNo: Record<number, PersonalizedModuleItem> = {};
 
-  const activeModuleId = selectedModule?.id || activeModule?.module_id || "";
-  const targetModuleIdForDays = selectedModule?.id || activeModule?.module_id || "";
+    for (const m of personalizedPath.modules) {
+      const days = moduleDaysData[m.id] || [];
+      daysByModuleNo[m.module_no] = days;
+      moduleByNo[m.module_no] = m;
+    }
 
-  const {
-    data: days,
-    isLoading: daysLoading,
-    isError: daysError,
-    refetch: refetchDays,
-  } = useGetModuleDaysQuery(targetModuleIdForDays, {
-    skip: !targetModuleIdForDays,
-  });
+    for (const waveConfig of PROGRESSION_WAVES) {
+      for (const mNo of waveConfig.modules) {
+        const moduleItem = moduleByNo[mNo];
+        if (!moduleItem) continue;
 
-  const { refetch: refetchProgress } = useGetModuleProgressQuery(activeModuleId, {
-    skip: !activeModuleId,
-  });
+        const moduleDays = daysByModuleNo[mNo] || [];
+        for (const dNum of waveConfig.days) {
+          const dayObj = moduleDays.find((d) => d.day_number === dNum);
+          if (dayObj) {
+            combined.push({
+              ...dayObj,
+              module_no: moduleItem.module_no,
+              module_title: moduleItem.title,
+              module_id: moduleItem.id,
+            });
+          }
+        }
+      }
+    }
+    return combined;
+  }, [personalizedPath, moduleDaysData]);
 
-  const { refetch: refetchEngagement } = useGetModuleEngagementQuery(activeModuleId, {
-    skip: !activeModuleId,
-  });
-
-  const firstIncompleteDayNumber = useMemo(() => {
-    if (!days) return 1;
-    const sortedDays = [...days].sort((a, b) => a.day_number - b.day_number);
-    const firstIncomplete = sortedDays.find((d) => !d.is_completed);
-    return firstIncomplete
-      ? firstIncomplete.day_number
-      : (sortedDays[sortedDays.length - 1]?.day_number ?? 12) + 1;
-  }, [days]);
-
-  // Find progression details for the active/selected module
-  const activeProgressionModule = useMemo(() => {
-    if (!progression?.unlocked_modules || !targetModuleIdForDays) return null;
-    return progression.unlocked_modules.find((m) => m.module_id === targetModuleIdForDays);
-  }, [progression?.unlocked_modules, targetModuleIdForDays]);
-
-  const unlockedDays = activeProgressionModule?.unlocked_days ?? [1, 2, 3, 4, 5, 6];
+  const firstIncompleteIndex = useMemo(() => {
+    return allDaysList.findIndex((d) => !d.is_completed);
+  }, [allDaysList]);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       if (gate.canEnter) {
-        await Promise.all([refetchPath(), refetchProgression()]);
-      }
-      // Always refetch assessment status on refresh if not fully completed
-      if (profile?.id && !profile?.cefr_range) {
-        await refetchAssessmentStatus();
-      }
-      if (selectedModule) {
-        await Promise.all([refetchProgress(), refetchEngagement(), refetchDays()]);
+        await Promise.all([refetchPath(), refetchProgression(), fetchAllDays(true)]);
       }
     } finally {
       setRefreshing(false);
     }
-  }, [
-    refetchPath,
-    refetchProgression,
-    refetchProgress,
-    refetchEngagement,
-    refetchDays,
-    selectedModule,
-    gate.canEnter,
-    profile?.id,
-    profile?.cefr_range,
-    refetchAssessmentStatus,
-  ]);
+  }, [refetchPath, refetchProgression, fetchAllDays, gate.canEnter]);
 
   const handleStartOrResumeAssessment = async () => {
     setIsStartingSession(true);
     try {
-      const currentSessionId = assessmentSession?.session_id || (await getAssessmentSessionId());
-
-      // Cache-first: prioritize the pre-fetched session, fallback to startSession mutation
-      let session = assessmentSession;
-      if (!session) {
-        session = await startSession().unwrap();
-      }
-
-      const activeSessionId = session?.session_id || currentSessionId;
-      if (activeSessionId) {
-        await saveAssessmentSessionId(activeSessionId);
-      }
-
-      const backendCompleted = session?.completed_sections || [];
-      await syncCompletedSections(backendCompleted);
-
-      const notCompleted = session?.not_completed_sections || [];
-
-      // If all sections are completed but cefr_range is not set yet, route directly to results!
-      if (notCompleted.length === 0 && !profile?.cefr_range) {
-        router.push({
-          pathname: "/results",
-          params: { session_id: activeSessionId },
-        });
-        return;
-      }
-
-      const allSections = [
-        "A_READING",
-        "A_SPEAKING",
-        "A_LISTEN",
-        "B_SPEAKING",
-        "C_GRAMMAR",
-        "D_LISTEN_ANSWER",
-      ];
-      const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
-
-      let targetSec = activeNotCompleted[0];
-      if (!targetSec) {
-        if (session?.current_section && !backendCompleted.includes(session.current_section)) {
-          targetSec = session.current_section;
-        }
-      }
-      if (!targetSec) {
-        if (session?.first_section && !backendCompleted.includes(session.first_section)) {
-          targetSec = session.first_section;
-        }
-      }
-      if (!targetSec) {
-        targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-      }
-
-      const targetRoute = getNextRouteForSection(targetSec);
+      const session = await startSession().unwrap();
       router.push({
-        pathname: targetRoute,
-        params: { session_id: activeSessionId },
+        pathname: "/assessment-entry" as any,
+        params: { session_id: session.session_id },
       });
     } catch (err: any) {
       console.error("Start/resume assessment session failed:", err);
@@ -660,9 +600,7 @@ export function LearningJourneyScreen() {
   };
 
   const isError =
-    (profileError ||
-      (gate.canEnter && (pathError || progressionError)) ||
-      (selectedModule && daysError)) &&
+    (profileError || (gate.canEnter && (pathError || progressionError))) &&
     !profileFetching &&
     !pathFetching &&
     !progressionFetching;
@@ -695,7 +633,7 @@ export function LearningJourneyScreen() {
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center px-2">
+            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-2">
               We couldn't connect to the learning server. Please ensure the backend service is
               running and try again.
             </Text>
@@ -718,18 +656,19 @@ export function LearningJourneyScreen() {
   }
 
   const isPathLoading =
-    gate.canEnter && (pathFetching || progressionFetching) && !personalizedPath && !progression;
+    gate.canEnter &&
+    (pathFetching ||
+      progressionFetching ||
+      loadingAllDays ||
+      !personalizedPath ||
+      !progression ||
+      !allDaysList.length);
 
   if (!gate.ready || isPathLoading) {
     return <GamifiedMascotLoader title="Consulting AI Mentor..." />;
   }
 
-  if (selectedModule && daysLoading) {
-    return <GamifiedMascotLoader title="Loading daily roadmap..." />;
-  }
-
-  if (isGated) {
-    const reason = gate.blockedReason === "onboarding" ? "onboarding" : "assessment";
+  if (!gate.canEnter && gate.blockedReason === "onboarding") {
     return (
       <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
@@ -740,19 +679,19 @@ export function LearningJourneyScreen() {
             <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
           </View>
           <GateEmptyState
-            reason={reason}
+            reason="onboarding"
             completedSections={completedSections}
-            onPrimary={
-              reason === "onboarding"
-                ? () => router.push("/onboarding")
-                : handleStartOrResumeAssessment
-            }
-            isLoading={isStartingSession}
+            onPrimary={() => {
+              router.push("/onboarding");
+            }}
+            isLoading={false}
           />
         </ScrollView>
       </SafeAreaView>
     );
   }
+
+  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
 
   // Diagnostic Assessment complete flag
   const isDiagnosticComplete = isPreAssessmentDone;
@@ -782,18 +721,20 @@ export function LearningJourneyScreen() {
 
   // Resolve day items for current phase
   const dayItems = [];
-  for (const dayNumber of unlockedDays) {
-    if (dayNumber === undefined) continue;
-    const dayObj = days?.find((d) => d.day_number === dayNumber);
-    const isCompleted = isDiagnosticComplete && !!dayObj?.is_completed;
-    const isLocked = !isDiagnosticComplete || dayNumber > firstIncompleteDayNumber;
-    const isInProgress = isDiagnosticComplete && dayNumber === firstIncompleteDayNumber;
+  let globalDayIdx = 1;
+  for (const dayObj of allDaysList) {
+    const idx = globalDayIdx - 1;
+    const isLocked =
+      !isDiagnosticComplete || (firstIncompleteIndex !== -1 && idx > firstIncompleteIndex);
+    const isCompleted = isDiagnosticComplete && !!dayObj?.is_completed && !isLocked;
+    const isInProgress =
+      isDiagnosticComplete && firstIncompleteIndex !== -1 && idx === firstIncompleteIndex;
 
-    const topic = dayObj?.topic || STATIC_DAY_TOPICS[dayNumber - 1] || "Daily Activities";
+    const topic = dayObj?.topic || STATIC_DAY_TOPICS[dayObj.day_number - 1] || "Daily Activities";
     const hours = dayObj?.duration_hours ?? 0.25;
     const minutes = Math.max(1, Math.round(hours * 60));
 
-    const title = `Day ${dayNumber}: ${topic}`;
+    const title = `Day ${globalDayIdx}: ${topic}`;
     const subtitle = isLocked
       ? "Complete previous stages to unlock"
       : isCompleted
@@ -801,8 +742,9 @@ export function LearningJourneyScreen() {
         : `Tap to start · ~${minutes} min`;
 
     dayItems.push({
-      id: dayObj?.id || `static_day_${dayNumber}`,
-      dayNumber,
+      id: dayObj?.id || `static_day_${globalDayIdx}`,
+      dayNumber: dayObj.day_number,
+      globalDayNumber: globalDayIdx,
       title,
       subtitle,
       isCompleted,
@@ -812,6 +754,7 @@ export function LearningJourneyScreen() {
       durationMinutes: minutes,
       dayObj,
     });
+    globalDayIdx++;
   }
 
   return (
@@ -978,7 +921,7 @@ export function LearningJourneyScreen() {
           {/* Item 3: Diagnostic Assessment */}
           <Pressable
             onPress={
-              profile?.cefr_range
+              isDiagnosticComplete
                 ? () => setShowPreAssessmentModal(true)
                 : handleStartOrResumeAssessment
             }
@@ -1015,7 +958,7 @@ export function LearningJourneyScreen() {
                 <View
                   style={[
                     timelineStyles.statusBadge,
-                    profile?.cefr_range
+                    isDiagnosticComplete
                       ? timelineStyles.badgeCompleted
                       : timelineStyles.badgeInProgress,
                   ]}
@@ -1023,14 +966,17 @@ export function LearningJourneyScreen() {
                   <Text
                     style={[
                       timelineStyles.badgeText,
-                      { color: profile?.cefr_range ? "#15803d" : "#a16207" },
+                      { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
                     ]}
                   >
                     {profile?.cefr_range
                       ? `Level ${profile.cefr_range}`
-                      : (assessmentSession?.not_completed_sections || []).length === 0
-                        ? "Scoring"
-                        : "In Progress"}
+                      : isDiagnosticComplete
+                        ? "Assessed"
+                        : assessmentSession &&
+                            (assessmentSession.not_completed_sections || []).length === 0
+                          ? "Scoring"
+                          : "In Progress"}
                   </Text>
                 </View>
               </View>
@@ -1050,9 +996,10 @@ export function LearningJourneyScreen() {
 
               <View style={timelineStyles.progressLabelRow}>
                 <Text style={timelineStyles.progressLabelText}>
-                  {profile?.cefr_range
+                  {isDiagnosticComplete
                     ? "6 of 6 sections completed"
-                    : (assessmentSession?.not_completed_sections || []).length === 0
+                    : assessmentSession &&
+                        (assessmentSession.not_completed_sections || []).length === 0
                       ? "Answers submitted, scoring in progress"
                       : `${diagLessonsCompleted} of 6 sections completed`}
                 </Text>
@@ -1066,15 +1013,16 @@ export function LearningJourneyScreen() {
                     : `${diagXp} XP earned`}
               </Text>
 
-              {/* Continue learning or View results CTA button inside active card */}
-              {!profile?.cefr_range && (
+              {/* Continue learning CTA button inside active card */}
+              {!isDiagnosticComplete && (
                 <Pressable
                   onPress={handleStartOrResumeAssessment}
                   disabled={isStartingSession}
                   style={timelineStyles.continueButton}
                 >
                   <Text style={timelineStyles.continueButtonText}>
-                    {(assessmentSession?.not_completed_sections || []).length === 0
+                    {assessmentSession &&
+                    (assessmentSession.not_completed_sections || []).length === 0
                       ? "View grading status"
                       : "Continue learning"}
                   </Text>
@@ -1106,8 +1054,8 @@ export function LearningJourneyScreen() {
                     router.push({
                       pathname: `/learning-journey/module/${item.dayObj.id}` as never,
                       params: {
-                        module_id: targetModuleIdForDays,
-                        day_number: String(item.dayNumber),
+                        module_id: item.dayObj.module_id,
+                        day_number: String(item.globalDayNumber),
                       },
                     });
                   }
@@ -1236,8 +1184,8 @@ export function LearningJourneyScreen() {
                           router.push({
                             pathname: `/learning-journey/module/${item.dayObj.id}` as never,
                             params: {
-                              module_id: targetModuleIdForDays,
-                              day_number: String(item.dayNumber),
+                              module_id: item.dayObj.module_id,
+                              day_number: String(item.globalDayNumber),
                             },
                           });
                         }

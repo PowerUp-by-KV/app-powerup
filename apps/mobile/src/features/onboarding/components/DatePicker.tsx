@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { View, Text, TouchableOpacity, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";

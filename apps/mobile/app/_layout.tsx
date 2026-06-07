@@ -60,6 +60,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     data: onboardingStatus,
     isLoading: isOnboardingLoading,
     isFetching: isOnboardingFetching,
+    isError: isOnboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
   });
@@ -71,6 +72,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (
       session &&
       isQueryActive &&
+      !isOnboardingError &&
       (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
     ) {
       return;
@@ -90,12 +92,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           router.replace("/onboarding" as never);
         }
       } else {
-        const routesToBlockAfterOnboarding = [
-          "login",
-          "register",
-          "onboarding",
-          "dynamic-onboarding",
-        ];
+        const routesToBlockAfterOnboarding = ["onboarding"];
         if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
@@ -108,6 +105,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     onboardingStatus,
     isOnboardingLoading,
     isOnboardingFetching,
+    isOnboardingError,
+    currentRoute,
     segments,
     router,
   ]);
@@ -123,6 +122,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isQueryActive = !!userId;
   const isQueryLoading =
     isQueryActive &&
+    !isOnboardingError &&
     (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
 
   if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
