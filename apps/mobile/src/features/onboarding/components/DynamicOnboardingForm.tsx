@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { OnboardingQuestion } from "@/services/onboarding-api";

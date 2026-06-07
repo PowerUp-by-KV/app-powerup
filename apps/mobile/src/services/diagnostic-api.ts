@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
 
 export type DiagnosticSectionCode = "section_a" | "section_b" | "section_c" | "section_d";

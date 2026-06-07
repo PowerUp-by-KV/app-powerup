@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
 import { addFeedback, markComplete, setCurrentQuestion } from "@/store/slices/mock-interview.slice";
 import type { PerQuestionFeedback } from "@/store/slices/mock-interview.slice";

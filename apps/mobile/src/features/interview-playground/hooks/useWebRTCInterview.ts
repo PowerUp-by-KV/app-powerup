@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  useStartInterviewMutation,
+  useStartWebRTCInterviewMutation,
   useSaveInterviewSessionMutation,
 } from "@/services/interview-playground-api";
 import type {
   EvaluationResult,
+  InterviewMode,
   InterviewStatus,
   StartInterviewResponse,
   TranscriptTurn,
@@ -20,7 +21,12 @@ import {
   setStatus,
   setSpeaking,
 } from "../store/interviewSession";
-import { RTCPeerConnection, mediaDevices } from "../platform/webrtc";
+import {
+  RTCPeerConnection,
+  mediaDevices,
+  attachRemoteAudio,
+  detachRemoteAudio,
+} from "../platform/webrtc";
 
 interface UseWebRTCInterviewReturn {
   status: InterviewStatus;
@@ -34,7 +40,12 @@ interface UseWebRTCInterviewReturn {
   endInterview: () => Promise<void>;
 }
 
-export function useWebRTCInterview(): UseWebRTCInterviewReturn {
+// The agent is instructed (system prompt) to end with this exact sentence,
+// both when the interview completes naturally and when the candidate says
+// "end the interview". Detecting it lets us auto-finalize on web AND phone.
+const CLOSING_PHRASE_MARKER = "this concludes our interview";
+
+export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRTCInterviewReturn {
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState<{ user: boolean; ai: boolean }>(
@@ -47,7 +58,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
 
   const isMountedRef = useRef(true);
 
-  const [startInterviewMutation] = useStartInterviewMutation();
+  const [startInterviewMutation] = useStartWebRTCInterviewMutation();
   const [saveSession] = useSaveInterviewSessionMutation();
 
   useEffect(() => {
@@ -80,10 +91,63 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
     setStatus("error");
   }, []);
 
+  // Tears down the WebRTC connection and saves the transcript for evaluation.
+  // Used by both the manual "End Interview" button and the auto-end that fires
+  // when the agent speaks the closing phrase (e.g. after "end the interview").
+  const finalizeSession = useCallback(async (): Promise<void> => {
+    if (activeSession.status !== "live") return;
+
+    const sid = activeSession.sessionId;
+    const role = activeSession.derivedRole;
+    const snapshot = [...activeSession.transcript];
+
+    setStatus("saving");
+
+    try {
+      activeSession.dataChannel?.close();
+    } catch {
+      // ignore
+    }
+    try {
+      activeSession.pc?.close();
+    } catch {
+      // ignore
+    }
+    if (activeSession.stream) {
+      activeSession.stream.getTracks().forEach((t) => t.stop());
+    }
+    detachRemoteAudio();
+
+    if (!sid) {
+      handleError("No session ID to save");
+      return;
+    }
+
+    try {
+      const result = await saveSession({
+        sessionId: sid,
+        body: { transcript: snapshot, derived_role: role ?? undefined },
+      }).unwrap();
+
+      activeSession.evaluation = result.evaluation;
+      if (isMountedRef.current) setEvaluation(result.evaluation);
+      setStatus("done");
+    } catch {
+      handleError("Failed to save interview. Your transcript may be lost.");
+    }
+  }, [saveSession, handleError]);
+
   const attachDataChannelListeners = useCallback(
     (dc: RTCDataChannel, sid: string, role: string) => {
       dc.onopen = () => {
         setStatus("live");
+        // Kick off the interviewer's opening turn so the AI greets the
+        // candidate first instead of waiting for them to speak.
+        try {
+          dc.send(JSON.stringify({ type: "response.create" }));
+        } catch {
+          // non-fatal — model will still respond to the first user turn
+        }
       };
 
       dc.onclose = () => {
@@ -138,9 +202,14 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
             setSpeaking({ user: activeSession.isSpeaking.user, ai: false });
             break;
 
+          // User's spoken answer transcribed. The `transcript` field is a
+          // plain string on this event (not an object with `.text`).
           case "conversation.item.input_audio_transcription.completed": {
-            const transcriptObj = parsed["transcript"] as { text?: string } | undefined;
-            const text = transcriptObj?.text?.trim();
+            const raw = parsed["transcript"];
+            const text =
+              typeof raw === "string"
+                ? raw.trim()
+                : ((raw as { text?: string } | undefined)?.text ?? "").trim();
             if (text) {
               appendTranscriptTurn({
                 role: "candidate",
@@ -151,7 +220,10 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
             break;
           }
 
-          case "response.audio_transcript.done": {
+          // AI interviewer's spoken turn transcribed. Event name differs across
+          // Realtime API versions — handle both the GA and newer variants.
+          case "response.audio_transcript.done":
+          case "response.output_audio_transcript.done": {
             const text = (parsed["transcript"] as string | undefined)?.trim();
             if (text) {
               appendTranscriptTurn({
@@ -159,6 +231,12 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
                 text,
                 timestamp: new Date().toISOString(),
               });
+              // The agent says the closing phrase when the interview ends —
+              // either naturally or because the candidate asked to stop. Once
+              // we hear it, automatically finalize and save the session.
+              if (text.toLowerCase().includes(CLOSING_PHRASE_MARKER)) {
+                void finalizeSession();
+              }
             }
             break;
           }
@@ -168,7 +246,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
         }
       };
     },
-    [saveSession, handleError],
+    [saveSession, handleError, finalizeSession],
   );
 
   const startInterview = useCallback(async (): Promise<string | null> => {
@@ -188,7 +266,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
     let backendData: StartInterviewResponse;
 
     try {
-      const result = await startInterviewMutation().unwrap();
+      const result = await startInterviewMutation({ mode }).unwrap();
       backendData = result;
     } catch {
       handleError("Failed to start interview. Please try again.");
@@ -197,6 +275,7 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
 
     activeSession.sessionId = backendData.session_id;
     activeSession.derivedRole = backendData.derived_role;
+    activeSession.mode = backendData.mode ?? mode;
     if (isMountedRef.current) {
       setSessionId(backendData.session_id);
       setDerivedRole(backendData.derived_role);
@@ -211,6 +290,21 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
 
       const pc = new RTCPeerConnection();
       activeSession.pc = pc;
+
+      // Play the AI interviewer's voice: attach the remote audio track to an
+      // audio sink. Without this, the connection works but the user hears
+      // nothing.
+      (
+        pc as unknown as {
+          ontrack: ((e: { streams: MediaStream[] }) => void) | null;
+        }
+      ).ontrack = (e) => {
+        const remoteStream = e.streams && e.streams[0];
+        if (remoteStream) {
+          activeSession.remoteStream = remoteStream;
+          attachRemoteAudio(remoteStream);
+        }
+      };
 
       stream.getTracks().forEach((track) => {
         (
@@ -252,47 +346,11 @@ export function useWebRTCInterview(): UseWebRTCInterviewReturn {
   }, [startInterviewMutation, attachDataChannelListeners, handleError]);
 
   const endInterview = useCallback(async (): Promise<void> => {
-    if (activeSession.status !== "live") return;
-
-    const sid = activeSession.sessionId;
-    const role = activeSession.derivedRole;
-    const snapshot = [...activeSession.transcript];
-
-    if (activeSession.dataChannel) {
-      try {
-        activeSession.dataChannel.close();
-      } catch {
-        // ignore
-      }
-    }
-    if (activeSession.pc) {
-      try {
-        activeSession.pc.close();
-      } catch {
-        // ignore
-      }
-    }
-
-    setStatus("saving");
-
-    if (!sid) {
-      handleError("No session ID to save");
-      return;
-    }
-
-    try {
-      const result = await saveSession({
-        sessionId: sid,
-        body: { transcript: snapshot, derived_role: role ?? undefined },
-      }).unwrap();
-
-      activeSession.evaluation = result.evaluation;
-      if (isMountedRef.current) setEvaluation(result.evaluation);
-      setStatus("done");
-    } catch {
-      handleError("Failed to save interview. Your transcript may be lost.");
-    }
-  }, [saveSession, handleError]);
+    // Manual "End Interview" button — tear down and save immediately.
+    // (Saying "end the interview" to the agent auto-ends via the closing
+    // phrase, which routes through this same finalize path.)
+    await finalizeSession();
+  }, [finalizeSession]);
 
   return {
     status,

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect, useRef } from "react";
 import {
   View,
@@ -191,7 +192,10 @@ export function MockInterviewQuestionScreen() {
   }, [isRecording, startRecording, stopRecording]);
 
   const handleSubmit = useCallback(async () => {
-    if (!sessionId || !currentQuestionId) return;
+    if (!sessionId || !currentQuestionId) {
+      setSubmitError("Question not loaded yet. Please wait a moment and try again.");
+      return;
+    }
     setSubmitError(null);
     try {
       const result = await submitAnswer({
@@ -221,7 +225,11 @@ export function MockInterviewQuestionScreen() {
   const confidencePct = findByName("confidence", 2);
   const behaviourPct = lastScore ? Math.round((relevancePct + confidencePct) / 2) : 0;
 
-  const canSubmit = !isSubmitting && (audioFile !== null || transcript.length > 0) && !isRecording;
+  const canSubmit =
+    !isSubmitting &&
+    !!currentQuestionId &&
+    (audioFile !== null || transcript.length > 0) &&
+    !isRecording;
 
   if (isLoadingQuestion) {
     return (

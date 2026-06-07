@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   SafeAreaView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
   onSpeakingChange,
   onStatusChange,
   onTranscriptChange,
+  resetSession,
 } from "../store/interviewSession";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { TranscriptPanel } from "../components/TranscriptPanel";
@@ -24,9 +26,10 @@ import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
 
 interface InterviewRoomScreenProps {
   sessionId: string | undefined;
+  mode?: "buddy" | "playground";
 }
 
-export function InterviewRoomScreen({ sessionId }: InterviewRoomScreenProps) {
+export function InterviewRoomScreen({ sessionId, mode = "playground" }: InterviewRoomScreenProps) {
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState(activeSession.isSpeaking);
@@ -48,28 +51,53 @@ export function InterviewRoomScreen({ sessionId }: InterviewRoomScreenProps) {
 
   useEffect(() => {
     if (status === "done" && sessionId) {
-      router.replace({ pathname: "/interview-results", params: { session_id: sessionId } });
+      router.replace({ pathname: "/interview-results", params: { session_id: sessionId, mode } });
     } else if (status === "error") {
-      Alert.alert("Interview Error", activeSession.errorMessage ?? "An error occurred.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      const msg = activeSession.errorMessage ?? "An error occurred.";
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") window.alert(`Interview Error: ${msg}`);
+        router.back();
+      } else {
+        Alert.alert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
+      }
     }
   }, [status, sessionId]);
+
+  // Safety net: if the user leaves the room without ending (back gesture,
+  // navigating away), tear down the WebRTC connection and stop the mic so we
+  // don't leak the peer connection or leave the microphone recording.
+  useEffect(() => {
+    return () => {
+      if (activeSession.status === "live" || activeSession.status === "connecting") {
+        resetSession();
+      }
+    };
+  }, []);
 
   const handleEnd = useCallback(async () => {
     if (isEnding) return;
 
+    const runEnd = async () => {
+      setIsEnding(true);
+      await endInterview();
+      setIsEnding(false);
+    };
+
+    // Alert.alert with action buttons is a no-op on React Native Web, so the
+    // confirmation never appears and the interview never ends. Use the native
+    // browser confirm there, and Alert on iOS/Android.
+    if (Platform.OS === "web") {
+      const confirmed =
+        typeof window !== "undefined"
+          ? window.confirm("Are you sure you want to end the interview?")
+          : true;
+      if (confirmed) await runEnd();
+      return;
+    }
+
     Alert.alert("End Interview?", "Are you sure you want to end the interview?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "End",
-        style: "destructive",
-        onPress: async () => {
-          setIsEnding(true);
-          await endInterview();
-          setIsEnding(false);
-        },
-      },
+      { text: "End", style: "destructive", onPress: runEnd },
     ]);
   }, [endInterview, isEnding]);
 
