@@ -13,12 +13,11 @@ import {
   View,
 } from "react-native";
 
-import { Feather, AntDesign } from "@expo/vector-icons";
+import { Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useRouter } from "expo-router";
 
 import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
-import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
   clearAuthSession,
@@ -44,7 +43,6 @@ export function LoginScreen() {
   const [login] = useLoginMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
-  const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
 
   // Prefetch onboarding questions in the background during the authentication handshake
   React.useEffect(() => {
@@ -220,7 +218,9 @@ export function LoginScreen() {
                 Sign in to your Lumino account to continue your learning journey
               </Text>
 
-              {/* Social Login Buttons */}
+              {/* Social Login Buttons (Google/Github) disabled for now — Google
+                  OAuth is not configured for native EAS builds and was crashing
+                  the screen. Re-enable once eas.json has Android/iOS client IDs.
               <View className="flex-row gap-4 w-full">
                 <TouchableOpacity
                   onPress={() => {
@@ -249,6 +249,7 @@ export function LoginScreen() {
                   <Text className="text-slate-800 font-bold text-sm">Github</Text>
                 </TouchableOpacity>
               </View>
+              */}
             </View>
 
             {/* OTP Option */}
