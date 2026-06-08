@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -40,22 +39,9 @@ import {
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
+import { CombinedModuleDay } from "@/features/home/HomeScreen";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-
-export interface CombinedModuleDay {
-  id: string;
-  day_number: number;
-  duration_hours: number | null;
-  is_completed: boolean;
-  topic?: string | null;
-  completed_activities?: number;
-  total_activities?: number;
-  progress_percentage?: number;
-  module_no: number;
-  module_title: string;
-  module_id: string;
-}
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -461,6 +447,7 @@ export function LearningJourneyScreen() {
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
   const [preAssessmentResults, setPreAssessmentResults] =
     useState<StoredPreAssessmentResult | null>(null);
+
   const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
   const completedSections = isPreAssessmentDone
     ? ["A_READING", "A_SPEAKING", "A_LISTEN", "B_SPEAKING", "C_GRAMMAR", "D_LISTEN_ANSWER"]
@@ -491,7 +478,6 @@ export function LearningJourneyScreen() {
       refetchResult();
     }
   }, [showPreAssessmentModal, profile?.id, refetchResult]);
-
   const { data: assessmentSession } = useCheckAssessmentStatusQuery(undefined, {
     skip: !profile?.id || !!profile?.cefr_range,
   });
@@ -1113,7 +1099,6 @@ export function LearningJourneyScreen() {
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
                 </View>
-
                 <Text style={timelineStyles.xpText}>
                   {isStartingSession
                     ? "Launching..."
@@ -1122,6 +1107,7 @@ export function LearningJourneyScreen() {
                       : `${diagXp} XP earned`}
                 </Text>
 
+                {/* Continue learning CTA button inside active card */}
                 {!isDiagnosticComplete && (
                   <Pressable
                     onPress={handleStartOrResumeAssessment}

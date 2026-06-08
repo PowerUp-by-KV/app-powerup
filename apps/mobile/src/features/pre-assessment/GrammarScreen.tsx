@@ -155,10 +155,10 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
           if (status.pending_answers > 0) {
             checkRetries--;
             await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else if (status.failed_answers > 0) {
-            console.warn("Some answers failed to score in backend processing:", status);
-            break;
           } else {
+            if (status.failed_answers > 0) {
+              console.warn("Some answers failed to score in backend processing:", status);
+            }
             break;
           }
         } catch (pollErr) {

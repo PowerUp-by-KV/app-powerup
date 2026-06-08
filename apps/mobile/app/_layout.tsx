@@ -1,5 +1,6 @@
 import "../global.css";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
@@ -172,14 +173,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function AuthLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter: Inter_400Regular,
-    "Inter-Regular": Inter_400Regular,
-    "Inter-Medium": Inter_500Medium,
-    "Inter-SemiBold": Inter_600SemiBold,
-    "Inter-Bold": Inter_700Bold,
-    "Inter-ExtraBold": Inter_800ExtraBold,
-  });
+  const [fontsLoaded, fontError] = useFonts(
+    Platform.OS === "web"
+      ? {}
+      : {
+          Inter: Inter_400Regular,
+          "Inter-Regular": Inter_400Regular,
+          "Inter-Medium": Inter_500Medium,
+          "Inter-SemiBold": Inter_600SemiBold,
+          "Inter-Bold": Inter_700Bold,
+          "Inter-ExtraBold": Inter_800ExtraBold,
+        },
+  );
 
   const [authChecked, setAuthChecked] = useState(false);
 

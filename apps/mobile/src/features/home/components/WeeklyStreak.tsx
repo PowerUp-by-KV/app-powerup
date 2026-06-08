@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -16,7 +16,7 @@ export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
   const filled = days ?? Array.from({ length: 7 }, (_, i) => i <= today);
 
   return (
-    <View className="bg-white rounded-3xl p-5 mb-4 border border-slate-100/60 shadow-sm shadow-slate-100">
+    <View style={styles.card}>
       <Text className="text-slate-900 text-base font-bold mb-4 text-center">Weekly Streak</Text>
       <View className="flex-row justify-between px-1">
         {LABELS.map((label, i) => {
@@ -26,15 +26,14 @@ export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
               {active ? (
                 <LinearGradient
                   colors={["#4f46e5", "#3b82f6"]}
-                  className="w-10 h-10 rounded-full items-center justify-center mb-1.5 shadow-sm shadow-indigo-100/30"
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.activeIndicator}
                 >
                   <Ionicons name="flame" size={20} color="#ffffff" />
                 </LinearGradient>
               ) : (
-                <View
-                  style={{ backgroundColor: "#e2f9cc" }}
-                  className="w-10 h-10 rounded-full items-center justify-center mb-1.5"
-                />
+                <View style={styles.inactiveIndicator} />
               )}
               <Text className="text-slate-400 text-xs font-semibold">{label}</Text>
             </View>
@@ -44,6 +43,44 @@ export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(241, 245, 249, 0.6)",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  activeIndicator: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+    shadowColor: "#4f46e5",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  inactiveIndicator: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#e2f9cc",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+});
 
 function mondayIndexFromDate(d: Date): number {
   const js = d.getDay();
