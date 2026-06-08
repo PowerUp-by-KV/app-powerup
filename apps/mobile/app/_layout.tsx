@@ -12,7 +12,11 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { getAuthSession, StoredSession } from "@/services/auth-storage";
+import {
+  getAuthSession,
+  StoredSession,
+  getProfileCompletedInSession,
+} from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,6 +39,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
+  const [localOnboardingComplete, setLocalOnboardingComplete] = useState<boolean>(false);
   // Tracks the route for which the session read has completed. We only make
   // redirect decisions once the fresh read for the *current* route is done —
   // otherwise, right after login navigates, the effect would run with a stale
@@ -43,10 +48,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    getAuthSession()
-      .then((sess) => {
+    Promise.all([getAuthSession(), getProfileCompletedInSession()])
+      .then(([sess, completed]) => {
         if (!active) return;
         setSession(sess);
+        setLocalOnboardingComplete(completed);
       })
       .catch((err) => {
         console.warn("Failed to load session in guard:", err);
@@ -81,6 +87,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       session &&
       isQueryActive &&
       !isOnboardingError &&
+      !localOnboardingComplete &&
       (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
     ) {
       return;
@@ -91,23 +98,14 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (!session) {
       if (!isPublic) router.replace("/login");
     } else {
-      const onboardingComplete = onboardingStatus?.answers_present ?? false;
+      const onboardingComplete =
+        (onboardingStatus?.answers_present ?? false) || localOnboardingComplete;
 
       if (!onboardingComplete) {
         // Logged in but onboarding not complete.
         // They should only be on onboarding or verification routes.
         // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
-        const allowedRoutes = [
-          "onboarding",
-          "onboarding-resume",
-          "verify-email",
-          "verify-phone",
-          "thank-you",
-          "welcome-back",
-          "success",
-          "profile",
-        ];
-        if (currentRoute && !allowedRoutes.includes(currentRoute)) {
+        if (currentRoute && !ALLOWED_BEFORE_ONBOARDING.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
@@ -136,28 +134,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isOnboardingLoading,
     isOnboardingFetching,
     isOnboardingError,
+    localOnboardingComplete,
     currentRoute,
     segments,
     router,
   ]);
-
-  // Only block render in the narrow window where we know the user is authenticated,
-  // haven't completed onboarding, and the onboarding status is still loading.
-  // In all other cases render children immediately — redirects fire via the effect above.
-  // Never return null while isLocalReady is false: the splash screen is still visible then.
-  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-  const isAllowedBeforeOnboarding =
-    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
-  const onboardingComplete = onboardingStatus?.answers_present ?? false;
-  const isQueryActive = !!userId;
-  const isQueryLoading =
-    isQueryActive &&
-    !isOnboardingError &&
-    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
-
-  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
-    return null;
-  }
 
   return <>{children}</>;
 }
