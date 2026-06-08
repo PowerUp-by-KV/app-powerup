@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
 
 import { useGetProfileQuery } from "@/services/auth-api";
@@ -85,10 +85,11 @@ export function AchievementsScreen() {
                 elevation: 2,
               }}
             >
-              <Image
-                source={require("../../../assets/images/trophy_silver.png")}
+              <LottieView
+                source={require("../../../assets/lottie/trophy.json")}
+                autoPlay
+                loop
                 style={{ width: 80, height: 80 }}
-                resizeMode="contain"
               />
             </View>
             <Text className="text-slate-500 font-bold text-sm text-center">
