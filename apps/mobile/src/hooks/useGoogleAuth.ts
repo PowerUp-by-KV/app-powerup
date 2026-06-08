@@ -1,3 +1,19 @@
+// ---------------------------------------------------------------------------
+// Google sign-in via expo-auth-session.
+//
+// Client IDs come from env (set per-profile in eas.json):
+//   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID      (required — also the id_token audience
+//                                           the backend validates against)
+//   EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID  (required for Android builds)
+//   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID      (optional — iOS only)
+//
+// IMPORTANT: this hook must NEVER throw. The previous version threw when client
+// IDs were missing, which crashed the login/register screens and left the app
+// stuck on the splash. Instead, when the IDs required for the current platform
+// are absent, `request` comes back null and the caller keeps the Google button
+// hidden/disabled. Email/password sign-in is unaffected either way.
+// ---------------------------------------------------------------------------
+
 import { useEffect } from "react";
 
 import * as Google from "expo-auth-session/providers/google";
@@ -22,19 +38,21 @@ export function useGoogleAuth() {
   const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
   const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-  if (!androidClientId || !iosClientId || !webClientId) {
-    throw new Error(
-      "Missing Google OAuth Client IDs. Please configure EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID, " +
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID, and EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your environment.",
-    );
-  }
-
   const router = useRouter();
   const dispatch = useDispatch();
   const [socialGoogleLogin] = useSocialGoogleLoginMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
 
-  const [request, response, promptAsync] = Google.useAuthRequest({
+  // useIdTokenAuthRequest (NOT useAuthRequest): the backend validates a Google
+  // **id_token**, so we must request one. On web this uses responseType=id_token
+  // (the plain useAuthRequest defaults to responseType=token → access token only,
+  // no id_token → nothing to send the backend → no redirect). On native it falls
+  // back to the auth-code flow with auto-exchange, which also yields an id_token.
+  //
+  // Called unconditionally to satisfy the rules of hooks. With no client IDs for
+  // the current platform, expo-auth-session returns `request === null` (no throw),
+  // and the caller keeps the button disabled.
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     androidClientId,
     iosClientId,
     webClientId,

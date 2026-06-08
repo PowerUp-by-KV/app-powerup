@@ -30,12 +30,13 @@ export function ProfileScreen() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { data: profile, isLoading } = useGetProfileQuery();
 
-  // Load preferences from SecureStore on mount
+  // Load preferences from SecureStore/localStorage on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
         let storedDarkMode: string | null = null;
         let storedNotifications: string | null = null;
+
         if (Platform.OS === "web") {
           if (typeof window !== "undefined") {
             storedDarkMode = window.localStorage.getItem("settings_dark_mode");
@@ -45,6 +46,7 @@ export function ProfileScreen() {
           storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
           storedNotifications = await SecureStore.getItemAsync("settings_notifications");
         }
+
         if (storedDarkMode !== null) {
           setIsDarkMode(storedDarkMode === "true");
         }
@@ -52,7 +54,7 @@ export function ProfileScreen() {
           setNotificationsEnabled(storedNotifications === "true");
         }
       } catch (error) {
-        console.error("Failed to load settings from SecureStore", error);
+        console.error("Failed to load settings from SecureStore/localStorage", error);
       }
     };
     loadSettings();
@@ -83,7 +85,6 @@ export function ProfileScreen() {
       }
     } catch {}
   };
-
   // Track the currently displayed date and view mode (weekly vs monthly)
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");

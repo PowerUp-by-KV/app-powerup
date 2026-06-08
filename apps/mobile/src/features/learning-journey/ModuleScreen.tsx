@@ -104,6 +104,7 @@ export function ModuleScreen() {
         // ignore and retry
       }
       // wait before next try
+      // eslint-disable-next-line no-await-in-loop
       await new Promise((r) => setTimeout(r, 700));
     }
     return false;
@@ -142,6 +143,7 @@ export function ModuleScreen() {
 
         // Give progression a short chance to update so the UI can show newly unlocked days.
         // This will return quickly if nothing changed.
+        // eslint-disable-next-line no-await-in-loop
         await tryRefreshProgression();
 
         router.replace({
