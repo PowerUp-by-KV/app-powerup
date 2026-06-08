@@ -23,6 +23,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Catch image files whose real content type doesn't match their extension
+      # (e.g. a JPEG saved as .png). Android's AAPT rejects these, but only ~22 min
+      # into an EAS build — this fails in seconds instead.
+      - name: Validate image assets
+        run: |
+          fail=0
+          while IFS= read -r -d '' f; do
+            type=$(file -b "$f")
+            case "${f##*.}" in
+              png) echo "$type" | grep -qi "PNG image data" || { echo "::error file=$f::Not a real PNG ($type)"; fail=1; } ;;
+              jpg|jpeg) echo "$type" | grep -qi "JPEG image data" || { echo "::error file=$f::Not a real JPEG ($type)"; fail=1; } ;;
+              gif) echo "$type" | grep -qi "GIF image data" || { echo "::error file=$f::Not a real GIF ($type)"; fail=1; } ;;
+            esac
+          done < <(find apps/mobile -type d -name node_modules -prune -o -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.gif' \) -print0)
+          if [ "$fail" -ne 0 ]; then
+            echo "Image asset(s) have a content type that does not match their extension. Re-export or rename them."
+            exit 1
+          fi
+          echo "All image assets match their extension."
+
       - name: Lint
         run: pnpm turbo run lint
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FlatList, Pressable, SafeAreaView, Text, View, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";
 
@@ -159,10 +160,11 @@ export function LeaderboardScreen() {
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={require("../../../assets/images/trophy_silver.png")}
+                <LottieView
+                  source={require("../../../assets/lottie/trophy.json")}
+                  autoPlay
+                  loop
                   style={{ width: 64, height: 64 }}
-                  resizeMode="contain"
                 />
               </View>
 
