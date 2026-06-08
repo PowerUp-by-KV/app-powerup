@@ -33,3 +33,8 @@ export function detachRemoteAudio(): void {
     remoteAudioEl.srcObject = null;
   }
 }
+
+// Audio routing (loudspeaker vs earpiece vs headset) is a native-only concern.
+// On web the browser handles output device selection, so these are no-ops.
+export function startAudioRouting(): void {}
+export function stopAudioRouting(): void {}

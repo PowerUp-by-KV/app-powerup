@@ -27,6 +27,8 @@ import {
   mediaDevices,
   attachRemoteAudio,
   detachRemoteAudio,
+  startAudioRouting,
+  stopAudioRouting,
 } from "../platform/webrtc";
 
 interface UseWebRTCInterviewReturn {
@@ -152,6 +154,7 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
       activeSession.stream.getTracks().forEach((t) => t.stop());
     }
     detachRemoteAudio();
+    stopAudioRouting();
 
     if (!sid) {
       handleError("No session ID to save");
@@ -329,6 +332,10 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
       const stream = await mediaDevices?.getUserMedia({ audio: true });
       if (!stream) throw new Error("No media stream returned from getUserMedia");
       activeSession.stream = stream;
+
+      // Route the AI's voice to the loudspeaker (or a connected headset) so the
+      // user can hear it hands-free instead of through the quiet earpiece.
+      startAudioRouting();
 
       const pc = new RTCPeerConnection();
       activeSession.pc = pc;
