@@ -8,7 +8,6 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
-  useWindowDimensions,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -269,9 +268,6 @@ export function ProfileScreen() {
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Profile..." />;
   }
-
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">

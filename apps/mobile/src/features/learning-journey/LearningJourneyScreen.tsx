@@ -32,7 +32,6 @@ import {
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getCompletedSections,
   StoredPreAssessmentResult,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";

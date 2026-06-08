@@ -1,13 +1,5 @@
 import React, { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  SafeAreaView,
-  Text,
-  View,
-  useWindowDimensions,
-  Image,
-} from "react-native";
+import { FlatList, Pressable, SafeAreaView, Text, View, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";
@@ -32,8 +24,6 @@ export function LeaderboardScreen() {
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
