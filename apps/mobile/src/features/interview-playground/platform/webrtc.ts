@@ -4,4 +4,6 @@ export {
   mediaDevices,
   attachRemoteAudio,
   detachRemoteAudio,
+  startAudioRouting,
+  stopAudioRouting,
 } from "./webrtc.web";
