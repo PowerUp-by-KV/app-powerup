@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import { usePathname } from "expo-router";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 import { useCheckAssessmentStatusQuery } from "@/services/assessment-api";
-import { getAuthSession, saveAssessmentSessionId } from "@/services/auth-storage";
+import {
+  getAuthSession,
+  saveAssessmentSessionId,
+  syncCompletedSections,
+} from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 
 export type GateReason = "onboarding" | "assessment" | null;
@@ -11,7 +15,8 @@ export interface LearningJourneyGate {
   ready: boolean;
   canEnter: boolean;
   blockedReason: GateReason;
-  completedSections?: string[];
+  completedSections: string[];
+  notCompletedSections: string[];
 }
 
 export function useLearningJourneyGate(): LearningJourneyGate {
@@ -64,14 +69,24 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     },
   );
 
-  // Auto-save session ID when fetched successfully
+  // Auto-save session ID and sync completed sections when fetched successfully
   useEffect(() => {
-    if (assessmentSession?.session_id) {
-      saveAssessmentSessionId(assessmentSession.session_id).catch((err) => {
-        console.warn("Failed to auto-save session ID in gate:", err);
-      });
+    if (assessmentSession) {
+      const syncData = async () => {
+        try {
+          if (assessmentSession.session_id) {
+            await saveAssessmentSessionId(assessmentSession.session_id);
+          }
+          if (assessmentSession.completed_sections) {
+            await syncCompletedSections(assessmentSession.completed_sections);
+          }
+        } catch (err) {
+          console.warn("Failed to sync assessment data in gate:", err);
+        }
+      };
+      syncData();
     }
-  }, [assessmentSession?.session_id]);
+  }, [assessmentSession]);
 
   if (
     !isLocalReady ||
@@ -79,16 +94,23 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     (userId && isOnboardingLoading) ||
     (shouldCheckAssessment && isAssessmentLoading)
   ) {
-    return { ready: false, canEnter: false, blockedReason: null, completedSections: [] };
+    return {
+      ready: false,
+      canEnter: false,
+      blockedReason: null,
+      completedSections: [],
+      notCompletedSections: [],
+    };
   }
 
   // Pre-assessment completion status is determined by:
   // - Populated cefr_range on live user profile (already finished and scored)
-  // - Backend session's not_completed_sections list being empty
+  // - Backend session having completed sections AND no sections left to complete
   let assessmentDone = isCefrDone;
+  const completed = assessmentSession?.completed_sections || [];
+  const notCompleted = assessmentSession?.not_completed_sections || [];
   if (!isCefrDone && assessmentSession) {
-    const notCompleted = assessmentSession.not_completed_sections || [];
-    assessmentDone = notCompleted.length === 0;
+    assessmentDone = completed.length > 0 && notCompleted.length === 0;
   }
 
   const canEnter = profileDone && assessmentDone;
@@ -102,6 +124,7 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     ready: true,
     canEnter,
     blockedReason,
-    completedSections: assessmentSession?.completed_sections || [],
+    completedSections: completed,
+    notCompletedSections: notCompleted,
   };
 }

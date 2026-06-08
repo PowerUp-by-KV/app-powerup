@@ -30,6 +30,12 @@ const ALLOWED_BEFORE_ONBOARDING = [
   "profile",
 ];
 
+// Sentinel for "no session read has completed yet". Must be distinct from every
+// possible route value — including `undefined` (segments[0] is undefined on the
+// first render), otherwise `readyForRoute === currentRoute` would be true before
+// any read finishes and the guard could redirect prematurely.
+const UNRESOLVED = Symbol("session-unresolved");
+
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
@@ -39,8 +45,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   // Tracks the route for which the session read has completed. We only make
   // redirect decisions once the fresh read for the *current* route is done —
   // otherwise, right after login navigates, the effect would run with a stale
-  // `session === null` and bounce the user straight back to /login.
-  const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
+  // `session === null` and bounce the user straight back to /login. Starts as
+  // UNRESOLVED (not undefined) so the first render is never considered "ready".
+  const [readyForRoute, setReadyForRoute] = useState<string | undefined | typeof UNRESOLVED>(
+    UNRESOLVED,
+  );
 
   useEffect(() => {
     let active = true;
@@ -93,16 +102,37 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       if (!isPublic) router.replace("/login");
     } else {
       const onboardingComplete = onboardingStatus?.answers_present ?? false;
-      const isAllowedBeforeOnboarding =
-        isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
       if (!onboardingComplete) {
-        if (!isAllowedBeforeOnboarding) {
+        // Logged in but onboarding not complete.
+        // They should only be on onboarding or verification routes.
+        // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
+        const allowedRoutes = [
+          "onboarding",
+          "onboarding-resume",
+          "verify-email",
+          "verify-phone",
+          "thank-you",
+          "welcome-back",
+          "success",
+          "profile",
+        ];
+        if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
-        const routesToBlockAfterOnboarding = ["onboarding"];
-        if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
+        // Logged in and onboarding complete.
+        // They should NOT be on any auth/onboarding routes (login, register, otp, splash, verify-email, verify-phone, onboarding).
+        const blockedRoutes = [
+          "login",
+          "register",
+          "otp",
+          "splash",
+          "verify-email",
+          "verify-phone",
+          "onboarding",
+        ];
+        if (!currentRoute || blockedRoutes.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
       }

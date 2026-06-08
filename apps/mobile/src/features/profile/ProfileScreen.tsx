@@ -8,6 +8,7 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  DimensionValue,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -275,29 +276,32 @@ export function ProfileScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, width: "100%" }}>
-          {/* Header Layout */}
-          <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-50">
-            <Pressable
-              onPress={() => safeBack()}
-              className="w-10 h-10 items-center justify-center rounded-full border border-slate-200 bg-white"
-            >
-              <Feather name="arrow-left" size={20} color="#0f172a" />
-            </Pressable>
-            <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">
-              Profile
-            </Text>
-          </View>
-
-          <ScrollView
-            className="flex-1 bg-white"
-            contentContainerStyle={{ flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+        {/* Header Layout */}
+        <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-50">
+          <Pressable
+            onPress={() => safeBack()}
+            className="w-10 h-10 items-center justify-center rounded-full border border-slate-200 bg-white"
           >
-            {/* Profile Header section */}
-            <View className="flex-row px-5 py-5 items-center bg-white" style={{ gap: 16 }}>
-              {/* Left: Avatar with gradient background */}
+            <Feather name="arrow-left" size={20} color="#0f172a" />
+          </Pressable>
+          <Text className="flex-1 text-slate-900 font-extrabold text-lg text-center pr-10">
+            Profile
+          </Text>
+        </View>
+
+        <ScrollView
+          className="flex-1 bg-white"
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Profile Header section */}
+          <View className="flex-row px-5 py-5 items-center bg-white" style={{ gap: 16 }}>
+            {/* Left: Avatar with gradient background */}
+            <Pressable
+              onPress={() => router.push("/profile/avatar" as never)}
+              className="active:opacity-85"
+            >
               <LinearGradient
                 colors={["#8ef34b", "#dcf434"]}
                 className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
@@ -310,327 +314,325 @@ export function ProfileScreen() {
                   style={{ resizeMode: "cover" }}
                 />
               </LinearGradient>
+            </Pressable>
 
-              {/* Right Details */}
+            {/* Right Details */}
+            <View className="flex-1">
+              <View className="flex-row items-center flex-wrap gap-2">
+                <Text className="text-slate-900 text-2xl font-black">
+                  {profile?.nickname ?? profile?.name ?? "Tina"}
+                </Text>
+                <Pressable
+                  onPress={() => router.push("/profile/edit" as never)}
+                  className="bg-[#4a72f6] px-3 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-90"
+                >
+                  <Feather name="edit-2" size={10} color="#fff" />
+                  <Text className="text-white text-[10px] font-black">Edit Profile</Text>
+                </Pressable>
+              </View>
+
+              {/* Level progress container */}
+              <View className="bg-[#eff6ff] rounded-2xl p-2.5 mt-2 border border-[#dbeafe]">
+                <Text className="text-[#1e3a8a] font-extrabold text-[10px] mb-1">
+                  LVL {profile?.current_level ?? 2}
+                </Text>
+                <View className="h-1.5 bg-[#dbeafe] rounded-full overflow-hidden mb-1">
+                  <LinearGradient
+                    colors={["#3b82f6", "#a3e635"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    className="h-full"
+                    style={{
+                      width: profile?.total_modules
+                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as DimensionValue)
+                        : "0%",
+                    }}
+                  />
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-slate-500 text-[9px] font-semibold">Modules Completed</Text>
+                  <Text className="text-slate-800 text-[9px] font-black">
+                    {profile?.modules_completed ?? 0}/{profile?.total_modules ?? 0}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Metrics section */}
+          <View className="flex-row px-5 mb-5" style={{ gap: 8 }}>
+            {/* Daily Streak */}
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
+              <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
+                <MaterialCommunityIcons name="fire" size={18} color="#fff" />
+              </View>
+              <View>
+                <Text className="text-slate-800 font-black text-sm leading-tight">
+                  {profile?.streak_count ?? 0}
+                </Text>
+                <Text className="text-slate-400 text-[9px] font-bold">Daily Streak</Text>
+              </View>
+            </View>
+
+            {/* XP Points */}
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
+              <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
+                <Feather name="zap" size={16} color="#fff" />
+              </View>
+              <View>
+                <Text className="text-slate-800 font-black text-sm leading-tight">
+                  {profile?.total_xp ?? 0}
+                </Text>
+                <Text className="text-slate-400 text-[9px] font-bold">XP Points</Text>
+              </View>
+            </View>
+
+            {/* Friends */}
+            <View
+              className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
+              style={{ gap: 8 }}
+            >
+              <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
+                <Feather name="user" size={16} color="#fff" />
+              </View>
+              <View>
+                <Text className="text-slate-800 font-black text-sm leading-tight">17</Text>
+                <Text className="text-slate-400 text-[9px] font-bold">Friends</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Tab Headers */}
+          <View className="bg-white border-b border-slate-100">
+            <View className="flex-row px-5" style={{ gap: 24 }}>
+              {(["space", "stats"] as const).map((t) => {
+                const isActive = tab === t;
+                return (
+                  <Pressable key={t} onPress={() => setTab(t)} className="py-3 relative">
+                    <Text
+                      className={`text-sm font-black ${
+                        isActive ? "text-[#4a72f6]" : "text-slate-400"
+                      }`}
+                    >
+                      {t === "space" ? "My Space" : "My Stats"}
+                    </Text>
+                    {isActive && (
+                      <View className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#4a72f6] rounded-t-full" />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Floating/Slate-Gray Tab Content Wrapper */}
+          <View className="flex-1 bg-[#f8fafc] px-5 py-6" style={{ minHeight: 450 }}>
+            {tab === "space" ? (
               <View className="flex-1">
-                <View className="flex-row items-center flex-wrap gap-2">
-                  <Text className="text-slate-900 text-2xl font-black">
-                    {profile?.nickname ?? profile?.name ?? "Tina"}
-                  </Text>
+                <Text className="text-slate-400 font-bold text-xs mb-3 px-1 uppercase tracking-wider">
+                  Settings
+                </Text>
+
+                <SettingsCard
+                  icon="user"
+                  label="Personal Details"
+                  onPress={() => router.push("/profile/edit" as never)}
+                />
+
+                <SettingsCard
+                  icon="translate"
+                  iconType="mci"
+                  label="Language"
+                  onPress={() => router.push("/profile/language" as never)}
+                />
+
+                <SettingsCard icon="key" label="Passwords" onPress={() => {}} />
+
+                <SettingsCard
+                  icon="sun"
+                  label="Mode"
+                  rightElement={
+                    <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
+                  }
+                />
+
+                <SettingsCard
+                  icon="bell"
+                  label="Notifications"
+                  rightElement={
+                    <CustomSwitch
+                      value={notificationsEnabled}
+                      onValueChange={handleToggleNotifications}
+                    />
+                  }
+                />
+
+                {/* Second section */}
+                <View className="mt-4">
+                  <SettingsCard label="About Us" onPress={() => {}} />
+
+                  <SettingsCard label="Privacy & Security" onPress={() => {}} />
+                </View>
+
+                {/* Logout Card */}
+                <View className="mt-4">
+                  <SettingsCard
+                    icon="log-out"
+                    label="Log out"
+                    labelColor="text-red-500"
+                    onPress={logout}
+                    rightElement={<View />}
+                  />
+                </View>
+              </View>
+            ) : (
+              <View className="flex-1">
+                {/* Streak Calendar Header */}
+                <View className="flex-row justify-between items-center mb-4 px-1">
+                  <Text className="text-slate-900 font-black text-base">Streak Calendar</Text>
                   <Pressable
-                    onPress={() => router.push("/profile/edit" as never)}
-                    className="bg-[#4a72f6] px-3 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-90"
+                    onPress={() => setViewMode(viewMode === "weekly" ? "monthly" : "weekly")}
+                    className="bg-slate-900 px-3.5 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-80 shadow-sm"
                   >
-                    <Feather name="edit-2" size={10} color="#fff" />
-                    <Text className="text-white text-[10px] font-black">Edit Profile</Text>
+                    <Text className="text-white text-xs font-black capitalize">{viewMode}</Text>
+                    <Feather name="chevron-down" size={11} color="#fff" />
                   </Pressable>
                 </View>
 
-                {/* Level progress container */}
-                <View className="bg-[#eff6ff] rounded-2xl p-2.5 mt-2 border border-[#dbeafe]">
-                  <Text className="text-[#1e3a8a] font-extrabold text-[10px] mb-1">
-                    LVL {profile?.current_level ?? 2}
-                  </Text>
-                  <View className="h-1.5 bg-[#dbeafe] rounded-full overflow-hidden mb-1">
-                    <LinearGradient
-                      colors={["#3b82f6", "#a3e635"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      className="h-full"
-                      style={{
-                        width: profile?.total_modules
-                          ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as any)
-                          : "0%",
-                      }}
-                    />
-                  </View>
-                  <View className="flex-row justify-between">
-                    <Text className="text-slate-500 text-[9px] font-semibold">
-                      Modules Completed
-                    </Text>
-                    <Text className="text-slate-800 text-[9px] font-black">
-                      {profile?.modules_completed ?? 0}/{profile?.total_modules ?? 0}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Metrics section */}
-            <View className="flex-row px-5 mb-5" style={{ gap: 8 }}>
-              {/* Daily Streak */}
-              <View
-                className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
-                style={{ gap: 8 }}
-              >
-                <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
-                  <MaterialCommunityIcons name="fire" size={18} color="#fff" />
-                </View>
-                <View>
-                  <Text className="text-slate-800 font-black text-sm leading-tight">
-                    {profile?.streak_count ?? 0}
-                  </Text>
-                  <Text className="text-slate-400 text-[9px] font-bold">Daily Streak</Text>
-                </View>
-              </View>
-
-              {/* XP Points */}
-              <View
-                className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
-                style={{ gap: 8 }}
-              >
-                <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
-                  <Feather name="zap" size={16} color="#fff" />
-                </View>
-                <View>
-                  <Text className="text-slate-800 font-black text-sm leading-tight">
-                    {profile?.total_xp ?? 0}
-                  </Text>
-                  <Text className="text-slate-400 text-[9px] font-bold">XP Points</Text>
-                </View>
-              </View>
-
-              {/* Friends */}
-              <View
-                className="flex-1 bg-white border border-slate-100 rounded-2xl p-2.5 flex-row items-center shadow-sm"
-                style={{ gap: 8 }}
-              >
-                <View className="w-9 h-9 rounded-xl bg-[#4a72f6] items-center justify-center">
-                  <Feather name="user" size={16} color="#fff" />
-                </View>
-                <View>
-                  <Text className="text-slate-800 font-black text-sm leading-tight">17</Text>
-                  <Text className="text-slate-400 text-[9px] font-bold">Friends</Text>
-                </View>
-              </View>
-            </View>
-
-            {/* Tab Headers */}
-            <View className="bg-white border-b border-slate-100">
-              <View className="flex-row px-5" style={{ gap: 24 }}>
-                {(["space", "stats"] as const).map((t) => {
-                  const isActive = tab === t;
-                  return (
-                    <Pressable key={t} onPress={() => setTab(t)} className="py-3 relative">
-                      <Text
-                        className={`text-sm font-black ${
-                          isActive ? "text-[#4a72f6]" : "text-slate-400"
-                        }`}
-                      >
-                        {t === "space" ? "My Space" : "My Stats"}
-                      </Text>
-                      {isActive && (
-                        <View className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#4a72f6] rounded-t-full" />
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Floating/Slate-Gray Tab Content Wrapper */}
-            <View className="flex-1 bg-[#f8fafc] px-5 py-6" style={{ minHeight: 450 }}>
-              {tab === "space" ? (
-                <View className="flex-1">
-                  <Text className="text-slate-400 font-bold text-xs mb-3 px-1 uppercase tracking-wider">
-                    Settings
-                  </Text>
-
-                  <SettingsCard
-                    icon="user"
-                    label="Personal Details"
-                    onPress={() => router.push("/profile/edit" as never)}
-                  />
-
-                  <SettingsCard
-                    icon="translate"
-                    iconType="mci"
-                    label="Language"
-                    onPress={() => router.push("/profile/language" as never)}
-                  />
-
-                  <SettingsCard icon="key" label="Passwords" onPress={() => {}} />
-
-                  <SettingsCard
-                    icon="sun"
-                    label="Mode"
-                    rightElement={
-                      <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
-                    }
-                  />
-
-                  <SettingsCard
-                    icon="bell"
-                    label="Notifications"
-                    rightElement={
-                      <CustomSwitch
-                        value={notificationsEnabled}
-                        onValueChange={handleToggleNotifications}
-                      />
-                    }
-                  />
-
-                  {/* Second section */}
-                  <View className="mt-4">
-                    <SettingsCard label="About Us" onPress={() => {}} />
-
-                    <SettingsCard label="Privacy & Security" onPress={() => {}} />
-                  </View>
-
-                  {/* Logout Card */}
-                  <View className="mt-4">
-                    <SettingsCard
-                      icon="log-out"
-                      label="Log out"
-                      labelColor="text-red-500"
-                      onPress={logout}
-                      rightElement={<View />}
-                    />
-                  </View>
-                </View>
-              ) : (
-                <View className="flex-1">
-                  {/* Streak Calendar Header */}
-                  <View className="flex-row justify-between items-center mb-4 px-1">
-                    <Text className="text-slate-900 font-black text-base">Streak Calendar</Text>
+                {/* Calendar Card */}
+                <View className="bg-white rounded-[24px] border border-slate-100 p-5 mb-5 shadow-sm">
+                  {/* Month/Week Navigation */}
+                  <View className="flex-row items-center justify-between mb-4 px-1">
                     <Pressable
-                      onPress={() => setViewMode(viewMode === "weekly" ? "monthly" : "weekly")}
-                      className="bg-slate-900 px-3.5 py-1.5 rounded-full flex-row items-center gap-1 active:opacity-80 shadow-sm"
+                      onPress={handlePrev}
+                      className="w-8 h-8 items-center justify-center rounded-full active:bg-slate-100"
                     >
-                      <Text className="text-white text-xs font-black capitalize">{viewMode}</Text>
-                      <Feather name="chevron-down" size={11} color="#fff" />
+                      <Feather name="chevron-left" size={18} color="#0f172a" />
+                    </Pressable>
+                    <Text className="text-slate-900 font-black text-base">{headerLabel}</Text>
+                    <Pressable
+                      onPress={handleNext}
+                      className="w-8 h-8 items-center justify-center rounded-full active:bg-slate-100"
+                    >
+                      <Feather name="chevron-right" size={18} color="#0f172a" />
                     </Pressable>
                   </View>
 
-                  {/* Calendar Card */}
-                  <View className="bg-white rounded-[24px] border border-slate-100 p-5 mb-5 shadow-sm">
-                    {/* Month/Week Navigation */}
-                    <View className="flex-row items-center justify-between mb-4 px-1">
-                      <Pressable
-                        onPress={handlePrev}
-                        className="w-8 h-8 items-center justify-center rounded-full active:bg-slate-100"
+                  {/* Weekday Headers */}
+                  <View className="flex-row mb-3">
+                    {["S", "M", "T", "W", "T", "F", "S"].map((day, idx) => (
+                      <Text
+                        key={idx}
+                        style={{ width: "14.28%" }}
+                        className="text-slate-400 font-black text-xs text-center"
                       >
-                        <Feather name="chevron-left" size={18} color="#0f172a" />
-                      </Pressable>
-                      <Text className="text-slate-900 font-black text-base">{headerLabel}</Text>
-                      <Pressable
-                        onPress={handleNext}
-                        className="w-8 h-8 items-center justify-center rounded-full active:bg-slate-100"
-                      >
-                        <Feather name="chevron-right" size={18} color="#0f172a" />
-                      </Pressable>
-                    </View>
-
-                    {/* Weekday Headers */}
-                    <View className="flex-row mb-3">
-                      {["S", "M", "T", "W", "T", "F", "S"].map((day, idx) => (
-                        <Text
-                          key={idx}
-                          style={{ width: "14.28%" }}
-                          className="text-slate-400 font-black text-xs text-center"
-                        >
-                          {day}
-                        </Text>
-                      ))}
-                    </View>
-
-                    {/* Days Grid */}
-                    <View className="flex-row flex-wrap">
-                      {displayedDays.map((dayObj, index) => {
-                        const streakStyle = getStreakStyle(index, displayedDays);
-                        const isToday = dayObj.date === todayStr;
-
-                        return (
-                          <View
-                            key={`${dayObj.date}-${index}`}
-                            style={{ width: "14.28%", height: 40, justifyContent: "center" }}
-                            className="py-1"
-                          >
-                            {streakStyle ? (
-                              <LinearGradient
-                                colors={["#e5edff", "#eff6ff"]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={streakStyle}
-                              >
-                                {isToday ? (
-                                  <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
-                                    <Text className="text-white font-extrabold text-sm">
-                                      {dayObj.dayNumber}
-                                    </Text>
-                                  </View>
-                                ) : (
-                                  <Text className="text-[#2563eb] font-extrabold text-sm">
-                                    {dayObj.dayNumber}
-                                  </Text>
-                                )}
-                              </LinearGradient>
-                            ) : (
-                              <View className="items-center justify-center h-full">
-                                {isToday ? (
-                                  <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
-                                    <Text className="text-white font-extrabold text-sm">
-                                      {dayObj.dayNumber}
-                                    </Text>
-                                  </View>
-                                ) : (
-                                  <Text
-                                    className={`text-sm font-extrabold ${
-                                      dayObj.isCurrentMonth ? "text-slate-800" : "text-slate-300"
-                                    }`}
-                                  >
-                                    {dayObj.dayNumber}
-                                  </Text>
-                                )}
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })}
-                    </View>
+                        {day}
+                      </Text>
+                    ))}
                   </View>
 
-                  {/* Premium Promotion Banner */}
-                  <Pressable
-                    onPress={() => router.push("/subscription" as never)}
-                    className="active:opacity-90"
-                  >
-                    <LinearGradient
-                      colors={["#3b82f6", "#10b981"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      className="rounded-[24px] p-5 flex-col justify-between relative overflow-hidden shadow-md"
-                    >
-                      <View className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10" />
-                      <View className="absolute right-10 top-2 w-16 h-16 rounded-full bg-white/10" />
+                  {/* Days Grid */}
+                  <View className="flex-row flex-wrap">
+                    {displayedDays.map((dayObj, index) => {
+                      const streakStyle = getStreakStyle(index, displayedDays);
+                      const isToday = dayObj.date === todayStr;
 
-                      <View className="mb-2">
-                        <Text className="text-white text-xs font-semibold tracking-wide">
-                          Supercharge Your Communication With
-                        </Text>
-                      </View>
-                      <View className="flex-row items-center gap-2">
-                        <Text className="text-white text-2xl font-black tracking-tight">
-                          lumino ✦
-                        </Text>
-                        <LinearGradient
-                          colors={["#facc15", "#8ef34b"]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 0 }}
-                          className="px-2.5 py-0.5 rounded-full"
+                      return (
+                        <View
+                          key={`${dayObj.date}-${index}`}
+                          style={{ width: "14.28%", height: 40, justifyContent: "center" }}
+                          className="py-1"
                         >
-                          <Text className="text-slate-900 text-[10px] font-black uppercase">
-                            Premium
-                          </Text>
-                        </LinearGradient>
-                      </View>
-                    </LinearGradient>
-                  </Pressable>
+                          {streakStyle ? (
+                            <LinearGradient
+                              colors={["#e5edff", "#eff6ff"]}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 0 }}
+                              style={streakStyle}
+                            >
+                              {isToday ? (
+                                <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
+                                  <Text className="text-white font-extrabold text-sm">
+                                    {dayObj.dayNumber}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <Text className="text-[#2563eb] font-extrabold text-sm">
+                                  {dayObj.dayNumber}
+                                </Text>
+                              )}
+                            </LinearGradient>
+                          ) : (
+                            <View className="items-center justify-center h-full">
+                              {isToday ? (
+                                <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
+                                  <Text className="text-white font-extrabold text-sm">
+                                    {dayObj.dayNumber}
+                                  </Text>
+                                </View>
+                              ) : (
+                                <Text
+                                  className={`text-sm font-extrabold ${
+                                    dayObj.isCurrentMonth ? "text-slate-800" : "text-slate-300"
+                                  }`}
+                                >
+                                  {dayObj.dayNumber}
+                                </Text>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
-              )}
-            </View>
-          </ScrollView>
-        </View>
+
+                {/* Premium Promotion Banner */}
+                <Pressable
+                  onPress={() => router.push("/subscription" as never)}
+                  className="active:opacity-90"
+                >
+                  <LinearGradient
+                    colors={["#3b82f6", "#10b981"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="rounded-[24px] p-5 flex-col justify-between relative overflow-hidden shadow-md"
+                  >
+                    <View className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full bg-white/10" />
+                    <View className="absolute right-10 top-2 w-16 h-16 rounded-full bg-white/10" />
+
+                    <View className="mb-2">
+                      <Text className="text-white text-xs font-semibold tracking-wide">
+                        Supercharge Your Communication With
+                      </Text>
+                    </View>
+                    <View className="flex-row items-center gap-2">
+                      <Text className="text-white text-2xl font-black tracking-tight">
+                        lumino ✦
+                      </Text>
+                      <LinearGradient
+                        colors={["#facc15", "#8ef34b"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        className="px-2.5 py-0.5 rounded-full"
+                      >
+                        <Text className="text-slate-900 text-[10px] font-black uppercase">
+                          Premium
+                        </Text>
+                      </LinearGradient>
+                    </View>
+                  </LinearGradient>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

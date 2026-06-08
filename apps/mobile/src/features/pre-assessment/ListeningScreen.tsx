@@ -61,6 +61,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [hasAudioFinished, setHasAudioFinished] = useState(false);
 
   const listenData = sectionData as DListenAnswerSectionResponse | undefined;
   const questions = listenData?.stories || [];
@@ -75,12 +76,13 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   useEffect(() => {
     if (currentQuestion) {
       setTimeLeft(maxDuration + 15);
+      setHasAudioFinished(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished) return;
+    if (!currentQuestion || isSubmitting || isFinished || !hasAudioFinished) return;
 
     if (timeLeft <= 0) {
       if (isLastQuestion) {
@@ -107,12 +109,23 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -260,6 +273,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
             audioUrl={(currentQuestion as any)?.audio_url}
             audioText={(currentQuestion as any)?.script || "Please listen to the audio carefully."}
             duration={30}
+            onPlayEnd={() => setHasAudioFinished(true)}
           />
 
           <View className="mt-4 mb-4">

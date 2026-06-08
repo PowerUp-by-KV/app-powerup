@@ -91,6 +91,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [hasRecorded, setHasRecorded] = useState<Record<string, boolean>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [hasAudioFinished, setHasAudioFinished] = useState(false);
 
   const listenData = sectionData as AListenSectionResponse | undefined;
   const questions = listenData?.items || [];
@@ -135,6 +136,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       setHasStartedRecording(false);
       setCurrentLocalUri(null);
       setCurrentLocalDuration(0);
+      setHasAudioFinished(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
@@ -176,6 +178,10 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }, [isRecording]);
 
   async function startRecording() {
+    if (!hasAudioFinished) {
+      Alert.alert("Locked", "Please listen to the audio completely before recording.");
+      return;
+    }
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
@@ -275,12 +281,23 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -472,6 +489,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             audioUrl={currentQuestion?.audio_url}
             audioText={currentQuestion?.text || "Please listen to the audio carefully."}
             duration={currentQuestion?.recording_time_seconds || 30}
+            onPlayEnd={() => setHasAudioFinished(true)}
           />
 
           {currentLocalUri ? (
@@ -491,6 +509,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
                 maxDuration={maxDuration}
                 onStartRecording={startRecording}
                 onStopRecording={stopRecording}
+                disabled={!hasAudioFinished}
               />
 
               {uploadingQuestions[currentQuestion?.id] && (

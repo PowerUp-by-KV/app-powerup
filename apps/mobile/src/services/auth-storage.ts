@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
@@ -155,14 +154,14 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
 
 export async function saveOnboardingWizardState(state: {
   currentStep: number;
-  formData: any;
+  formData: Record<string, unknown>;
 }): Promise<void> {
   await setItem(ONBOARDING_WIZARD_STATE_KEY, JSON.stringify(state));
 }
 
 export async function getOnboardingWizardState(): Promise<{
   currentStep: number;
-  formData: any;
+  formData: Record<string, unknown>;
 } | null> {
   const raw = await getItem(ONBOARDING_WIZARD_STATE_KEY);
   if (!raw) return null;
@@ -251,11 +250,11 @@ export async function clearPreAssessmentResults(): Promise<void> {
 
 const ONBOARDING_ANSWERS_KEY = "powerup.onboarding_answers";
 
-export async function saveLocalOnboardingAnswers(answers: Record<string, any>): Promise<void> {
+export async function saveLocalOnboardingAnswers(answers: Record<string, unknown>): Promise<void> {
   await setItem(ONBOARDING_ANSWERS_KEY, JSON.stringify(answers));
 }
 
-export async function getLocalOnboardingAnswers(): Promise<Record<string, any> | null> {
+export async function getLocalOnboardingAnswers(): Promise<Record<string, unknown> | null> {
   const raw = await getItem(ONBOARDING_ANSWERS_KEY);
   if (!raw) return null;
   try {

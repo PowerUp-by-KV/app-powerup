@@ -24,10 +24,13 @@ import {
   useLazyGetModuleDaysQuery,
   useGetPersonalizedPathQuery,
   useGetProgressionQuery,
+  PersonalizedModuleItem,
 } from "@/services/module-api";
+import { ModuleDay } from "@powerup/shared";
 import {
   useStartSessionMutation,
   useGetUserAssessmentResultQuery,
+  useCheckAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
@@ -84,7 +87,6 @@ function PreAssessmentModal({
         }),
       ]).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -476,6 +478,9 @@ export function LearningJourneyScreen() {
       refetchResult();
     }
   }, [showPreAssessmentModal, profile?.id, refetchResult]);
+  const { data: assessmentSession } = useCheckAssessmentStatusQuery(undefined, {
+    skip: !profile?.id || !!profile?.cefr_range,
+  });
 
   useEffect(() => {
     console.log("[DEBUG results] user_id:", profile?.id);
@@ -528,7 +533,7 @@ export function LearningJourneyScreen() {
   };
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [allDaysList, setAllDaysList] = useState<CombinedModuleDay[]>([]);
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
   const [loadingAllDays, setLoadingAllDays] = useState(false);
 
   const fetchAllDays = useCallback(
@@ -539,43 +544,19 @@ export function LearningJourneyScreen() {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
             const data = await triggerGetModuleDays(m.id, !force).unwrap();
-            return { module: m, days: data };
+            return { moduleId: m.id, days: data };
           } catch (e) {
             console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { module: m, days: [] };
+            return { moduleId: m.id, days: [] };
           }
         });
         const results = await Promise.all(promises);
 
-        const daysByModuleNo: Record<number, any[]> = {};
-        const moduleByNo: Record<number, any> = {};
-
+        const nextData: Record<string, ModuleDay[]> = {};
         for (const res of results) {
-          daysByModuleNo[res.module.module_no] = res.days;
-          moduleByNo[res.module.module_no] = res.module;
+          nextData[res.moduleId] = res.days;
         }
-
-        const combined = [];
-        for (const waveConfig of PROGRESSION_WAVES) {
-          for (const mNo of waveConfig.modules) {
-            const moduleItem = moduleByNo[mNo];
-            if (!moduleItem) continue;
-
-            const moduleDays = daysByModuleNo[mNo] || [];
-            for (const dNum of waveConfig.days) {
-              const dayObj = moduleDays.find((d) => d.day_number === dNum);
-              if (dayObj) {
-                combined.push({
-                  ...dayObj,
-                  module_no: moduleItem.module_no,
-                  module_title: moduleItem.title,
-                  module_id: moduleItem.id,
-                });
-              }
-            }
-          }
-        }
-        setAllDaysList(combined);
+        setModuleDaysData(nextData);
       } catch (err) {
         console.error("Error fetching all days:", err);
       } finally {
@@ -591,6 +572,39 @@ export function LearningJourneyScreen() {
     }
   }, [fetchAllDays, gate.canEnter]);
 
+  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
+    if (!personalizedPath?.modules?.length) return [];
+    const combined: CombinedModuleDay[] = [];
+    const daysByModuleNo: Record<number, ModuleDay[]> = {};
+    const moduleByNo: Record<number, PersonalizedModuleItem> = {};
+
+    for (const m of personalizedPath.modules) {
+      const days = moduleDaysData[m.id] || [];
+      daysByModuleNo[m.module_no] = days;
+      moduleByNo[m.module_no] = m;
+    }
+
+    for (const waveConfig of PROGRESSION_WAVES) {
+      for (const mNo of waveConfig.modules) {
+        const moduleItem = moduleByNo[mNo];
+        if (!moduleItem) continue;
+
+        const moduleDays = daysByModuleNo[mNo] || [];
+        for (const dNum of waveConfig.days) {
+          const dayObj = moduleDays.find((d) => d.day_number === dNum);
+          if (dayObj) {
+            combined.push({
+              ...dayObj,
+              module_no: moduleItem.module_no,
+              module_title: moduleItem.title,
+              module_id: moduleItem.id,
+            });
+          }
+        }
+      }
+    }
+    return combined;
+  }, [personalizedPath, moduleDaysData]);
   const firstIncompleteIndex = useMemo(() => {
     return allDaysList.findIndex((d) => !d.is_completed);
   }, [allDaysList]);
@@ -647,12 +661,23 @@ export function LearningJourneyScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -1065,7 +1090,12 @@ export function LearningJourneyScreen() {
 
                 <View style={timelineStyles.progressLabelRow}>
                   <Text style={timelineStyles.progressLabelText}>
-                    {diagLessonsCompleted} of 6 sections completed
+                    {isDiagnosticComplete
+                      ? "6 of 6 sections completed"
+                      : assessmentSession &&
+                          (assessmentSession.not_completed_sections || []).length === 0
+                        ? "Answers submitted, scoring in progress"
+                        : `${diagLessonsCompleted} of 6 sections completed`}
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
                 </View>
@@ -1084,7 +1114,12 @@ export function LearningJourneyScreen() {
                     disabled={isStartingSession}
                     style={timelineStyles.continueButton}
                   >
-                    <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                    <Text style={timelineStyles.continueButtonText}>
+                      {assessmentSession &&
+                      (assessmentSession.not_completed_sections || []).length === 0
+                        ? "View grading status"
+                        : "Continue learning"}
+                    </Text>
                   </Pressable>
                 )}
               </View>
