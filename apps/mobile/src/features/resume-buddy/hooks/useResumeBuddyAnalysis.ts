@@ -71,10 +71,10 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
     async (jobId: string) => {
       try {
         const history = await fetchHistory().unwrap();
-        const match = history.find((h) => h.job_id === jobId) ?? history[0];
+        const match = history.find((h) => h.job_id === jobId);
         if (!isMountedRef.current) return;
         if (match) {
-          setResult(match as ResumeBuddyResponse);
+          setResult(match);
           setPhase("done");
         } else {
           setError("Analysis finished but the result could not be loaded.");
@@ -116,27 +116,38 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
       }
 
       const id = jobId;
-      cleanupRef.current = await subscribeResumeBuddyStatus(id, {
-        onEvent: (event) => {
-          if (!isMountedRef.current) return;
-          setActiveStage((prev) => Math.max(prev, toActiveStage(event)));
-          if (event.status === "failed") {
-            setError(
-              (typeof event.error === "string" && event.error) ||
-                "The analysis failed while processing your resume.",
-            );
-            setPhase("error");
-          } else if (event.stage === "done") {
+      try {
+        const close = await subscribeResumeBuddyStatus(id, {
+          onEvent: (event) => {
+            if (!isMountedRef.current) return;
+            setActiveStage((prev) => Math.max(prev, toActiveStage(event)));
+            if (event.status === "failed") {
+              setError(
+                (typeof event.error === "string" && event.error) ||
+                  "The analysis failed while processing your resume.",
+              );
+              setPhase("error");
+            } else if (event.stage === "done") {
+              void loadFinalResult(id);
+            }
+          },
+          onError: () => {
+            if (!isMountedRef.current) return;
+            // Stream dropped; the worker may have finished — read the result once.
             void loadFinalResult(id);
-          }
-        },
-        onError: () => {
-          if (!isMountedRef.current) return;
-          // The stream dropped — the worker may still have finished, so make one
-          // authoritative attempt to read the result before surfacing an error.
-          void loadFinalResult(id);
-        },
-      });
+          },
+        });
+        // Component may have unmounted while the subscription was being set up.
+        if (!isMountedRef.current) {
+          close();
+          return;
+        }
+        cleanupRef.current = close;
+      } catch {
+        if (!isMountedRef.current) return;
+        setError("Failed to establish connection for real-time analysis.");
+        setPhase("error");
+      }
     },
     [analyzeResume, loadFinalResult],
   );
