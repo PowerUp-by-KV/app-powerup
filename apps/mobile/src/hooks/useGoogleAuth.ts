@@ -15,6 +15,7 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect } from "react";
+import { Alert } from "react-native";
 
 import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
@@ -74,8 +75,9 @@ export function useGoogleAuth() {
     try {
       const auth = await socialGoogleLogin({ id_token: idToken }).unwrap();
 
+      // saveAuthSession awaits the underlying SecureStore/localStorage write,
+      // so no extra delay is needed before the token is readable.
       await saveAuthSession(auth);
-      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const email = auth.user?.email ?? "";
       await clearStaleLocalFlagsIfUserChanged(email);
@@ -84,19 +86,30 @@ export function useGoogleAuth() {
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
 
+      // Without a user id we can't query onboarding status — default to the
+      // onboarding flow instead of sending an empty-id request to the backend.
+      const userId = auth.user?.id;
+      if (!userId) {
+        router.replace("/onboarding");
+        return;
+      }
+
       try {
-        const status = await getOnboardingStatus(auth.user?.id ?? "").unwrap();
+        const status = await getOnboardingStatus(userId).unwrap();
         if (status?.answers_present) {
-          router.replace("/(tabs)/my-learning" as never);
+          router.replace("/(tabs)/my-learning");
         } else {
-          router.replace("/onboarding" as never);
+          router.replace("/onboarding");
         }
       } catch {
-        router.replace("/onboarding" as never);
+        router.replace("/onboarding");
       }
     } catch (err) {
+      // Do NOT rethrow: this runs from a `void handleGoogleToken(...)` call inside
+      // a useEffect, so a rejection here would be an unhandled promise rejection.
+      // Surface the failure to the user instead.
       console.error("Google login failed:", err);
-      throw err;
+      Alert.alert("Google Sign-In", "Could not complete Google sign-in. Please try again.");
     }
   };
 
