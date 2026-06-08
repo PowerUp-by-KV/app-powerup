@@ -12,8 +12,13 @@ const STATUS_CONFIG: Record<
   { label: string; color: string; textColor: string; pulse: boolean }
 > = {
   idle: { label: "Ready", color: "#E2E8F0", textColor: "#475569", pulse: false },
-  starting: { label: "Starting…", color: "#FEF3C7", textColor: "#92400E", pulse: false },
-  connecting: { label: "Connecting", color: "#FDE68A", textColor: "#B45309", pulse: false },
+  starting: {
+    label: "Preparing your interview…",
+    color: "#FEF3C7",
+    textColor: "#92400E",
+    pulse: true,
+  },
+  connecting: { label: "Connecting…", color: "#FDE68A", textColor: "#B45309", pulse: true },
   live: { label: "Live", color: "#D1FAE5", textColor: "#065F46", pulse: true },
   saving: { label: "Saving…", color: "#DBEAFE", textColor: "#1E40AF", pulse: false },
   done: { label: "Done", color: "#E0E7FF", textColor: "#3730A3", pulse: false },
