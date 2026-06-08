@@ -498,6 +498,13 @@ export function LearningJourneyScreen() {
   }, [liveResult]);
 
   const resultsToPass = liveResult || preAssessmentResults;
+  // Compute the CEFR to show on the badge using the same priority as the popup:
+  // result's cefr_level → result's cefr_range → profile's cefr_range
+  const diagCefr =
+    (resultsToPass as any)?.cefr_level ??
+    (resultsToPass as any)?.cefr_range ??
+    profile?.cefr_range ??
+    null;
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
@@ -1065,9 +1072,7 @@ export function LearningJourneyScreen() {
                         { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
                       ]}
                     >
-                      {isDiagnosticComplete
-                        ? `Level ${profile?.cefr_range || "Assessed"}`
-                        : "In Progress"}
+                      {isDiagnosticComplete ? `Level ${diagCefr || "Assessed"}` : "In Progress"}
                     </Text>
                   </View>
                 </View>
