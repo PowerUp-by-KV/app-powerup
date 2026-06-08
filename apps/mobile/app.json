@@ -48,7 +48,8 @@
           "cameraPermission": "PowerUp uses the camera for video interview practice.",
           "microphonePermission": "PowerUp uses the microphone for your voice interview with the AI interviewer."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
     "experiments": {
       "typedRoutes": true

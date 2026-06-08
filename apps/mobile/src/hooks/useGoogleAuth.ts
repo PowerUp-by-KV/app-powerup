@@ -1,25 +1,29 @@
 // ---------------------------------------------------------------------------
-// Google sign-in via expo-auth-session.
+// Google sign-in via the native Google Sign-In SDK
+// (@react-native-google-signin/google-signin).
 //
-// Client IDs come from env (set per-profile in eas.json):
-//   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID      (required — also the id_token audience
-//                                           the backend validates against)
-//   EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID  (required for Android builds)
-//   EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID      (optional — iOS only)
+// Why native (not expo-auth-session): on a standalone EAS build the browser /
+// AuthSession flow uses the Android OAuth client with a custom-scheme redirect,
+// which Google rejects with "Error 400: invalid_request" — Android clients have
+// no browser redirect URIs, they authenticate via the native SDK (package name +
+// SHA-1). The native SDK avoids the browser entirely and returns an id_token
+// whose audience is the WEB client id, which is exactly what the backend
+// validates against.
 //
-// IMPORTANT: this hook must NEVER throw. The previous version threw when client
-// IDs were missing, which crashed the login/register screens and left the app
-// stuck on the splash. Instead, when the IDs required for the current platform
-// are absent, `request` comes back null and the caller keeps the Google button
-// hidden/disabled. Email/password sign-in is unaffected either way.
+// Client ID required (set per-profile in eas.json):
+//   EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID  → passed as webClientId; it is the
+//                                       id_token audience the backend checks.
+// The Android OAuth client (package + SHA-1) is matched automatically by the
+// SDK — it is NOT passed here.
+//
+// NOTE: requires a native rebuild (expo prebuild + EAS build). It cannot be
+// delivered via OTA update because it adds a native module + config plugin.
 // ---------------------------------------------------------------------------
 
-import { useEffect } from "react";
 import { Alert } from "react-native";
 
-import * as Google from "expo-auth-session/providers/google";
+import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { useDispatch } from "react-redux";
 
 import { useSocialGoogleLoginMutation } from "@/services/auth-api";
@@ -32,51 +36,32 @@ import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
-WebBrowser.maybeCompleteAuthSession();
+const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+
+// Configure once at module load. Safe to call even if webClientId is missing —
+// signIn() will simply fail and we surface that to the user.
+if (webClientId) {
+  GoogleSignin.configure({ webClientId });
+}
+
+interface GoogleAuthError {
+  code?: string;
+}
 
 export function useGoogleAuth() {
-  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
   const router = useRouter();
   const dispatch = useDispatch();
   const [socialGoogleLogin] = useSocialGoogleLoginMutation();
   const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
 
-  // useIdTokenAuthRequest (NOT useAuthRequest): the backend validates a Google
-  // **id_token**, so we must request one. On web this uses responseType=id_token
-  // (the plain useAuthRequest defaults to responseType=token → access token only,
-  // no id_token → nothing to send the backend → no redirect). On native it falls
-  // back to the auth-code flow with auto-exchange, which also yields an id_token.
-  //
-  // Called unconditionally to satisfy the rules of hooks. With no client IDs for
-  // the current platform, expo-auth-session returns `request === null` (no throw),
-  // and the caller keeps the button disabled.
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    androidClientId,
-    iosClientId,
-    webClientId,
-  });
-
-  useEffect(() => {
-    if (response?.type !== "success") return;
-
-    const idToken =
-      (response.authentication?.idToken as string | undefined) ??
-      (response.params as Record<string, string>)?.id_token;
-
-    if (!idToken) return;
-
-    void handleGoogleToken(idToken);
-  }, [response]);
+  // `request` mirrors the old expo-auth-session API: truthy means the button is
+  // enabled. We only require the web client id to be present.
+  const request = webClientId ? {} : null;
 
   const handleGoogleToken = async (idToken: string) => {
     try {
       const auth = await socialGoogleLogin({ id_token: idToken }).unwrap();
 
-      // saveAuthSession awaits the underlying SecureStore/localStorage write,
-      // so no extra delay is needed before the token is readable.
       await saveAuthSession(auth);
 
       const email = auth.user?.email ?? "";
@@ -86,8 +71,6 @@ export function useGoogleAuth() {
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
 
-      // Without a user id we can't query onboarding status — default to the
-      // onboarding flow instead of sending an empty-id request to the backend.
       const userId = auth.user?.id;
       if (!userId) {
         router.replace("/onboarding");
@@ -105,11 +88,41 @@ export function useGoogleAuth() {
         router.replace("/onboarding");
       }
     } catch (err) {
-      // Do NOT rethrow: this runs from a `void handleGoogleToken(...)` call inside
-      // a useEffect, so a rejection here would be an unhandled promise rejection.
-      // Surface the failure to the user instead.
       console.error("Google login failed:", err);
       Alert.alert("Google Sign-In", "Could not complete Google sign-in. Please try again.");
+    }
+  };
+
+  const promptAsync = async () => {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const result = await GoogleSignin.signIn();
+
+      // v13+ returns { type: "success" | "cancelled", data }. Older shapes put
+      // the user object at the top level — handle both defensively.
+      if (result.type === "cancelled") return;
+
+      const idToken =
+        result.data?.idToken ?? (result as unknown as { idToken?: string }).idToken ?? null;
+
+      if (!idToken) {
+        Alert.alert("Google Sign-In", "No identity token returned by Google. Please try again.");
+        return;
+      }
+
+      await handleGoogleToken(idToken);
+    } catch (err) {
+      const code = (err as GoogleAuthError)?.code;
+      // User-cancelled / in-progress are normal — don't alarm the user.
+      if (code === statusCodes.SIGN_IN_CANCELLED || code === statusCodes.IN_PROGRESS) {
+        return;
+      }
+      if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("Google Sign-In", "Google Play Services is not available on this device.");
+        return;
+      }
+      console.error("Google sign-in error:", err);
+      Alert.alert("Google Sign-In", "Could not open Google sign-in. Please try again.");
     }
   };
 
