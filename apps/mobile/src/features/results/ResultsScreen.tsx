@@ -92,6 +92,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const [hasTriggered, setHasTriggered] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
+  const [pollCount, setPollCount] = useState(0);
 
   // Poll the status API every 3 seconds only when isPolling is true
   const { data: currentStatus } = useGetAssessmentStatusQuery(
@@ -111,13 +112,25 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   useEffect(() => {
     if (currentStatus) {
       setStatusData(currentStatus);
-      if (currentStatus.pending_answers === 0) {
-        // Scoring is completed! Re-fetch results and stop polling.
+      const processed = currentStatus.completed_answers + currentStatus.failed_answers;
+      const total = currentStatus.total_answers;
+
+      // Stop polling and finalize if:
+      // 1. pending_answers reaches 0
+      // 2. Or all answers have been processed (completed + failed equals total)
+      // 3. Or we have polled 6 times (18 seconds) as a safety timeout
+      if (
+        currentStatus.pending_answers === 0 ||
+        (total > 0 && processed >= total) ||
+        pollCount >= 6
+      ) {
         setIsPolling(false);
         completeSession({ session_id: sessionId! });
+      } else {
+        setPollCount((prev) => prev + 1);
       }
     }
-  }, [currentStatus, sessionId, completeSession]);
+  }, [currentStatus, sessionId, completeSession, pollCount]);
 
   // Watch mutation result
   useEffect(() => {
@@ -211,42 +224,116 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   if (hasError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-900 justify-center items-center px-6">
-        <View className="items-center mb-4 self-center">
-          <LottieView
-            source={require("../../../assets/mascot/Error 404.lottie")}
-            autoPlay
-            loop
-            style={{ width: 140, height: 140, marginBottom: 12 }}
-          />
-          <Text className="text-2xl font-black text-white text-center mb-2">
-            Connection Timeout
-          </Text>
-          <Text className="text-slate-400 text-center text-sm mb-4 px-4">
-            We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
-            reconnect!
-          </Text>
-        </View>
-
-        {/* Playable Offline Game View */}
-        <View className="w-full max-w-sm mb-6 self-center">
-          <OfflineGameView />
-        </View>
-
-        <View className="flex-row gap-4 w-full max-w-sm justify-center self-center">
-          <TouchableOpacity
-            className="flex-1 bg-blue-500 active:bg-blue-600 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
-            onPress={handleTryAgain}
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+        <View
+          style={{
+            flex: 1,
+            width: "100%",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 360,
+              backgroundColor: "#ffffff",
+              borderWidth: 1,
+              borderColor: "#e2e8f0",
+              borderRadius: 24,
+              padding: 24,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.05,
+              shadowRadius: 3,
+              elevation: 2,
+            }}
           >
-            <Text className="text-white font-bold text-base">Try Again</Text>
-          </TouchableOpacity>
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
-          <TouchableOpacity
-            className="flex-1 bg-white active:bg-slate-50 py-3.5 rounded-2xl items-center border border-slate-200 active:scale-95"
-            onPress={handleBack}
-          >
-            <Text className="text-slate-700 font-bold text-base">Back to Home</Text>
-          </TouchableOpacity>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "900",
+                color: "#0f172a",
+                textAlign: "center",
+                marginBottom: 8,
+              }}
+            >
+              Connection Timeout
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                color: "#64748b",
+                textAlign: "center",
+                lineHeight: 18,
+                marginBottom: 16,
+                paddingHorizontal: 8,
+              }}
+            >
+              We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
+              reconnect!
+            </Text>
+
+            {/* Playable Offline Game View */}
+            <View style={{ width: "100%", marginBottom: 16 }}>
+              <OfflineGameView />
+            </View>
+
+            <View
+              style={{ flexDirection: "row", gap: 12, width: "100%", justifyContent: "center" }}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "#3b82f6",
+                  paddingVertical: 12,
+                  borderRadius: 16,
+                  alignItems: "center",
+                }}
+                onPress={handleTryAgain}
+              >
+                <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Try Again</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: "#ffffff",
+                  paddingVertical: 12,
+                  borderRadius: 16,
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: "#cbd5e1",
+                }}
+                onPress={handleBack}
+              >
+                <Text style={{ color: "#475569", fontWeight: "700", fontSize: 14 }}>
+                  Back to Home
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </SafeAreaView>
     );

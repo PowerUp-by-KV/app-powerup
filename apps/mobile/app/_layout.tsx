@@ -92,16 +92,37 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       if (!isPublic) router.replace("/login");
     } else {
       const onboardingComplete = onboardingStatus?.answers_present ?? false;
-      const isAllowedBeforeOnboarding =
-        isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
       if (!onboardingComplete) {
-        if (!isAllowedBeforeOnboarding) {
+        // Logged in but onboarding not complete.
+        // They should only be on onboarding or verification routes.
+        // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
+        const allowedRoutes = [
+          "onboarding",
+          "onboarding-resume",
+          "verify-email",
+          "verify-phone",
+          "thank-you",
+          "welcome-back",
+          "success",
+          "profile",
+        ];
+        if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
-        const routesToBlockAfterOnboarding = ["onboarding"];
-        if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
+        // Logged in and onboarding complete.
+        // They should NOT be on any auth/onboarding routes (login, register, otp, splash, verify-email, verify-phone, onboarding).
+        const blockedRoutes = [
+          "login",
+          "register",
+          "otp",
+          "splash",
+          "verify-email",
+          "verify-phone",
+          "onboarding",
+        ];
+        if (!currentRoute || blockedRoutes.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
       }

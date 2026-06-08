@@ -84,7 +84,7 @@ export default function OnboardingScreen() {
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/my-learning" as any);
+        router.replace("/(tabs)/my-learning" as any);
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -109,12 +109,23 @@ export default function OnboardingScreen() {
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -162,7 +173,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/my-learning" as any);
+              router.replace("/(tabs)/my-learning" as any);
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -268,7 +279,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/my-learning" as any);
+      router.replace("/(tabs)/my-learning" as any);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
@@ -333,11 +344,27 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch (err) {
+        } catch {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",
-            getApiErrorMessage(err, "Could not upload and extract your resume. Please try again."),
+            "Could not upload and extract your resume. You can try again or continue onboarding without it.",
+            [
+              { text: "Try Again", style: "cancel" },
+              {
+                text: "Continue Without Resume",
+                onPress: async () => {
+                  // Clear the file answer so we proceed with only questionnaire answers
+                  dispatch(updateField({ field: question.question_key as any, value: "" }));
+                  setResumeUploaded(false);
+                  if (stepNumber < flattenedQuestions.length) {
+                    dispatch(nextStep());
+                  } else {
+                    await submitFinalAnswers();
+                  }
+                },
+              },
+            ],
           );
           return;
         }
@@ -354,16 +381,11 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     if (!question) return;
 
-    if (question.input_type === "file") {
-      Alert.alert(
-        "Resume Required",
-        "Resume upload is a required first step to personalize your onboarding. You cannot skip this step.",
-      );
-      return;
-    }
-
-    // Optionally clear value when skipping
+    // Clear value when skipping
     dispatch(updateField({ field: question.question_key as any, value: "" }));
+    if (question.input_type === "file") {
+      setResumeUploaded(false);
+    }
 
     if (stepNumber < flattenedQuestions.length) {
       dispatch(nextStep());
@@ -392,70 +414,74 @@ export default function OnboardingScreen() {
           paddingBottom: 40,
           paddingTop: Platform.OS === "android" ? 48 : 20,
           alignItems: "center",
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Navigation & Progress Bar Row */}
-        <View className="flex-row items-center w-full max-w-md px-1 mb-6">
-          <TouchableOpacity
-            onPress={handleBack}
-            className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-80"
-          >
-            <Feather name="arrow-left" size={18} color="#64748b" />
-          </TouchableOpacity>
-          <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
-            <LinearGradient
-              colors={["#3b82f6", "#22c55e"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ width: `${progress}%` }}
-              className="h-full rounded-full"
-            />
+        {/* Top and Middle Content Wrapper */}
+        <View className="flex-1 w-full items-center">
+          {/* Top Navigation & Progress Bar Row */}
+          <View className="flex-row items-center w-full max-w-md px-1 mb-6">
+            <TouchableOpacity
+              onPress={handleBack}
+              className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-80"
+            >
+              <Feather name="arrow-left" size={18} color="#64748b" />
+            </TouchableOpacity>
+            <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+              <LinearGradient
+                colors={["#3b82f6", "#22c55e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ width: `${progress}%` }}
+                className="h-full rounded-full"
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Section Title */}
-        <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5">
-          {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
-        </Text>
-
-        {/* Question Text */}
-        {!isFileQuestion && (
-          <Text className="text-[20px] font-extrabold text-slate-900 text-center px-4 mb-4 leading-snug max-w-md">
-            {question?.question_text}
+          {/* Section Title */}
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5">
+            {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
           </Text>
-        )}
 
-        {/* Loopable Mascot Animation */}
-        {!isFileQuestion && (
-          <View className="items-center justify-center my-2">
-            <LottieView
-              source={companyEmployees}
-              autoPlay
-              loop
-              style={{ width: 220, height: 160 }}
-            />
+          {/* Question Text */}
+          {!isFileQuestion && (
+            <Text className="text-[20px] font-extrabold text-slate-900 text-center px-4 mb-4 leading-snug max-w-md">
+              {question?.question_text}
+            </Text>
+          )}
+
+          {/* Loopable Mascot Animation */}
+          {!isFileQuestion && (
+            <View className="items-center justify-center my-2">
+              <LottieView
+                source={companyEmployees}
+                autoPlay
+                loop
+                style={{ width: 220, height: 160 }}
+              />
+            </View>
+          )}
+
+          {/* Main Options / Input Fields */}
+          <View className={`w-full mb-6 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
+            {question && (
+              <DynamicOnboardingForm
+                questions={[question]}
+                formData={formData}
+                onInputChange={handleInputChange}
+                hideLabel={true}
+              />
+            )}
           </View>
-        )}
 
-        {/* Main Options / Input Fields */}
-        <View className={`w-full mb-6 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
-          {question && (
-            <DynamicOnboardingForm
-              questions={[question]}
-              formData={formData}
-              onInputChange={handleInputChange}
-              hideLabel={true}
-            />
+          {/* Description paragraph specific to file upload step */}
+          {isFileQuestion && (
+            <Text className="text-sm font-semibold text-slate-400 text-center px-6 mb-8 leading-relaxed max-w-xl">
+              Upload your resume to analyze and enhance your professional profile
+            </Text>
           )}
         </View>
-
-        {/* Description paragraph specific to file upload step */}
-        {isFileQuestion && (
-          <Text className="text-sm font-semibold text-slate-400 text-center px-6 mb-8 leading-relaxed max-w-xl">
-            Upload your resume to analyze and enhance your professional profile
-          </Text>
-        )}
 
         {/* Bottom Continue Button */}
         <TouchableOpacity
