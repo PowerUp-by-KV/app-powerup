@@ -88,7 +88,7 @@ export function AssessmentHeader({
         "Are you sure you want to exit the assessment? You can resume it later from where you left off.",
       );
       if (confirmExit) {
-        router.replace("/(tabs)/my-learning" as any);
+        router.replace("/(tabs)/my-learning" as never);
       }
       return;
     }
@@ -102,7 +102,7 @@ export function AssessmentHeader({
           text: "Exit",
           style: "destructive",
           onPress: () => {
-            router.replace("/(tabs)/my-learning" as any);
+            router.replace("/(tabs)/my-learning" as never);
           },
         },
       ],
