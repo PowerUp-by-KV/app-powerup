@@ -31,6 +31,7 @@ import {
   useStartSessionMutation,
   useGetUserAssessmentResultQuery,
   useCheckAssessmentStatusQuery,
+  AssessmentResultResponse,
 } from "@/services/assessment-api";
 import {
   getPreAssessmentResults,
@@ -47,8 +48,8 @@ interface PreAssessmentModalProps {
   visible: boolean;
   onClose: () => void;
   cefrRange?: string | null;
-  results?: any | null;
-  error?: any;
+  results?: StoredPreAssessmentResult | null;
+  error?: unknown;
   onRetry?: () => void;
 }
 
@@ -84,7 +85,7 @@ function PreAssessmentModal({
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [visible, scaleAnim, opacityAnim]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -229,29 +230,31 @@ function PreAssessmentModal({
   // derivedResults is guaranteed non-null here because isAssessmentComplete is true
   // (we early-returned above when !isAssessmentComplete where derivedResults === null)
   const safeResults = derivedResults!;
-  const percentage = safeResults.percentage;
-  const obtainedPoints = Math.round(safeResults.total_score);
-  const totalPoints = Math.round(safeResults.max_score);
+  const percentage = safeResults.percentage ?? 0;
+  const obtainedPoints = Math.round(safeResults.total_score ?? 0);
+  const totalPoints = Math.round(safeResults.max_score ?? 100);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
+  const sectionPercentages = safeResults.section_percentages ?? {};
+
   // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
-  const readingPct = safeResults.section_percentages["A_READING"] ?? 0;
+  const readingPct = sectionPercentages["A_READING"] ?? 0;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
-  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? 0;
-  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? 0;
+  const listen1 = sectionPercentages["A_LISTEN"] ?? 0;
+  const listen2 = sectionPercentages["D_LISTEN_ANSWER"] ?? 0;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
-  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? 0;
+  const writingPct = sectionPercentages["C_GRAMMAR"] ?? 0;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
-  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? 0;
-  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? 0;
+  const speak1 = sectionPercentages["A_SPEAKING"] ?? 0;
+  const speak2 = sectionPercentages["B_SPEAKING"] ?? 0;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
@@ -452,7 +455,7 @@ export function LearningJourneyScreen() {
 
   useEffect(() => {
     refetchProfile();
-  }, []);
+  }, [refetchProfile]);
 
   useEffect(() => {
     getPreAssessmentResults().then((res) => {
@@ -500,11 +503,8 @@ export function LearningJourneyScreen() {
   const resultsToPass = liveResult || preAssessmentResults;
   // Compute the CEFR to show on the badge using the same priority as the popup:
   // result's cefr_level → result's cefr_range → profile's cefr_range
-  const diagCefr =
-    (resultsToPass as any)?.cefr_level ??
-    (resultsToPass as any)?.cefr_range ??
-    profile?.cefr_range ??
-    null;
+  const resultsObj = resultsToPass as AssessmentResultResponse | StoredPreAssessmentResult | null;
+  const diagCefr = resultsObj?.cefr_level ?? resultsObj?.cefr_range ?? profile?.cefr_range ?? null;
 
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [startSession] = useStartSessionMutation();
@@ -630,10 +630,10 @@ export function LearningJourneyScreen() {
     try {
       const session = await startSession().unwrap();
       router.push({
-        pathname: "/assessment-entry" as any,
+        pathname: "/assessment-entry" as never,
         params: { session_id: session.session_id },
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error("Start/resume assessment session failed:", err);
       Alert.alert("Error", "Could not start assessment. Please try again.");
     } finally {
