@@ -1,5 +1,6 @@
 import "../global.css";
 import { useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
@@ -101,16 +102,37 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       if (!isPublic) router.replace("/login");
     } else {
       const onboardingComplete = onboardingStatus?.answers_present ?? false;
-      const isAllowedBeforeOnboarding =
-        isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
 
       if (!onboardingComplete) {
-        if (!isAllowedBeforeOnboarding) {
+        // Logged in but onboarding not complete.
+        // They should only be on onboarding or verification routes.
+        // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
+        const allowedRoutes = [
+          "onboarding",
+          "onboarding-resume",
+          "verify-email",
+          "verify-phone",
+          "thank-you",
+          "welcome-back",
+          "success",
+          "profile",
+        ];
+        if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
-        const routesToBlockAfterOnboarding = ["onboarding"];
-        if (currentRoute && routesToBlockAfterOnboarding.includes(currentRoute)) {
+        // Logged in and onboarding complete.
+        // They should NOT be on any auth/onboarding routes (login, register, otp, splash, verify-email, verify-phone, onboarding).
+        const blockedRoutes = [
+          "login",
+          "register",
+          "otp",
+          "splash",
+          "verify-email",
+          "verify-phone",
+          "onboarding",
+        ];
+        if (!currentRoute || blockedRoutes.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
       }
@@ -151,14 +173,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function AuthLayout() {
-  const [fontsLoaded, fontError] = useFonts({
-    Inter: Inter_400Regular,
-    "Inter-Regular": Inter_400Regular,
-    "Inter-Medium": Inter_500Medium,
-    "Inter-SemiBold": Inter_600SemiBold,
-    "Inter-Bold": Inter_700Bold,
-    "Inter-ExtraBold": Inter_800ExtraBold,
-  });
+  const [fontsLoaded, fontError] = useFonts(
+    Platform.OS === "web"
+      ? {}
+      : {
+          Inter: Inter_400Regular,
+          "Inter-Regular": Inter_400Regular,
+          "Inter-Medium": Inter_500Medium,
+          "Inter-SemiBold": Inter_600SemiBold,
+          "Inter-Bold": Inter_700Bold,
+          "Inter-ExtraBold": Inter_800ExtraBold,
+        },
+  );
 
   const [authChecked, setAuthChecked] = useState(false);
 

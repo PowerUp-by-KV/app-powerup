@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   ReadingSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ReadingQuestion as ReadingQuestionComponent } from "./components/ReadingQuestion";
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
@@ -27,6 +28,7 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -55,6 +57,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
@@ -106,12 +109,23 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -199,14 +213,37 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         }
       }
 
+      // Poll/verify status
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else {
+            if (status.failed_answers > 0) {
+              console.warn("Some answers failed to score in backend processing:", status);
+            }
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
+          break;
+        }
+      }
+
       // Brief delay to allow dev tunnel proxy socket to clean up before loading next route
       await new Promise((res) => setTimeout(res, 600));
 
       await saveCompletedSection("A_READING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch {
-      Alert.alert("Error", "Could not submit answers. Please try again.");
+    } catch (err: any) {
+      console.error("A_READING submission failed:", err);
+      setIsFinished(false);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
+      Alert.alert("Submission Failed", msg);
     }
   };
 

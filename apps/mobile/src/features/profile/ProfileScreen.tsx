@@ -8,6 +8,7 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  DimensionValue,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -297,18 +298,23 @@ export function ProfileScreen() {
           {/* Profile Header section */}
           <View className="flex-row px-5 py-5 items-center bg-white" style={{ gap: 16 }}>
             {/* Left: Avatar with gradient background */}
-            <LinearGradient
-              colors={["#8ef34b", "#dcf434"]}
-              className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
+            <Pressable
+              onPress={() => router.push("/profile/avatar" as never)}
+              className="active:opacity-85"
             >
-              <Image
-                source={{
-                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                }}
-                className="w-full h-full"
-                style={{ resizeMode: "cover" }}
-              />
-            </LinearGradient>
+              <LinearGradient
+                colors={["#8ef34b", "#dcf434"]}
+                className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
+              >
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  className="w-full h-full"
+                  style={{ resizeMode: "cover" }}
+                />
+              </LinearGradient>
+            </Pressable>
 
             {/* Right Details */}
             <View className="flex-1">
@@ -338,7 +344,7 @@ export function ProfileScreen() {
                     className="h-full"
                     style={{
                       width: profile?.total_modules
-                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as any)
+                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as DimensionValue)
                         : "0%",
                     }}
                   />

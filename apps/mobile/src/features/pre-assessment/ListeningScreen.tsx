@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   DListenAnswerSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ListeningQuestion } from "./components/ListeningQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
@@ -26,6 +27,7 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 interface ListeningScreenProps {
   sessionId?: string;
@@ -54,10 +56,12 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [hasAudioFinished, setHasAudioFinished] = useState(false);
 
   const listenData = sectionData as DListenAnswerSectionResponse | undefined;
   const questions = listenData?.stories || [];
@@ -72,12 +76,13 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   useEffect(() => {
     if (currentQuestion) {
       setTimeLeft(maxDuration + 15);
+      setHasAudioFinished(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
   // Main countdown timer
   useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished) return;
+    if (!currentQuestion || isSubmitting || isFinished || !hasAudioFinished) return;
 
     if (timeLeft <= 0) {
       if (isLastQuestion) {
@@ -104,12 +109,23 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -173,13 +189,35 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         }
       }
 
+      // Poll/verify status
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else {
+            if (status.failed_answers > 0) {
+              console.warn("Some answers failed to score in backend processing:", status);
+            }
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
+          break;
+        }
+      }
+
       await saveCompletedSection("D_LISTEN_ANSWER");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response?.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      console.error("D_LISTEN_ANSWER submission failed:", err);
+      setIsFinished(false);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
     }
   };
@@ -235,6 +273,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
             audioUrl={(currentQuestion as any)?.audio_url}
             audioText={(currentQuestion as any)?.script || "Please listen to the audio carefully."}
             duration={30}
+            onPlayEnd={() => setHasAudioFinished(true)}
           />
 
           <View className="mt-4 mb-4">

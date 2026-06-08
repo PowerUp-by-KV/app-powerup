@@ -969,8 +969,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    maxWidth: 600,
-    alignSelf: "center",
     width: "100%",
   },
   headerSection: {

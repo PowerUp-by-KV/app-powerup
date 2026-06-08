@@ -421,14 +421,14 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
         <Pressable
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={{
+          style={({ pressed }) => ({
             marginTop: 24,
-            backgroundColor: "#0f172a",
+            backgroundColor: pressed ? "#2563eb" : "#3b82f6",
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
             ...Platform.select({ web: { cursor: "pointer" } as any }),
-          }}
+          })}
         >
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
         </Pressable>
@@ -490,7 +490,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
       <View style={{ alignItems: "center", marginTop: 24 }}>
         {submitting ? (
           <View style={{ alignItems: "center" }}>
-            <ActivityIndicator size="large" color="#2f95dc" />
+            <ActivityIndicator size="large" color="#3b82f6" />
             <Text style={{ marginTop: 12, color: "#475569" }}>Analyzing your answer…</Text>
           </View>
         ) : recordedUri ? (
@@ -530,7 +530,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                       style={{
                         width: 5,
                         height: baseHeight,
-                        backgroundColor: isPast ? "#22c55e" : "#000000",
+                        backgroundColor: isPast ? "#3b82f6" : "#cbd5e1",
                         borderRadius: 2.5,
                         transform: [{ scaleY: anims[index % anims.length]! }],
                       }}
@@ -559,15 +559,19 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
               <View style={{ alignItems: "center" }}>
                 <Pressable
                   onPress={togglePlayback}
-                  style={{
+                  style={({ pressed }) => ({
                     width: 56,
                     height: 56,
                     borderRadius: 28,
-                    backgroundColor: isPlaybackPlaying ? "#22c55e" : "#0f172a",
+                    backgroundColor: isPlaybackPlaying
+                      ? "#22c55e"
+                      : pressed
+                        ? "#2563eb"
+                        : "#3b82f6",
                     alignItems: "center",
                     justifyContent: "center",
                     ...Platform.select({ web: { cursor: "pointer" } as any }),
-                  }}
+                  })}
                 >
                   <Feather name={isPlaybackPlaying ? "pause" : "play"} size={22} color="#fff" />
                 </Pressable>
@@ -601,11 +605,11 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
             {/* Submit Button - Shown only after retake and playback are visible */}
             <Pressable
               onPress={submitRecording}
-              style={{
+              style={({ pressed }) => ({
                 width: "100%",
                 maxWidth: 280,
                 marginTop: 48, // Pushed further down for clean vertical rhythm
-                backgroundColor: "#0f172a",
+                backgroundColor: pressed ? "#2563eb" : "#3b82f6",
                 paddingVertical: 14,
                 borderRadius: 12,
                 alignItems: "center",
@@ -615,7 +619,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 shadowRadius: 4,
                 elevation: 3,
                 ...Platform.select({ web: { cursor: "pointer" } as any }),
-              }}
+              })}
             >
               <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>Submit Answer</Text>
             </Pressable>
@@ -624,15 +628,15 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
           <>
             <Pressable
               onPress={isRecording ? stopRecording : startRecording}
-              style={{
+              style={({ pressed }) => ({
                 width: 96,
                 height: 96,
                 borderRadius: 48,
-                backgroundColor: isRecording ? "#dc2626" : "#0f172a",
+                backgroundColor: isRecording ? "#dc2626" : pressed ? "#2563eb" : "#3b82f6",
                 alignItems: "center",
                 justifyContent: "center",
                 ...Platform.select({ web: { cursor: "pointer" } as any }),
-              }}
+              })}
             >
               <Feather name={isRecording ? "square" : "mic"} size={36} color="#fff" />
             </Pressable>

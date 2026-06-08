@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
@@ -36,33 +35,21 @@ import {
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getCompletedSections,
   StoredPreAssessmentResult,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
+import { CombinedModuleDay } from "@/features/home/HomeScreen";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-
-export interface CombinedModuleDay {
-  id: string;
-  day_number: number;
-  duration_hours: number | null;
-  is_completed: boolean;
-  topic?: string | null;
-  completed_activities?: number;
-  total_activities?: number;
-  progress_percentage?: number;
-  module_no: number;
-  module_title: string;
-  module_id: string;
-}
 
 interface PreAssessmentModalProps {
   visible: boolean;
   onClose: () => void;
   cefrRange?: string | null;
   results?: any | null;
+  error?: any;
+  onRetry?: () => void;
 }
 
 // CEFR Score Mapping Constants
@@ -73,7 +60,14 @@ const DEFAULT_SPEAKING_PERCENTAGE = 100.0;
 const SCORE_SCALE_CONVERSION = 100;
 const SCORE_AVERAGING_DIVISOR = 2;
 
-function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessmentModalProps) {
+function PreAssessmentModal({
+  visible,
+  onClose,
+  cefrRange,
+  results,
+  error,
+  onRetry,
+}: PreAssessmentModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -93,7 +87,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         }),
       ]).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -158,6 +151,45 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
           <Pressable onPress={handleClose} style={scoreStyles.doneButton}>
             <Text style={scoreStyles.doneButtonText}>Close</Text>
           </Pressable>
+        </Animated.View>
+      </Animated.View>
+    );
+  }
+
+  // If there is an error fetching real results — show an error message with a retry button
+  if (isAssessmentComplete && error && !hasRealResults) {
+    return (
+      <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
+        <Animated.View style={[scoreStyles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
+          <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+            <Feather name="x" size={20} color="#64748b" />
+          </Pressable>
+          <Text style={scoreStyles.overallScoreTitle}>Pre-Assessment</Text>
+          <View style={{ alignItems: "center", paddingVertical: 32, paddingHorizontal: 16 }}>
+            <Text style={{ fontSize: 44, marginBottom: 12 }}>⚠️</Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontWeight: "700",
+                color: "#ef4444",
+                marginBottom: 8,
+                textAlign: "center",
+              }}
+            >
+              Failed to load results
+            </Text>
+            <Text style={{ fontSize: 13, color: "#64748b", textAlign: "center", marginBottom: 20 }}>
+              We couldn't retrieve your detailed scoring breakdown from the server.
+            </Text>
+            {onRetry && (
+              <Pressable
+                onPress={onRetry}
+                style={[scoreStyles.doneButton, { backgroundColor: "#ef4444", width: "80%" }]}
+              >
+                <Text style={scoreStyles.doneButtonText}>Retry</Text>
+              </Pressable>
+            )}
+          </View>
         </Animated.View>
       </Animated.View>
     );
@@ -415,7 +447,11 @@ export function LearningJourneyScreen() {
   const [showPreAssessmentModal, setShowPreAssessmentModal] = useState(false);
   const [preAssessmentResults, setPreAssessmentResults] =
     useState<StoredPreAssessmentResult | null>(null);
-  const [completedSections, setCompletedSections] = useState<string[]>([]);
+
+  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
+  const completedSections = isPreAssessmentDone
+    ? ["A_READING", "A_SPEAKING", "A_LISTEN", "B_SPEAKING", "C_GRAMMAR", "D_LISTEN_ANSWER"]
+    : gate.completedSections || [];
 
   useEffect(() => {
     refetchProfile();
@@ -427,18 +463,21 @@ export function LearningJourneyScreen() {
         setPreAssessmentResults(res);
       }
     });
-
-    getCompletedSections().then((sections) => {
-      if (sections) setCompletedSections(sections);
-    });
   }, [showPreAssessmentModal, profile]);
 
   const {
     data: liveResult,
     error: liveResultError,
     isFetching: liveResultFetching,
+    refetch: refetchResult,
   } = useGetUserAssessmentResultQuery({ user_id: profile?.id || "" }, { skip: !profile?.id });
 
+  // Refetch results whenever the modal is shown to ensure fresh scoring details
+  useEffect(() => {
+    if (showPreAssessmentModal && profile?.id) {
+      refetchResult();
+    }
+  }, [showPreAssessmentModal, profile?.id, refetchResult]);
   const { data: assessmentSession } = useCheckAssessmentStatusQuery(undefined, {
     skip: !profile?.id || !!profile?.cefr_range,
   });
@@ -566,7 +605,6 @@ export function LearningJourneyScreen() {
     }
     return combined;
   }, [personalizedPath, moduleDaysData]);
-
   const firstIncompleteIndex = useMemo(() => {
     return allDaysList.findIndex((d) => !d.is_completed);
   }, [allDaysList]);
@@ -623,12 +661,23 @@ export function LearningJourneyScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -691,7 +740,26 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const isPreAssessmentDone = !!profile?.cefr_range || gate.canEnter;
+  if (!gate.canEnter && gate.blockedReason === "assessment" && completedSections.length === 0) {
+    return (
+      <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
+          <View className="px-6 pt-12">
+            <Text className="text-slate-500 text-sm">
+              Hi{profile?.name ? `, ${profile?.name?.split(" ")[0] || ""}` : ""}!
+            </Text>
+            <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
+          </View>
+          <GateEmptyState
+            reason="assessment"
+            completedSections={completedSections}
+            onPrimary={handleStartOrResumeAssessment}
+            isLoading={isStartingSession}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   // Diagnostic Assessment complete flag
   const isDiagnosticComplete = isPreAssessmentDone;
@@ -765,6 +833,8 @@ export function LearningJourneyScreen() {
         onClose={() => setShowPreAssessmentModal(false)}
         cefrRange={profile?.cefr_range || (isPreAssessmentDone ? "A2" : null)}
         results={resultsToPass}
+        error={liveResultError}
+        onRetry={refetchResult}
       />
 
       <ScrollView
@@ -820,48 +890,58 @@ export function LearningJourneyScreen() {
             onPress={() =>
               Alert.alert("Free Content", "This free module is completed! Continue down your path.")
             }
-            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, width: "100%" })}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
-              <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                <Feather name="check" size={16} color="white" />
-              </View>
-              {/* Connector line segment going down */}
+            <View style={timelineStyles.stageRow}>
               <View
                 style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
+                  width: 36,
+                  marginRight: 16,
+                  alignItems: "center",
+                  position: "relative",
+                  zIndex: 3,
                 }}
-              />
-            </View>
-            <View style={timelineStyles.stageContent}>
-              <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Free Content</Text>
-                <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                  <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+              >
+                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
+                  <Feather name="check" size={16} color="white" />
                 </View>
-              </View>
-              <Text style={timelineStyles.stageSubtitle}>The Fundamentals of Communication</Text>
-
-              <View style={timelineStyles.progressBarBg}>
-                <LinearGradient
-                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                {/* Connector line segment going down */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 36,
+                    left: 16.5,
+                    width: 3,
+                    bottom: -32,
+                    backgroundColor: "#3b82f6",
+                    zIndex: 10,
+                  }}
                 />
               </View>
+              <View style={timelineStyles.stageContent}>
+                <View style={timelineStyles.stageHeaderRow}>
+                  <Text style={timelineStyles.stageTitle}>Free Content</Text>
+                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                  </View>
+                </View>
+                <Text style={timelineStyles.stageSubtitle}>The Fundamentals of Communication</Text>
 
-              <View style={timelineStyles.progressLabelRow}>
-                <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
-                <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                <View style={timelineStyles.progressBarBg}>
+                  <LinearGradient
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                  />
+                </View>
+
+                <View style={timelineStyles.progressLabelRow}>
+                  <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
+                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                </View>
+                <Text style={timelineStyles.xpText}>350 XP earned</Text>
               </View>
-              <Text style={timelineStyles.xpText}>350 XP earned</Text>
             </View>
           </Pressable>
 
@@ -873,48 +953,58 @@ export function LearningJourneyScreen() {
                 "This trial module is completed! Continue down your path.",
               )
             }
-            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, width: "100%" })}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
-              <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                <Feather name="check" size={16} color="white" />
-              </View>
-              {/* Connector line segment going down */}
+            <View style={timelineStyles.stageRow}>
               <View
                 style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
+                  width: 36,
+                  marginRight: 16,
+                  alignItems: "center",
+                  position: "relative",
+                  zIndex: 3,
                 }}
-              />
-            </View>
-            <View style={timelineStyles.stageContent}>
-              <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Trial Content</Text>
-                <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                  <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+              >
+                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
+                  <Feather name="check" size={16} color="white" />
                 </View>
-              </View>
-              <Text style={timelineStyles.stageSubtitle}>Behaviour in Workplace</Text>
-
-              <View style={timelineStyles.progressBarBg}>
-                <LinearGradient
-                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                {/* Connector line segment going down */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 36,
+                    left: 16.5,
+                    width: 3,
+                    bottom: -32,
+                    backgroundColor: "#3b82f6",
+                    zIndex: 10,
+                  }}
                 />
               </View>
+              <View style={timelineStyles.stageContent}>
+                <View style={timelineStyles.stageHeaderRow}>
+                  <Text style={timelineStyles.stageTitle}>Trial Content</Text>
+                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                  </View>
+                </View>
+                <Text style={timelineStyles.stageSubtitle}>Behaviour in Workplace</Text>
 
-              <View style={timelineStyles.progressLabelRow}>
-                <Text style={timelineStyles.progressLabelText}>7 lessons completed</Text>
-                <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                <View style={timelineStyles.progressBarBg}>
+                  <LinearGradient
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                  />
+                </View>
+
+                <View style={timelineStyles.progressLabelRow}>
+                  <Text style={timelineStyles.progressLabelText}>7 lessons completed</Text>
+                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                </View>
+                <Text style={timelineStyles.xpText}>250 XP earned</Text>
               </View>
-              <Text style={timelineStyles.xpText}>250 XP earned</Text>
             </View>
           </Pressable>
 
@@ -926,108 +1016,113 @@ export function LearningJourneyScreen() {
                 : handleStartOrResumeAssessment
             }
             disabled={isStartingSession}
-            style={({ pressed }) => [timelineStyles.stageRow, { opacity: pressed ? 0.8 : 1 }]}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, width: "100%" })}
           >
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
-              <View
-                style={[
-                  timelineStyles.stageIconCircle,
-                  isDiagnosticComplete
-                    ? timelineStyles.stageCircleCompleted
-                    : timelineStyles.stageCircleInProgress,
-                ]}
-              >
-                <Feather name="check" size={16} color="white" />
-              </View>
-              {/* Connector line segment going down */}
+            <View style={timelineStyles.stageRow}>
               <View
                 style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: "#3b82f6",
-                  zIndex: 1,
+                  width: 36,
+                  marginRight: 16,
+                  alignItems: "center",
+                  position: "relative",
+                  zIndex: 3,
                 }}
-              />
-            </View>
-            <View style={timelineStyles.stageContent}>
-              <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Diagnostic Assessment</Text>
+              >
                 <View
                   style={[
-                    timelineStyles.statusBadge,
+                    timelineStyles.stageIconCircle,
                     isDiagnosticComplete
-                      ? timelineStyles.badgeCompleted
-                      : timelineStyles.badgeInProgress,
+                      ? timelineStyles.stageCircleCompleted
+                      : timelineStyles.stageCircleInProgress,
                   ]}
                 >
-                  <Text
-                    style={[
-                      timelineStyles.badgeText,
-                      { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
-                    ]}
-                  >
-                    {profile?.cefr_range
-                      ? `Level ${profile.cefr_range}`
-                      : isDiagnosticComplete
-                        ? "Assessed"
-                        : assessmentSession &&
-                            (assessmentSession.not_completed_sections || []).length === 0
-                          ? "Scoring"
-                          : "In Progress"}
-                  </Text>
+                  <Feather name="check" size={16} color="white" />
                 </View>
-              </View>
-              <Text style={timelineStyles.stageSubtitle}>Assessing your skills</Text>
-
-              <View style={timelineStyles.progressBarBg}>
-                <LinearGradient
-                  colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={[
-                    timelineStyles.progressBarFill,
-                    { width: isDiagnosticComplete ? "100%" : `${diagProgress}%` },
-                  ]}
+                {/* Connector line segment going down */}
+                <View
+                  style={{
+                    position: "absolute",
+                    top: 36,
+                    left: 16.5,
+                    width: 3,
+                    bottom: -32,
+                    backgroundColor: "#3b82f6",
+                    zIndex: 10,
+                  }}
                 />
               </View>
+              <View style={timelineStyles.stageContent}>
+                <View style={timelineStyles.stageHeaderRow}>
+                  <Text style={timelineStyles.stageTitle}>Diagnostic Assessment</Text>
+                  <View
+                    style={[
+                      timelineStyles.statusBadge,
+                      isDiagnosticComplete
+                        ? timelineStyles.badgeCompleted
+                        : timelineStyles.badgeInProgress,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        timelineStyles.badgeText,
+                        { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
+                      ]}
+                    >
+                      {isDiagnosticComplete
+                        ? `Level ${profile?.cefr_range || "Assessed"}`
+                        : "In Progress"}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={timelineStyles.stageSubtitle}>Assessing your skills</Text>
 
-              <View style={timelineStyles.progressLabelRow}>
-                <Text style={timelineStyles.progressLabelText}>
-                  {isDiagnosticComplete
-                    ? "6 of 6 sections completed"
-                    : assessmentSession &&
-                        (assessmentSession.not_completed_sections || []).length === 0
-                      ? "Answers submitted, scoring in progress"
-                      : `${diagLessonsCompleted} of 6 sections completed`}
-                </Text>
-                <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
-              </View>
-              <Text style={timelineStyles.xpText}>
-                {isStartingSession
-                  ? "Launching..."
-                  : isDiagnosticComplete
-                    ? "150 XP earned"
-                    : `${diagXp} XP earned`}
-              </Text>
+                <View style={timelineStyles.progressBarBg}>
+                  <LinearGradient
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[
+                      timelineStyles.progressBarFill,
+                      { width: isDiagnosticComplete ? "100%" : `${diagProgress}%` },
+                    ]}
+                  />
+                </View>
 
-              {/* Continue learning CTA button inside active card */}
-              {!isDiagnosticComplete && (
-                <Pressable
-                  onPress={handleStartOrResumeAssessment}
-                  disabled={isStartingSession}
-                  style={timelineStyles.continueButton}
-                >
-                  <Text style={timelineStyles.continueButtonText}>
-                    {assessmentSession &&
-                    (assessmentSession.not_completed_sections || []).length === 0
-                      ? "View grading status"
-                      : "Continue learning"}
+                <View style={timelineStyles.progressLabelRow}>
+                  <Text style={timelineStyles.progressLabelText}>
+                    {isDiagnosticComplete
+                      ? "6 of 6 sections completed"
+                      : assessmentSession &&
+                          (assessmentSession.not_completed_sections || []).length === 0
+                        ? "Answers submitted, scoring in progress"
+                        : `${diagLessonsCompleted} of 6 sections completed`}
                   </Text>
-                </Pressable>
-              )}
+                  <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
+                </View>
+                <Text style={timelineStyles.xpText}>
+                  {isStartingSession
+                    ? "Launching..."
+                    : isDiagnosticComplete
+                      ? "150 XP earned"
+                      : `${diagXp} XP earned`}
+                </Text>
+
+                {/* Continue learning CTA button inside active card */}
+                {!isDiagnosticComplete && (
+                  <Pressable
+                    onPress={handleStartOrResumeAssessment}
+                    disabled={isStartingSession}
+                    style={timelineStyles.continueButton}
+                  >
+                    <Text style={timelineStyles.continueButtonText}>
+                      {assessmentSession &&
+                      (assessmentSession.not_completed_sections || []).length === 0
+                        ? "View grading status"
+                        : "Continue learning"}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
           </Pressable>
 
@@ -1060,141 +1155,159 @@ export function LearningJourneyScreen() {
                     });
                   }
                 }}
-                style={({ pressed }) => [
-                  timelineStyles.stageRow,
-                  {
-                    opacity: pressed ? 0.8 : 1,
-                    marginBottom: isLast ? 0 : 32,
-                  },
-                ]}
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.8 : 1,
+                  width: "100%",
+                })}
               >
-                <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+                <View
+                  style={[
+                    timelineStyles.stageRow,
+                    {
+                      marginBottom: isLast ? 0 : 32,
+                    },
+                  ]}
+                >
                   <View
-                    style={[
-                      timelineStyles.stageIconCircle,
-                      item.isCompleted
-                        ? timelineStyles.stageCircleCompleted
-                        : item.isInProgress
-                          ? timelineStyles.stageCircleInProgress
-                          : timelineStyles.stageCircleLocked,
-                    ]}
+                    style={{
+                      width: 36,
+                      marginRight: 16,
+                      alignItems: "center",
+                      position: "relative",
+                      zIndex: 3,
+                    }}
                   >
-                    <Feather
-                      name={item.isCompleted ? "check" : item.isLocked ? "lock" : "play"}
-                      size={16}
-                      color={item.isCompleted || item.isInProgress ? "white" : "#b4b8da"}
-                    />
-                  </View>
-                  {/* Connector line segment going down */}
-                  {!isLast && (
                     <View
-                      style={{
-                        position: "absolute",
-                        top: 36,
-                        left: 17,
-                        width: 3,
-                        bottom: -32,
-                        backgroundColor: lineBgColor,
-                        zIndex: 1,
-                      }}
-                    />
-                  )}
-                </View>
-                <View style={timelineStyles.stageContent}>
-                  <View style={timelineStyles.stageHeaderRow}>
-                    <Text
                       style={[
-                        timelineStyles.stageTitle,
-                        item.isLocked && timelineStyles.textLocked,
+                        timelineStyles.stageIconCircle,
+                        item.isCompleted
+                          ? timelineStyles.stageCircleCompleted
+                          : item.isInProgress
+                            ? timelineStyles.stageCircleInProgress
+                            : timelineStyles.stageCircleLocked,
                       ]}
                     >
-                      {item.title}
-                    </Text>
-                    {item.isLocked && (
-                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeLocked]}>
-                        <Text style={[timelineStyles.badgeText, { color: "#6366f1" }]}>Locked</Text>
-                      </View>
-                    )}
-                    {item.isCompleted && (
-                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                        <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>
-                          Completed
-                        </Text>
-                      </View>
-                    )}
-                    {item.isInProgress && (
-                      <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
-                        <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
-                          In Progress
-                        </Text>
-                      </View>
+                      <Feather
+                        name={item.isCompleted ? "check" : item.isLocked ? "lock" : "play"}
+                        size={16}
+                        color={item.isCompleted || item.isInProgress ? "white" : "#b4b8da"}
+                      />
+                    </View>
+                    {/* Connector line segment going down */}
+                    {!isLast && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 36,
+                          left: 16.5,
+                          width: 3,
+                          bottom: -32,
+                          backgroundColor: lineBgColor === "#3b82f6" ? "#3b82f6" : "#cbd5e1",
+                          zIndex: 10,
+                        }}
+                      />
                     )}
                   </View>
-                  <Text
-                    style={[timelineStyles.stageSubtitle, item.isLocked && { color: "#cbd5e1" }]}
-                  >
-                    {item.subtitle}
-                  </Text>
-
-                  {!item.isLocked &&
-                    (() => {
-                      const totalAct = item.dayObj?.total_activities ?? 0;
-                      const compAct = item.dayObj?.completed_activities ?? 0;
-                      const pct = item.isCompleted ? 100 : (item.dayObj?.progress_percentage ?? 0);
-
-                      const progressLabelText = item.isCompleted
-                        ? "Completed"
-                        : compAct > 0
-                          ? `${compAct} of ${totalAct} activities completed`
-                          : "Not started";
-
-                      return (
-                        <>
-                          <View style={timelineStyles.progressBarBg}>
-                            <LinearGradient
-                              colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}
-                            />
-                          </View>
-                          <View style={timelineStyles.progressLabelRow}>
-                            <Text style={timelineStyles.progressLabelText}>
-                              {progressLabelText}
-                            </Text>
-                            <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
-                          </View>
-                          <Text style={timelineStyles.xpText}>
-                            {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                  <View style={timelineStyles.stageContent}>
+                    <View style={timelineStyles.stageHeaderRow}>
+                      <Text
+                        style={[
+                          timelineStyles.stageTitle,
+                          item.isLocked && timelineStyles.textLocked,
+                        ]}
+                      >
+                        {item.title}
+                      </Text>
+                      {item.isLocked && (
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeLocked]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#6366f1" }]}>
+                            Locked
                           </Text>
-                        </>
-                      );
-                    })()}
-
-                  {/* Continue learning CTA button inside active day card */}
-                  {item.isInProgress && (
-                    <Pressable
-                      onPress={() => {
-                        if (!item.dayObj?.id) {
-                          Alert.alert(
-                            "Error",
-                            "Day content is not available yet. Please try refreshing.",
-                          );
-                        } else {
-                          router.push({
-                            pathname: `/learning-journey/module/${item.dayObj.id}` as never,
-                            params: {
-                              module_id: item.dayObj.module_id,
-                              day_number: String(item.globalDayNumber),
-                            },
-                          });
-                        }
-                      }}
-                      style={timelineStyles.continueButton}
+                        </View>
+                      )}
+                      {item.isCompleted && (
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>
+                            Completed
+                          </Text>
+                        </View>
+                      )}
+                      {item.isInProgress && (
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
+                            In Progress
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text
+                      style={[timelineStyles.stageSubtitle, item.isLocked && { color: "#cbd5e1" }]}
                     >
-                      <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
-                    </Pressable>
-                  )}
+                      {item.subtitle}
+                    </Text>
+
+                    {!item.isLocked &&
+                      (() => {
+                        const totalAct = item.dayObj?.total_activities ?? 0;
+                        const compAct = item.dayObj?.completed_activities ?? 0;
+                        const pct = item.isCompleted
+                          ? 100
+                          : (item.dayObj?.progress_percentage ?? 0);
+
+                        const progressLabelText = item.isCompleted
+                          ? "Completed"
+                          : compAct > 0
+                            ? `${compAct} of ${totalAct} activities completed`
+                            : "Not started";
+
+                        return (
+                          <>
+                            <View style={timelineStyles.progressBarBg}>
+                              <LinearGradient
+                                colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}
+                              />
+                            </View>
+                            <View style={timelineStyles.progressLabelRow}>
+                              <Text style={timelineStyles.progressLabelText}>
+                                {progressLabelText}
+                              </Text>
+                              <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
+                            </View>
+                            <Text style={timelineStyles.xpText}>
+                              {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                            </Text>
+                          </>
+                        );
+                      })()}
+
+                    {/* Continue learning CTA button inside active day card */}
+                    {item.isInProgress && (
+                      <Pressable
+                        onPress={() => {
+                          if (!item.dayObj?.id) {
+                            Alert.alert(
+                              "Error",
+                              "Day content is not available yet. Please try refreshing.",
+                            );
+                          } else {
+                            router.push({
+                              pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+                              params: {
+                                module_id: item.dayObj.module_id,
+                                day_number: String(item.globalDayNumber),
+                              },
+                            });
+                          }
+                        }}
+                        style={timelineStyles.continueButton}
+                      >
+                        <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
+                      </Pressable>
+                    )}
+                  </View>
                 </View>
               </Pressable>
             );
@@ -1239,7 +1352,6 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1268,6 +1380,8 @@ const timelineStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#1e293b",
+    flex: 1,
+    marginRight: 8,
   },
   textLocked: {
     color: "#b4b8da",

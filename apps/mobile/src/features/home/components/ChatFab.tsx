@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { RiveMascot } from "@/components/RiveMascot";
 
 interface ChatFabProps {
@@ -8,28 +8,30 @@ interface ChatFabProps {
 
 export function ChatFab({ onPress }: ChatFabProps) {
   return (
-    <View
-      style={{
-        position: "absolute",
-        right: 8,
-        bottom: 64,
-      }}
-      pointerEvents="box-none"
-    >
-      <Pressable
-        onPress={onPress}
-        className="active:scale-90"
-        style={{
-          width: 110,
-          height: 110,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <View pointerEvents="none" style={{ width: 110, height: 110 }}>
+    <View style={styles.container} pointerEvents="box-none">
+      <Pressable onPress={onPress} className="active:scale-95" style={styles.pressable}>
+        <View pointerEvents="none" style={styles.mascotWrapper}>
           <RiveMascot width={110} height={110} />
         </View>
       </Pressable>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    right: -10,
+    bottom: 50,
+  },
+  pressable: {
+    width: 110,
+    height: 110,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mascotWrapper: {
+    width: 110,
+    height: 110,
+  },
+});
