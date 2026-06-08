@@ -36,7 +36,6 @@ import {
 import {
   getPreAssessmentResults,
   savePreAssessmentResults,
-  getCompletedSections,
   StoredPreAssessmentResult,
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
@@ -102,7 +101,6 @@ function PreAssessmentModal({
         }),
       ]).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {

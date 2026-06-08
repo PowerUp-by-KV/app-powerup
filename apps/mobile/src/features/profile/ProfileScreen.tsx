@@ -8,6 +8,7 @@ import {
   View,
   KeyboardAvoidingView,
   Platform,
+  DimensionValue,
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -343,7 +344,7 @@ export function ProfileScreen() {
                     className="h-full"
                     style={{
                       width: profile?.total_modules
-                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as any)
+                        ? (`${(profile.modules_completed / profile.total_modules) * 100}%` as DimensionValue)
                         : "0%",
                     }}
                   />

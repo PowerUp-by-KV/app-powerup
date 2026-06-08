@@ -344,7 +344,7 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch (err) {
+        } catch {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",

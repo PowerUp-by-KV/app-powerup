@@ -17,7 +17,6 @@ import {
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
 } from "@/services/onboarding-api";
-import { getApiErrorMessage } from "@/utils/error-message";
 
 export function ResumeUploadStep() {
   const router = useRouter();
@@ -62,9 +61,9 @@ export function ResumeUploadStep() {
     if (!picked || isLoading) return;
     try {
       const formData = new FormData();
-      if (Platform.OS === "web" && (picked as any).file) {
+      if (Platform.OS === "web" && (picked as unknown as { file?: File }).file) {
         // On web, use the actual File object from the document picker
-        formData.append("file", (picked as any).file, picked.name);
+        formData.append("file", (picked as unknown as { file?: File }).file!, picked.name);
       } else {
         // On mobile (React Native), use the {uri, name, type} format
         formData.append("file", {
@@ -97,7 +96,7 @@ export function ResumeUploadStep() {
           router.replace("/(tabs)" as never);
         }
       }, 2000);
-    } catch (err) {
+    } catch {
       Alert.alert(
         "Upload failed",
         "Could not upload and extract your resume. You can try again or continue without it.",

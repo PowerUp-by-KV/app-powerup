@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 

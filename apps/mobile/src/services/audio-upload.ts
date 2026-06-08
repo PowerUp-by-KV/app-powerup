@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
 import { normalizeBaseUrlForRuntime } from "./api";
