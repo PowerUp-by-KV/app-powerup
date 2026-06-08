@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert } from "react-native";
 
 import {
   useStartWebRTCInterviewMutation,
@@ -44,6 +45,40 @@ interface UseWebRTCInterviewReturn {
 // both when the interview completes naturally and when the candidate says
 // "end the interview". Detecting it lets us auto-finalize on web AND phone.
 const CLOSING_PHRASE_MARKER = "this concludes our interview";
+
+// Translates a failed /interview/start into a human-readable message + a
+// machine-readable code. The backend returns { detail: { code, message } }
+// for known cases (e.g. NO_RESUME); everything else is mapped to a friendly
+// fallback instead of a bare "Failed to start interview".
+function describeStartError(err: unknown): { code: string; message: string } {
+  const e = err as { status?: number | string; data?: { detail?: unknown } };
+  const detail = e?.data?.detail;
+
+  if (detail && typeof detail === "object") {
+    const d = detail as { code?: string; message?: string };
+    if (d.code === "NO_RESUME") {
+      return {
+        code: "NO_RESUME",
+        message:
+          d.message ??
+          "We couldn't find your résumé. Add or finish building your résumé so we can tailor your interview questions.",
+      };
+    }
+    if (d.message) return { code: d.code ?? "SERVER", message: d.message };
+  }
+
+  if (e?.status === "FETCH_ERROR" || e?.status === "TIMEOUT_ERROR") {
+    return {
+      code: "NETWORK",
+      message: "We couldn't reach the interview service. Check your connection and try again.",
+    };
+  }
+
+  return {
+    code: "SERVER",
+    message: "We couldn't start your interview right now. Please try again in a moment.",
+  };
+}
 
 export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRTCInterviewReturn {
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
@@ -268,8 +303,15 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
     try {
       const result = await startInterviewMutation({ mode }).unwrap();
       backendData = result;
-    } catch {
-      handleError("Failed to start interview. Please try again.");
+    } catch (err) {
+      const { code, message } = describeStartError(err);
+      handleError(message);
+      // Surface a popup for the most actionable case; the screens also render
+      // `errorMessage` inline (which is the visible path on web, where
+      // Alert.alert is a no-op).
+      if (code === "NO_RESUME") {
+        Alert.alert("Résumé needed", message, [{ text: "OK" }]);
+      }
       return null;
     }
 
