@@ -1,12 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView, View, Text, Pressable, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
-import { getApiErrorMessage } from "@/utils/error-message";
-import { useAnalyzeResumeMutation } from "./services/resume-buddy-api";
-import type { ResumeBuddyResponse, ResumeBuddyStep } from "./types";
+import { useResumeBuddyAnalysis } from "./hooks/useResumeBuddyAnalysis";
+import type { ResumeBuddyStep } from "./types";
 
 import { DomainInputStep } from "./components/DomainInputStep";
 import { AnalysisLoadingStep } from "./components/AnalysisLoadingStep";
@@ -19,9 +18,7 @@ export function ResumeBuddyScreen() {
   const safeBack = useSafeBack();
 
   const [step, setStep] = useState<ResumeBuddyStep>("input");
-  const [analysis, setAnalysis] = useState<ResumeBuddyResponse | null>(null);
-
-  const [analyzeResume, { isLoading }] = useAnalyzeResumeMutation();
+  const { phase, activeStage, result: analysis, error, analyze, reset } = useResumeBuddyAnalysis();
 
   // Guard against duplicate submissions
   const submittingRef = useRef(false);
@@ -30,25 +27,23 @@ export function ResumeBuddyScreen() {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setStep("loading");
+    await analyze(domain);
+    submittingRef.current = false;
+  };
 
-    try {
-      const res = await analyzeResume({ domain }).unwrap();
-      setAnalysis(res);
+  // React to the async analysis lifecycle: surface the result, or report failure.
+  useEffect(() => {
+    if (phase === "done" && analysis) {
       setStep("scores");
-    } catch (err) {
-      console.error("Resume Buddy analysis failed:", err);
+    } else if (phase === "error") {
       setStep("input");
       Alert.alert(
         "Analysis Failed",
-        getApiErrorMessage(
-          err,
-          "Failed to analyze your resume. Please check your connection and try again.",
-        ),
+        error ?? "Failed to analyze your resume. Please check your connection and try again.",
       );
-    } finally {
-      submittingRef.current = false;
+      reset();
     }
-  };
+  }, [phase, analysis, error, reset]);
 
   const handleHistory = () => {
     router.push("/resume-buddy-history" as never);
@@ -106,11 +101,11 @@ export function ResumeBuddyScreen() {
           <DomainInputStep
             onAnalyze={handleAnalyze}
             onHistory={handleHistory}
-            isLoading={isLoading}
+            isLoading={phase === "running"}
           />
         )}
 
-        {step === "loading" && <AnalysisLoadingStep />}
+        {step === "loading" && <AnalysisLoadingStep activeStage={activeStage} />}
 
         {step === "strengths" && analysis && (
           <StrengthWeaknessStep

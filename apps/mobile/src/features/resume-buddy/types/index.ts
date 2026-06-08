@@ -53,12 +53,31 @@ export interface ResumeBuddyResponse {
   missing_skills: string[];
   personalized_suggestions: string[];
   resume_quality_summary: string;
+  // Present on the async-analyze response; used to subscribe to the SSE status stream.
+  job_id?: string;
+}
+
+// ─── Async status (SSE) ───────────────────────────────────────────────────────
+
+// Stages the backend worker publishes over Redis pub/sub → SSE.
+export type ResumeBuddyBackendStage = "extraction" | "ats" | "ai" | "done";
+export type ResumeBuddyBackendStatus = "started" | "completed" | "failed";
+
+export interface ResumeBuddyStatusEvent {
+  stage: ResumeBuddyBackendStage;
+  status: ResumeBuddyBackendStatus;
+  error?: string;
+  // The "done"/"completed" event also carries headline scores, but the full
+  // structured record (criteria_scores, ats findings, …) is read back from
+  // /history once done fires.
+  [key: string]: unknown;
 }
 
 // ─── History ──────────────────────────────────────────────────────────────────
 
 export interface ResumeBuddyHistoryItem {
   id: string;
+  job_id?: string;
   overall_resume_score: number;
   ats_score: number;
   skills_match_percentage: number;
