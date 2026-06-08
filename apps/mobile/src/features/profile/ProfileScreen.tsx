@@ -34,11 +34,20 @@ export function ProfileScreen() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+        let storedDarkMode: string | null = null;
+        let storedNotifications: string | null = null;
+        if (Platform.OS === "web") {
+          if (typeof window !== "undefined") {
+            storedDarkMode = window.localStorage.getItem("settings_dark_mode");
+            storedNotifications = window.localStorage.getItem("settings_notifications");
+          }
+        } else {
+          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+          storedNotifications = await SecureStore.getItemAsync("settings_notifications");
+        }
         if (storedDarkMode !== null) {
           setIsDarkMode(storedDarkMode === "true");
         }
-        const storedNotifications = await SecureStore.getItemAsync("settings_notifications");
         if (storedNotifications !== null) {
           setNotificationsEnabled(storedNotifications === "true");
         }
@@ -52,14 +61,26 @@ export function ProfileScreen() {
   const handleToggleDarkMode = async (value: boolean) => {
     setIsDarkMode(value);
     try {
-      await SecureStore.setItemAsync("settings_dark_mode", String(value));
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_dark_mode", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_dark_mode", String(value));
+      }
     } catch {}
   };
 
   const handleToggleNotifications = async (value: boolean) => {
     setNotificationsEnabled(value);
     try {
-      await SecureStore.setItemAsync("settings_notifications", String(value));
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("settings_notifications", String(value));
+        }
+      } else {
+        await SecureStore.setItemAsync("settings_notifications", String(value));
+      }
     } catch {}
   };
 
@@ -275,18 +296,23 @@ export function ProfileScreen() {
           {/* Profile Header section */}
           <View className="flex-row px-5 py-5 items-center bg-white" style={{ gap: 16 }}>
             {/* Left: Avatar with gradient background */}
-            <LinearGradient
-              colors={["#8ef34b", "#dcf434"]}
-              className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
+            <Pressable
+              onPress={() => router.push("/profile/avatar" as never)}
+              className="active:opacity-85"
             >
-              <Image
-                source={{
-                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                }}
-                className="w-full h-full"
-                style={{ resizeMode: "cover" }}
-              />
-            </LinearGradient>
+              <LinearGradient
+                colors={["#8ef34b", "#dcf434"]}
+                className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
+              >
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  className="w-full h-full"
+                  style={{ resizeMode: "cover" }}
+                />
+              </LinearGradient>
+            </Pressable>
 
             {/* Right Details */}
             <View className="flex-1">

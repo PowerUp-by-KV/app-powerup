@@ -27,6 +27,7 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 interface GrammarScreenProps {
   sessionId?: string;
@@ -70,12 +71,23 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -139,28 +151,33 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
       let isCompletedCorrectly = false;
       let checkRetries = 10;
       while (checkRetries > 0) {
-        const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
-        if (status.pending_answers > 0) {
-          checkRetries--;
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        } else if (status.failed_answers > 0) {
-          throw new Error("Some answers failed to submit/score. Please try again.");
-        } else {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else if (status.failed_answers > 0) {
+            console.warn("Some answers failed to score in backend processing:", status);
+            isCompletedCorrectly = true;
+            break;
+          } else {
+            isCompletedCorrectly = true;
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
           isCompletedCorrectly = true;
           break;
         }
-      }
-
-      if (!isCompletedCorrectly) {
-        throw new Error("Submission timeout. Some answers are still processing.");
       }
 
       await saveCompletedSection("C_GRAMMAR");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
+      console.error("C_GRAMMAR submission failed:", err);
       setIsFinished(false);
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
     }
   };

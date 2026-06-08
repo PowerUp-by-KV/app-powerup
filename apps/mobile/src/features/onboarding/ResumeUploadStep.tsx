@@ -100,7 +100,16 @@ export function ResumeUploadStep() {
     } catch (err) {
       Alert.alert(
         "Upload failed",
-        getApiErrorMessage(err, "Could not upload and extract your resume."),
+        "Could not upload and extract your resume. You can try again or continue without it.",
+        [
+          { text: "Try Again", style: "cancel" },
+          {
+            text: "Continue Without Resume",
+            onPress: async () => {
+              await goToAssessment();
+            },
+          },
+        ],
       );
     }
   };

@@ -109,12 +109,23 @@ export default function OnboardingScreen() {
       <SafeAreaView className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -337,7 +348,23 @@ export default function OnboardingScreen() {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",
-            getApiErrorMessage(err, "Could not upload and extract your resume. Please try again."),
+            "Could not upload and extract your resume. You can try again or continue onboarding without it.",
+            [
+              { text: "Try Again", style: "cancel" },
+              {
+                text: "Continue Without Resume",
+                onPress: async () => {
+                  // Clear the file answer so we proceed with only questionnaire answers
+                  dispatch(updateField({ field: question.question_key as any, value: "" }));
+                  setResumeUploaded(false);
+                  if (stepNumber < flattenedQuestions.length) {
+                    dispatch(nextStep());
+                  } else {
+                    await submitFinalAnswers();
+                  }
+                },
+              },
+            ],
           );
           return;
         }
@@ -354,16 +381,11 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     if (!question) return;
 
-    if (question.input_type === "file") {
-      Alert.alert(
-        "Resume Required",
-        "Resume upload is a required first step to personalize your onboarding. You cannot skip this step.",
-      );
-      return;
-    }
-
-    // Optionally clear value when skipping
+    // Clear value when skipping
     dispatch(updateField({ field: question.question_key as any, value: "" }));
+    if (question.input_type === "file") {
+      setResumeUploaded(false);
+    }
 
     if (stepNumber < flattenedQuestions.length) {
       dispatch(nextStep());
