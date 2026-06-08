@@ -29,6 +29,12 @@ const ALLOWED_BEFORE_ONBOARDING = [
   "profile",
 ];
 
+// Sentinel for "no session read has completed yet". Must be distinct from every
+// possible route value — including `undefined` (segments[0] is undefined on the
+// first render), otherwise `readyForRoute === currentRoute` would be true before
+// any read finishes and the guard could redirect prematurely.
+const UNRESOLVED = Symbol("session-unresolved");
+
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
@@ -38,8 +44,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   // Tracks the route for which the session read has completed. We only make
   // redirect decisions once the fresh read for the *current* route is done —
   // otherwise, right after login navigates, the effect would run with a stale
-  // `session === null` and bounce the user straight back to /login.
-  const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
+  // `session === null` and bounce the user straight back to /login. Starts as
+  // UNRESOLVED (not undefined) so the first render is never considered "ready".
+  const [readyForRoute, setReadyForRoute] = useState<string | undefined | typeof UNRESOLVED>(
+    UNRESOLVED,
+  );
 
   useEffect(() => {
     let active = true;
