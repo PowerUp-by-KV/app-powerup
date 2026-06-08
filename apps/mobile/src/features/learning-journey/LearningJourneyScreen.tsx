@@ -37,6 +37,7 @@ import {
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
+import { CombinedModuleDay } from "@/features/home/HomeScreen";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
 
@@ -528,7 +529,7 @@ export function LearningJourneyScreen() {
   };
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [allDaysList, setAllDaysList] = useState<any[]>([]);
+  const [allDaysList, setAllDaysList] = useState<CombinedModuleDay[]>([]);
   const [loadingAllDays, setLoadingAllDays] = useState(false);
 
   const fetchAllDays = useCallback(

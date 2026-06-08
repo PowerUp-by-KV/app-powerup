@@ -346,7 +346,6 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       }
 
       // Poll/verify status
-      let isCompletedCorrectly = false;
       let checkRetries = 10;
       while (checkRetries > 0) {
         try {
@@ -354,17 +353,14 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
           if (status.pending_answers > 0) {
             checkRetries--;
             await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else if (status.failed_answers > 0) {
-            console.warn("Some answers failed to score in backend processing:", status);
-            isCompletedCorrectly = true;
-            break;
           } else {
-            isCompletedCorrectly = true;
+            if (status.failed_answers > 0) {
+              console.warn("Some answers failed to score in backend processing:", status);
+            }
             break;
           }
         } catch (pollErr) {
           console.warn("Polling assessment status failed, continuing anyway:", pollErr);
-          isCompletedCorrectly = true;
           break;
         }
       }
