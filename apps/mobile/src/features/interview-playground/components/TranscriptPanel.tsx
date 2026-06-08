@@ -8,18 +8,8 @@ interface TranscriptPanelProps {
 }
 
 const ROLE_LABELS: Record<TranscriptTurn["role"], string> = {
-  interviewer: "AI",
+  interviewer: "AI Interviewer",
   candidate: "You",
-};
-
-const ROLE_COLORS: Record<TranscriptTurn["role"], string> = {
-  interviewer: "#4F46E5",
-  candidate: "#475569",
-};
-
-const ROLE_BG: Record<TranscriptTurn["role"], string> = {
-  interviewer: "#EEF2FF",
-  candidate: "#F1F5F9",
 };
 
 export function TranscriptPanel({ turns }: TranscriptPanelProps) {
@@ -32,23 +22,26 @@ export function TranscriptPanel({ turns }: TranscriptPanelProps) {
   if (turns.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>Transcript will appear here…</Text>
+        <Text style={styles.emptyText}>The conversation will appear here…</Text>
       </View>
     );
   }
 
   return (
     <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content}>
-      {turns.map((turn, index) => (
-        <View key={index} style={styles.turnRow}>
-          <View style={[styles.badge, { backgroundColor: ROLE_BG[turn.role] }]}>
-            <Text style={[styles.badgeText, { color: ROLE_COLORS[turn.role] }]}>
+      {turns.map((turn, index) => {
+        const isAI = turn.role === "interviewer";
+        return (
+          <View key={index} style={[styles.row, isAI ? styles.rowLeft : styles.rowRight]}>
+            <Text style={[styles.speaker, isAI ? styles.speakerAI : styles.speakerUser]}>
               {ROLE_LABELS[turn.role]}
             </Text>
+            <View style={[styles.bubble, isAI ? styles.bubbleAI : styles.bubbleUser]}>
+              <Text style={[styles.text, isAI ? styles.textAI : styles.textUser]}>{turn.text}</Text>
+            </View>
           </View>
-          <Text style={styles.turnText}>{turn.text}</Text>
-        </View>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 }
@@ -58,31 +51,56 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 12,
-    gap: 10,
+    padding: 16,
+    gap: 14,
   },
-  turnRow: {
-    flexDirection: "row",
+  row: {
+    maxWidth: "88%",
+  },
+  rowLeft: {
+    alignSelf: "flex-start",
     alignItems: "flex-start",
-    gap: 8,
   },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 36,
-    alignItems: "center",
-    marginTop: 2,
+  rowRight: {
+    alignSelf: "flex-end",
+    alignItems: "flex-end",
   },
-  badgeText: {
+  speaker: {
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "700",
+    marginBottom: 4,
+    marginHorizontal: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  turnText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#1E293B",
-    lineHeight: 20,
+  speakerAI: {
+    color: "#A5B4FC",
+  },
+  speakerUser: {
+    color: "#7DD3FC",
+  },
+  bubble: {
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  bubbleAI: {
+    backgroundColor: "#312E81",
+    borderTopLeftRadius: 4,
+  },
+  bubbleUser: {
+    backgroundColor: "#1E293B",
+    borderTopRightRadius: 4,
+  },
+  text: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  textAI: {
+    color: "#EEF2FF",
+  },
+  textUser: {
+    color: "#E2E8F0",
   },
   empty: {
     flex: 1,
@@ -91,7 +109,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   emptyText: {
-    color: "#94A3B8",
+    color: "#64748B",
     fontSize: 14,
   },
 });

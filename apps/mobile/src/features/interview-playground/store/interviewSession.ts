@@ -1,4 +1,5 @@
 import type { TranscriptTurn, InterviewStatus, EvaluationResult, InterviewMode } from "../types";
+import { stopAudioRouting } from "../platform/webrtc";
 
 type StatusListener = (status: InterviewStatus) => void;
 type TranscriptListener = (turns: TranscriptTurn[]) => void;
@@ -77,6 +78,9 @@ export function resetSession(): void {
     }
     activeSession.pc = null;
   }
+  // Release the audio session / loudspeaker routing on every teardown path
+  // (manual end, disconnect, unmount, error).
+  stopAudioRouting();
   activeSession.transcript = [];
   activeSession.sessionId = null;
   activeSession.derivedRole = null;
