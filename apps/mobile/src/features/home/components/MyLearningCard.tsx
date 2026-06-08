@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 interface MyLearningCardProps {
@@ -25,9 +25,9 @@ function StatTile({
       colors={colors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      className="flex-1 items-center rounded-3xl py-4 mx-1 shadow-sm"
+      style={styles.statTile}
     >
-      <Text className="text-white font-extrabold text-4xl tracking-tight">{value}</Text>
+      <Text className="text-white font-extrabold text-3xl tracking-tight">{value}</Text>
       <Text className="text-indigo-100 text-[11px] font-semibold mt-1">{label}</Text>
     </LinearGradient>
   );
@@ -47,7 +47,7 @@ export function MyLearningCard({
   const tileColors: readonly [string, string, ...string[]] = ["#4f46e5", "#3b82f6"];
 
   return (
-    <View className="bg-white rounded-3xl p-5 border border-slate-100/60 shadow-sm shadow-slate-100 mb-6">
+    <View style={styles.card}>
       <Text className="text-slate-900 text-base font-bold mb-4 text-center">Daily Progress</Text>
       <View className="flex-row -mx-1 mb-5">
         <StatTile value={streakCount} label="Streaks" colors={tileColors} />
@@ -62,21 +62,21 @@ export function MyLearningCard({
           </Text>
           <Text className="text-slate-300 text-xs font-semibold">{pct}%</Text>
         </View>
-        <View className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <View style={styles.progressBarContainer}>
           <LinearGradient
             colors={["#3b82f6", "#22c55e", "#84cc16"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={{ width: `${pct}%`, height: "100%", borderRadius: 9999 }}
+            style={[styles.progressBarFill, { width: `${pct}%` }]}
           />
         </View>
       </View>
-      <Pressable onPress={onTrack} className="active:scale-98 overflow-hidden rounded-2xl">
+      <Pressable onPress={onTrack} style={styles.buttonPressable} className="active:scale-98">
         <LinearGradient
           colors={["#4f46e5", "#3b82f6"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          className="py-3.5 items-center justify-center shadow-md shadow-indigo-100/20"
+          style={styles.buttonGradient}
         >
           <Text className="text-white font-bold text-base tracking-wide">Track my Learning</Text>
         </LinearGradient>
@@ -84,3 +84,56 @@ export function MyLearningCard({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(241, 245, 249, 0.6)",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 24,
+  },
+  statTile: {
+    flex: 1,
+    alignItems: "center",
+    borderRadius: 20,
+    paddingVertical: 16,
+    marginHorizontal: 4,
+    shadowColor: "#4f46e5",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  progressBarContainer: {
+    height: 10,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 5,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 5,
+  },
+  buttonPressable: {
+    borderRadius: 9999,
+    overflow: "hidden",
+  },
+  buttonGradient: {
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 9999,
+    shadowColor: "#4f46e5",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+});

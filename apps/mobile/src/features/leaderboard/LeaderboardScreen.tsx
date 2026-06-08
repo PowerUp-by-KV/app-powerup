@@ -144,7 +144,14 @@ export function LeaderboardScreen() {
               <View className="bg-white border border-slate-100 rounded-3xl p-5 mb-5 flex-row items-center justify-between shadow-sm">
                 <View className="flex-row items-center flex-1 pr-3">
                   <Text className="text-slate-800 text-3xl font-black mr-4">
-                    #{data?.your_rank === 1 ? "1st" : `${data?.your_rank ?? 0}th`}
+                    #
+                    {data?.your_rank === 1
+                      ? "1st"
+                      : data?.your_rank === 2
+                        ? "2nd"
+                        : data?.your_rank === 3
+                          ? "3rd"
+                          : `${data?.your_rank ?? 0}th`}
                   </Text>
                   <View className="flex-1">
                     <Text className="text-slate-500 text-xs font-bold leading-normal">

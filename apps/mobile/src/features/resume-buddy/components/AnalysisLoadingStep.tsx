@@ -1,22 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 const STAGES = [
-  { label: "Reading Resume Data", icon: "file-text" as const, durationMs: 1200 },
-  { label: "Evaluating ATS Compatibility", icon: "shield" as const, durationMs: 1500 },
-  { label: "Matching Skills", icon: "target" as const, durationMs: 1400 },
-  { label: "Running AI Semantic Analysis", icon: "cpu" as const, durationMs: 1800 },
-  { label: "Generating Recommendations", icon: "zap" as const, durationMs: 1600 },
-  { label: "Finalizing Report", icon: "check-circle" as const, durationMs: 1000 },
+  { label: "Reading Resume Data", icon: "file-text" as const },
+  { label: "Evaluating ATS Compatibility", icon: "shield" as const },
+  { label: "Matching Skills", icon: "target" as const },
+  { label: "Running AI Semantic Analysis", icon: "cpu" as const },
+  { label: "Generating Recommendations", icon: "zap" as const },
+  { label: "Finalizing Report", icon: "check-circle" as const },
 ];
 
 type StageStatus = "pending" | "active" | "done";
 
-export function AnalysisLoadingStep() {
-  const [stageStatuses, setStageStatuses] = useState<StageStatus[]>(
-    STAGES.map((_, i) => (i === 0 ? "active" : "pending")),
-  );
+interface AnalysisLoadingStepProps {
+  // Index (0-5) of the stage the backend is currently working on, driven by the
+  // real SSE status stream. Stages before it render as done.
+  activeStage?: number;
+}
+
+export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProps) {
+  const clampedActive = Math.min(Math.max(activeStage, 0), STAGES.length - 1);
+
+  const stageStatuses: StageStatus[] = STAGES.map((_, i) => {
+    if (i < clampedActive) return "done";
+    if (i === clampedActive) return "active";
+    return "pending";
+  });
 
   // Pulse animation for the active stage dot
   const pulse = React.useRef(new Animated.Value(1)).current;
@@ -32,32 +42,7 @@ export function AnalysisLoadingStep() {
     return () => anim.stop();
   }, [pulse]);
 
-  // Staged timer: advance each stage after its duration
-  useEffect(() => {
-    let current = 0;
-    let timeout: ReturnType<typeof setTimeout>;
-
-    const advance = () => {
-      if (current >= STAGES.length - 1) return;
-      const stageDuration = STAGES[current]?.durationMs ?? 1000;
-      timeout = setTimeout(() => {
-        current++;
-        setStageStatuses((prev) =>
-          prev.map((s, i) => {
-            if (i < current) return "done";
-            if (i === current) return "active";
-            return "pending";
-          }),
-        );
-        advance();
-      }, stageDuration);
-    };
-
-    advance();
-    return () => clearTimeout(timeout);
-  }, []);
-
-  const activeIndex = stageStatuses.findIndex((s) => s === "active");
+  const activeIndex = clampedActive;
 
   return (
     <View style={styles.container}>
