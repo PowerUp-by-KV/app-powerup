@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { LinearGradient } from "expo-linear-gradient";
 
 import {
   useCompleteActivityMutation,
@@ -104,7 +105,6 @@ export function ModuleScreen() {
         // ignore and retry
       }
       // wait before next try
-      // eslint-disable-next-line no-await-in-loop
       await new Promise((r) => setTimeout(r, 700));
     }
     return false;
@@ -143,7 +143,6 @@ export function ModuleScreen() {
 
         // Give progression a short chance to update so the UI can show newly unlocked days.
         // This will return quickly if nothing changed.
-        // eslint-disable-next-line no-await-in-loop
         await tryRefreshProgression();
 
         router.replace({
@@ -253,18 +252,37 @@ export function ModuleScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1 }} className="bg-white">
-      <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-        <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
-          <Feather name="x" size={22} color="#0f172a" />
-        </Pressable>
-        <View className="flex-1 mx-4">
-          <View className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-            <View className="h-full bg-slate-900" style={{ width: `${progressPct}%` }} />
+      <View className="px-4 pt-4 pb-2 border-b border-slate-100 bg-white">
+        {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
+        <View className="flex-row items-center w-full mb-3">
+          <Pressable
+            onPress={() => safeBack()}
+            className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-85"
+          >
+            <Feather name="x" size={20} color="#0f172a" />
+          </Pressable>
+          <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+            <LinearGradient
+              colors={["#3b82f6", "#22c55e"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ width: `${progressPct}%` }}
+              className="h-full rounded-full"
+            />
           </View>
         </View>
-        <Text className="text-xs text-slate-500 w-12 text-right">
-          {currentStep}/{totalSteps}
-        </Text>
+
+        {/* Section details with Category title and progress count */}
+        <View className="flex-row items-center justify-between px-1 mb-1">
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+            {currentActivity?.skill_type || "Activity"}
+          </Text>
+          <View className="bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/40">
+            <Text className="text-[10px] font-extrabold text-slate-500">
+              Activity {currentStep} of {totalSteps}
+            </Text>
+          </View>
+        </View>
       </View>
 
       <View style={{ flex: 1 }}>

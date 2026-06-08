@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   ASpeakingSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { SentenceDisplay } from "./components/SentenceDisplay";
 import { Recorder } from "./components/Recorder";
@@ -29,6 +30,7 @@ import { OfflineGameView } from "@/components/OfflineGameView";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -82,6 +84,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -342,14 +345,39 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
         }
       }
 
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else if (status.failed_answers > 0) {
+            console.warn("Some answers failed to score in backend processing:", status);
+            isCompletedCorrectly = true;
+            break;
+          } else {
+            isCompletedCorrectly = true;
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
       await saveCompletedSection("A_SPEAKING");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
+      console.error("A_SPEAKING submission failed:", err);
       setIsFinished(false);
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
     }
   };

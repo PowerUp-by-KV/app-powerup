@@ -13,16 +13,16 @@ export function StatTile({ label, value, icon, onPress }: StatTileProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 bg-slate-900 rounded-2xl p-4 active:opacity-85"
-      style={{ minHeight: 86 }}
+      className="flex-1 bg-[#f0f2fe] rounded-3xl p-4 active:opacity-85 overflow-hidden border border-[#e2e8f0]/40 shadow-xs"
+      style={{ minHeight: 90, position: "relative" }}
     >
-      <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-slate-400 text-xs font-semibold uppercase tracking-wider">
-          {label}
-        </Text>
-        <Feather name={icon} size={16} color="#94a3b8" />
+      <View className="z-10 flex-1 justify-between">
+        <Text className="text-slate-500 text-xs font-bold uppercase tracking-wider">{label}</Text>
+        <Text className="text-slate-800 text-2xl font-black mt-1">{value}</Text>
       </View>
-      <Text className="text-white text-2xl font-extrabold">{value}</Text>
+      <View style={{ position: "absolute", right: 10, bottom: -10, opacity: 0.08 }}>
+        <Feather name={icon} size={64} color="#4f46e5" />
+      </View>
     </Pressable>
   );
 }

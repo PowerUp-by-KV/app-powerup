@@ -1,5 +1,13 @@
 import React, { useMemo } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,6 +21,8 @@ import {
   useGetPersonalizedPathQuery,
   PersonalizedModuleItem,
 } from "@/services/module-api";
+
+import { getAvatarUri } from "@/utils/avatar";
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
@@ -50,6 +60,8 @@ export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
 
   const { data: personalizedPath } = useGetPersonalizedPathQuery(undefined, {
     skip: !gate.canEnter,
@@ -152,7 +164,10 @@ export function HomeScreen() {
     skip: !activeDay,
   });
 
-  const firstName = profile?.name?.split(" ")[0] ?? "there";
+  const rawFirstName = profile?.name?.split(" ")[0] ?? "there";
+  const firstName = rawFirstName
+    ? rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
+    : "there";
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {
@@ -200,102 +215,103 @@ export function HomeScreen() {
         style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
       />
       <SafeAreaView style={{ flex: 1 }} className="flex-1">
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View className="flex-row items-center justify-between mb-6">
-            <View>
-              <Text className="text-2xl font-black tracking-tight">
-                <Text style={{ color: "#4f46e5" }}>Hi, </Text>
-                <Text style={{ color: "#94a3b8" }}>
-                  {(firstName?.toUpperCase() || "").slice(0, 2)}
+        <View style={{ flex: 1, width: "100%", position: "relative" }}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: isTablet ? 24 : 20, paddingBottom: 120 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View className="flex-row items-center justify-between mb-6">
+              <View>
+                <Text className="text-2xl font-black tracking-tight">
+                  <Text style={{ color: "#4f46e5" }}>Hi, </Text>
+                  <Text style={{ color: "#84cc16" }}>{firstName}!</Text>
                 </Text>
-                <Text style={{ color: "#84cc16" }}>
-                  {(firstName?.toUpperCase() || "").slice(2)}!
+                <Text className="text-slate-400 text-sm mt-1 font-semibold">
+                  Ready to learn something new?
                 </Text>
-              </Text>
-              <Text className="text-slate-400 text-sm mt-1 font-semibold">
-                Ready to learn something new?
-              </Text>
-            </View>
-            <Pressable
-              onPress={() => router.push("/profile" as never)}
-              className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
-            >
-              <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                <Feather name="user" size={20} color="#4f46e5" />
               </View>
-            </Pressable>
-          </View>
+              <Pressable
+                onPress={() => router.push("/profile" as never)}
+                className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
+              >
+                <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
+                  <Image
+                    source={{ uri: getAvatarUri(profile?.avatar_id, profile?.id) }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode="cover"
+                  />
+                </View>
+              </Pressable>
+            </View>
 
-          {profile && profile.email_verified === false && (
-            <VerifyEmailBanner email={profile.email} />
-          )}
+            {profile && profile.email_verified === false && (
+              <VerifyEmailBanner email={profile.email} />
+            )}
 
-          <WeeklyStreak days={profile?.weekly_streak} />
+            <WeeklyStreak days={profile?.weekly_streak} />
 
-          <MyLearningCard
-            streakCount={profile?.streak_count ?? 0}
-            badgesCount={profile?.badges_count ?? 0}
-            xpPoints={profile?.total_xp ?? 0}
-            daysCompleted={daysCompleted}
-            totalDays={totalDays}
-            onTrack={() => router.push("/(tabs)/achievements" as never)}
-          />
+            <MyLearningCard
+              streakCount={profile?.streak_count ?? 0}
+              badgesCount={profile?.badges_count ?? 0}
+              xpPoints={profile?.total_xp ?? 0}
+              daysCompleted={daysCompleted}
+              totalDays={totalDays}
+              onTrack={() => router.push("/(tabs)/achievements" as never)}
+            />
 
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
-            <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
-              <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
-            </Pressable>
-          </View>
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
+              <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
+                <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
+              </Pressable>
+            </View>
 
-          <ContinueLearningCard
-            title={continueTitle}
-            subtitle={continueSubtitle}
-            onPress={handleContinuePress}
-          />
+            <ContinueLearningCard
+              title={continueTitle}
+              subtitle={continueSubtitle}
+              onPress={handleContinuePress}
+            />
 
-          <FeatureGroupCard
-            title="Convo Coach"
-            subtitle="Say it better, every time"
-            icon="✨"
-            items={[
-              {
-                title: "Interview Playground",
-                subtitle: "Try, learn and improve — No pressure",
-                onPress: () => router.push("/interview-playground" as never),
-              },
-              {
-                title: "Interview Buddy",
-                subtitle: "Practice with a buddy before it counts",
-                onPress: () => router.push("/ai-interview" as never),
-              },
-            ]}
-          />
+            <FeatureGroupCard
+              title="Convo Coach"
+              subtitle="Say it better, every time"
+              icon="✨"
+              items={[
+                {
+                  title: "Interview Playground",
+                  subtitle: "Try, learn and improve — No pressure",
+                  onPress: () => router.push("/interview-playground" as never),
+                },
+                {
+                  title: "Interview Buddy",
+                  subtitle: "Practice with a buddy before it counts",
+                  onPress: () => router.push("/ai-interview" as never),
+                },
+              ]}
+            />
 
-          <FeatureGroupCard
-            title="Resume Studio"
-            subtitle="Build a resume you're proud to share"
-            icon="📝"
-            items={[
-              {
-                title: "Resume Buddy",
-                subtitle: "Know what recruiters notice",
-                onPress: () => router.push("/resume-buddy" as never),
-              },
-              {
-                title: "Craft your Resume",
-                subtitle: "Design your story, your way",
-                onPress: () => router.push("/resume" as never),
-              },
-            ]}
-          />
-        </ScrollView>
-        <ChatFab onPress={() => router.push("/chat" as never)} />
+            <FeatureGroupCard
+              title="Resume Studio"
+              subtitle="Build a resume you're proud to share"
+              icon="📝"
+              items={[
+                {
+                  title: "Resume Buddy",
+                  subtitle: "Know what recruiters notice",
+                  onPress: () => router.push("/resume-buddy" as never),
+                },
+                {
+                  title: "Craft your Resume",
+                  subtitle: "Design your story, your way",
+                  onPress: () => router.push("/resume" as never),
+                },
+              ]}
+            />
+          </ScrollView>
+          <ChatFab onPress={() => router.push("/chat" as never)} />
+        </View>
       </SafeAreaView>
     </View>
   );

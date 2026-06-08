@@ -17,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   DListenAnswerSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ListeningQuestion } from "./components/ListeningQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
@@ -26,6 +27,7 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 interface ListeningScreenProps {
   sessionId?: string;
@@ -54,6 +56,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -173,13 +176,39 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         }
       }
 
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else if (status.failed_answers > 0) {
+            console.warn("Some answers failed to score in backend processing:", status);
+            isCompletedCorrectly = true;
+            break;
+          } else {
+            isCompletedCorrectly = true;
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
       await saveCompletedSection("D_LISTEN_ANSWER");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response?.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      console.error("D_LISTEN_ANSWER submission failed:", err);
+      setIsFinished(false);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
     }
   };

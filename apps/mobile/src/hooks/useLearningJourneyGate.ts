@@ -11,6 +11,7 @@ export interface LearningJourneyGate {
   ready: boolean;
   canEnter: boolean;
   blockedReason: GateReason;
+  completedSections?: string[];
 }
 
 export function useLearningJourneyGate(): LearningJourneyGate {
@@ -78,7 +79,7 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     (userId && isOnboardingLoading) ||
     (shouldCheckAssessment && isAssessmentLoading)
   ) {
-    return { ready: false, canEnter: false, blockedReason: null };
+    return { ready: false, canEnter: false, blockedReason: null, completedSections: [] };
   }
 
   // Pre-assessment completion status is determined by:
@@ -97,5 +98,10 @@ export function useLearningJourneyGate(): LearningJourneyGate {
       ? "assessment"
       : null;
 
-  return { ready: true, canEnter, blockedReason };
+  return {
+    ready: true,
+    canEnter,
+    blockedReason,
+    completedSections: assessmentSession?.completed_sections || [],
+  };
 }

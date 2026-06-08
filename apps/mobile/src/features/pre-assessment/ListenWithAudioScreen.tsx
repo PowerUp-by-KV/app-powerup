@@ -16,6 +16,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   AListenSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
@@ -30,6 +31,7 @@ import { OfflineGameView } from "@/components/OfflineGameView";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
+import { getApiErrorMessage } from "@/utils/error-message";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -83,6 +85,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -367,13 +370,38 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         }
       }
 
+      // Poll/verify status
+      let isCompletedCorrectly = false;
+      let checkRetries = 10;
+      while (checkRetries > 0) {
+        try {
+          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
+          if (status.pending_answers > 0) {
+            checkRetries--;
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } else if (status.failed_answers > 0) {
+            console.warn("Some answers failed to score in backend processing:", status);
+            isCompletedCorrectly = true;
+            break;
+          } else {
+            isCompletedCorrectly = true;
+            break;
+          }
+        } catch (pollErr) {
+          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
+          isCompletedCorrectly = true;
+          break;
+        }
+      }
+
       await saveCompletedSection("A_LISTEN");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      console.error("A_LISTEN submission failed:", err);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
       setIsFinished(false);
     }
