@@ -31,6 +31,7 @@ import LottieView from "lottie-react-native";
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -358,24 +359,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       }
 
       // Poll/verify status
-      let checkRetries = 10;
-      while (checkRetries > 0) {
-        try {
-          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
-          if (status.pending_answers > 0) {
-            checkRetries--;
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else if (status.failed_answers > 0) {
-            console.warn("Some answers failed to score in backend processing:", status);
-            break;
-          } else {
-            break;
-          }
-        } catch (pollErr) {
-          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
-          break;
-        }
-      }
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
 
       await saveCompletedSection("B_SPEAKING");
       await new Promise((res) => setTimeout(res, 600));

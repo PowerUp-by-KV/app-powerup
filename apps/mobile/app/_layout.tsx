@@ -107,7 +107,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           "success",
           "profile",
         ];
-        if (!currentRoute || !allowedRoutes.includes(currentRoute)) {
+        if (currentRoute && !allowedRoutes.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
@@ -122,7 +122,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           "verify-phone",
           "onboarding",
         ];
-        if (!currentRoute || blockedRoutes.includes(currentRoute)) {
+        if (currentRoute && blockedRoutes.includes(currentRoute)) {
           router.replace("/(tabs)/my-learning" as never);
         }
       }

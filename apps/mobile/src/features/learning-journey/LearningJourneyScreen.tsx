@@ -67,10 +67,7 @@ interface PreAssessmentModalProps {
 }
 
 // CEFR Score Mapping Constants
-const DEFAULT_CEFR_PERCENTAGE = 83.33;
 const MAX_CEFR_SCALE = 6;
-const DEFAULT_WRITING_PERCENTAGE = 66.67;
-const DEFAULT_SPEAKING_PERCENTAGE = 100.0;
 const SCORE_SCALE_CONVERSION = 100;
 const SCORE_AVERAGING_DIVISOR = 2;
 
@@ -253,22 +250,22 @@ function PreAssessmentModal({
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
   // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
-  const readingPct = safeResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const readingPct = safeResults.section_percentages["A_READING"] ?? 0;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
-  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
-  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? 0;
+  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? 0;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
-  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
+  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? 0;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
-  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
-  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? 0;
+  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? 0;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
