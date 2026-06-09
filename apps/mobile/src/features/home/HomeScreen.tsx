@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { ModuleDay } from "@powerup/shared";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
@@ -12,6 +13,12 @@ import {
   useGetDayProgressQuery,
   useGetModulesQuery,
 } from "@/services/module-api";
+
+export interface CombinedModuleDay extends ModuleDay {
+  module_no: number;
+  module_title: string;
+  module_id: string;
+}
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
@@ -55,7 +62,7 @@ export function HomeScreen() {
   }, [modulesData]);
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [allDaysList, setAllDaysList] = React.useState<any[]>([]);
+  const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
 
   React.useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
@@ -65,43 +72,19 @@ export function HomeScreen() {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
             const data = await triggerGetModuleDays(m.id).unwrap();
-            return { module: m, days: data };
+            return { moduleId: m.id, days: data };
           } catch (e) {
             console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { module: m, days: [] };
+            return { moduleId: m.id, days: [] };
           }
         });
         const results = await Promise.all(promises);
 
-        const daysByModuleNo: Record<number, any[]> = {};
-        const moduleByNo: Record<number, any> = {};
-
+        const newData: Record<string, ModuleDay[]> = {};
         for (const res of results) {
-          daysByModuleNo[res.module.module_no] = res.days;
-          moduleByNo[res.module.module_no] = res.module;
+          newData[res.moduleId] = res.days;
         }
-
-        const combined = [];
-        for (const waveConfig of PROGRESSION_WAVES) {
-          for (const mNo of waveConfig.modules) {
-            const moduleItem = moduleByNo[mNo];
-            if (!moduleItem) continue;
-
-            const moduleDays = daysByModuleNo[mNo] || [];
-            for (const dNum of waveConfig.days) {
-              const dayObj = moduleDays.find((d) => d.day_number === dNum);
-              if (dayObj) {
-                combined.push({
-                  ...dayObj,
-                  module_no: moduleItem.module_no,
-                  module_title: moduleItem.title,
-                  module_id: moduleItem.id,
-                });
-              }
-            }
-          }
-        }
-        setAllDaysList(combined);
+        setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
       }
@@ -109,6 +92,40 @@ export function HomeScreen() {
 
     fetchAllDays();
   }, [personalizedPath, triggerGetModuleDays]);
+
+  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
+    if (!personalizedPath?.modules?.length) return [];
+
+    const daysByModuleNo: Record<number, ModuleDay[]> = {};
+    const moduleByNo: Record<number, (typeof personalizedPath.modules)[0]> = {};
+
+    for (const m of personalizedPath.modules) {
+      daysByModuleNo[m.module_no] = moduleDaysData[m.id] || [];
+      moduleByNo[m.module_no] = m;
+    }
+
+    const combined: CombinedModuleDay[] = [];
+    for (const waveConfig of PROGRESSION_WAVES) {
+      for (const mNo of waveConfig.modules) {
+        const moduleItem = moduleByNo[mNo];
+        if (!moduleItem) continue;
+
+        const moduleDays = daysByModuleNo[mNo] || [];
+        for (const dNum of waveConfig.days) {
+          const dayObj = moduleDays.find((d) => d.day_number === dNum);
+          if (dayObj) {
+            combined.push({
+              ...dayObj,
+              module_no: moduleItem.module_no,
+              module_title: moduleItem.title,
+              module_id: moduleItem.id,
+            });
+          }
+        }
+      }
+    }
+    return combined;
+  }, [personalizedPath, moduleDaysData]);
 
   const firstIncompleteIdx = useMemo(() => {
     return allDaysList.findIndex((d) => !d.is_completed);
@@ -141,7 +158,7 @@ export function HomeScreen() {
     skip: !activeDay,
   });
 
-  const firstName = profile?.name?.split(" ")[0] ?? "there";
+  const firstName = profile?.name?.split(" ")[0] || "there";
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {

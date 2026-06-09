@@ -19,6 +19,13 @@ import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { getAvatarUri } from "@/utils/avatar";
+import type { ModuleDay } from "@powerup/shared";
+
+export interface CombinedModuleDay extends ModuleDay {
+  module_no: number;
+  module_title: string;
+  module_id: string;
+}
 
 import {
   useLazyGetModuleDaysQuery,
@@ -181,30 +188,30 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
 
   // derivedResults is guaranteed non-null here because isAssessmentComplete is true
   // (we early-returned above when !isAssessmentComplete where derivedResults === null)
-  const safeResults = derivedResults!;
-  const percentage = safeResults.percentage;
-  const obtainedPoints = Math.round(safeResults.total_score);
-  const totalPoints = Math.round(safeResults.max_score);
+  const safeResults = derivedResults;
+  const percentage = safeResults?.percentage ?? 0;
+  const obtainedPoints = Math.round(safeResults?.total_score ?? 0);
+  const totalPoints = Math.round(safeResults?.max_score ?? 0);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
 
   // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
-  const readingPct = safeResults.section_percentages["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const readingPct = safeResults?.section_percentages?.["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
   const readingScoreText = `${((readingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Listening Score: average of A_LISTEN and D_LISTEN_ANSWER percentages mapped out of MAX_CEFR_SCALE
-  const listen1 = safeResults.section_percentages["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
-  const listen2 = safeResults.section_percentages["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen1 = safeResults?.section_percentages?.["A_LISTEN"] ?? DEFAULT_CEFR_PERCENTAGE;
+  const listen2 = safeResults?.section_percentages?.["D_LISTEN_ANSWER"] ?? DEFAULT_CEFR_PERCENTAGE;
   const listenPct = (listen1 + listen2) / SCORE_AVERAGING_DIVISOR;
   const listeningScoreText = `${((listenPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Writing Score: C_GRAMMAR percentage mapped out of MAX_CEFR_SCALE
-  const writingPct = safeResults.section_percentages["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
+  const writingPct = safeResults?.section_percentages?.["C_GRAMMAR"] ?? DEFAULT_WRITING_PERCENTAGE;
   const writingScoreText = `${((writingPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
   // Speaking Score: average of A_SPEAKING and B_SPEAKING percentages mapped out of MAX_CEFR_SCALE
-  const speak1 = safeResults.section_percentages["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
-  const speak2 = safeResults.section_percentages["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak1 = safeResults?.section_percentages?.["A_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
+  const speak2 = safeResults?.section_percentages?.["B_SPEAKING"] ?? DEFAULT_SPEAKING_PERCENTAGE;
   const speakPct = (speak1 + speak2) / SCORE_AVERAGING_DIVISOR;
   const speakingScoreText = `${((speakPct / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
 
@@ -486,7 +493,7 @@ export function LearningJourneyScreen() {
   };
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [allDaysList, setAllDaysList] = useState<any[]>([]);
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
   const [loadingAllDays, setLoadingAllDays] = useState(false);
 
   const fetchAllDays = useCallback(
@@ -497,43 +504,19 @@ export function LearningJourneyScreen() {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
             const data = await triggerGetModuleDays(m.id, !force).unwrap();
-            return { module: m, days: data };
+            return { moduleId: m.id, days: data };
           } catch (e) {
             console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { module: m, days: [] };
+            return { moduleId: m.id, days: [] };
           }
         });
         const results = await Promise.all(promises);
 
-        const daysByModuleNo: Record<number, any[]> = {};
-        const moduleByNo: Record<number, any> = {};
-
+        const newData: Record<string, ModuleDay[]> = {};
         for (const res of results) {
-          daysByModuleNo[res.module.module_no] = res.days;
-          moduleByNo[res.module.module_no] = res.module;
+          newData[res.moduleId] = res.days;
         }
-
-        const combined = [];
-        for (const waveConfig of PROGRESSION_WAVES) {
-          for (const mNo of waveConfig.modules) {
-            const moduleItem = moduleByNo[mNo];
-            if (!moduleItem) continue;
-
-            const moduleDays = daysByModuleNo[mNo] || [];
-            for (const dNum of waveConfig.days) {
-              const dayObj = moduleDays.find((d) => d.day_number === dNum);
-              if (dayObj) {
-                combined.push({
-                  ...dayObj,
-                  module_no: moduleItem.module_no,
-                  module_title: moduleItem.title,
-                  module_id: moduleItem.id,
-                });
-              }
-            }
-          }
-        }
-        setAllDaysList(combined);
+        setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
       } finally {
@@ -548,6 +531,40 @@ export function LearningJourneyScreen() {
       fetchAllDays(false);
     }
   }, [fetchAllDays, gate.canEnter]);
+
+  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
+    if (!personalizedPath?.modules?.length) return [];
+
+    const daysByModuleNo: Record<number, ModuleDay[]> = {};
+    const moduleByNo: Record<number, (typeof personalizedPath.modules)[0]> = {};
+
+    for (const m of personalizedPath.modules) {
+      daysByModuleNo[m.module_no] = moduleDaysData[m.id] || [];
+      moduleByNo[m.module_no] = m;
+    }
+
+    const combined: CombinedModuleDay[] = [];
+    for (const waveConfig of PROGRESSION_WAVES) {
+      for (const mNo of waveConfig.modules) {
+        const moduleItem = moduleByNo[mNo];
+        if (!moduleItem) continue;
+
+        const moduleDays = daysByModuleNo[mNo] || [];
+        for (const dNum of waveConfig.days) {
+          const dayObj = moduleDays.find((d) => d.day_number === dNum);
+          if (dayObj) {
+            combined.push({
+              ...dayObj,
+              module_no: moduleItem.module_no,
+              module_title: moduleItem.title,
+              module_id: moduleItem.id,
+            });
+          }
+        }
+      }
+    }
+    return combined;
+  }, [personalizedPath, moduleDaysData]);
 
   const firstIncompleteIndex = useMemo(() => {
     return allDaysList.findIndex((d) => !d.is_completed);
@@ -820,7 +837,7 @@ export function LearningJourneyScreen() {
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Free Content</Text>
+                <Text className="flex-1 text-lg font-bold text-slate-800">Free Content</Text>
                 <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
                   <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
                 </View>
@@ -873,7 +890,7 @@ export function LearningJourneyScreen() {
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Trial Content</Text>
+                <Text className="flex-1 text-lg font-bold text-slate-800">Trial Content</Text>
                 <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
                   <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
                 </View>
@@ -933,7 +950,9 @@ export function LearningJourneyScreen() {
             </View>
             <View style={timelineStyles.stageContent}>
               <View style={timelineStyles.stageHeaderRow}>
-                <Text style={timelineStyles.stageTitle}>Diagnostic Assessment</Text>
+                <Text className="flex-1 text-lg font-bold text-slate-800">
+                  Diagnostic Assessment
+                </Text>
                 <View
                   style={[
                     timelineStyles.statusBadge,
@@ -1067,10 +1086,9 @@ export function LearningJourneyScreen() {
                 <View style={timelineStyles.stageContent}>
                   <View style={timelineStyles.stageHeaderRow}>
                     <Text
-                      style={[
-                        timelineStyles.stageTitle,
-                        item.isLocked && timelineStyles.textLocked,
-                      ]}
+                      className={`flex-1 text-lg font-bold ${
+                        item.isLocked ? "text-slate-400" : "text-slate-800"
+                      }`}
                     >
                       {item.title}
                     </Text>
@@ -1227,14 +1245,6 @@ const timelineStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
-  },
-  stageTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1e293b",
-  },
-  textLocked: {
-    color: "#b4b8da",
   },
   statusBadge: {
     paddingVertical: 4,
