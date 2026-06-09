@@ -240,7 +240,7 @@ export const resumeApi = api.injectEndpoints({
       providesTags: ["Resume"],
     }),
 
-    updateProfileResume: builder.mutation<ResumeRead, { parsed_data: any }>({
+    updateProfileResume: builder.mutation<ResumeRead, { parsed_data: Partial<ResumeParsedData> }>({
       query: (body) => ({
         url: "/v1/users/profile/resume",
         method: "PUT",
