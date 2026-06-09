@@ -830,7 +830,7 @@ export function LearningJourneyScreen() {
                 zIndex: 1,
               }}
             />
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
               <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
                 <Feather name="check" size={16} color="white" />
               </View>
@@ -883,7 +883,7 @@ export function LearningJourneyScreen() {
                 zIndex: 1,
               }}
             />
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
               <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
                 <Feather name="check" size={16} color="white" />
               </View>
@@ -936,7 +936,7 @@ export function LearningJourneyScreen() {
                 zIndex: 1,
               }}
             />
-            <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+            <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
               <View
                 style={[
                   timelineStyles.stageIconCircle,
@@ -1065,7 +1065,7 @@ export function LearningJourneyScreen() {
                     }}
                   />
                 )}
-                <View className="relative mr-4" style={{ zIndex: 3, alignItems: "center" }}>
+                <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
                   <View
                     style={[
                       timelineStyles.stageIconCircle,
@@ -1221,7 +1221,6 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

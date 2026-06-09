@@ -151,7 +151,12 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
         setError("Microphone permission required to record.");
         return;
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+        playThroughEarpieceAndroid: false,
+        staysActiveInBackground: true,
+      });
       const recording = new Audio.Recording();
       await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       await recording.startAsync();
@@ -186,6 +191,12 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
     if (playbackSound === null) {
       try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: true,
+        });
         const { sound } = await Audio.Sound.createAsync(
           { uri: recordedUri },
           { shouldPlay: true, progressUpdateIntervalMillis: 100 },

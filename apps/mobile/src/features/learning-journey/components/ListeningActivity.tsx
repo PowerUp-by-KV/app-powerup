@@ -114,6 +114,12 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     if (soundRef.current === null) {
       try {
         setLoading(true);
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          playThroughEarpieceAndroid: false,
+          staysActiveInBackground: true,
+        });
         const { sound } = await Audio.Sound.createAsync(
           { uri: audioUrl },
           { shouldPlay: true, progressUpdateIntervalMillis: 100 },
