@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,6 +13,7 @@ import {
   useGetDayProgressQuery,
   useGetModulesQuery,
 } from "@/services/module-api";
+import { useGetResumeStatusQuery } from "@/services/resume-api";
 
 export interface CombinedModuleDay extends ModuleDay {
   module_no: number;
@@ -42,6 +43,7 @@ export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
+  const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
   const insets = useSafeAreaInsets();
 
   const { data: modulesData } = useGetModulesQuery(undefined, {
@@ -185,6 +187,34 @@ export function HomeScreen() {
     }
   };
 
+  const handleResumeFeaturePress = (route: string) => {
+    if (isResumeStatusLoading) {
+      return;
+    }
+
+    if (resumeStatus?.uploaded) {
+      router.push(route as never);
+    } else {
+      if (Platform.OS === "web") {
+        const wantsToUpload = window.confirm(
+          "Your resume is not uploaded. To enable this feature, please upload your resume. Click OK to upload.",
+        );
+        if (wantsToUpload) {
+          router.push("/onboarding-resume" as never);
+        }
+      } else {
+        Alert.alert(
+          "Resume Required",
+          "Your resume is not uploaded. To enable this feature, please upload your resume.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upload", onPress: () => router.push("/onboarding-resume" as never) },
+          ],
+        );
+      }
+    }
+  };
+
   const continueTitle = useMemo(() => {
     if (!activeDay || !activeModule) return "Continue Learning";
     return `${activeModule.title} (Day ${firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length})`;
@@ -236,7 +266,6 @@ export function HomeScreen() {
               </View>
             </Pressable>
           </View>
-
           {profile && profile.email_verified === false && (
             <VerifyEmailBanner email={profile.email} />
           )}
@@ -291,12 +320,12 @@ export function HomeScreen() {
               {
                 title: "Resume Buddy",
                 subtitle: "Know what recruiters notice",
-                onPress: () => router.push("/resume-buddy" as never),
+                onPress: () => handleResumeFeaturePress("/resume-buddy"),
               },
               {
                 title: "Craft your Resume",
                 subtitle: "Design your story, your way",
-                onPress: () => router.push("/resume" as never),
+                onPress: () => handleResumeFeaturePress("/resume"),
               },
             ]}
           />

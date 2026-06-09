@@ -15,7 +15,7 @@ import { StepWizard } from "../components/StepWizard";
 import { Step1ContactScreen } from "./Step1ContactScreen";
 import { Step2ExperienceScreen } from "./Step2ExperienceScreen";
 import { Step3SkillsScreen } from "./Step3SkillsScreen";
-import { Step4TemplateScreen } from "./Step4TemplateScreen";
+import { Step4OnboardingFlow } from "./Step4OnboardingFlow";
 import { Step5PreviewScreen } from "./Step5PreviewScreen";
 
 export function ResumeBuilderWizard() {
@@ -66,7 +66,7 @@ export function ResumeBuilderWizard() {
           {currentStep === 1 && <Step1ContactScreen />}
           {currentStep === 2 && <Step2ExperienceScreen />}
           {currentStep === 3 && <Step3SkillsScreen />}
-          {currentStep === 4 && <Step4TemplateScreen />}
+          {currentStep === 4 && <Step4OnboardingFlow />}
           {currentStep === 5 && <Step5PreviewScreen />}
         </View>
       </View>
@@ -77,7 +77,7 @@ export function ResumeBuilderWizard() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f3f4f6", // Updated to main app background
   },
   container: {
     flex: 1,
@@ -85,9 +85,8 @@ const styles = StyleSheet.create({
   wizardContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "white",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    backgroundColor: "transparent",
+    borderBottomWidth: 0,
   },
   contentContainer: {
     flex: 1,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f3f4f6",
   },
   loadingText: {
     marginTop: 12,

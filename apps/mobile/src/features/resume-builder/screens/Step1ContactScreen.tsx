@@ -8,6 +8,8 @@ import {
   Modal,
   FlatList,
   Alert,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -15,14 +17,12 @@ import {
   updateContact,
   updateSummary,
   selectBuilderDraft,
-  selectBuilderPhotoUrl,
   selectBuilderIsSaving,
   selectBuilderLastSavedAt,
-  setPhotoUrl,
   setCurrentStep,
+  resetBuilderState,
 } from "@/store/slices/resume-builder.slice";
 import { TextInput } from "@/features/resume/components/TextInput";
-import { PhotoUploader } from "../components/PhotoUploader";
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 import {
   validatePhoneDigits,
@@ -38,7 +38,6 @@ export function Step1ContactScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
-  const photoUrl = useAppSelector(selectBuilderPhotoUrl);
   const isSaving = useAppSelector(selectBuilderIsSaving);
   const lastSavedAt = useAppSelector(selectBuilderLastSavedAt);
 
@@ -128,25 +127,26 @@ export function Step1ContactScreen() {
   }, [contact.phone]);
 
   const handleCancel = () => {
-    const title = "Exit Resume Builder";
-    const message = "Are you sure you want to exit? Your progress is saved as a draft.";
-
     const performExit = () => {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace("/");
-      }
+      dispatch(resetBuilderState());
+      router.replace("/resume" as never);
     };
 
-    Alert.alert(title, message, [
-      { text: "Continue Editing", style: "cancel" },
-      {
-        text: "Exit",
-        style: "destructive",
-        onPress: performExit,
-      },
-    ]);
+    if (Platform.OS === "web") {
+      // Alert.alert is a silent no-op on web — use window.confirm instead
+      if (window.confirm("Exit Resume Builder?\n\nYour progress is saved as a draft.")) {
+        performExit();
+      }
+    } else {
+      Alert.alert(
+        "Exit Resume Builder",
+        "Are you sure you want to exit? Your progress is saved as a draft.",
+        [
+          { text: "Continue Editing", style: "cancel" },
+          { text: "Exit", style: "destructive", onPress: performExit },
+        ],
+      );
+    }
   };
 
   // Hook up debounced auto-save
@@ -198,280 +198,280 @@ export function Step1ContactScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.container}>
-        {/* Step Indicator Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.titleRow}>
-              <Text style={styles.stepNumber}>Step 1 of 5</Text>
-              {isSaving ? (
-                <Text style={styles.saveBadge}>Saving...</Text>
-              ) : lastSavedAt ? (
-                <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
-              ) : null}
-            </View>
-            <Text style={styles.headerTitle}>Contact & Profile Photo</Text>
-            <Text style={styles.headerSubtitle}>Let's start with your professional details</Text>
-          </View>
-        </View>
-
-        {/* Form Containers */}
-        <View style={styles.formContainer}>
-          {/* Profile Photo Upload card */}
-          <PhotoUploader
-            photoUrl={photoUrl}
-            onPhotoUploaded={(url) => {
-              dispatch(setPhotoUrl(url || null));
-            }}
-          />
-
-          {/* Personal Details card */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="person" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Personal Details</Text>
-            </View>
-
-            <TextInput
-              label="Full Name"
-              required
-              placeholder="e.g., John Doe"
-              value={contact.fullName}
-              onChangeText={(text) => {
-                dispatch(updateContact({ fullName: text }));
-                if (errors.fullName) setErrors({ ...errors, fullName: "" });
-              }}
-              error={errors.fullName}
-            />
-
-            <TextInput
-              label="Email"
-              required
-              keyboardType="email-address"
-              placeholder="e.g., john.doe@example.com"
-              value={contact.email}
-              onChangeText={(text) => {
-                dispatch(updateContact({ email: text }));
-                if (errors.email) setErrors({ ...errors, email: "" });
-              }}
-              error={errors.email}
-            />
-
-            {/* Phone Input with dropdown list selection */}
-            <View style={{ marginBottom: 16 }}>
-              <View style={styles.labelRow}>
-                <Text style={styles.inputLabel}>Phone</Text>
-                <Text style={styles.requiredStar}>*</Text>
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.container}>
+          {/* Step Indicator Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={styles.titleRow}>
+                <Text style={styles.stepNumber}>Step 1 of 5</Text>
+                {isSaving ? (
+                  <Text style={styles.saveBadge}>Saving...</Text>
+                ) : lastSavedAt ? (
+                  <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
+                ) : null}
               </View>
-              <View style={styles.phoneInputRow}>
-                <Pressable
-                  style={styles.countryCodeButton}
-                  onPress={() => setShowCountryCodeModal(true)}
-                >
-                  <Text style={styles.countryCodeText}>{selectedCountryCode}</Text>
-                  <MaterialIcons name="arrow-drop-down" size={18} color="#2563EB" />
-                </Pressable>
-                <RNTextInput
-                  style={[styles.phoneInput, errors.phone && styles.phoneInputError]}
-                  placeholder="e.g., 9876543210"
-                  placeholderTextColor="#9CA3AF"
-                  keyboardType="phone-pad"
-                  value={phoneNumber}
-                  maxLength={getExpectedDigitCount(selectedCountryCode) || 15}
-                  onChangeText={(text) => {
-                    const cleaned = text.replace(/[^\d]/g, "");
-                    setPhoneNumber(cleaned);
-                    const combined = `${selectedCountryCode} ${cleaned}`.trim();
-                    lastSyncedPhoneRef.current = combined;
-                    dispatch(updateContact({ phone: combined }));
-                    if (errors.phone) setErrors({ ...errors, phone: "" });
+              <Text style={styles.headerTitle}>Contact Details</Text>
+              <Text style={styles.headerSubtitle}>Let's start with your professional details</Text>
+            </View>
+          </View>
 
-                    if (cleaned.trim().length > 0) {
-                      const validation = validatePhoneDigits(selectedCountryCode, cleaned);
-                      setPhoneValidation(validation);
+          {/* Form Containers */}
+          <View style={styles.formContainer}>
+            {/* Personal Details card */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="person" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Personal Details</Text>
+              </View>
+
+              <TextInput
+                label="Full Name"
+                required
+                placeholder="e.g., John Doe"
+                value={contact.fullName}
+                onChangeText={(text) => {
+                  dispatch(updateContact({ fullName: text }));
+                  if (errors.fullName) setErrors({ ...errors, fullName: "" });
+                }}
+                error={errors.fullName}
+              />
+
+              <TextInput
+                label="Email"
+                required
+                keyboardType="email-address"
+                placeholder="e.g., john.doe@example.com"
+                value={contact.email}
+                onChangeText={(text) => {
+                  dispatch(updateContact({ email: text }));
+                  if (errors.email) setErrors({ ...errors, email: "" });
+                }}
+                error={errors.email}
+              />
+
+              {/* Phone Input with dropdown list selection */}
+              <View style={{ marginBottom: 16 }}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>Phone</Text>
+                  <Text style={styles.requiredStar}>*</Text>
+                </View>
+                <View style={styles.phoneInputRow}>
+                  <Pressable
+                    style={styles.countryCodeButton}
+                    onPress={() => setShowCountryCodeModal(true)}
+                  >
+                    <Text style={styles.countryCodeText}>{selectedCountryCode}</Text>
+                    <MaterialIcons name="arrow-drop-down" size={18} color="#2563EB" />
+                  </Pressable>
+                  <RNTextInput
+                    style={[styles.phoneInput, errors.phone && styles.phoneInputError]}
+                    placeholder="e.g., 9876543210"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="phone-pad"
+                    value={phoneNumber}
+                    maxLength={getExpectedDigitCount(selectedCountryCode) || 15}
+                    onChangeText={(text) => {
+                      const cleaned = text.replace(/[^\d]/g, "");
+                      setPhoneNumber(cleaned);
+                      const combined = `${selectedCountryCode} ${cleaned}`.trim();
+                      lastSyncedPhoneRef.current = combined;
+                      dispatch(updateContact({ phone: combined }));
+                      if (errors.phone) setErrors({ ...errors, phone: "" });
+
+                      if (cleaned.trim().length > 0) {
+                        const validation = validatePhoneDigits(selectedCountryCode, cleaned);
+                        setPhoneValidation(validation);
+                      } else {
+                        setPhoneValidation(null);
+                      }
+                    }}
+                  />
+                </View>
+                {phoneValidation && (
+                  <Text
+                    style={[
+                      styles.phoneHint,
+                      phoneValidation.isValid ? styles.hintSuccess : styles.hintError,
+                    ]}
+                  >
+                    {phoneValidation.isValid ? "✓ " : "ℹ "} {phoneValidation.message}
+                  </Text>
+                )}
+                {!!errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+              </View>
+
+              {/* Location Autocomplete input */}
+              <View style={{ marginBottom: 16 }}>
+                <TextInput
+                  label="Location"
+                  placeholder="e.g., Mumbai, Maharashtra"
+                  value={contact.location}
+                  onChangeText={(text) => {
+                    dispatch(updateContact({ location: text }));
+                    if (text.trim().length > 0) {
+                      const suggestions = getLocationSuggestions(text);
+                      setLocationSuggestions(suggestions);
+                      setShowLocationSuggestions(suggestions.length > 0);
                     } else {
-                      setPhoneValidation(null);
+                      setLocationSuggestions([]);
+                      setShowLocationSuggestions(false);
                     }
                   }}
                 />
-              </View>
-              {phoneValidation && (
-                <Text
-                  style={[
-                    styles.phoneHint,
-                    phoneValidation.isValid ? styles.hintSuccess : styles.hintError,
-                  ]}
-                >
-                  {phoneValidation.isValid ? "✓ " : "ℹ "} {phoneValidation.message}
-                </Text>
-              )}
-              {!!errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-            </View>
-
-            {/* Location Autocomplete input */}
-            <View style={{ marginBottom: 16 }}>
-              <TextInput
-                label="Location"
-                placeholder="e.g., Mumbai, Maharashtra"
-                value={contact.location}
-                onChangeText={(text) => {
-                  dispatch(updateContact({ location: text }));
-                  if (text.trim().length > 0) {
-                    const suggestions = getLocationSuggestions(text);
-                    setLocationSuggestions(suggestions);
-                    setShowLocationSuggestions(suggestions.length > 0);
-                  } else {
-                    setLocationSuggestions([]);
-                    setShowLocationSuggestions(false);
-                  }
-                }}
-              />
-              {showLocationSuggestions && locationSuggestions.length > 0 && (
-                <View style={styles.suggestionsContainer}>
-                  {locationSuggestions.map((suggestion) => (
-                    <Pressable
-                      key={suggestion.id}
-                      style={styles.suggestionItem}
-                      onPress={() => {
-                        dispatch(updateContact({ location: suggestion.displayText }));
-                        setLocationSuggestions([]);
-                        setShowLocationSuggestions(false);
-                      }}
-                    >
-                      <View style={styles.suggestionContent}>
-                        <MaterialIcons
-                          name={suggestion.type === "country" ? "public" : "place"}
-                          size={14}
-                          color="#2563EB"
-                          style={{ marginRight: 6 }}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.suggestionText}>{suggestion.name}</Text>
-                          <Text style={styles.suggestionSubText}>
-                            {suggestion.type.toUpperCase()} • {suggestion.country || ""}
-                          </Text>
+                {showLocationSuggestions && locationSuggestions.length > 0 && (
+                  <View style={styles.suggestionsContainer}>
+                    {locationSuggestions.map((suggestion) => (
+                      <Pressable
+                        key={suggestion.id}
+                        style={styles.suggestionItem}
+                        onPress={() => {
+                          dispatch(updateContact({ location: suggestion.displayText }));
+                          setLocationSuggestions([]);
+                          setShowLocationSuggestions(false);
+                        }}
+                      >
+                        <View style={styles.suggestionContent}>
+                          <MaterialIcons
+                            name={suggestion.type === "country" ? "public" : "place"}
+                            size={14}
+                            color="#2563EB"
+                            style={{ marginRight: 6 }}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.suggestionText}>{suggestion.name}</Text>
+                            <Text style={styles.suggestionSubText}>
+                              {suggestion.type.toUpperCase()} • {suggestion.country || ""}
+                            </Text>
+                          </View>
                         </View>
-                      </View>
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Social Details card */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="link" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Optional Links</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
             </View>
 
-            <TextInput
-              label="LinkedIn"
-              placeholder="e.g., https://linkedin.com/in/username"
-              value={contact.linkedin}
-              onChangeText={(text) => dispatch(updateContact({ linkedin: text }))}
-            />
+            {/* Social Details card */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="link" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Optional Links</Text>
+              </View>
 
-            <TextInput
-              label="GitHub / Portfolio"
-              placeholder="e.g., https://github.com/username"
-              value={contact.github}
-              onChangeText={(text) => dispatch(updateContact({ github: text }))}
-            />
-          </View>
-
-          {/* Professional Summary card */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons
-                name="description"
-                size={20}
-                color="#2563EB"
-                style={{ marginRight: 8 }}
+              <TextInput
+                label="LinkedIn"
+                placeholder="e.g., https://linkedin.com/in/username"
+                value={contact.linkedin}
+                onChangeText={(text) => dispatch(updateContact({ linkedin: text }))}
               />
-              <Text style={styles.sectionTitle}>Professional Summary</Text>
+
+              <TextInput
+                label="GitHub / Portfolio"
+                placeholder="e.g., https://github.com/username"
+                value={contact.github}
+                onChangeText={(text) => dispatch(updateContact({ github: text }))}
+              />
             </View>
 
-            <TextInput
-              label="Summary"
-              multiline
-              numberOfLines={4}
-              placeholder="Write a brief professional profile summary here..."
-              value={summary}
-              onChangeText={(text) => dispatch(updateSummary(text))}
-            />
-          </View>
+            {/* Professional Summary card */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons
+                  name="description"
+                  size={20}
+                  color="#2563EB"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.sectionTitle}>Professional Summary</Text>
+              </View>
 
-          {/* Navigation Buttons footer */}
-          <View style={styles.footerRow}>
-            <Pressable onPress={handleCancel} style={styles.backButton}>
-              <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-              <Text style={styles.backButtonText}>Cancel</Text>
-            </Pressable>
-            <Pressable onPress={handleNext} style={styles.nextButton}>
-              <Text style={styles.nextButtonText}>Next Screen</Text>
-              <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
-            </Pressable>
-          </View>
-        </View>
-      </View>
+              <TextInput
+                label="Summary"
+                multiline
+                numberOfLines={4}
+                placeholder="Write a brief professional profile summary here..."
+                value={summary}
+                onChangeText={(text) => dispatch(updateSummary(text))}
+              />
+            </View>
 
-      {/* Country Code Modal */}
-      <Modal
-        visible={showCountryCodeModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCountryCodeModal(false)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Country Code</Text>
-              <Pressable onPress={() => setShowCountryCodeModal(false)}>
-                <MaterialIcons name="close" size={20} color="#374151" />
+            {/* Navigation Buttons footer */}
+            <View style={styles.footerRow}>
+              <Pressable onPress={handleCancel} style={styles.backButton}>
+                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
+                <Text style={styles.backButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable onPress={handleNext} style={styles.nextButton}>
+                <Text style={styles.nextButtonText}>Next Screen</Text>
+                <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
               </Pressable>
             </View>
-            <View style={styles.modalSearchBox}>
-              <MaterialIcons name="search" size={18} color="#9ca3af" />
-              <RNTextInput
-                style={styles.modalSearchInput}
-                placeholder="Search country..."
-                value={countryCodeSearch}
-                onChangeText={setCountryCodeSearch}
-              />
-            </View>
-            <FlatList
-              data={getFilteredCountryCodes()}
-              keyExtractor={(item) => item.code}
-              renderItem={({ item }: { item: CountryCodeItem }) => (
-                <Pressable
-                  style={styles.countryItem}
-                  onPress={() => {
-                    setSelectedCountryCode(item.code);
-                    setPhoneNumber("");
-                    setPhoneValidation(null);
-                    setShowCountryCodeModal(false);
-                    setCountryCodeSearch("");
-                    const combined = `${item.code} `.trim();
-                    lastSyncedPhoneRef.current = combined;
-                    dispatch(updateContact({ phone: combined }));
-                  }}
-                >
-                  <Text style={styles.countryCode}>{item.code}</Text>
-                  <Text style={styles.countryName}>{item.country}</Text>
-                </Pressable>
-              )}
-            />
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+
+        {/* Country Code Modal */}
+        <Modal
+          visible={showCountryCodeModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowCountryCodeModal(false)}
+        >
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Country Code</Text>
+                <Pressable onPress={() => setShowCountryCodeModal(false)}>
+                  <MaterialIcons name="close" size={20} color="#374151" />
+                </Pressable>
+              </View>
+              <View style={styles.modalSearchBox}>
+                <MaterialIcons name="search" size={18} color="#9ca3af" />
+                <RNTextInput
+                  style={styles.modalSearchInput}
+                  placeholder="Search country..."
+                  value={countryCodeSearch}
+                  onChangeText={setCountryCodeSearch}
+                />
+              </View>
+              <FlatList
+                data={getFilteredCountryCodes()}
+                keyExtractor={(item) => item.code}
+                renderItem={({ item }: { item: CountryCodeItem }) => (
+                  <Pressable
+                    style={styles.countryItem}
+                    onPress={() => {
+                      setSelectedCountryCode(item.code);
+                      setPhoneNumber("");
+                      setPhoneValidation(null);
+                      setShowCountryCodeModal(false);
+                      setCountryCodeSearch("");
+                      const combined = `${item.code} `.trim();
+                      lastSyncedPhoneRef.current = combined;
+                      dispatch(updateContact({ phone: combined }));
+                    }}
+                  >
+                    <Text style={styles.countryCode}>{item.code}</Text>
+                    <Text style={styles.countryName}>{item.country}</Text>
+                  </Pressable>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollContainer: {
     flex: 1,
     backgroundColor: "#f9fafb",
@@ -536,60 +536,64 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#111827",
   },
   labelRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
     color: "#374151",
   },
   requiredStar: {
     color: "#ef4444",
-    fontSize: 13,
+    fontSize: 14,
     marginLeft: 3,
   },
   phoneInputRow: {
     flexDirection: "row",
     borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
+    borderColor: "#e5e7eb",
+    borderRadius: 16,
     overflow: "hidden",
+    backgroundColor: "#f9fafb",
   },
   countryCodeButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f3f4f6",
-    paddingHorizontal: 12,
+    backgroundColor: "#f9fafb",
+    paddingHorizontal: 16,
     borderRightWidth: 1,
-    borderRightColor: "#d1d5db",
+    borderRightColor: "#e5e7eb",
   },
   countryCodeText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
     color: "#374151",
-    marginRight: 2,
+    marginRight: 4,
   },
   phoneInput: {
     flex: 1,

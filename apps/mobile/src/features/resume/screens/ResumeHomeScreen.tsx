@@ -24,6 +24,7 @@ import {
   useDeleteResumeMutation,
   useGetResumeQuery,
 } from "@/services/resume-api";
+import { useGetResumeStatusQuery } from "@/services/resume-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -97,8 +98,10 @@ export function ResumeHomeScreen() {
   const { data: profile } = useGetProfileQuery();
   const userId = (profile as { id?: string } | undefined)?.id ?? "";
   const { data: existingResume } = useGetResumeQuery(userId, { skip: !userId });
+  const { data: resumeStatus } = useGetResumeStatusQuery();
 
-  const hasExistingResume = useAppSelector(selectHasExistingResume);
+  const hasExistingResume =
+    useAppSelector(selectHasExistingResume) || (resumeStatus?.uploaded ?? false);
   const error = useAppSelector(selectError);
   const formData = useAppSelector(selectFormData);
   const [uploadResume] = useUploadResumeMutation();
@@ -109,7 +112,6 @@ export function ResumeHomeScreen() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [parsedResume, setParsedResume] = useState<ResumeRead | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const isSubmittingRef = useRef(false);
@@ -183,17 +185,10 @@ export function ResumeHomeScreen() {
       return;
     }
 
-    let progressInterval: ReturnType<typeof setInterval> | undefined;
-
     try {
       isSubmittingRef.current = true;
       setUploading(true);
-      setUploadProgress(0);
       dispatch(setError(null));
-
-      progressInterval = setInterval(() => {
-        setUploadProgress((prev) => Math.min(prev + 10, 90));
-      }, 300);
 
       // Create FormData
       const uploadData = new FormData();
@@ -209,9 +204,6 @@ export function ResumeHomeScreen() {
 
       // Upload to server
       const response = await uploadResume(uploadData).unwrap();
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
 
       if (!response) {
         throw new Error("Invalid response from upload API");
@@ -240,19 +232,14 @@ export function ResumeHomeScreen() {
 
       Alert.alert("Success", "Resume uploaded and parsed successfully!", [
         {
-          text: "Continue to Builder",
+          text: "Continue",
           onPress: () => {
-            router.push("/resume/builder" as never);
+            router.push("/resume/score" as never);
           },
         },
       ]);
     } catch (error: unknown) {
       const apiError = error as ApiRequestError;
-      if (progressInterval) {
-        clearInterval(progressInterval);
-      }
-
-      setUploadProgress(0);
 
       let errorMessage = "Failed to upload resume. Please try again.";
 
@@ -289,7 +276,6 @@ export function ResumeHomeScreen() {
 
   const handleUploadAnother = () => {
     setSelectedFile(null);
-    setUploadProgress(0);
     setUploadSuccess(false);
     setParsedResume(null);
   };
@@ -297,7 +283,7 @@ export function ResumeHomeScreen() {
   const handleBuildFromScratch = () => {
     dispatch(resetResume());
     dispatch(setCurrentStep(1));
-    router.push("/resume/builder" as never);
+    router.push("/resume/builder?mode=scratch" as never);
   };
 
   const handleEditResume = () => {
@@ -375,13 +361,58 @@ export function ResumeHomeScreen() {
     executeDelete();
   };
 
+  if (uploading) {
+    return (
+      <View style={styles.fullScreenLoader}>
+        <View style={styles.skeletonLoaderContainer}>
+          <View
+            style={[
+              styles.skeletonPaper,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              Platform.OS === "web" ? ({ filter: "blur(4px)" } as any) : {},
+            ]}
+          >
+            {/* Left sidebar block */}
+            <View style={styles.skeletonSidebar} />
+
+            {/* Right content blocks */}
+            <View style={styles.skeletonContent}>
+              <View style={styles.skeletonRow}>
+                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
+                <View style={[styles.skeletonBlock, { flex: 0.8, height: 40 }]} />
+              </View>
+              <View style={[styles.skeletonBlock, { height: 60 }]} />
+              <View style={[styles.skeletonBlock, { height: 60 }]} />
+              <View style={[styles.skeletonBlock, { height: 60 }]} />
+              <View style={styles.skeletonRow}>
+                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
+                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
+              </View>
+            </View>
+          </View>
+
+          {/* Overlay with Text and Spinner directly on frosted glass */}
+          <View style={styles.skeletonOverlay}>
+            <Text style={styles.analyzingText}>Analysing Resume...</Text>
+            <ActivityIndicator size="large" color="#3b82f6" />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Text style={styles.mainTitle}>Upload Your Resume</Text>
-          <Text style={styles.subtitle}>Help us understand your professional background</Text>
+          <Pressable onPress={() => router.replace("/home" as never)} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={26} color="#1f2937" />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mainTitle}>Upload Your Resume</Text>
+            <Text style={styles.subtitle}>Help us understand your professional background</Text>
+          </View>
         </View>
 
         {deleteSuccess && (
@@ -425,6 +456,22 @@ export function ResumeHomeScreen() {
               <MaterialIcons name="close" size={20} color="#dc2626" />
             </Pressable>
           </View>
+        )}
+
+        {/* Override Caption */}
+        {hasExistingResume && !selectedFile && !uploadSuccess && (
+          <Text
+            style={{
+              textAlign: "center",
+              color: "#f59e0b",
+              marginBottom: 12,
+              fontSize: 14,
+              fontWeight: "500",
+            }}
+          >
+            Note: This would override the existing resume and you will be using the resume which
+            will be uploaded here.
+          </Text>
         )}
 
         {/* Upload Box */}
@@ -475,7 +522,7 @@ export function ResumeHomeScreen() {
         </View>
 
         {/* File Info Box */}
-        {selectedFile && !uploadSuccess && (
+        {selectedFile && !uploadSuccess && !uploading && (
           <View style={styles.fileInfoBox}>
             <View style={styles.fileInfoContent}>
               <MaterialIcons name="description" size={28} color="#3b82f6" style={styles.fileIcon} />
@@ -494,49 +541,23 @@ export function ResumeHomeScreen() {
           </View>
         )}
 
-        {/* Progress Bar */}
-        {uploading && (
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
-            </View>
-            <Text style={styles.progressText}>{uploadProgress}%</Text>
-          </View>
-        )}
-
         {/* Upload Buttons */}
-        {selectedFile && !uploadSuccess && (
+        {selectedFile && !uploadSuccess && !uploading && (
           <View style={styles.buttonGroup}>
             <Pressable
-              style={({ pressed }) => [
-                styles.uploadButton,
-                pressed && styles.uploadButtonPressed,
-                uploading && styles.uploadButtonDisabled,
-              ]}
+              style={({ pressed }) => [styles.uploadButton, pressed && styles.uploadButtonPressed]}
               onPress={handleUpload}
-              disabled={uploading}
             >
-              {uploading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <>
-                  <MaterialIcons name="send" size={20} color="white" style={styles.buttonIcon} />
-                  <Text style={styles.uploadButtonText}>Upload Resume</Text>
-                </>
-              )}
+              <MaterialIcons name="send" size={20} color="white" style={styles.buttonIcon} />
+              <Text style={styles.uploadButtonText}>Upload Resume</Text>
             </Pressable>
 
-            {!uploading && (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.cancelButton,
-                  pressed && styles.cancelButtonPressed,
-                ]}
-                onPress={() => setSelectedFile(null)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </Pressable>
-            )}
+            <Pressable
+              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}
+              onPress={() => setSelectedFile(null)}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
           </View>
         )}
 
@@ -830,7 +851,7 @@ export function ResumeHomeScreen() {
                   { flex: 1, backgroundColor: "#2563EB", borderColor: "#2563EB" },
                   pressed && { opacity: 0.8 },
                 ]}
-                onPress={handleEditResume}
+                onPress={() => router.push("/resume/score" as never)}
               >
                 <Text style={[styles.uploadAnotherText, { color: "white" }]}>Continue</Text>
                 <MaterialIcons
@@ -868,8 +889,22 @@ export function ResumeHomeScreen() {
         )}
 
         {/* Action Buttons */}
-        {!selectedFile && !uploadSuccess && !hasExistingResume && (
+        {!selectedFile && !uploadSuccess && (
           <View style={styles.altActionContainer}>
+            {hasExistingResume && (
+              <Pressable
+                onPress={handleEditResume}
+                style={({ pressed }) => [
+                  styles.altActionButton,
+                  { backgroundColor: "#10b981", marginBottom: 16, shadowColor: "#10b981" },
+                  pressed && { backgroundColor: "#059669" },
+                ]}
+              >
+                <MaterialIcons name="restore" size={24} color="white" />
+                <Text style={styles.altActionText}>Continue with Existing Resume</Text>
+              </Pressable>
+            )}
+
             <Pressable
               onPress={handleBuildFromScratch}
               style={({ pressed }) => [
@@ -877,37 +912,32 @@ export function ResumeHomeScreen() {
                 pressed && styles.altActionButtonPressed,
               ]}
             >
-              <MaterialIcons name="edit" size={20} color="#059669" />
+              <MaterialIcons name="edit" size={24} color="white" />
               <Text style={styles.altActionText}>Build from Scratch</Text>
             </Pressable>
-          </View>
-        )}
 
-        {hasExistingResume && !selectedFile && !uploadSuccess && (
-          <View style={[styles.altActionContainer, { flexDirection: "row", gap: 12 }]}>
-            <Pressable
-              onPress={handleEditResume}
-              style={({ pressed }) => [
-                styles.altActionButton,
-                { flex: 1 },
-                pressed && styles.altActionButtonPressed,
-              ]}
-            >
-              <MaterialIcons name="edit" size={20} color="#059669" />
-              <Text style={styles.altActionText}>Edit Resume</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={handleDeleteResume}
-              style={({ pressed }) => [
-                styles.altActionButton,
-                { flex: 1, borderColor: "#fee2e2", backgroundColor: "#fef2f2" },
-                pressed && styles.altActionButtonPressed,
-              ]}
-            >
-              <MaterialIcons name="delete" size={20} color="#dc2626" />
-              <Text style={[styles.altActionText, { color: "#dc2626" }]}>Delete</Text>
-            </Pressable>
+            {hasExistingResume && (
+              <Pressable
+                onPress={handleDeleteResume}
+                style={({ pressed }) => [
+                  styles.altActionButton,
+                  {
+                    backgroundColor: "transparent",
+                    marginTop: 16,
+                    borderWidth: 1,
+                    borderColor: "#ef4444",
+                    shadowOpacity: 0,
+                    elevation: 0,
+                  },
+                  pressed && { backgroundColor: "#fef2f2" },
+                ]}
+              >
+                <MaterialIcons name="delete" size={24} color="#ef4444" />
+                <Text style={[styles.altActionText, { color: "#ef4444" }]}>
+                  Delete Existing Resume
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
       </View>
@@ -961,10 +991,66 @@ export function ResumeHomeScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#f3f4f6",
+  },
+  fullScreenLoader: {
+    flex: 1,
+    backgroundColor: "#f3f4f6",
   },
   contentContainer: {
     flexGrow: 1,
+  },
+  skeletonLoaderContainer: {
+    flex: 1,
+    width: "100%",
+    backgroundColor: "#f3f4f6", // Matches app background
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+  },
+  skeletonPaper: {
+    width: "100%",
+    maxWidth: 500, // Max width of the "paper"
+    aspectRatio: 1 / 1.414, // A4 aspect ratio
+    backgroundColor: "white",
+    flexDirection: "row",
+    borderRadius: 8,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  skeletonSidebar: {
+    width: 60,
+    backgroundColor: "#3b82f6",
+    height: "100%",
+  },
+  skeletonContent: {
+    flex: 1,
+    gap: 32,
+    padding: 48,
+  },
+  skeletonRow: {
+    flexDirection: "row",
+    gap: 32,
+  },
+  skeletonBlock: {
+    backgroundColor: "#cbd5e1",
+    borderRadius: 8,
+  },
+  skeletonOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(248,250,252,0.8)", // slightly more washed out like the picture
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  analyzingText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#475569",
+    marginBottom: 16,
   },
   container: {
     flex: 1,
@@ -974,6 +1060,13 @@ const styles = StyleSheet.create({
   headerSection: {
     marginBottom: 24,
     marginTop: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  backButton: {
+    marginRight: 16,
+    marginTop: 4,
+    padding: 4,
   },
   mainTitle: {
     fontSize: 28,
@@ -1015,35 +1108,23 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   uploadBox: {
-    borderWidth: 2,
-    borderColor: "#E5E7EB",
-    borderStyle: "dashed",
-    borderRadius: 20,
+    borderWidth: 0,
+    borderRadius: 24,
     padding: 48,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    ...Platform.select({
-      ios: {
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   uploadBoxPressed: {
-    borderColor: "#2563EB",
     backgroundColor: "#F8FAFC",
-    borderStyle: "solid",
   },
   successBox: {
-    borderWidth: 2,
-    borderColor: "#10b981",
-    backgroundColor: "#f0fdf4",
-    borderStyle: "solid",
+    borderWidth: 0,
+    backgroundColor: "#FFFFFF",
   },
   uploadIconContainer: {
     width: 88,
@@ -1189,10 +1270,10 @@ const styles = StyleSheet.create({
   },
   dataCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    shadowColor: "#0F172A",
-    shadowOpacity: 0.06,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 3,
@@ -1287,11 +1368,15 @@ const styles = StyleSheet.create({
   },
   infoCard: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 24,
+    padding: 24,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   infoIcon: {
     marginBottom: 8,
@@ -1315,18 +1400,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#D1FAE5",
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: "#3b82f6",
+    borderRadius: 30,
+    paddingVertical: 18,
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
   altActionButtonPressed: {
-    backgroundColor: "#A7F3D0",
+    backgroundColor: "#2563eb",
   },
   altActionText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#059669",
-    marginLeft: 8,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "white",
+    marginLeft: 10,
   },
   metadataRow: {
     flexDirection: "row",
