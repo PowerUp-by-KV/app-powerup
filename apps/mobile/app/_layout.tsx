@@ -12,7 +12,7 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { getAuthSession, StoredSession } from "@/services/auth-storage";
+import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,11 +35,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
-  // Tracks the route for which the session read has completed. We only make
-  // redirect decisions once the fresh read for the *current* route is done —
-  // otherwise, right after login navigates, the effect would run with a stale
-  // `session === null` and bounce the user straight back to /login.
+  // Tracks the route for which the session read has completed.
   const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
+  // Ensures we wait for at least one successful or failed network check before proceeding.
+  const [hasStartedFetching, setHasStartedFetching] = useState(false);
+  const [networkCheckComplete, setNetworkCheckComplete] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -71,7 +71,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isError: isOnboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
+    refetchOnMountOrArgChange: true,
   });
+
+  useEffect(() => {
+    if (userId) {
+      if (isOnboardingFetching) {
+        setHasStartedFetching(true);
+      } else if (hasStartedFetching && !isOnboardingFetching) {
+        setNetworkCheckComplete(true);
+      }
+    }
+  }, [userId, isOnboardingFetching, hasStartedFetching]);
 
   useEffect(() => {
     if (!isLocalReady) return;
@@ -80,13 +91,23 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (
       session &&
       isQueryActive &&
-      !isOnboardingError &&
-      (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
+      (!networkCheckComplete ||
+        isOnboardingLoading ||
+        isOnboardingFetching ||
+        (onboardingStatus === undefined && !isOnboardingError))
     ) {
       return;
     }
 
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+
+    if (isOnboardingError) {
+      clearAuthSession().then(() => {
+        setSession(null);
+        router.replace("/login");
+      });
+      return;
+    }
 
     if (!session) {
       if (!isPublic) router.replace("/login");
@@ -136,6 +157,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isOnboardingLoading,
     isOnboardingFetching,
     isOnboardingError,
+    networkCheckComplete,
     currentRoute,
     segments,
     router,
@@ -152,8 +174,10 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isQueryActive = !!userId;
   const isQueryLoading =
     isQueryActive &&
-    !isOnboardingError &&
-    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
+    (!networkCheckComplete ||
+      isOnboardingLoading ||
+      isOnboardingFetching ||
+      (onboardingStatus === undefined && !isOnboardingError));
 
   if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
     return null;

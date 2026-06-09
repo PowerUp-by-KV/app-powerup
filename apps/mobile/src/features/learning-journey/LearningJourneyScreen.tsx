@@ -51,7 +51,7 @@ interface PreAssessmentModalProps {
   visible: boolean;
   onClose: () => void;
   cefrRange?: string | null;
-  results?: any | null;
+  results?: StoredPreAssessmentResult | null;
 }
 
 // CEFR Score Mapping Constants

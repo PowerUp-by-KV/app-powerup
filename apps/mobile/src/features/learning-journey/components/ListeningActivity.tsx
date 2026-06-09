@@ -191,10 +191,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   return (
     <ScrollView
-      style={{
-        flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as any }),
-      }}
+      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View
@@ -220,22 +217,33 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
         <Pressable
           onPress={togglePlay}
           disabled={hasPlayed || loading}
-          style={({ pressed }) => ({
-            width: 72,
-            height: 72,
-            borderRadius: 36,
-            backgroundColor: hasPlayed ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
-            alignItems: "center",
-            justifyContent: "center",
-            ...Platform.select({ web: { cursor: hasPlayed ? "default" : "pointer" } as any }),
-          })}
+          style={
+            {
+              width: 72,
+              height: 72,
+              borderRadius: 36,
+              overflow: "hidden",
+              ...(Platform.OS === "web" ? { cursor: hasPlayed ? "default" : "pointer" } : {}),
+            } as any
+          }
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : hasPlayed ? (
-            <Feather name="check" size={32} color="#475569" />
-          ) : (
-            <Feather name={isPlaying ? "pause" : "play"} size={32} color="#fff" />
+          {({ pressed }) => (
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: hasPlayed ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : hasPlayed ? (
+                <Feather name="check" size={32} color="#475569" />
+              ) : (
+                <Feather name={isPlaying ? "pause" : "play"} size={32} color="#fff" />
+              )}
+            </View>
           )}
         </Pressable>
 
@@ -260,7 +268,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...Platform.select({ web: { cursor: "pointer" } as any }),
+              ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {
