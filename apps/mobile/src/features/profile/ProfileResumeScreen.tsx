@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import {
@@ -34,6 +35,7 @@ interface ExtendedResume extends Omit<ResumeRead, "contact"> {
 
 export function ProfileResumeScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: resume, isLoading: isFetching, refetch } = useGetProfileResumeQuery();
   const [updateProfileResume, { isLoading: isUpdating }] = useUpdateProfileResumeMutation();
 
@@ -120,7 +122,7 @@ export function ProfileResumeScreen() {
     .filter((s) => s.length > 0);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -375,6 +377,6 @@ export function ProfileResumeScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

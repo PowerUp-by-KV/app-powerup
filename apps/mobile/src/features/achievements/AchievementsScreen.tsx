@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   Text,
@@ -10,7 +9,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
@@ -61,11 +62,12 @@ export function AchievementsScreen() {
   const [tab, setTab] = useState<"achievements" | "skills">("achievements");
   const { data: profile } = useGetProfileQuery();
   const { data: list, isLoading: listLoading } = useListAchievementsQuery();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: isTablet ? 32 : 20, paddingBottom: 96 }}
@@ -85,10 +87,11 @@ export function AchievementsScreen() {
                 elevation: 2,
               }}
             >
-              <Image
-                source={require("../../../assets/images/trophy_silver.png")}
+              <LottieView
+                source={require("../../../assets/lottie/trophy.json")}
+                autoPlay
+                loop
                 style={{ width: 80, height: 80 }}
-                resizeMode="contain"
               />
             </View>
             <Text className="text-slate-500 font-bold text-sm text-center">
@@ -299,6 +302,6 @@ export function AchievementsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

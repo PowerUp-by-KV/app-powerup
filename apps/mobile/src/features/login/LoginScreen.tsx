@@ -15,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AntDesign, Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { AuthResponse, LoginRequest, useLoginMutation } from "@/services/auth-api";
@@ -35,6 +36,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export function LoginScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -142,7 +144,7 @@ export function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -354,6 +356,6 @@ export function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

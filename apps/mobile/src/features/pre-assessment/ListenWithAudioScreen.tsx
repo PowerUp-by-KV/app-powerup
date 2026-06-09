@@ -9,7 +9,7 @@ import {
   Alert,
   KeyboardAvoidingView,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   useGetAssessmentSectionQuery,
@@ -65,6 +65,7 @@ const getOptimizedRecordingSettings = (): any => {
 
 export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAudioScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -279,7 +280,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -320,7 +321,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -441,7 +442,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -526,7 +527,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

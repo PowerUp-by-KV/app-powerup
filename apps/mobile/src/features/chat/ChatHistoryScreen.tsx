@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import {
@@ -20,6 +20,7 @@ const BookmarkFlatList = FlatList as unknown as React.ComponentType<SafeFlatList
 export function ChatHistoryScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<"recent" | "bookmarks">("recent");
   const { data: threads, isLoading: threadsLoading } = useListChatThreadsQuery();
   const { data: bookmarks, isLoading: bookmarksLoading } = useListBookmarksQuery(undefined, {
@@ -27,7 +28,7 @@ export function ChatHistoryScreen() {
   });
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
@@ -107,6 +108,6 @@ export function ChatHistoryScreen() {
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }

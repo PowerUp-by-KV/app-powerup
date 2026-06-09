@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useListAchievementsQuery, useGetMedalsQuery } from "@/services/gamification-api";
@@ -244,6 +245,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 
 export function MedalsScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
   const isLoading = isAchievementsLoading || isMedalsLoading;
@@ -321,7 +323,7 @@ export function MedalsScreen() {
   }, [list]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
       {/* Dynamic Detailed Modal */}
       <BadgeDetailModal
         visible={selectedBadge !== null}
@@ -447,7 +449,7 @@ export function MedalsScreen() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

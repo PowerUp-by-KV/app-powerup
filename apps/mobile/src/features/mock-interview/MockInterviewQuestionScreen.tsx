@@ -1,8 +1,8 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { View, Text, Pressable, ActivityIndicator, ScrollView, Animated } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Href } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -148,6 +148,7 @@ function ControlBtn({
 
 export function MockInterviewQuestionScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const sessionId = useAppSelector((s) => s.mockInterview.sessionId);
   const currentQuestionText = useAppSelector((s) => s.mockInterview.currentQuestionText);
@@ -258,7 +259,7 @@ export function MockInterviewQuestionScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }}>
+    <View style={{ flex: 1, backgroundColor: "#0f172a", paddingTop: insets.top }}>
       {/* ── Top header ────────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", textAlign: "center" }}>
@@ -500,6 +501,6 @@ export function MockInterviewQuestionScreen() {
           )}
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, Pressable, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
@@ -18,9 +18,13 @@ export function ErrorMascot({
   showBackButton = true,
 }: ErrorMascotProps) {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView className="flex-1 bg-white items-center justify-center px-6">
+    <View
+      style={{ paddingTop: insets.top }}
+      className="flex-1 bg-white items-center justify-center px-6"
+    >
       <View
         style={{
           width: 280,
@@ -59,6 +63,6 @@ export function ErrorMascot({
           </Pressable>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

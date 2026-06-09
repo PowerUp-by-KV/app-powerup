@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
@@ -19,6 +19,7 @@ export function InterviewResultsScreen({
 }: InterviewResultsScreenProps) {
   const homeRoute = mode === "buddy" ? "/ai-interview" : "/interview-playground";
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const {
     data: session,
@@ -30,45 +31,45 @@ export function InterviewResultsScreen({
 
   if (!sessionId) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
         <View style={styles.center}>
           <Text style={styles.errorText}>No session ID provided.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
             <Text style={styles.backButtonText}>Back to Interviews</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text style={styles.loadingText}>Loading results…</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isError || !session) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load session results.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
             <Text style={styles.backButtonText}>Back to Interviews</Text>
           </Pressable>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const hasEvaluation = !!session.evaluation;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={[styles.safe, { paddingTop: insets.top }]}>
       <View style={styles.topBar}>
         <Text style={styles.title} numberOfLines={1}>
           {mode === "buddy" ? (session.derived_role ?? "Interview Results") : "Practice Session"}
@@ -128,7 +129,7 @@ export function InterviewResultsScreen({
           <Text style={styles.primaryButtonText}>Try Again</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

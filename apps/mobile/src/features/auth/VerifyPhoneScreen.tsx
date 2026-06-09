@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 
@@ -19,6 +19,7 @@ const DEV_BYPASS = process.env.EXPO_PUBLIC_DEV_BYPASS_OTP === "1" || __DEV__;
 
 export function VerifyPhoneScreen({ flow: propFlow }: { flow?: "signup" | "signin" }) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ phone?: string; flow?: "signup" | "signin" }>();
   const flow = propFlow ?? params.flow ?? "signup";
   const [phone, setPhone] = useState(params.phone ?? "");
@@ -37,7 +38,7 @@ export function VerifyPhoneScreen({ flow: propFlow }: { flow?: "signup" | "signi
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -168,6 +169,6 @@ export function VerifyPhoneScreen({ flow: propFlow }: { flow?: "signup" | "signi
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

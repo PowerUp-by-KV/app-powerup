@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, Pressable, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useResumeBuddyAnalysis } from "./hooks/useResumeBuddyAnalysis";
 import type { ResumeBuddyStep } from "./types";
@@ -17,6 +17,7 @@ import { ScoreAnalysisStep } from "./components/ScoreAnalysisStep";
 export function ResumeBuddyScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<ResumeBuddyStep>("input");
   const { phase, activeStage, result: analysis, error, analyze, reset } = useResumeBuddyAnalysis();
@@ -73,7 +74,7 @@ export function ResumeBuddyScreen() {
   const isOnResultsStep = step === "strengths" || step === "suggestions" || step === "scores";
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable
@@ -138,6 +139,6 @@ export function ResumeBuddyScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

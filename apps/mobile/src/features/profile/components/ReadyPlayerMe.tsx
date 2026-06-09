@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { usePatchProfileMutation, useGetProfileQuery } from "@/services/auth-api";
 
@@ -348,6 +349,7 @@ const threeHtml = `
 
 export function ReadyPlayerMe() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: profile } = useGetProfileQuery();
   const [patchProfile, { isLoading: isSaving }] = usePatchProfileMutation();
 
@@ -460,7 +462,7 @@ export function ReadyPlayerMe() {
   }, [background]);
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       {/* Header Bar */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white shadow-sm z-10">
         <Pressable
@@ -725,6 +727,6 @@ export function ReadyPlayerMe() {
           )}
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

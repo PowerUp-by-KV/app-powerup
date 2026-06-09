@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { useStartSessionMutation } from "@/services/assessment-api";
@@ -13,6 +13,7 @@ import {
 
 export function ResumeUploadStep() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,7 +114,7 @@ export function ResumeUploadStep() {
   // Success overlay
   if (uploadSuccess) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "#fff" }}>
         <View
           style={{
             flex: 1,
@@ -139,12 +140,12 @@ export function ResumeUploadStep() {
           </Text>
           <Text style={{ fontSize: 15, color: "#6b7280" }}>Redirecting...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="h-1 bg-slate-100 w-full">
         <View className="h-full bg-indigo-600 w-full" />
       </View>
@@ -198,6 +199,6 @@ export function ResumeUploadStep() {
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

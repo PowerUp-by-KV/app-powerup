@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View, TouchableOpacity } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TIPS = [
   "Consistency is key! Just 10 minutes a day builds strong neural paths.",
@@ -26,6 +26,7 @@ export function GamifiedMascotLoader({
   subtitle,
 }: GamifiedMascotLoaderProps) {
   const [tipIdx, setTipIdx] = useState(0);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -35,7 +36,7 @@ export function GamifiedMascotLoader({
   }, []);
 
   return (
-    <SafeAreaView
+    <View
       style={{
         flex: 1,
         backgroundColor: "transparent",
@@ -43,6 +44,7 @@ export function GamifiedMascotLoader({
         height: "100%",
         alignItems: "center",
         justifyContent: "center",
+        paddingTop: insets.top,
       }}
       className="items-center justify-center p-6"
     >
@@ -93,6 +95,6 @@ export function GamifiedMascotLoader({
           </TouchableOpacity>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

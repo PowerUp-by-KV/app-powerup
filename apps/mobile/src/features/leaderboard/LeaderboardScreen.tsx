@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { FlatList, Pressable, Text, View, Image } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   useGetLeaderboardQuery,
@@ -25,6 +26,7 @@ export function LeaderboardScreen() {
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
@@ -39,83 +41,127 @@ export function LeaderboardScreen() {
 
     let avatarSize = 56;
     let blockHeight = 65;
-    let blockBg = "#bfdbfe"; // Blue (3rd)
-    let textNameColor = "text-blue-950";
-    let textPointsColor = "text-blue-800";
-    let avatarBorderColor = "border-blue-300 bg-blue-100";
+    let blockColors: [string, string] = ["#dbeafe", "#93c5fd"]; // Blue (3rd)
+    let avatarColors: [string, string] = ["#dbeafe", "#bfdbfe"];
+    let textNameColor = "#1e3a8a";
+    let textPointsColor = "#2563eb";
+    let avatarBorderColor = "#93c5fd";
     let isFirst = false;
 
     if (position === "middle") {
       avatarSize = 72;
       blockHeight = 115;
-      blockBg = "#d9f99d"; // Lime-green (1st)
-      textNameColor = "text-emerald-950";
-      textPointsColor = "text-emerald-800";
-      avatarBorderColor = "border-lime-300 bg-lime-100";
+      blockColors = ["#d9f99d", "#bef264"]; // Lime-green (1st)
+      avatarColors = ["#fef08a", "#facc15"]; // Gold
+      textNameColor = "#3f6212";
+      textPointsColor = "#4d7c0f";
+      avatarBorderColor = "#a3e635";
       isFirst = true;
     } else if (position === "left") {
       avatarSize = 56;
       blockHeight = 85;
-      blockBg = "#e9d5ff"; // Lavender (2nd)
-      textNameColor = "text-purple-950";
-      textPointsColor = "text-purple-800";
-      avatarBorderColor = "border-purple-300 bg-purple-100";
+      blockColors = ["#ebd5ff", "#c084fc"]; // Lavender (2nd)
+      avatarColors = ["#fae8ff", "#ebd5ff"];
+      textNameColor = "#581c87";
+      textPointsColor = "#701a75";
+      avatarBorderColor = "#c084fc";
     }
 
     return (
       <View className="items-center" style={{ width: 90 }}>
         {/* Avatar Container */}
         <View
-          className="items-center justify-center mb-1.5 relative"
+          className="items-center justify-center mb-2 relative"
           style={{ width: avatarSize, height: avatarSize }}
         >
           {isFirst && (
             <Text style={{ position: "absolute", top: -16, fontSize: 18, zIndex: 10 }}>👑</Text>
           )}
-          <View
-            className={`w-full h-full rounded-full border-2 overflow-hidden justify-center items-center ${avatarBorderColor}`}
+          <LinearGradient
+            colors={avatarColors}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={{
+              width: "100%",
+              height: "100%",
+              borderRadius: avatarSize / 2,
+              borderWidth: 2,
+              borderColor: avatarBorderColor,
+              overflow: "hidden",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
             {e.avatar ? (
               <Image
                 source={{ uri: resolveApiAssetUrl(`/static/avatars/${e.avatar}.png`) ?? undefined }}
-                className="w-full h-full"
+                style={{ width: "100%", height: "100%" }}
               />
             ) : (
               <Feather name="user" size={isFirst ? 28 : 20} color="#94a3b8" />
             )}
-          </View>
+          </LinearGradient>
         </View>
 
         {/* Podium Block */}
-        <View
-          className="w-full rounded-t-2xl overflow-hidden shadow-xs"
-          style={{ height: blockHeight, backgroundColor: blockBg }}
+        <LinearGradient
+          colors={blockColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{
+            height: blockHeight,
+            width: "100%",
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            overflow: "hidden",
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.05,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
         >
           <View className="w-full h-full items-center justify-center px-1">
             <Text
-              className={`font-black text-center ${isFirst ? "text-xs" : "text-[10px]"} ${textNameColor}`}
+              style={{
+                fontWeight: "900",
+                textAlign: "center",
+                fontSize: isFirst ? 13 : 11,
+                color: textNameColor,
+              }}
               numberOfLines={1}
             >
               {e.name}
             </Text>
-            <Text className={`font-extrabold text-[9px] text-center mt-0.5 ${textPointsColor}`}>
+            <Text
+              style={{
+                fontWeight: "800",
+                fontSize: 10,
+                textAlign: "center",
+                marginTop: 2,
+                color: textPointsColor,
+              }}
+            >
               {e.points} xp
             </Text>
           </View>
-        </View>
+        </LinearGradient>
       </View>
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <View style={{ flex: 1, width: "100%", position: "relative" }}>
         <View className="px-5 pt-10 pb-3">
           <Text className="text-slate-900 text-2xl font-extrabold">Leaderboards</Text>
         </View>
 
         {/* Tab Selector */}
-        <View className="flex-row bg-slate-100/80 rounded-full p-1 mx-5 mb-5" style={{ gap: 4 }}>
+        <View
+          className="flex-row rounded-full p-1 mx-5 mb-5"
+          style={{ gap: 4, backgroundColor: "#ebd5ff40", borderWidth: 1, borderColor: "#ebd5ff60" }}
+        >
           {PERIODS.map((p) => {
             const isActive = period === p;
             return (
@@ -127,9 +173,12 @@ export function LeaderboardScreen() {
                 }`}
               >
                 <Text
-                  className={`text-xs font-bold capitalize ${
-                    isActive ? "text-slate-800" : "text-slate-400"
-                  }`}
+                  style={{
+                    fontSize: 12,
+                    fontWeight: "700",
+                    textTransform: "capitalize",
+                    color: isActive ? "#1e293b" : "#8b5cf6",
+                  }}
                 >
                   {p}
                 </Text>
@@ -142,8 +191,32 @@ export function LeaderboardScreen() {
           ListHeaderComponent={
             <View className="px-5 pb-4">
               {/* Trophy summary card */}
-              <View className="bg-white border border-slate-100 rounded-3xl p-5 mb-5 flex-row items-center justify-between shadow-sm">
-                <View className="flex-row items-center flex-1 pr-3">
+              <LinearGradient
+                colors={["#f8fafc", "#f1f5f9"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{
+                  borderRadius: 24,
+                  padding: 20,
+                  marginBottom: 20,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  borderWidth: 1,
+                  borderColor: "#ebd5ff",
+                }}
+                className="shadow-sm"
+              >
+                <View
+                  className="pr-3"
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flexGrow: 1,
+                    flexShrink: 1,
+                    flexBasis: "auto",
+                  }}
+                >
                   <Text className="text-slate-800 text-3xl font-black mr-4">
                     #
                     {data?.your_rank === 1
@@ -154,18 +227,30 @@ export function LeaderboardScreen() {
                           ? "3rd"
                           : `${data?.your_rank ?? 0}th`}
                   </Text>
-                  <View className="flex-1">
-                    <Text className="text-slate-500 text-xs font-bold leading-normal">
-                      You Are Doing Better{"\n"}Than {data?.better_than_count ?? 0} Players!!
+                  <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
+                    <Text className="text-slate-500 text-xs font-bold">You Are Doing Better</Text>
+                    <Text className="text-slate-400 text-xs font-semibold mt-0.5">
+                      Than {data?.better_than_count ?? 0} Players!!
                     </Text>
                   </View>
                 </View>
-                <Image
-                  source={require("../../../assets/images/trophy_silver.png")}
-                  style={{ width: 64, height: 64 }}
-                  resizeMode="contain"
-                />
-              </View>
+                <View
+                  style={{
+                    width: 64,
+                    height: 64,
+                    overflow: "hidden",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <LottieView
+                    source={require("../../../assets/lottie/trophy.json")}
+                    autoPlay
+                    loop
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </View>
+              </LinearGradient>
 
               {/* Podium section */}
               {data && data.top3.length > 0 && (
@@ -181,8 +266,24 @@ export function LeaderboardScreen() {
           keyExtractor={(item: LeaderboardEntry) => item.user_id}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}
           renderItem={({ item }: { item: LeaderboardEntry }) => (
-            <View className="bg-white border border-slate-100 rounded-3xl p-4 mb-3 flex-row items-center justify-between shadow-xs">
-              <View className="flex-row items-center flex-1 pr-3">
+            <View
+              className="bg-white border border-slate-100 rounded-3xl p-4 mb-3 shadow-xs"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <View
+                className="pr-3"
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  flexGrow: 1,
+                  flexShrink: 1,
+                  flexBasis: "auto",
+                }}
+              >
                 <View className="w-10 h-10 rounded-full bg-slate-100 mr-3 overflow-hidden justify-center items-center border border-slate-200/50">
                   {item.avatar ? (
                     <Image
@@ -195,7 +296,7 @@ export function LeaderboardScreen() {
                     <Feather name="user" size={18} color="#94a3b8" />
                   )}
                 </View>
-                <View className="flex-1">
+                <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
                   <Text className="text-slate-800 font-extrabold text-sm" numberOfLines={1}>
                     {item.is_you ? `${item.name} (You)` : item.name}
                   </Text>
@@ -237,6 +338,6 @@ export function LeaderboardScreen() {
 
         <FriendsModal visible={friendsOpen} onClose={() => setFriendsOpen(false)} />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
