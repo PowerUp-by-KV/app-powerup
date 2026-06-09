@@ -1,13 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useRouter } from "expo-router";
@@ -171,13 +164,13 @@ export function ResumeUploadStep() {
           <Text className="text-slate-900 font-semibold text-base mb-1">
             {picked ? picked.name : "Upload your resume here"}
           </Text>
-          <Pressable
-            onPress={handlePick}
+          <View
+            pointerEvents="none"
             className="mt-4 bg-indigo-600 px-5 py-2 rounded-lg flex-row items-center"
           >
             <Feather name="file-text" size={14} color="#fff" />
             <Text className="text-white font-semibold ml-2">Browse Files</Text>
-          </Pressable>
+          </View>
           <Text className="text-slate-400 text-xs mt-4">Supported formats: PDF, DOC, DOCX</Text>
           <Text className="text-slate-400 text-xs">Maximum file size: 10MB</Text>
         </Pressable>

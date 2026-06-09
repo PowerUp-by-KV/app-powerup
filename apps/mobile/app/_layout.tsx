@@ -1,6 +1,5 @@
 import "../global.css";
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
@@ -13,11 +12,7 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import {
-  getAuthSession,
-  StoredSession,
-  getProfileCompletedInSession,
-} from "@/services/auth-storage";
+import { getAuthSession, StoredSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
@@ -34,35 +29,24 @@ const ALLOWED_BEFORE_ONBOARDING = [
   "profile",
 ];
 
-// Sentinel for "no session read has completed yet". Must be distinct from every
-// possible route value — including `undefined` (segments[0] is undefined on the
-// first render), otherwise `readyForRoute === currentRoute` would be true before
-// any read finishes and the guard could redirect prematurely.
-const UNRESOLVED = Symbol("session-unresolved");
-
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const currentRoute = segments[0] as string | undefined;
 
   const [session, setSession] = useState<StoredSession | null>(null);
-  const [localOnboardingComplete, setLocalOnboardingComplete] = useState<boolean>(false);
   // Tracks the route for which the session read has completed. We only make
   // redirect decisions once the fresh read for the *current* route is done —
   // otherwise, right after login navigates, the effect would run with a stale
-  // `session === null` and bounce the user straight back to /login. Starts as
-  // UNRESOLVED (not undefined) so the first render is never considered "ready".
-  const [readyForRoute, setReadyForRoute] = useState<string | undefined | typeof UNRESOLVED>(
-    UNRESOLVED,
-  );
+  // `session === null` and bounce the user straight back to /login.
+  const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
-    Promise.all([getAuthSession(), getProfileCompletedInSession()])
-      .then(([sess, completed]) => {
+    getAuthSession()
+      .then((sess) => {
         if (!active) return;
         setSession(sess);
-        setLocalOnboardingComplete(completed);
       })
       .catch((err) => {
         console.warn("Failed to load session in guard:", err);
@@ -97,7 +81,6 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       session &&
       isQueryActive &&
       !isOnboardingError &&
-      !localOnboardingComplete &&
       (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined)
     ) {
       return;
@@ -108,14 +91,23 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (!session) {
       if (!isPublic) router.replace("/login");
     } else {
-      const onboardingComplete =
-        (onboardingStatus?.answers_present ?? false) || localOnboardingComplete;
+      const onboardingComplete = onboardingStatus?.answers_present ?? false;
 
       if (!onboardingComplete) {
         // Logged in but onboarding not complete.
         // They should only be on onboarding or verification routes.
         // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
-        if (currentRoute && !ALLOWED_BEFORE_ONBOARDING.includes(currentRoute)) {
+        const allowedRoutes = [
+          "onboarding",
+          "onboarding-resume",
+          "verify-email",
+          "verify-phone",
+          "thank-you",
+          "welcome-back",
+          "success",
+          "profile",
+        ];
+        if (currentRoute && !allowedRoutes.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
@@ -144,28 +136,41 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isOnboardingLoading,
     isOnboardingFetching,
     isOnboardingError,
-    localOnboardingComplete,
     currentRoute,
     segments,
     router,
   ]);
 
+  // Only block render in the narrow window where we know the user is authenticated,
+  // haven't completed onboarding, and the onboarding status is still loading.
+  // In all other cases render children immediately — redirects fire via the effect above.
+  // Never return null while isLocalReady is false: the splash screen is still visible then.
+  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+  const isAllowedBeforeOnboarding =
+    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
+  const onboardingComplete = onboardingStatus?.answers_present ?? false;
+  const isQueryActive = !!userId;
+  const isQueryLoading =
+    isQueryActive &&
+    !isOnboardingError &&
+    (isOnboardingLoading || isOnboardingFetching || onboardingStatus === undefined);
+
+  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
+    return null;
+  }
+
   return <>{children}</>;
 }
 
 export default function AuthLayout() {
-  const [fontsLoaded, fontError] = useFonts(
-    Platform.OS === "web"
-      ? {}
-      : {
-          Inter: Inter_400Regular,
-          "Inter-Regular": Inter_400Regular,
-          "Inter-Medium": Inter_500Medium,
-          "Inter-SemiBold": Inter_600SemiBold,
-          "Inter-Bold": Inter_700Bold,
-          "Inter-ExtraBold": Inter_800ExtraBold,
-        },
-  );
+  const [fontsLoaded, fontError] = useFonts({
+    Inter: Inter_400Regular,
+    "Inter-Regular": Inter_400Regular,
+    "Inter-Medium": Inter_500Medium,
+    "Inter-SemiBold": Inter_600SemiBold,
+    "Inter-Bold": Inter_700Bold,
+    "Inter-ExtraBold": Inter_800ExtraBold,
+  });
 
   const [authChecked, setAuthChecked] = useState(false);
 

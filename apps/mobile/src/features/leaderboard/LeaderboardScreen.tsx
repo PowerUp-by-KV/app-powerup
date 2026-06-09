@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { FlatList, Pressable, SafeAreaView, Text, View, Image } from "react-native";
+import { FlatList, Pressable, Text, View, Image } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";

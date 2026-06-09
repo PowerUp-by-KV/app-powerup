@@ -1,5 +1,6 @@
 import React from "react";
-import { SafeAreaView, Text, Pressable, View } from "react-native";
+import { Text, Pressable, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 import { useSafeBack } from "@/hooks/useSafeBack";
 

@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useRef } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View, Animated } from "react-native";
+import { ActivityIndicator, Text, View, Animated } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import LottieView from "lottie-react-native";
 
 const ONBOARDING_TIPS = [

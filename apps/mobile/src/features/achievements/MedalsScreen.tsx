@@ -3,7 +3,6 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -11,6 +10,7 @@ import {
   Animated,
   Modal,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useSafeBack } from "@/hooks/useSafeBack";
 

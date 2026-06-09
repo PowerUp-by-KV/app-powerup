@@ -258,7 +258,10 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
               </Text>
 
               {/* Browse Files Button */}
-              <View className="bg-blue-500 active:bg-blue-600 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
+              <View
+                pointerEvents="none"
+                className="bg-blue-500 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm"
+              >
                 <Feather name="file" size={16} color="white" style={{ marginRight: 8 }} />
                 <Text className="text-white font-extrabold text-sm">
                   {formData[`${question_key}Name`] ? "Change File" : "Browse Files"}

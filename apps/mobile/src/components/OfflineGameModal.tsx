@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, SafeAreaView, Text, View, Pressable, StyleSheet } from "react-native";
+import { Modal, Text, View, Pressable, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 const GAME_HEIGHT = 300;

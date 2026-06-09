@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, SafeAreaView, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, Pressable, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert, Platform } from "react-native";
+import { View, Text, TouchableOpacity, Modal, Alert, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
