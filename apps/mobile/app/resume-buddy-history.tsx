@@ -1,13 +1,15 @@
-import { SafeAreaView, View, Text, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ResumeBuddyHistoryScreen } from "@/features/resume-buddy";
 
 export default function ResumeBuddyHistoryPage() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+    <View style={{ flex: 1, backgroundColor: "#f8fafc", paddingTop: insets.top }}>
       {/* Header */}
       <View
         style={{
@@ -42,6 +44,6 @@ export default function ResumeBuddyHistoryPage() {
       </View>
 
       <ResumeBuddyHistoryScreen />
-    </SafeAreaView>
+    </View>
   );
 }

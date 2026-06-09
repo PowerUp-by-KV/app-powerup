@@ -1,5 +1,6 @@
 import React from "react";
-import { View, StyleSheet, SafeAreaView } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import {
   selectCurrentStep,
@@ -18,9 +19,10 @@ import {
 export default function ResumeBuilderRoute() {
   const currentStep = useAppSelector(selectCurrentStep);
   const dispatch = useAppDispatch();
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
       <View style={styles.container}>
         <View style={styles.wizardContainer}>
           <StepWizard
@@ -37,7 +39,7 @@ export default function ResumeBuilderRoute() {
           {currentStep === 4 && <PreviewScreen />}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

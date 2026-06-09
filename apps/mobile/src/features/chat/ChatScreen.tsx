@@ -5,14 +5,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import {
@@ -32,6 +33,7 @@ const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
 export function ChatScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ thread_id?: string }>();
   const { data: profile } = useGetProfileQuery();
   const [threadId, setThreadId] = useState<string | null>(params.thread_id ?? null);
@@ -95,25 +97,120 @@ export function ChatScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: Platform.OS === "web" ? "rgba(15, 23, 42, 0.35)" : "#fff",
+        backgroundColor: Platform.OS === "web" ? "#0f172a" : "#fff",
       }}
     >
-      <SafeAreaView
+      {Platform.OS === "web" && (
+        <>
+          <View
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={["#faf5ff", "#f5f3ff", "#fafafd"]}
+              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+            />
+            {/* Optimized static mockup representation of the HomeScreen to prevent re-querying API hooks */}
+            <View style={{ padding: 24, paddingTop: 60, opacity: 0.35 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 28,
+                }}
+              >
+                <View>
+                  <View
+                    style={{
+                      width: 140,
+                      height: 26,
+                      backgroundColor: "#cbd5e1",
+                      borderRadius: 13,
+                      marginBottom: 8,
+                    }}
+                  />
+                  <View
+                    style={{ width: 200, height: 16, backgroundColor: "#e2e8f0", borderRadius: 8 }}
+                  />
+                </View>
+                <View
+                  style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#cbd5e1" }}
+                />
+              </View>
+              <View
+                style={{
+                  height: 110,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 24,
+                  marginBottom: 24,
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
+                }}
+              />
+              <View
+                style={{
+                  height: 170,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 24,
+                  marginBottom: 24,
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
+                }}
+              />
+              <View
+                style={{
+                  width: 160,
+                  height: 22,
+                  backgroundColor: "#cbd5e1",
+                  borderRadius: 11,
+                  marginBottom: 16,
+                }}
+              />
+              <View
+                style={{
+                  height: 130,
+                  backgroundColor: "#ffffff",
+                  borderRadius: 24,
+                  marginBottom: 24,
+                  borderWidth: 1,
+                  borderColor: "#e2e8f0",
+                }}
+              />
+            </View>
+          </View>
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.45)",
+            }}
+            pointerEvents="none"
+          />
+        </>
+      )}
+      <View
         style={{
-          flex: 1,
+          height: Platform.OS === "web" ? "82%" : "100%",
+          maxHeight: Platform.OS === "web" ? 750 : "100%",
+          paddingTop: insets.top,
           backgroundColor: "#fff",
           maxWidth: Platform.OS === "web" ? 480 : "100%",
           width: "100%",
           alignSelf: Platform.OS === "web" ? "flex-end" : "auto",
+          marginTop: Platform.OS === "web" ? "auto" : 0,
           margin: Platform.OS === "web" ? 24 : 0,
           borderRadius: Platform.OS === "web" ? 24 : 0,
           overflow: "hidden",
-          borderLeftWidth: Platform.OS === "web" ? 1 : 0,
+          borderWidth: Platform.OS === "web" ? 1 : 0,
           borderColor: "#e2e8f0",
-          shadowColor: "#000",
-          shadowOffset: { width: -4, height: 0 },
-          shadowOpacity: Platform.OS === "web" ? 0.04 : 0,
-          shadowRadius: 10,
+          shadowColor: "#0f172a",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: Platform.OS === "web" ? 0.12 : 0,
+          shadowRadius: 24,
         }}
       >
         <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -230,7 +327,7 @@ export function ChatScreen() {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

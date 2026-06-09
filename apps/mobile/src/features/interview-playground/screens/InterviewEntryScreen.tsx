@@ -1,14 +1,7 @@
 import React, { useCallback } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
 import { useGetProfileResumeQuery } from "@/services/resume-api";
@@ -40,6 +33,7 @@ function SessionItem({ item }: { item: InterviewSessionSummary }) {
 }
 
 export function InterviewEntryScreen() {
+  const insets = useSafeAreaInsets();
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "playground",
   });
@@ -97,7 +91,7 @@ export function InterviewEntryScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={[styles.safe, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.listContent}>
         {renderHeader()}
         {isLoadingSessions && <ActivityIndicator style={styles.loader} />}
@@ -105,7 +99,7 @@ export function InterviewEntryScreen() {
           <SessionItem key={item.session_id} item={item} />
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

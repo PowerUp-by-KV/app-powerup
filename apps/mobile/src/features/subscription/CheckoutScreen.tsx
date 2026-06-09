@@ -1,15 +1,8 @@
 import React, { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import {
@@ -20,6 +13,7 @@ import {
 export function CheckoutScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ plan_id?: string }>();
   const { data: plans = [] } = useGetSubscriptionPlansQuery();
   const [checkout, { isLoading }] = useCheckoutSubscriptionMutation();
@@ -41,14 +35,17 @@ export function CheckoutScreen() {
 
   if (!plan) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+      <View
+        style={{ flex: 1, paddingTop: insets.top }}
+        className="flex-1 bg-white items-center justify-center"
+      >
         <Text className="text-slate-500">Plan not found.</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
@@ -110,6 +107,6 @@ export function CheckoutScreen() {
           your account settings.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

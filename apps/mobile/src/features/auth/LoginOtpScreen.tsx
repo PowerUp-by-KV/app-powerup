@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { OtpInput } from "./components/OtpInput";
@@ -18,6 +18,7 @@ import { OtpResendTimer } from "./components/OtpResendTimer";
 
 export function LoginOtpScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,7 +34,7 @@ export function LoginOtpScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -138,6 +139,6 @@ export function LoginOtpScreen() {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

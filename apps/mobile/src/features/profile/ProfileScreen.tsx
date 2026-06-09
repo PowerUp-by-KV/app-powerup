@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
@@ -25,6 +25,7 @@ import { getAvatarUri } from "@/utils/avatar";
 export function ProfileScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { logout } = useLogout();
   const [tab, setTab] = useState<"stats" | "space">("space");
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -94,7 +95,33 @@ export function ProfileScreen() {
     return `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}`;
   }, [currentDate]);
 
+  const prevMonthIso = useMemo(() => {
+    const prevDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+    return `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, "0")}`;
+  }, [currentDate]);
+
+  const nextMonthIso = useMemo(() => {
+    const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+    return `${nextDate.getFullYear()}-${(nextDate.getMonth() + 1).toString().padStart(2, "0")}`;
+  }, [currentDate]);
+
   const { data: calendar } = useGetStreakCalendarQuery(monthIso);
+  const { data: prevCalendar } = useGetStreakCalendarQuery(prevMonthIso);
+  const { data: nextCalendar } = useGetStreakCalendarQuery(nextMonthIso);
+
+  const activeDates = useMemo(() => {
+    const dates = new Set<string>();
+    if (calendar?.days) {
+      calendar.days.filter((d) => d.active).forEach((d) => dates.add(d.date));
+    }
+    if (prevCalendar?.days) {
+      prevCalendar.days.filter((d) => d.active).forEach((d) => dates.add(d.date));
+    }
+    if (nextCalendar?.days) {
+      nextCalendar.days.filter((d) => d.active).forEach((d) => dates.add(d.date));
+    }
+    return dates;
+  }, [calendar, prevCalendar, nextCalendar]);
 
   const allGridDays = useMemo(() => {
     const year = currentDate.getFullYear();
@@ -123,13 +150,11 @@ export function ProfileScreen() {
         date: dateStr,
         dayNumber: dayNum,
         isCurrentMonth: false,
-        active: false,
+        active: activeDates.has(dateStr),
       });
     }
 
     // 2. Current month days
-    const activeDates = new Set((calendar?.days ?? []).filter((d) => d.active).map((d) => d.date));
-
     for (let i = 1; i <= totalDaysInMonth; i++) {
       const dateStr = `${year}-${(month + 1).toString().padStart(2, "0")}-${i.toString().padStart(2, "0")}`;
       days.push({
@@ -150,12 +175,12 @@ export function ProfileScreen() {
         date: dateStr,
         dayNumber: i,
         isCurrentMonth: false,
-        active: false,
+        active: activeDates.has(dateStr),
       });
     }
 
     return days;
-  }, [currentDate, calendar]);
+  }, [currentDate, activeDates]);
 
   const displayedDays = useMemo(() => {
     if (viewMode === "monthly") {
@@ -225,53 +250,12 @@ export function ProfileScreen() {
     return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}-${d.getDate().toString().padStart(2, "0")}`;
   }, []);
 
-  const getStreakStyle = (index: number, days: Array<{ active: boolean }>) => {
-    const current = days[index];
-    if (!current || !current.active) return null;
-
-    const isRowStart = index % 7 === 0;
-    const isRowEnd = index % 7 === 6;
-
-    const prevActive = !isRowStart && days[index - 1]?.active;
-    const nextActive = !isRowEnd && days[index + 1]?.active;
-
-    const baseStyle = {
-      height: 32,
-      width: "100%" as const,
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    };
-
-    if (prevActive && nextActive) {
-      return {
-        ...baseStyle,
-      };
-    } else if (prevActive) {
-      return {
-        ...baseStyle,
-        borderTopRightRadius: 16,
-        borderBottomRightRadius: 16,
-      };
-    } else if (nextActive) {
-      return {
-        ...baseStyle,
-        borderTopLeftRadius: 16,
-        borderBottomLeftRadius: 16,
-      };
-    } else {
-      return {
-        ...baseStyle,
-        borderRadius: 16,
-      };
-    }
-  };
-
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Profile..." />;
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -538,58 +522,102 @@ export function ProfileScreen() {
                   </View>
 
                   {/* Days Grid */}
-                  <View className="flex-row flex-wrap">
-                    {displayedDays.map((dayObj, index) => {
-                      const streakStyle = getStreakStyle(index, displayedDays);
-                      const isToday = dayObj.date === todayStr;
+                  <View className="flex-col">
+                    {(() => {
+                      const rows = [];
+                      for (let i = 0; i < displayedDays.length; i += 7) {
+                        rows.push(displayedDays.slice(i, i + 7));
+                      }
+                      return rows.map((rowDays, rowIndex) => {
+                        const segments: Array<{ start: number; end: number }> = [];
+                        let currentStart: number | null = null;
+                        for (let i = 0; i < 7; i++) {
+                          if (rowDays[i]?.active) {
+                            if (currentStart === null) {
+                              currentStart = i;
+                            }
+                          } else {
+                            if (currentStart !== null) {
+                              segments.push({ start: currentStart, end: i - 1 });
+                              currentStart = null;
+                            }
+                          }
+                        }
+                        if (currentStart !== null) {
+                          segments.push({ start: currentStart, end: 6 });
+                        }
 
-                      return (
-                        <View
-                          key={`${dayObj.date}-${index}`}
-                          style={{ width: "14.28%", height: 40, justifyContent: "center" }}
-                          className="py-1"
-                        >
-                          {streakStyle ? (
-                            <LinearGradient
-                              colors={["#e5edff", "#eff6ff"]}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={streakStyle}
-                            >
-                              {isToday ? (
-                                <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
-                                  <Text className="text-white font-extrabold text-sm">
-                                    {dayObj.dayNumber}
-                                  </Text>
-                                </View>
-                              ) : (
-                                <Text className="text-[#2563eb] font-extrabold text-sm">
-                                  {dayObj.dayNumber}
-                                </Text>
-                              )}
-                            </LinearGradient>
-                          ) : (
-                            <View className="items-center justify-center h-full">
-                              {isToday ? (
-                                <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
-                                  <Text className="text-white font-extrabold text-sm">
-                                    {dayObj.dayNumber}
-                                  </Text>
-                                </View>
-                              ) : (
-                                <Text
-                                  className={`text-sm font-extrabold ${
-                                    dayObj.isCurrentMonth ? "text-slate-800" : "text-slate-300"
-                                  }`}
+                        return (
+                          <View
+                            key={rowIndex}
+                            className="flex-row w-full relative mb-1"
+                            style={{ height: 40 }}
+                          >
+                            {/* Absolute Background Gradient Pill Layer */}
+                            {segments.map((seg, segIdx) => {
+                              const leftPercent = seg.start * 14.2857;
+                              const widthPercent = (seg.end - seg.start + 1) * 14.2857;
+                              return (
+                                <LinearGradient
+                                  key={segIdx}
+                                  colors={["#e5edff", "#eff6ff"]}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 0 }}
+                                  style={{
+                                    position: "absolute",
+                                    left: `${leftPercent}%`,
+                                    width: `${widthPercent}%`,
+                                    top: 4,
+                                    height: 32,
+                                    borderTopLeftRadius: 16,
+                                    borderBottomLeftRadius: 16,
+                                    borderTopRightRadius: 16,
+                                    borderBottomRightRadius: 16,
+                                  }}
+                                />
+                              );
+                            })}
+
+                            {/* Foreground Day Numbers */}
+                            {rowDays.map((dayObj, dayIdx) => {
+                              const isToday = dayObj.date === todayStr;
+                              return (
+                                <View
+                                  key={`${dayObj.date}-${dayIdx}`}
+                                  style={{
+                                    width: "14.2857%",
+                                    height: 40,
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                  }}
+                                  className="z-10"
                                 >
-                                  {dayObj.dayNumber}
-                                </Text>
-                              )}
-                            </View>
-                          )}
-                        </View>
-                      );
-                    })}
+                                  {isToday ? (
+                                    <View className="w-8 h-8 rounded-full bg-[#3b82f6] items-center justify-center shadow-sm">
+                                      <Text className="text-white font-extrabold text-sm">
+                                        {dayObj.dayNumber}
+                                      </Text>
+                                    </View>
+                                  ) : dayObj.active ? (
+                                    <Text className="text-[#2563eb] font-extrabold text-sm">
+                                      {dayObj.dayNumber}
+                                    </Text>
+                                  ) : (
+                                    <Text
+                                      className={`text-sm font-extrabold ${
+                                        dayObj.isCurrentMonth ? "text-slate-800" : "text-slate-300"
+                                      }`}
+                                    >
+                                      {dayObj.dayNumber}
+                                    </Text>
+                                  )}
+                                </View>
+                              );
+                            })}
+                          </View>
+                        );
+                      });
+                    })()}
                   </View>
                 </View>
 
@@ -634,7 +662,7 @@ export function ProfileScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

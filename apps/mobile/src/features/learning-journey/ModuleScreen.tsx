@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
@@ -22,6 +23,7 @@ import { ActivityRenderer, ActivityResult } from "./components/ActivityRenderer"
 export function ModuleScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     day_id?: string;
     module_id?: string;
@@ -184,9 +186,12 @@ export function ModuleScreen() {
 
   if (!dayId) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+      <View
+        style={{ paddingTop: insets.top }}
+        className="flex-1 bg-white items-center justify-center"
+      >
         <Text className="text-slate-500">Missing day id.</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -194,12 +199,13 @@ export function ModuleScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView
+      <View
         style={{
           flex: 1,
           backgroundColor: "#f8fafc",
           justifyContent: "center",
           alignItems: "center",
+          paddingTop: insets.top,
         }}
         className="p-6"
       >
@@ -249,7 +255,7 @@ export function ModuleScreen() {
             </Pressable>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -262,7 +268,7 @@ export function ModuleScreen() {
   const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <View className="px-4 pt-4 pb-2 border-b border-slate-100 bg-white">
         {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
         <View className="flex-row items-center w-full mb-3">
@@ -303,6 +309,6 @@ export function ModuleScreen() {
           onComplete={handleActivityComplete}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

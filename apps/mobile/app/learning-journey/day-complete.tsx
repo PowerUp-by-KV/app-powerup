@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -10,6 +9,7 @@ import {
   Dimensions,
   StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -218,6 +218,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
  */
 export default function DayCompleteScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     day_number?: string;
     module_id?: string;
@@ -277,7 +278,7 @@ export default function DayCompleteScreen() {
   // ── State 2: Module check passed ───────────────────────────────────────
   if (state === "check-passed") {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
         <CelebrationOverlay
           visible={overlayVisible}
           onClose={() => setOverlayVisible(false)}
@@ -361,14 +362,14 @@ export default function DayCompleteScreen() {
             </Pressable>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ── State 3: Module check failed ───────────────────────────────────────
   if (state === "check-failed") {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
         <ScrollView contentContainerStyle={{ padding: 24, alignItems: "center" }}>
           <Feather name="refresh-ccw" size={64} color="#64748b" style={{ marginTop: 20 }} />
           <Text className="text-2xl font-extrabold text-slate-900 mt-4 text-center">
@@ -399,13 +400,13 @@ export default function DayCompleteScreen() {
             <Text style={{ color: "#fff", fontWeight: "700" }}>Review weak days</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ── State 1: Normal day complete ───────────────────────────────────────
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <CelebrationOverlay
         visible={overlayVisible}
         onClose={() => setOverlayVisible(false)}
@@ -447,7 +448,7 @@ export default function DayCompleteScreen() {
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

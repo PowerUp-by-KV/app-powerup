@@ -1,5 +1,6 @@
 import React from "react";
-import { Pressable, SafeAreaView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 interface AuthSuccessScreenProps {
@@ -10,8 +11,9 @@ interface AuthSuccessScreenProps {
 }
 
 export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessScreenProps) {
+  const insets = useSafeAreaInsets();
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="flex-1 items-center justify-center px-8">
         <View className="w-16 h-16 rounded-full bg-[#3b82f6] items-center justify-center mb-6 shadow-md shadow-blue-100">
           <Feather name="check" size={28} color="#fff" />
@@ -25,6 +27,6 @@ export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessSc
           <Text className="text-white font-bold text-base">{cta}</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
