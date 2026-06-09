@@ -231,7 +231,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   return (
     <View
       style={{
-        flex: 1,
+        // When nested inside a parent ScrollView (e.g. ListeningActivity), flex:1
+        // collapses on Android and clips the Submit button below the fold. Size to
+        // content instead so the parent ScrollView can reach the button.
+        ...(isNested ? {} : { flex: 1 }),
         ...Platform.select({ web: { userSelect: "none" } as any }),
       }}
     >
