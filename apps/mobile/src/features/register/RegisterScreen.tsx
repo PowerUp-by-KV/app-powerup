@@ -11,7 +11,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AntDesign, Feather } from "@expo/vector-icons";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";

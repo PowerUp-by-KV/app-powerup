@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector, useDispatch } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";

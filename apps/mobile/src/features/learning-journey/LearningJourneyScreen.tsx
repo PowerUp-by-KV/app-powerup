@@ -12,7 +12,6 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -195,8 +194,6 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
   const totalPoints = Math.round(safeResults?.max_score ?? 0);
   const formattedOverall = `${((percentage / SCORE_SCALE_CONVERSION) * MAX_CEFR_SCALE).toFixed(1)} of ${MAX_CEFR_SCALE}`;
   const formattedPoints = `${obtainedPoints} of ${totalPoints}`;
-
-  const sectionPercentages = safeResults.section_percentages ?? {};
 
   // Reading Score: A_READING percentage mapped out of MAX_CEFR_SCALE
   const readingPct = safeResults?.section_percentages?.["A_READING"] ?? DEFAULT_CEFR_PERCENTAGE;
