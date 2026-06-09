@@ -14,6 +14,7 @@ export interface ResumeBuilderState {
   isSaving: boolean;
   lastSavedAt: string | null;
   photoUrl: string | null;
+  currentSubStep: number;
 }
 
 const initialState: ResumeBuilderState = {
@@ -43,6 +44,7 @@ const initialState: ResumeBuilderState = {
   isSaving: false,
   lastSavedAt: null,
   photoUrl: null,
+  currentSubStep: 0,
 };
 
 export const resumeBuilderSlice = createSlice({
@@ -51,6 +53,10 @@ export const resumeBuilderSlice = createSlice({
   reducers: {
     setCurrentStep: (state, action: PayloadAction<number>) => {
       state.currentStep = action.payload;
+    },
+
+    setCurrentSubStep: (state, action: PayloadAction<number>) => {
+      state.currentSubStep = action.payload;
     },
 
     updateContact: (state, action: PayloadAction<Partial<BuilderContact>>) => {
@@ -140,6 +146,7 @@ export const resumeBuilderSlice = createSlice({
 
 export const {
   setCurrentStep,
+  setCurrentSubStep,
   updateContact,
   updateSummary,
   updateExperience,
@@ -161,6 +168,8 @@ export default resumeBuilderSlice.reducer;
 // Selectors
 export const selectBuilderCurrentStep = (state: { resumeBuilder: ResumeBuilderState }) =>
   state.resumeBuilder.currentStep;
+export const selectBuilderCurrentSubStep = (state: { resumeBuilder: ResumeBuilderState }) =>
+  state.resumeBuilder.currentSubStep;
 export const selectBuilderDraft = (state: { resumeBuilder: ResumeBuilderState }) =>
   state.resumeBuilder.draftResume;
 export const selectBuilderIsDirty = (state: { resumeBuilder: ResumeBuilderState }) =>
