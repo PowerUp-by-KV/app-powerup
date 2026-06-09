@@ -14,7 +14,6 @@ import * as SecureStore from "expo-secure-store";
 
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetResumeScoreQuery } from "@/services/resume-api";
@@ -122,7 +121,6 @@ export function ResumeScoreScreen() {
       <View style={styles.header}>
         <Pressable onPress={() => safeBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={20} color="#9ca3af" />
-
         </Pressable>
         <Text style={styles.headerTitle}>Resume Building</Text>
         <View style={styles.backButtonPlaceholder} />
@@ -203,7 +201,6 @@ export function ResumeScoreScreen() {
         </View>
       )}
     </SafeAreaView>
-
   );
 }
 

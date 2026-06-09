@@ -590,7 +590,7 @@ export function LearningJourneyScreen() {
         pathname: "/assessment-entry" as any,
         params: { session_id: session.session_id },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Start/resume assessment session failed:", err);
       Alert.alert("Error", "Could not start assessment. Please try again.");
     } finally {

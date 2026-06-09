@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
-import { Platform, Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -221,7 +220,6 @@ export function HomeScreen() {
     return `${activeModule.title} (Day ${firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length})`;
   }, [activeDay, activeModule, firstIncompleteIdx, allDaysList.length]);
 
-
   const continueSubtitle = useMemo(() => {
     if (!activeDay) return "⏱ 15 min left";
     if (dayProgress) {
@@ -335,6 +333,5 @@ export function HomeScreen() {
         <ChatFab onPress={() => router.push("/chat" as never)} />
       </View>
     </View>
-
   );
 }
