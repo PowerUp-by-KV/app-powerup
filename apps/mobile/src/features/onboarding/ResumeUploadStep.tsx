@@ -1,28 +1,28 @@
-import React, { useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  Text,
-  View,
-} from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
-import { useStartSessionMutation, getNextRouteForSection } from "@/services/assessment-api";
+import { useStartSessionMutation } from "@/services/assessment-api";
 import {
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
 } from "@/services/onboarding-api";
-import { getApiErrorMessage } from "@/utils/error-message";
 
 export function ResumeUploadStep() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [picked, setPicked] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    };
+  }, []);
   const [extractResume, { isLoading: isExtracting }] = useExtractOnboardingResumeMutation();
   const [confirmResume, { isLoading: isConfirming }] = useConfirmOnboardingResumeMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
@@ -44,35 +44,7 @@ export function ResumeUploadStep() {
   const goToAssessment = async () => {
     try {
       const session = await startSession().unwrap();
-      const notCompleted = session.not_completed_sections || [];
-      const backendCompleted = session.completed_sections || [];
-      const allSections = [
-        "A_READING",
-        "A_SPEAKING",
-        "A_LISTEN",
-        "B_SPEAKING",
-        "C_GRAMMAR",
-        "D_LISTEN_ANSWER",
-      ];
-      const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
-
-      let targetSec = activeNotCompleted[0];
-      if (!targetSec) {
-        if (session.current_section && !backendCompleted.includes(session.current_section)) {
-          targetSec = session.current_section;
-        }
-      }
-      if (!targetSec) {
-        if (session.first_section && !backendCompleted.includes(session.first_section)) {
-          targetSec = session.first_section;
-        }
-      }
-      if (!targetSec) {
-        targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-      }
-
-      const targetRoute = getNextRouteForSection(targetSec);
-      router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+      router.replace(`/assessment-entry?session_id=${session.session_id}` as never);
     } catch {
       // If session start fails, still land user in the app — they can retry from My Learning
       router.replace("/(tabs)" as never);
@@ -83,9 +55,9 @@ export function ResumeUploadStep() {
     if (!picked || isLoading) return;
     try {
       const formData = new FormData();
-      if (Platform.OS === "web" && (picked as any).file) {
+      if (Platform.OS === "web" && (picked as unknown as { file?: File }).file) {
         // On web, use the actual File object from the document picker
-        formData.append("file", (picked as any).file, picked.name);
+        formData.append("file", (picked as unknown as { file?: File }).file!, picked.name);
       } else {
         // On mobile (React Native), use the {uri, name, type} format
         formData.append("file", {
@@ -110,46 +82,27 @@ export function ResumeUploadStep() {
 
       // Show success screen for 2 seconds, then navigate
       setUploadSuccess(true);
-      setTimeout(async () => {
+      navTimerRef.current = setTimeout(async () => {
         try {
           const session = await startSession().unwrap();
-          const notCompleted = session.not_completed_sections || [];
-          const backendCompleted = session.completed_sections || [];
-          const allSections = [
-            "A_READING",
-            "A_SPEAKING",
-            "A_LISTEN",
-            "B_SPEAKING",
-            "C_GRAMMAR",
-            "D_LISTEN_ANSWER",
-          ];
-          const activeNotCompleted = notCompleted.filter((sec) => !backendCompleted.includes(sec));
-
-          let targetSec = activeNotCompleted[0];
-          if (!targetSec) {
-            if (session.current_section && !backendCompleted.includes(session.current_section)) {
-              targetSec = session.current_section;
-            }
-          }
-          if (!targetSec) {
-            if (session.first_section && !backendCompleted.includes(session.first_section)) {
-              targetSec = session.first_section;
-            }
-          }
-          if (!targetSec) {
-            targetSec = allSections.find((sec) => !backendCompleted.includes(sec)) || "A_READING";
-          }
-
-          const targetRoute = getNextRouteForSection(targetSec);
-          router.replace(`${targetRoute}?session_id=${session.session_id}` as never);
+          router.replace(`/assessment-entry?session_id=${session.session_id}` as never);
         } catch {
           router.replace("/(tabs)" as never);
         }
       }, 2000);
-    } catch (err) {
+    } catch {
       Alert.alert(
         "Upload failed",
-        getApiErrorMessage(err, "Could not upload and extract your resume."),
+        "Could not upload and extract your resume. You can try again or continue without it.",
+        [
+          { text: "Try Again", style: "cancel" },
+          {
+            text: "Continue Without Resume",
+            onPress: async () => {
+              await goToAssessment();
+            },
+          },
+        ],
       );
     }
   };
@@ -161,7 +114,7 @@ export function ResumeUploadStep() {
   // Success overlay
   if (uploadSuccess) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "#fff" }}>
         <View
           style={{
             flex: 1,
@@ -187,12 +140,12 @@ export function ResumeUploadStep() {
           </Text>
           <Text style={{ fontSize: 15, color: "#6b7280" }}>Redirecting...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="h-1 bg-slate-100 w-full">
         <View className="h-full bg-indigo-600 w-full" />
       </View>
@@ -246,6 +199,6 @@ export function ResumeUploadStep() {
           </Pressable>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

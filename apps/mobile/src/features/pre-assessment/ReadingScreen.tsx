@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
@@ -10,12 +10,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   ReadingSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ReadingQuestion as ReadingQuestionComponent } from "./components/ReadingQuestion";
 import { ParagraphDisplay } from "./components/ParagraphDisplay";
@@ -26,6 +28,8 @@ import { getAssessmentSessionId, saveCompletedSection } from "@/services/auth-st
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -33,6 +37,7 @@ interface ReadingScreenProps {
 
 export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -54,12 +59,14 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const readingData = sectionData as ReadingSectionResponse | undefined;
   const questions =
     readingData?.questions ||
+    (readingData?.passages && readingData.passages.flatMap((p) => p.questions || [])) ||
     readingData?.sentences ||
     readingData?.items ||
     readingData?.prompts ||
@@ -97,20 +104,30 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, timeLeft, isLastQuestion, isSubmitting, isFinished]);
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -125,14 +142,14 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             <View className="w-full gap-3 mt-2">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -198,14 +215,20 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         }
       }
 
+      // Poll/verify status
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
+
       // Brief delay to allow dev tunnel proxy socket to clean up before loading next route
       await new Promise((res) => setTimeout(res, 600));
 
       await saveCompletedSection("A_READING");
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
-    } catch {
-      Alert.alert("Error", "Could not submit answers. Please try again.");
+    } catch (err: any) {
+      console.error("A_READING submission failed:", err);
+      setIsFinished(false);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
+      Alert.alert("Submission Failed", msg);
     }
   };
 
@@ -222,8 +245,28 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     setCurrentQuestionIndex((prev) => prev + 1);
   };
 
+  // Find active paragraph for current question from its parent passage, if passages are defined
+  const getActiveParagraph = () => {
+    if (readingData?.passages && currentQuestion) {
+      const qId = currentQuestion.id || currentQuestion.question_id;
+      const matchingPassage = readingData.passages.find((p) =>
+        p.questions?.some((q) => q.id === qId || q.question_id === qId),
+      );
+      if (matchingPassage) {
+        return matchingPassage.paragraph;
+      }
+    }
+    return (
+      readingData?.paragraph ||
+      (readingData as any)?.passage_text ||
+      (readingData as any)?.text ||
+      ""
+    );
+  };
+  const activeParagraph = getActiveParagraph();
+
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -245,18 +288,8 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               stopTimer={isSubmitting || isFinished}
             />
 
-            {(readingData?.paragraph ||
-              (readingData as any)?.passage_text ||
-              (readingData as any)?.text) && (
-              <ParagraphDisplay
-                paragraph={
-                  readingData?.paragraph ||
-                  (readingData as any)?.passage_text ||
-                  (readingData as any)?.text ||
-                  ""
-                }
-                topic="Reading Comprehension"
-              />
+            {!!activeParagraph && (
+              <ParagraphDisplay paragraph={activeParagraph} topic="Reading Comprehension" />
             )}
 
             <ReadingQuestionComponent
@@ -297,7 +330,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             <View className="flex-row justify-between mt-8 gap-4 mb-8">
               <TouchableOpacity
                 className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
-                  isSubmitting ? "bg-slate-400" : "bg-slate-800"
+                  isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
                 }`}
                 onPress={handleNext}
                 disabled={isSubmitting}
@@ -333,7 +366,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

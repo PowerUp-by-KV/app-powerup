@@ -1,8 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -11,6 +11,7 @@ import {
   Modal,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useListAchievementsQuery, useGetMedalsQuery } from "@/services/gamification-api";
@@ -129,7 +130,6 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
         ]),
       ).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const handleClose = () => {
@@ -244,6 +244,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 
 export function MedalsScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
   const isLoading = isAchievementsLoading || isMedalsLoading;
@@ -321,7 +322,7 @@ export function MedalsScreen() {
   }, [list]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
       {/* Dynamic Detailed Modal */}
       <BadgeDetailModal
         visible={selectedBadge !== null}
@@ -402,16 +403,12 @@ export function MedalsScreen() {
               ))}
             </View>
 
-            {/* level up yor Medal Section */}
+            {/* Level Up Your Medal Section */}
             {medalsData &&
               medalsData.level_up_progress &&
               medalsData.level_up_progress.length > 0 && (
-                <View style={{ marginTop: 36, width: "100%" }}>
-                  <Text
-                    style={{ fontSize: 18, fontWeight: "900", color: "#000000", marginBottom: 16 }}
-                  >
-                    level up yor Medal
-                  </Text>
+                <View className="mt-9 w-full">
+                  <Text className="text-lg font-black text-black mb-4">Level up your Medal</Text>
 
                   {medalsData.level_up_progress.map((p) => {
                     const percent = Math.min(100, Math.round(p.progress * 100));
@@ -451,7 +448,7 @@ export function MedalsScreen() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -24,9 +24,33 @@ export interface RegisterRequest {
 }
 
 export interface AuthRegisterResponse {
-  user_id: string;
+  user_id?: string;
   access_token: string;
   refresh_token?: string;
+  user?: {
+    id: string;
+    email: string | null;
+    phone_number: string | null;
+    name: string;
+  };
+}
+
+// Matches AuthLoginResponse from the API: POST /api/v1/auth/social/google
+export interface GoogleAuthRequest {
+  id_token: string;
+}
+
+export interface SocialAuthLoginResponse {
+  access_token: string;
+  refresh_token: string;
+  user: {
+    id: string;
+    email: string | null;
+    name: string;
+    phone_number?: string | null;
+    cefr_range?: string | null;
+    profile_completed?: boolean;
+  };
 }
 
 export interface UserProfile {
@@ -52,6 +76,10 @@ export interface UserProfile {
   language: string | null;
   avatar_id: string | null;
   email_verified?: boolean;
+}
+
+export interface GoogleAuthRequest {
+  id_token: string;
 }
 
 export interface SendEmailOtpRequest {
@@ -118,12 +146,12 @@ export const authApi = api.injectEndpoints({
     }),
 
     getProfile: builder.query<UserProfile, void>({
-      query: () => "/v1/users/profile",
+      query: () => "/v1/auth/me",
       providesTags: ["Auth"],
     }),
 
     patchProfile: builder.mutation<UserProfile, UserUpdate>({
-      query: (body) => ({ url: "/v1/users/profile", method: "PUT", body }),
+      query: (body) => ({ url: "/v1/auth/me", method: "PATCH", body }),
       invalidatesTags: ["Auth"],
     }),
 
@@ -143,6 +171,15 @@ export const authApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Auth"],
     }),
+
+    socialGoogleLogin: builder.mutation<AuthResponse, GoogleAuthRequest>({
+      query: (body) => ({
+        url: "/v1/auth/social/google",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
   }),
 });
 
@@ -154,4 +191,5 @@ export const {
   usePatchProfileMutation,
   useSendEmailOtpMutation,
   useVerifyEmailOtpMutation,
+  useSocialGoogleLoginMutation,
 } = authApi;

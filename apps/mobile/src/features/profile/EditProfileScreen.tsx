@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
@@ -42,6 +43,7 @@ const parseMultiSelect = (text: string): string[] => {
 
 export function EditProfileScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
   const [patch, { isLoading: isPatchSaving }] = usePatchProfileMutation();
 
@@ -318,8 +320,10 @@ export function EditProfileScreen() {
       // 1. Basic Profile
       addAnswer("name", name);
       addAnswer("education", education);
-      addAnswer("year_of_study", yearOfStudy);
-      addAnswer("branch", branch);
+      if (education === "Engineering Student") {
+        addAnswer("year_of_study", yearOfStudy);
+        addAnswer("branch", branch);
+      }
       addAnswer("dob", dob);
       addAnswer("country", country);
       addAnswer("native_language", nativeLanguage);
@@ -496,7 +500,7 @@ export function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -1006,7 +1010,7 @@ export function EditProfileScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

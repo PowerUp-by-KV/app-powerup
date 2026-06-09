@@ -1,18 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Feather, AntDesign } from "@expo/vector-icons";
+import { AntDesign, Feather } from "@expo/vector-icons";
+import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+
+import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 import { getApiErrorMessage } from "@/utils/error-message";
 import {
@@ -26,6 +30,9 @@ import {
 } from "@/services/auth-storage";
 import { AuthResponse, useRegisterMutation } from "@/services/auth-api";
 import { onboardingApi } from "@/services/onboarding-api";
+import { useDispatch } from "react-redux";
+import { api } from "@/services/api";
+import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
@@ -44,6 +51,8 @@ function passwordStrength(pw: string): { score: number; label: string; color: st
 
 export function RegisterScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const dispatch = useDispatch();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,12 +61,14 @@ export function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [register] = useRegisterMutation();
+  const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the registration handshake
   React.useEffect(() => {
     prefetchOnboarding();
   }, [prefetchOnboarding]);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -116,7 +127,7 @@ export function RegisterScreen() {
         access_token: regResponse.access_token,
         refresh_token: regResponse.refresh_token,
         user: {
-          id: regResponse.user_id,
+          id: regResponse.user?.id || regResponse.user_id || "",
           name: fullName,
           email: email.trim(),
           phone_number: phone.trim(),
@@ -131,6 +142,10 @@ export function RegisterScreen() {
       await clearAssessmentStartTime();
       await saveLastLoggedInEmail(email.trim());
       await clearPreAssessmentResults();
+
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
 
       Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
@@ -156,7 +171,7 @@ export function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -175,37 +190,104 @@ export function RegisterScreen() {
           <View className="w-full max-w-sm py-4">
             {/* Top Logo Icon */}
             <View className="items-center mb-6">
-              <View className="w-14 h-14 rounded-2xl bg-slate-600 mb-4 items-center justify-center shadow-sm" />
+              {/* Lumino Logo Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 8,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 38,
+                    fontWeight: "900",
+                    color: "#3b82f6",
+                    letterSpacing: -1.5,
+                    marginRight: 1,
+                  }}
+                >
+                  lumin
+                </Text>
+
+                <View
+                  style={{
+                    width: 38,
+                    height: 38,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 3,
+                  }}
+                >
+                  <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                    <Defs>
+                      <LinearGradient id="gradientORegForm" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor="#86efac" />
+                        <Stop offset="50%" stopColor="#22d3ee" />
+                        <Stop offset="100%" stopColor="#3b82f6" />
+                      </LinearGradient>
+                    </Defs>
+                    <Circle cx="24" cy="24" r="22" fill="url(#gradientORegForm)" />
+                  </Svg>
+
+                  <View style={{ position: "absolute", transform: [{ rotate: "45deg" }] }}>
+                    <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
+                      <Path
+                        d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
+                        fill="#ffffff"
+                      />
+                    </Svg>
+                  </View>
+                </View>
+              </View>
+
               <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
-                Welcome to Powerup
+                Welcome to Lumino
               </Text>
-              <Text className="text-xs text-slate-500 text-center mb-6">
-                Join powerup to start your learning journey
+              <Text className="text-xs text-slate-400 text-center mb-6 px-4">
+                Join Hexaware Lumino to start your learning journey
               </Text>
 
-              {/* Social Login Buttons */}
-              <View className="flex-row gap-4 w-full">
-                <TouchableOpacity
-                  onPress={() => {}}
-                  className="flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm"
-                  activeOpacity={0.7}
-                >
-                  <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
-                  <Text className="text-slate-800 font-bold text-sm">Google</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {}}
-                  className="flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm"
-                  activeOpacity={0.7}
-                >
-                  <AntDesign name="github" size={18} color="#333333" style={{ marginRight: 8 }} />
-                  <Text className="text-slate-800 font-bold text-sm">Github</Text>
-                </TouchableOpacity>
-              </View>
+              {/* Google sign-in. Rendered only when a valid auth request could be
+                  built (i.e. the Google client IDs are configured for this build);
+                  otherwise it stays hidden so missing IDs can never crash the screen. */}
+              {googleRequest ? (
+                <View className="flex-row gap-4 w-full">
+                  <TouchableOpacity
+                    onPress={() => {
+                      promptGoogle().catch(() =>
+                        Alert.alert(
+                          "Google Sign-In",
+                          "Could not open Google sign-in. Please try again.",
+                        ),
+                      );
+                    }}
+                    disabled={isLoading || !googleRequest}
+                    className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
+                      isLoading || !googleRequest ? "opacity-50" : ""
+                    }`}
+                    activeOpacity={0.7}
+                  >
+                    <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
+                    <Text className="text-slate-800 font-bold text-sm">Google</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
             </View>
 
+            {/* OTP Option */}
+            <TouchableOpacity
+              onPress={() => router.push("/verify-phone")}
+              className="w-full py-3.5 bg-white border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm mb-2"
+              activeOpacity={0.7}
+            >
+              <Feather name="shield" size={16} color="#475569" style={{ marginRight: 8 }} />
+              <Text className="text-slate-800 font-bold text-sm">Sign up with OTP</Text>
+            </TouchableOpacity>
+
             {/* OR Separator */}
-            <View className="flex-row items-center mb-6">
+            <View className="flex-row items-center mb-6 mt-4">
               <View className="flex-1 h-px bg-slate-200" />
               <Text className="mx-4 text-xs font-medium text-slate-400">or</Text>
               <View className="flex-1 h-px bg-slate-200" />
@@ -410,7 +492,7 @@ export function RegisterScreen() {
                 <View
                   className={`w-5 h-5 border rounded mr-3 items-center justify-center ${
                     agreedToTerms
-                      ? "bg-slate-700 border-slate-700"
+                      ? "bg-[#3b82f6] border-[#3b82f6]"
                       : errors.terms
                         ? "border-red-400"
                         : "border-slate-300"
@@ -429,7 +511,7 @@ export function RegisterScreen() {
 
             {/* Action Sign Up Button */}
             <TouchableOpacity
-              className={`bg-slate-700 py-4 rounded-2xl items-center justify-center shadow-lg shadow-slate-300 mb-6 ${
+              className={`bg-[#3b82f6] py-4 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 mb-6 ${
                 isLoading ? "opacity-75" : ""
               }`}
               disabled={isLoading}
@@ -455,7 +537,7 @@ export function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

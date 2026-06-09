@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -206,14 +207,14 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
 
         <Pressable
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={{
+          style={({ pressed }) => ({
             marginTop: 24,
-            backgroundColor: "#0f172a",
+            backgroundColor: pressed ? "#2563eb" : "#3b82f6",
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
             ...Platform.select({ web: { cursor: "pointer" } as any }),
-          }}
+          })}
         >
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
         </Pressable>
@@ -230,7 +231,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   return (
     <View
       style={{
-        flex: 1,
+        // When nested inside a parent ScrollView (e.g. ListeningActivity), flex:1
+        // collapses on Android and clips the Submit button below the fold. Size to
+        // content instead so the parent ScrollView can reach the button.
+        ...(isNested ? {} : { flex: 1 }),
         ...Platform.select({ web: { userSelect: "none" } as any }),
       }}
     >
@@ -360,11 +364,11 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               feedbackIcon = <Feather name="x-circle" size={20} color="#ef4444" />;
             }
           } else if (isSelected) {
-            borderColor = "#2f95dc"; // Blue border
+            borderColor = "#3b82f6"; // Blue border
             backgroundColor = "#eff6ff"; // Light blue bg
-            dotBorderColor = "#2f95dc";
-            dotTextColor = "#2f95dc";
-            feedbackIcon = <Feather name="check-circle" size={20} color="#2f95dc" />;
+            dotBorderColor = "#3b82f6";
+            dotTextColor = "#3b82f6";
+            feedbackIcon = <Feather name="check-circle" size={20} color="#3b82f6" />;
           }
 
           return (
@@ -410,13 +414,15 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           <Pressable
             onPress={handleSubmit}
             disabled={selected === null}
-            style={{
-              backgroundColor: selected === null ? "#cbd5e1" : "#0f172a",
+            style={({ pressed }) => ({
+              backgroundColor: selected === null ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
               paddingVertical: 14,
               borderRadius: 10,
               alignItems: "center",
-              ...Platform.select({ web: { cursor: "pointer" } as any }),
-            }}
+              ...Platform.select({
+                web: { cursor: selected === null ? "default" : "pointer" } as any,
+              }),
+            })}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
           </Pressable>

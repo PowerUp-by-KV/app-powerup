@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
 import { OnboardingQuestion } from "@/services/onboarding-api";
@@ -89,7 +90,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
             keyboardType={input_type === "number" ? "numeric" : "default"}
             multiline={input_type === "textarea"}
             numberOfLines={input_type === "textarea" ? 4 : 1}
-            className={`bg-slate-50 rounded-xl p-3.5 mb-4 border border-slate-200 text-slate-900 text-sm ${
+            className={`bg-white rounded-2xl p-4 mb-3 border border-slate-200 text-slate-900 text-sm shadow-sm transition-all focus:border-blue-500 ${
               input_type === "textarea" ? "h-28 text-top" : ""
             }`}
             style={[input_type === "textarea" && { textAlignVertical: "top" }]}
@@ -118,27 +119,30 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
       case "radio":
       case "multiple_choice":
         return (
-          <View className="mt-1">
+          <View className="mt-2 w-full">
             {normalizedOptions.map(([optKey, optLabel]) => {
               const isSelected = value === optKey;
               return (
                 <TouchableOpacity
                   key={optKey}
                   onPress={() => handleToggle(question_key, optKey, false)}
-                  className="flex-row items-center py-2.5 mb-1"
+                  className={`flex-row items-center p-4 mb-3 rounded-2xl border transition-all ${
+                    isSelected
+                      ? "border-blue-500 bg-blue-50/10 shadow-sm"
+                      : "border-slate-200 bg-white"
+                  }`}
+                  activeOpacity={0.8}
                 >
                   <View
-                    className={`w-4 h-4 rounded-full border mr-3 items-center justify-center ${
-                      isSelected
-                        ? "border-slate-800 bg-slate-800"
-                        : "border-slate-400 bg-transparent"
+                    className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+                      isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-transparent"
                     }`}
                   >
                     {isSelected && <View className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </View>
                   <Text
-                    className={`text-sm ${
-                      isSelected ? "font-bold text-slate-900" : "text-slate-700"
+                    className={`text-[14px] leading-5 flex-1 ${
+                      isSelected ? "font-bold text-blue-900" : "font-semibold text-slate-700"
                     }`}
                   >
                     {optLabel}
@@ -152,27 +156,30 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
       case "multi-select":
       case "checkbox":
         return (
-          <View className="mt-1">
+          <View className="mt-2 w-full">
             {normalizedOptions.map(([optKey, optLabel]) => {
               const isSelected = ((value as string[]) || []).includes(optKey);
               return (
                 <TouchableOpacity
                   key={optKey}
                   onPress={() => handleToggle(question_key, optKey, true)}
-                  className="flex-row items-center py-2.5 mb-1"
+                  className={`flex-row items-center p-4 mb-3 rounded-2xl border transition-all ${
+                    isSelected
+                      ? "border-blue-500 bg-blue-50/10 shadow-sm"
+                      : "border-slate-200 bg-white"
+                  }`}
+                  activeOpacity={0.8}
                 >
                   <View
-                    className={`w-4 h-4 rounded border mr-3 items-center justify-center ${
-                      isSelected
-                        ? "border-slate-800 bg-slate-800"
-                        : "border-slate-400 bg-transparent"
+                    className={`w-5 h-5 rounded-md border-2 mr-3 items-center justify-center ${
+                      isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-transparent"
                     }`}
                   >
-                    {isSelected && <View className="w-2 h-2 bg-white rounded-xs" />}
+                    {isSelected && <Feather name="check" size={10} color="white" />}
                   </View>
                   <Text
-                    className={`text-sm ${
-                      isSelected ? "font-bold text-slate-900" : "text-slate-700"
+                    className={`text-[14px] leading-5 flex-1 ${
+                      isSelected ? "font-bold text-blue-900" : "font-semibold text-slate-700"
                     }`}
                   >
                     {optLabel}
@@ -204,19 +211,23 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
 
       case "file":
         return (
-          <View className="w-full my-1">
+          <View className="w-full my-2">
             <TouchableOpacity
               onPress={async () => {
                 try {
                   const res: any = await DocumentPicker.getDocumentAsync({
-                    type: "application/pdf",
+                    type: [
+                      "application/pdf",
+                      "application/msword",
+                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ],
                   });
                   if (res.assets && res.assets.length > 0) {
                     const asset = res.assets[0];
                     const sizeMB = (asset.size || 0) / (1024 * 1024);
 
-                    if (sizeMB > 2) {
-                      Alert.alert("File too large", "Please upload a resume smaller than 2MB");
+                    if (sizeMB > 10) {
+                      Alert.alert("File too large", "Please upload a resume smaller than 10MB");
                       return;
                     }
 
@@ -227,17 +238,18 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                   // silently ignore file picker errors
                 }
               }}
-              className="bg-white border border-dashed border-slate-300 rounded-2xl py-8 px-4 items-center justify-center w-full"
+              className="bg-white border-2 border-dashed border-slate-200 rounded-3xl py-14 px-8 items-center justify-center w-full shadow-sm"
+              activeOpacity={0.8}
             >
               {/* Circular Upload Icon */}
-              <View className="w-14 h-14 rounded-full bg-slate-100 items-center justify-center mb-4">
-                <Feather name="upload" size={22} color="#64748B" />
+              <View className="w-20 h-20 rounded-full bg-slate-50 items-center justify-center mb-6">
+                <Feather name="upload" size={28} color="#3b82f6" />
               </View>
 
-              {/* Upload Text */}
-              <Text className="text-slate-600 text-xs mb-4 text-center">
+              {/* Upload Title */}
+              <Text className="text-slate-700 font-extrabold text-base mb-6 text-center px-4">
                 {formData[`${question_key}Name`] ? (
-                  <Text className="font-bold text-indigo-600">
+                  <Text className="font-black text-blue-600">
                     {formData[`${question_key}Name`]}
                   </Text>
                 ) : (
@@ -246,18 +258,20 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
               </Text>
 
               {/* Browse Files Button */}
-              <View className="bg-blue-600 rounded-xl px-6 py-2.5 flex-row items-center justify-center mb-5 shadow-sm">
-                <Feather name="file" size={12} color="white" className="mr-2" />
-                <Text className="text-white font-bold text-xs">
+              <View className="bg-blue-500 active:bg-blue-600 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
+                <Feather name="file" size={16} color="white" style={{ marginRight: 8 }} />
+                <Text className="text-white font-extrabold text-sm">
                   {formData[`${question_key}Name`] ? "Change File" : "Browse Files"}
                 </Text>
               </View>
 
               {/* Supported Format Details */}
-              <Text className="text-slate-400 text-[11px] text-center mb-1">
-                Supported formats: PDF only
+              <Text className="text-slate-400 font-semibold text-[12px] text-center mb-1.5">
+                Supported formats: PDF, DOC, DOCX
               </Text>
-              <Text className="text-slate-400 text-[11px] text-center">Maximum file size: 2MB</Text>
+              <Text className="text-slate-400 font-semibold text-[12px] text-center">
+                Maximum file size 10MB
+              </Text>
             </TouchableOpacity>
           </View>
         );

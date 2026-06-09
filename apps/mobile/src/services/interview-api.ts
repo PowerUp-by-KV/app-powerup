@@ -37,7 +37,6 @@ export type PracticeHistoryResponse = PracticeSession[];
 // ---------------------------------------------------------------------------
 
 export const practiceHistoryApi = api.injectEndpoints({
-  overrideExisting: false,
   endpoints: (builder) => ({
     getPracticeHistory: builder.query<PracticeHistoryResponse, void>({
       query: () => ({
@@ -47,6 +46,7 @@ export const practiceHistoryApi = api.injectEndpoints({
       providesTags: ["PracticeHistory"],
     }),
   }),
+  overrideExisting: true,
 });
 
 export const { useGetPracticeHistoryQuery } = practiceHistoryApi;

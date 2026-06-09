@@ -1,6 +1,7 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Feather, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 interface SubItem {
   title: string;
@@ -16,15 +17,30 @@ interface FeatureGroupCardProps {
 }
 
 export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupCardProps) {
+  const renderIcon = () => {
+    if (icon === "✨") {
+      return <Ionicons name="sparkles" size={22} color="#ffffff" />;
+    }
+    if (icon === "📝") {
+      return <Feather name="edit-3" size={22} color="#ffffff" />;
+    }
+    return <Text className="text-xl">{icon}</Text>;
+  };
+
   return (
-    <View className="bg-white rounded-3xl p-4 border border-slate-100 mb-4">
-      <View className="flex-row items-center mb-3">
-        <View className="w-10 h-10 rounded-2xl bg-slate-100 items-center justify-center mr-3">
-          <Text className="text-xl">{icon}</Text>
-        </View>
-        <View className="flex-1">
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <LinearGradient
+          colors={["#4f46e5", "#3b82f6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.headerIconContainer}
+        >
+          {renderIcon()}
+        </LinearGradient>
+        <View style={styles.headerText}>
           <Text className="text-slate-900 font-bold text-base">{title}</Text>
-          <Text className="text-slate-500 text-xs">{subtitle}</Text>
+          <Text className="text-slate-500 text-xs mt-0.5">{subtitle}</Text>
         </View>
       </View>
       <View>
@@ -32,17 +48,87 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
           <Pressable
             key={i}
             onPress={item.onPress}
-            className="flex-row items-center justify-between py-3 active:opacity-70"
-            style={{ borderTopWidth: i === 0 ? 1 : 0, borderColor: "#f1f5f9" }}
+            style={[styles.itemPressable, { marginBottom: i === items.length - 1 ? 0 : 12 }]}
+            className="active:scale-[0.98]"
           >
-            <View className="flex-1 pr-3">
-              <Text className="text-slate-900 font-semibold">{item.title}</Text>
-              <Text className="text-slate-400 text-xs">{item.subtitle}</Text>
+            <View style={styles.itemTextContainer}>
+              <Text className="text-slate-800 font-bold text-sm tracking-tight">{item.title}</Text>
+              <Text className="text-slate-400 text-xs font-semibold mt-1">{item.subtitle}</Text>
             </View>
-            <Feather name="chevron-right" size={18} color="#94a3b8" />
+            <View style={styles.chevronContainer}>
+              <Feather name="chevron-right" size={18} color="#1a202c" />
+            </View>
           </Pressable>
         ))}
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 24,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "rgba(241, 245, 249, 0.6)",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+    shadowColor: "#4f46e5",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerText: {
+    flex: 1,
+  },
+  itemPressable: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "rgba(241, 245, 249, 0.8)",
+    borderRadius: 16,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.02,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  itemTextContainer: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  chevronContainer: {
+    backgroundColor: "#bef264",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#bef264",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 1.5,
+  },
+});

@@ -2,7 +2,7 @@
   "expo": {
     "name": "PowerUp",
     "slug": "powerup",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "powerup",
@@ -16,18 +16,21 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.gowthamcoder.apppowerup",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "PowerUp uses the microphone for speaking exercises and mock interviews."
       }
     },
     "android": {
       "package": "com.gowthamcoder.apppowerup",
+      "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["android.permission.RECORD_AUDIO", "android.permission.MODIFY_AUDIO_SETTINGS"]
     },
     "web": {
       "bundler": "metro",
@@ -40,7 +43,20 @@
       "expo-font",
       "expo-secure-store",
       "expo-sharing",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "PowerUp uses the microphone for speaking exercises and mock interviews."
+        }
+      ],
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "PowerUp uses the camera for video interview practice.",
+          "microphonePermission": "PowerUp uses the microphone for your voice interview with the AI interviewer."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

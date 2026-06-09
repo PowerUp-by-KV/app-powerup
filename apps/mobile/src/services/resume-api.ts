@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Resume API Service
  * RTK Query endpoints for resume management with comprehensive error handling

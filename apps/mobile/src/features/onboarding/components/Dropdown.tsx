@@ -37,7 +37,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         onPress={() => setIsOpen(!isOpen)}
         activeOpacity={0.8}
         className={`bg-slate-50 rounded-xl p-3.5 border flex-row justify-between items-center transition-all ${
-          isOpen ? "border-indigo-500 bg-white" : "border-slate-200"
+          isOpen ? "border-blue-500 bg-white" : "border-slate-200"
         }`}
       >
         <Text
@@ -48,7 +48,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         <Feather
           name={isOpen ? "chevron-up" : "chevron-down"}
           size={18}
-          color={isOpen ? "#4F46E5" : "#64748B"}
+          color={isOpen ? "#3b82f6" : "#64748B"}
         />
       </TouchableOpacity>
 
@@ -97,17 +97,17 @@ export const Dropdown: React.FC<DropdownProps> = ({
                     }}
                     activeOpacity={0.7}
                     className={`py-3 px-4 border-b border-slate-50 flex-row justify-between items-center last:border-b-0 ${
-                      isSelected ? "bg-indigo-50/50" : "active:bg-slate-50"
+                      isSelected ? "bg-blue-50/50" : "active:bg-slate-50"
                     }`}
                   >
                     <Text
                       className={`text-sm ${
-                        isSelected ? "text-indigo-600 font-bold" : "text-slate-700"
+                        isSelected ? "text-blue-600 font-bold" : "text-slate-700"
                       }`}
                     >
                       {item.label}
                     </Text>
-                    {isSelected && <Feather name="check" size={16} color="#4F46E5" />}
+                    {isSelected && <Feather name="check" size={16} color="#3b82f6" />}
                   </TouchableOpacity>
                 );
               })

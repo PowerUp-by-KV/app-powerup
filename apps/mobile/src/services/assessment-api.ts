@@ -1,4 +1,4 @@
-import { api, API_BASE_URL } from "./api";
+import { api, API_BASE_URL, refreshAccessToken } from "./api";
 import { getAuthSession } from "./auth-storage";
 
 export interface StartSessionResponse {
@@ -46,6 +46,12 @@ export interface ListeningStory {
   questions: AssessmentQuestion[];
 }
 
+export interface ReadingPassage {
+  passage_no: number;
+  paragraph: string;
+  questions: AssessmentQuestion[];
+}
+
 export interface ReadingSectionResponse {
   section: string;
   paragraph?: string;
@@ -55,6 +61,7 @@ export interface ReadingSectionResponse {
   items?: AssessmentQuestion[];
   prompts?: AssessmentQuestion[];
   stories?: ListeningStory[];
+  passages?: ReadingPassage[];
 }
 
 export interface SpeakingSentence {
@@ -163,14 +170,23 @@ export interface AssessmentScoringStatusResponse {
 }
 
 export interface AssessmentResultResponse {
+  // Core score fields (always present)
   total_score: number;
   max_score: number;
   percentage: number;
   cefr_range: string;
-  cefr_level?: string | null;
   section_scores: Record<string, number>;
-  section_percentages: Record<string, number>;
-  aggregated_scores: Record<string, number>;
+
+  // Optional enrichment fields
+  cefr_level?: string | null;
+  section_percentages?: Record<string, number>;
+  aggregated_scores?: Record<string, number>;
+
+  // Timestamp fields returned by /user/{user_id}/result
+  started_at?: string | null;
+  last_submitted_at?: string | null;
+  completed_at?: string | null;
+  time_taken_seconds?: number | null;
 }
 
 export const assessmentApi = api.injectEndpoints({
@@ -219,11 +235,24 @@ export const assessmentApi = api.injectEndpoints({
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+          let response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
             method: "POST",
             headers,
             body: formData,
           });
+
+          if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              headers["Authorization"] = `Bearer ${newToken}`;
+              response = await fetch(`${API_BASE_URL}/v1/assessment/audio`, {
+                method: "POST",
+                headers,
+                body: formData,
+              });
+            }
+          }
+
           if (!response.ok) {
             const err = await response.json().catch(() => ({ detail: "Upload failed" }));
             return { error: { status: response.status, data: err } };
@@ -254,6 +283,11 @@ export const assessmentApi = api.injectEndpoints({
 
     getAssessmentResult: builder.query<AssessmentResultResponse, { session_id: string }>({
       query: ({ session_id }) => `/v1/assessment/session/${session_id}/result`,
+      providesTags: ["Assessment"],
+    }),
+
+    getUserAssessmentResult: builder.query<AssessmentResultResponse, { user_id: string }>({
+      query: ({ user_id }) => `/v1/assessment/user/${user_id}/result`,
       providesTags: ["Assessment"],
     }),
   }),
@@ -298,4 +332,6 @@ export const {
   useLazyGetAssessmentStatusQuery,
   useGetAssessmentResultQuery,
   useLazyGetAssessmentResultQuery,
+  useGetUserAssessmentResultQuery,
+  useLazyGetUserAssessmentResultQuery,
 } = assessmentApi;

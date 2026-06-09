@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -10,7 +10,9 @@ import {
   Platform,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { RootState } from "@/store";
 import {
   updateField,
@@ -23,25 +25,30 @@ import {
   useSubmitOnboardingMutation,
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
+  useGetOnboardingStatusQuery,
 } from "@/services/onboarding-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useStartSessionMutation } from "@/services/assessment-api";
+import { LinearGradient } from "expo-linear-gradient";
 import { DynamicOnboardingForm } from "./components/DynamicOnboardingForm";
 import {
   setProfileCompletedInSession,
   setPreAssessmentCompletedInSession,
   clearCompletedSections,
-  getProfileCompletedInSession,
   saveLocalOnboardingAnswers,
 } from "@/services/auth-storage";
 import { getApiErrorMessage } from "@/utils/error-message";
 import LoaderScreen from "./components/LoaderScreen";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import LottieView from "lottie-react-native";
+import { Feather } from "@expo/vector-icons";
+import companyEmployees from "../../../assets/mascot/company-employees.json";
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
+  const safeBack = useSafeBack();
   const formData = useSelector((state: RootState) => state.onboarding);
   const stepNumber = formData.currentStep;
 
@@ -57,26 +64,30 @@ export default function OnboardingScreen() {
   const [confirmResume] = useConfirmOnboardingResumeMutation();
   const [, { isLoading: isStarting }] = useStartSessionMutation();
 
+  const { data: onboardingStatus, isLoading: isOnboardingStatusLoading } =
+    useGetOnboardingStatusQuery(profile?.id ?? "", {
+      skip: !profile?.id,
+    });
+
   const [isUploading, setIsUploading] = React.useState(false);
   const [resumeUploaded, setResumeUploaded] = React.useState(false);
   const [isCheckingResume, setIsCheckingResume] = React.useState(true);
 
   React.useEffect(() => {
-    if (isProfileLoading) return;
+    if (isProfileLoading || isOnboardingStatusLoading) return;
 
     const checkResumeAssessment = async () => {
       try {
-        const localOnboardingDone = await getProfileCompletedInSession();
-        const isOnboardingComplete = profile?.profile_completed || localOnboardingDone;
+        const isOnboardingComplete = onboardingStatus?.answers_present ?? false;
 
-        // If the user profile is not loaded or onboarding is not completed, DO NOT start any assessment session!
+        // If the user profile is not loaded or onboarding is not completed, let them stay
         if (!profile || !isOnboardingComplete) {
           setIsCheckingResume(false);
           return;
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/my-learning" as any);
+        router.replace("/(tabs)/my-learning" as any);
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -86,8 +97,7 @@ export default function OnboardingScreen() {
     };
 
     checkResumeAssessment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, isProfileLoading]);
+  }, [profile, isProfileLoading, onboardingStatus, isOnboardingStatusLoading]);
 
   // Flatten the questions from the API for the step-by-step wizard
   const flattenedQuestions = React.useMemo(() => {
@@ -99,15 +109,26 @@ export default function OnboardingScreen() {
 
   if (onboardingError && !isFetching) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -123,24 +144,24 @@ export default function OnboardingScreen() {
             <View className="w-full gap-3">
               <TouchableOpacity
                 onPress={() => refetchQuestions()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
-  if (isCheckingResume || isFetching || isProfileLoading) {
+  if (isCheckingResume || isFetching || isProfileLoading || isOnboardingStatusLoading) {
     return <LoaderScreen />;
   }
 
   if (!question && !isFetching) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <View className="w-20 h-20 bg-indigo-100 rounded-full items-center justify-center mb-6">
             <Text className="text-4xl">🎯</Text>
@@ -155,7 +176,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/my-learning" as any);
+              router.replace("/(tabs)/my-learning" as any);
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -166,7 +187,7 @@ export default function OnboardingScreen() {
             <Text className="text-indigo-600 font-semibold text-base">Review Answers</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -261,7 +282,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/my-learning" as any);
+      router.replace("/(tabs)/my-learning" as any);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
@@ -326,11 +347,27 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch (err) {
+        } catch {
           setIsUploading(false);
           Alert.alert(
             "Upload Failed",
-            getApiErrorMessage(err, "Could not upload and extract your resume. Please try again."),
+            "Could not upload and extract your resume. You can try again or continue onboarding without it.",
+            [
+              { text: "Try Again", style: "cancel" },
+              {
+                text: "Continue Without Resume",
+                onPress: async () => {
+                  // Clear the file answer so we proceed with only questionnaire answers
+                  dispatch(updateField({ field: question.question_key as any, value: "" }));
+                  setResumeUploaded(false);
+                  if (stepNumber < flattenedQuestions.length) {
+                    dispatch(nextStep());
+                  } else {
+                    await submitFinalAnswers();
+                  }
+                },
+              },
+            ],
           );
           return;
         }
@@ -347,16 +384,11 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     if (!question) return;
 
-    if (question.input_type === "file") {
-      Alert.alert(
-        "Resume Required",
-        "Resume upload is a required first step to personalize your onboarding. You cannot skip this step.",
-      );
-      return;
-    }
-
-    // Optionally clear value when skipping
+    // Clear value when skipping
     dispatch(updateField({ field: question.question_key as any, value: "" }));
+    if (question.input_type === "file") {
+      setResumeUploaded(false);
+    }
 
     if (stepNumber < flattenedQuestions.length) {
       dispatch(nextStep());
@@ -369,7 +401,7 @@ export default function OnboardingScreen() {
     if (stepNumber > 1) {
       dispatch(prevStep());
     } else {
-      router.back();
+      safeBack();
     }
   };
 
@@ -377,7 +409,7 @@ export default function OnboardingScreen() {
   const isFileQuestion = question?.input_type === "file";
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -385,65 +417,92 @@ export default function OnboardingScreen() {
           paddingBottom: 40,
           paddingTop: Platform.OS === "android" ? 48 : 20,
           alignItems: "center",
+          flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Progress Track Header */}
-        <View className="w-32 h-1.5 bg-slate-200 rounded-full mt-2 mb-2 overflow-hidden">
-          <View className="h-full bg-slate-600 rounded-full" style={{ width: `${progress}%` }} />
-        </View>
+        {/* Top and Middle Content Wrapper */}
+        <View className="flex-1 w-full items-center">
+          {/* Top Navigation & Progress Bar Row */}
+          <View className="flex-row items-center w-full max-w-md px-1 mb-6">
+            <TouchableOpacity
+              onPress={handleBack}
+              className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-80"
+            >
+              <Feather name="arrow-left" size={18} color="#64748b" />
+            </TouchableOpacity>
+            <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+              <LinearGradient
+                colors={["#3b82f6", "#22c55e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ width: `${progress}%` }}
+                className="h-full rounded-full"
+              />
+            </View>
+          </View>
 
-        {/* Section Title */}
-        <Text className="text-sm font-bold text-slate-800 text-center mb-6">
-          {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
-        </Text>
+          {/* Section Title */}
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5">
+            {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
+          </Text>
 
-        {/* Question & Options Card Container */}
-        <View
-          className={`bg-white rounded-2xl p-6 shadow-sm border border-slate-200/60 w-full max-w-md ${
-            isFileQuestion ? "mb-4" : "mb-8"
-          }`}
-        >
+          {/* Question Text */}
           {!isFileQuestion && (
-            <Text className="text-base font-bold text-slate-900 mb-4 leading-relaxed">
+            <Text className="text-[20px] font-extrabold text-slate-900 text-center px-4 mb-4 leading-snug max-w-md">
               {question?.question_text}
             </Text>
           )}
 
-          {question && (
-            <DynamicOnboardingForm
-              questions={[question]}
-              formData={formData}
-              onInputChange={handleInputChange}
-              hideLabel={true}
-            />
+          {/* Loopable Mascot Animation */}
+          {!isFileQuestion && (
+            <View className="items-center justify-center my-2">
+              <LottieView
+                source={companyEmployees}
+                autoPlay
+                loop
+                style={{ width: 220, height: 160 }}
+              />
+            </View>
+          )}
+
+          {/* Main Options / Input Fields */}
+          <View className={`w-full mb-6 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
+            {question && (
+              <DynamicOnboardingForm
+                questions={[question]}
+                formData={formData}
+                onInputChange={handleInputChange}
+                hideLabel={true}
+              />
+            )}
+          </View>
+
+          {/* Description paragraph specific to file upload step */}
+          {isFileQuestion && (
+            <Text className="text-sm font-semibold text-slate-400 text-center px-6 mb-8 leading-relaxed max-w-xl">
+              Upload your resume to analyze and enhance your professional profile
+            </Text>
           )}
         </View>
-
-        {/* Description paragraph specific to file upload step */}
-        {isFileQuestion && (
-          <Text className="text-sm text-slate-500 text-center px-4 mb-6 leading-relaxed max-w-md">
-            Upload your resume to analyze and enhance your professional profile
-          </Text>
-        )}
 
         {/* Bottom Continue Button */}
         <TouchableOpacity
           onPress={handleNext}
           disabled={isSubmitting || isStarting || isUploading}
-          className={`py-3.5 px-16 rounded-2xl items-center justify-center shadow-sm ${
-            isSubmitting || isStarting || isUploading ? "bg-slate-400" : "bg-slate-700"
-          }`}
+          className={`py-4 w-full rounded-2xl items-center justify-center shadow-md active:opacity-90 transition-all ${
+            isFileQuestion ? "max-w-xl" : "max-w-md"
+          } ${isSubmitting || isStarting || isUploading ? "bg-slate-300" : "bg-blue-500"}`}
         >
           {isSubmitting || isStarting || isUploading ? (
             <View className="flex-row items-center">
               <ActivityIndicator color="white" size="small" className="mr-2" />
-              <Text className="text-white font-bold text-sm">
+              <Text className="text-white font-extrabold text-sm">
                 {isUploading ? "Uploading..." : "Processing..."}
               </Text>
             </View>
           ) : (
-            <Text className="text-white font-bold text-sm">
+            <Text className="text-white font-extrabold text-sm">
               {isFileQuestion && resumeUploaded
                 ? "Upload Successful - Continue"
                 : isFileQuestion
@@ -453,17 +512,15 @@ export default function OnboardingScreen() {
           )}
         </TouchableOpacity>
 
-        {/* Dynamic Secondary Action Link */}
+        {/* Secondary Navigation Actions */}
         {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Skip for now</Text>
-          </TouchableOpacity>
-        ) : stepNumber > 1 ? (
-          <TouchableOpacity onPress={handleBack} className="mt-4 py-2">
-            <Text className="text-sm text-slate-400">Go Back</Text>
+          <TouchableOpacity onPress={handleSkip} className="mt-5 py-2">
+            <Text className="text-sm font-bold text-slate-400 hover:text-slate-500 transition-colors">
+              Skip for now
+            </Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

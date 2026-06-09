@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
-import { View, ActivityIndicator, StyleSheet, SafeAreaView } from "react-native";
+import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { useLocalSearchParams } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   selectBuilderCurrentStep,
   hydrateResume,
@@ -20,6 +21,7 @@ import { Step5PreviewScreen } from "./Step5PreviewScreen";
 export function ResumeBuilderWizard() {
   const dispatch = useAppDispatch();
   const currentStep = useAppSelector(selectBuilderCurrentStep);
+  const insets = useSafeAreaInsets();
   const { mode } = useLocalSearchParams<{ mode?: "scratch" | "draft" }>();
   const isScratchMode = mode === "scratch";
 
@@ -52,7 +54,7 @@ export function ResumeBuilderWizard() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
       <View style={styles.container}>
         <View style={styles.wizardContainer}>
           <StepWizard
@@ -68,7 +70,7 @@ export function ResumeBuilderWizard() {
           {currentStep === 5 && <Step5PreviewScreen />}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,7 +1,8 @@
 import React from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery } from "@/services/auth-api";
@@ -9,9 +10,10 @@ import { useGetProfileQuery } from "@/services/auth-api";
 export function LevelDetailScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: profile } = useGetProfileQuery();
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
@@ -43,6 +45,6 @@ export function LevelDetailScreen() {
           <Text className="text-white font-bold">Continue learning</Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

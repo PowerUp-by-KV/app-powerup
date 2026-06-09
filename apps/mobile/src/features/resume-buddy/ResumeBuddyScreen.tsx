@@ -1,12 +1,12 @@
-import React, { useRef, useState } from "react";
-import { SafeAreaView, View, Text, Pressable, Alert } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Text, Pressable, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
-import { getApiErrorMessage } from "@/utils/error-message";
-import { useAnalyzeResumeMutation } from "./services/resume-buddy-api";
-import type { ResumeBuddyResponse, ResumeBuddyStep } from "./types";
+import { useResumeBuddyAnalysis } from "./hooks/useResumeBuddyAnalysis";
+import type { ResumeBuddyStep } from "./types";
 
 import { DomainInputStep } from "./components/DomainInputStep";
 import { AnalysisLoadingStep } from "./components/AnalysisLoadingStep";
@@ -17,11 +17,10 @@ import { ScoreAnalysisStep } from "./components/ScoreAnalysisStep";
 export function ResumeBuddyScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<ResumeBuddyStep>("input");
-  const [analysis, setAnalysis] = useState<ResumeBuddyResponse | null>(null);
-
-  const [analyzeResume, { isLoading }] = useAnalyzeResumeMutation();
+  const { phase, activeStage, result: analysis, error, analyze, reset } = useResumeBuddyAnalysis();
 
   // Guard against duplicate submissions
   const submittingRef = useRef(false);
@@ -30,25 +29,23 @@ export function ResumeBuddyScreen() {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setStep("loading");
+    await analyze(domain);
+    submittingRef.current = false;
+  };
 
-    try {
-      const res = await analyzeResume({ domain }).unwrap();
-      setAnalysis(res);
+  // React to the async analysis lifecycle: surface the result, or report failure.
+  useEffect(() => {
+    if (phase === "done" && analysis) {
       setStep("scores");
-    } catch (err) {
-      console.error("Resume Buddy analysis failed:", err);
+    } else if (phase === "error") {
       setStep("input");
       Alert.alert(
         "Analysis Failed",
-        getApiErrorMessage(
-          err,
-          "Failed to analyze your resume. Please check your connection and try again.",
-        ),
+        error ?? "Failed to analyze your resume. Please check your connection and try again.",
       );
-    } finally {
-      submittingRef.current = false;
+      reset();
     }
-  };
+  }, [phase, analysis, error, reset]);
 
   const handleHistory = () => {
     router.push("/resume-buddy-history" as never);
@@ -77,7 +74,7 @@ export function ResumeBuddyScreen() {
   const isOnResultsStep = step === "strengths" || step === "suggestions" || step === "scores";
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable
@@ -106,11 +103,11 @@ export function ResumeBuddyScreen() {
           <DomainInputStep
             onAnalyze={handleAnalyze}
             onHistory={handleHistory}
-            isLoading={isLoading}
+            isLoading={phase === "running"}
           />
         )}
 
-        {step === "loading" && <AnalysisLoadingStep />}
+        {step === "loading" && <AnalysisLoadingStep activeStage={activeStage} />}
 
         {step === "strengths" && analysis && (
           <StrengthWeaknessStep
@@ -142,6 +139,6 @@ export function ResumeBuddyScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

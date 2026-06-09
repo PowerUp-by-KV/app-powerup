@@ -3,7 +3,6 @@ import { api } from "@/services/api";
 import appReducer from "./slices/app.slice";
 import onboardingReducer from "./slices/onboardingSlice";
 import resumeReducer from "./slices/resume.slice";
-import resumeBuilderReducer from "./slices/resume-builder.slice";
 import mockInterviewReducer from "./slices/mock-interview.slice";
 
 export const store = configureStore({
@@ -11,7 +10,6 @@ export const store = configureStore({
     app: appReducer,
     onboarding: onboardingReducer,
     resume: resumeReducer,
-    resumeBuilder: resumeBuilderReducer,
     mockInterview: mockInterviewReducer,
     [api.reducerPath]: api.reducer,
   },

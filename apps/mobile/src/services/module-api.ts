@@ -7,7 +7,7 @@ import type {
   ModuleVariant,
 } from "@powerup/shared";
 
-import { api, API_BASE_URL } from "./api";
+import { api, API_BASE_URL, refreshAccessToken } from "./api";
 import { getAuthSession } from "./auth-storage";
 
 export interface PersonalizedModuleItem {
@@ -171,8 +171,6 @@ export const moduleApi = api.injectEndpoints({
       query: (body) => ({ url: "/v1/activity/writing/submit", method: "POST", body }),
     }),
 
-    // queryFn + native fetch: same reason as assessment audio upload — fetchBaseQuery
-    // serialises {uri,name,type} to "[object Object]"; native fetch handles it correctly.
     submitSpeakingAnswer: builder.mutation<ActivitySubmitResponse, FormData>({
       queryFn: async (formData) => {
         try {
@@ -181,11 +179,24 @@ export const moduleApi = api.injectEndpoints({
           if (session?.access_token) {
             headers["Authorization"] = `Bearer ${session.access_token}`;
           }
-          const response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
+          let response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
             method: "POST",
             headers,
             body: formData,
           });
+
+          if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              headers["Authorization"] = `Bearer ${newToken}`;
+              response = await fetch(`${API_BASE_URL}/v1/activity/speaking/submit`, {
+                method: "POST",
+                headers,
+                body: formData,
+              });
+            }
+          }
+
           if (!response.ok) {
             const err = await response.json().catch(() => ({ detail: "Submit failed" }));
             return { error: { status: response.status, data: err } };
@@ -250,6 +261,7 @@ export const {
   useGetModulesQuery,
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
+  useLazyGetModuleDaysQuery,
   useGetDayActivitiesQuery,
   useGetActivityQuestionsQuery,
   useSubmitReadingAnswerMutation,

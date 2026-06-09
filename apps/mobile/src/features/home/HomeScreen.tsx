@@ -1,16 +1,26 @@
 import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import type { ModuleDay } from "@powerup/shared";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
-  useGetProgressionQuery,
-  useGetModuleDaysQuery,
+  useLazyGetModuleDaysQuery,
   useGetDayProgressQuery,
+  useGetModulesQuery,
 } from "@/services/module-api";
 import { useGetResumeStatusQuery } from "@/services/resume-api";
+
+export interface CombinedModuleDay extends ModuleDay {
+  module_no: number;
+  module_title: string;
+  module_id: string;
+}
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
@@ -19,40 +29,139 @@ import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
 import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
 
+const PROGRESSION_WAVES = [
+  { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 2, modules: [1, 5, 9], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 3, modules: [2, 6, 10], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 4, modules: [2, 6, 10], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 5, modules: [3, 7, 11], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 6, modules: [3, 7, 11], days: [7, 8, 9, 10, 11, 12] },
+  { wave: 7, modules: [4, 8, 12, 13], days: [1, 2, 3, 4, 5, 6] },
+  { wave: 8, modules: [4, 8, 12, 13], days: [7, 8, 9, 10, 11, 12] },
+];
+
 export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
+  const insets = useSafeAreaInsets();
 
-  const { data: progression } = useGetProgressionQuery(undefined, {
+  const { data: modulesData } = useGetModulesQuery(undefined, {
     skip: !gate.canEnter,
   });
 
-  const activeModule = useMemo(() => {
-    if (!progression?.unlocked_modules?.length) return null;
-    const current = progression.unlocked_modules.find((m) => !m.locked && !m.completed);
-    if (current) return current;
-    const firstUnlocked = progression.unlocked_modules.find((m) => !m.locked);
-    if (firstUnlocked) return firstUnlocked;
-    return progression.unlocked_modules[0];
-  }, [progression?.unlocked_modules]);
+  const personalizedPath = useMemo(() => {
+    if (!modulesData) return null;
+    return {
+      modules: modulesData.map((m) => ({
+        id: m.id,
+        module_no: m.order_index,
+        title: m.title,
+        variant_id: null,
+        is_unlocked: true,
+      })),
+    };
+  }, [modulesData]);
 
-  const { data: days } = useGetModuleDaysQuery(activeModule?.module_id ?? "", {
-    skip: !activeModule,
-  });
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
+
+  React.useEffect(() => {
+    if (!personalizedPath?.modules?.length) return;
+
+    const fetchAllDays = async () => {
+      try {
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id).unwrap();
+            return { moduleId: m.id, days: data };
+          } catch (e) {
+            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
+            return { moduleId: m.id, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+
+        const newData: Record<string, ModuleDay[]> = {};
+        for (const res of results) {
+          newData[res.moduleId] = res.days;
+        }
+        setModuleDaysData(newData);
+      } catch (err) {
+        console.error("Error fetching all days:", err);
+      }
+    };
+
+    fetchAllDays();
+  }, [personalizedPath, triggerGetModuleDays]);
+
+  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
+    if (!personalizedPath?.modules?.length) return [];
+
+    const daysByModuleNo: Record<number, ModuleDay[]> = {};
+    const moduleByNo: Record<number, (typeof personalizedPath.modules)[0]> = {};
+
+    for (const m of personalizedPath.modules) {
+      daysByModuleNo[m.module_no] = moduleDaysData[m.id] || [];
+      moduleByNo[m.module_no] = m;
+    }
+
+    const combined: CombinedModuleDay[] = [];
+    for (const waveConfig of PROGRESSION_WAVES) {
+      for (const mNo of waveConfig.modules) {
+        const moduleItem = moduleByNo[mNo];
+        if (!moduleItem) continue;
+
+        const moduleDays = daysByModuleNo[mNo] || [];
+        for (const dNum of waveConfig.days) {
+          const dayObj = moduleDays.find((d) => d.day_number === dNum);
+          if (dayObj) {
+            combined.push({
+              ...dayObj,
+              module_no: moduleItem.module_no,
+              module_title: moduleItem.title,
+              module_id: moduleItem.id,
+            });
+          }
+        }
+      }
+    }
+    return combined;
+  }, [personalizedPath, moduleDaysData]);
+
+  const firstIncompleteIdx = useMemo(() => {
+    return allDaysList.findIndex((d) => !d.is_completed);
+  }, [allDaysList]);
 
   const activeDay = useMemo(() => {
-    if (!days) return null;
-    const firstIncomplete = days.find((d) => !d.is_completed);
-    return firstIncomplete ?? days[0] ?? null;
-  }, [days]);
+    if (allDaysList.length === 0) return null;
+    return firstIncompleteIdx !== -1
+      ? allDaysList[firstIncompleteIdx]
+      : allDaysList[allDaysList.length - 1];
+  }, [allDaysList, firstIncompleteIdx]);
+
+  const activeModule = useMemo(() => {
+    if (!activeDay) return null;
+    return {
+      module_id: activeDay.module_id,
+      title: activeDay.module_title,
+    };
+  }, [activeDay]);
+
+  const daysCompleted = useMemo(() => {
+    return firstIncompleteIdx !== -1 ? firstIncompleteIdx : allDaysList.length;
+  }, [allDaysList, firstIncompleteIdx]);
+
+  const totalDays = useMemo(() => {
+    return allDaysList.length || 156;
+  }, [allDaysList]);
 
   const { data: dayProgress } = useGetDayProgressQuery(activeDay?.id ?? "", {
     skip: !activeDay,
   });
 
-  const firstName = profile?.name?.split(" ")[0] ?? "there";
+  const firstName = profile?.name?.split(" ")[0] || "there";
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {
@@ -67,7 +176,12 @@ export function HomeScreen() {
     if (activeDay && activeModule) {
       router.push({
         pathname: `/learning-journey/module/${activeDay.id}` as never,
-        params: { module_id: activeModule.module_id },
+        params: {
+          module_id: activeModule.module_id,
+          day_number: String(
+            firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length,
+          ),
+        },
       });
     } else {
       router.push("/(tabs)/my-learning" as never);
@@ -76,7 +190,6 @@ export function HomeScreen() {
 
   const handleResumeFeaturePress = (route: string) => {
     if (isResumeStatusLoading) {
-      // Still loading, do nothing
       return;
     }
 
@@ -103,9 +216,11 @@ export function HomeScreen() {
     }
   };
 
-  const continueTitle = activeModule
-    ? `${activeModule.title} (Day ${activeDay?.day_number ?? 1})`
-    : "Continue Learning";
+  const continueTitle = useMemo(() => {
+    if (!activeDay || !activeModule) return "Continue Learning";
+    return `${activeModule.title} (Day ${firstIncompleteIdx !== -1 ? firstIncompleteIdx + 1 : allDaysList.length})`;
+  }, [activeDay, activeModule, firstIncompleteIdx, allDaysList.length]);
+
 
   const continueSubtitle = useMemo(() => {
     if (!activeDay) return "⏱ 15 min left";
@@ -117,89 +232,109 @@ export function HomeScreen() {
   }, [activeDay, dayProgress]);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="flex-1 bg-slate-50">
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-row items-center justify-between mb-6">
-          <View>
-            <Text className="text-slate-900 text-xl font-extrabold">Hi, {firstName}!</Text>
-            <Text className="text-slate-500 text-sm mt-0.5">Ready to learn something new?</Text>
+    <View className="flex-1">
+      <LinearGradient
+        colors={["#faf5ff", "#f5f3ff", "#fafafd"]}
+        style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
+      />
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1">
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="flex-row items-center justify-between mb-6">
+            <View>
+              <Text className="text-2xl font-black tracking-tight">
+                <Text style={{ color: "#4f46e5" }}>Hi, </Text>
+                <Text style={{ color: "#94a3b8" }}>
+                  {(firstName?.toUpperCase() || "").slice(0, 2)}
+                </Text>
+                <Text style={{ color: "#84cc16" }}>
+                  {(firstName?.toUpperCase() || "").slice(2)}!
+                </Text>
+              </Text>
+              <Text className="text-slate-400 text-sm mt-1 font-semibold">
+                Ready to learn something new?
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
+            >
+              <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
+                <Feather name="user" size={20} color="#4f46e5" />
+              </View>
+            </Pressable>
           </View>
-          <Pressable
-            onPress={() => router.push("/profile" as never)}
-            className="w-10 h-10 rounded-full bg-slate-200 items-center justify-center"
-          >
-            <Feather name="user" size={20} color="#475569" />
-          </Pressable>
-        </View>
+          {profile && profile.email_verified === false && (
+            <VerifyEmailBanner email={profile.email} />
+          )}
 
-        {profile && profile.email_verified === false && <VerifyEmailBanner email={profile.email} />}
+          <WeeklyStreak days={profile?.weekly_streak} />
 
-        <WeeklyStreak days={profile?.weekly_streak} />
+          <MyLearningCard
+            streakCount={profile?.streak_count ?? 0}
+            badgesCount={profile?.badges_count ?? 0}
+            xpPoints={profile?.total_xp ?? 0}
+            daysCompleted={daysCompleted}
+            totalDays={totalDays}
+            onTrack={() => router.push("/(tabs)/achievements" as never)}
+          />
 
-        <MyLearningCard
-          streakCount={profile?.streak_count ?? 0}
-          badgesCount={profile?.badges_count ?? 0}
-          xpPoints={profile?.total_xp ?? 0}
-          modulesCompleted={profile?.modules_completed ?? 0}
-          totalModules={profile?.total_modules ?? null}
-          onTrack={() => router.push("/(tabs)/achievements" as never)}
-        />
+          <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
+            <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
+              <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
+            </Pressable>
+          </View>
 
-        <View className="flex-row justify-between items-center mb-3">
-          <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
-          <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
-            <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
-          </Pressable>
-        </View>
+          <ContinueLearningCard
+            title={continueTitle}
+            subtitle={continueSubtitle}
+            onPress={handleContinuePress}
+          />
 
-        <ContinueLearningCard
-          title={continueTitle}
-          subtitle={continueSubtitle}
-          onPress={handleContinuePress}
-        />
+          <FeatureGroupCard
+            title="Convo Coach"
+            subtitle="Say it better, every time"
+            icon="✨"
+            items={[
+              {
+                title: "Interview Playground",
+                subtitle: "Try, learn and improve — No pressure",
+                onPress: () => router.push("/mock-interview" as never),
+              },
+              {
+                title: "Interview Buddy",
+                subtitle: "Practice with a buddy before it counts",
+                onPress: () => router.push("/ai-interview" as never),
+              },
+            ]}
+          />
 
-        <FeatureGroupCard
-          title="Convo Coach"
-          subtitle="Say it better, every time"
-          icon="✨"
-          items={[
-            {
-              title: "Interview Playground",
-              subtitle: "Try, learn and improve — No pressure",
-              onPress: () => router.push("/mock-interview" as never),
-            },
-            {
-              title: "Interview Buddy",
-              subtitle: "Practice with a buddy before it counts",
-              onPress: () => router.push("/ai-interview" as never),
-            },
-          ]}
-        />
+          <FeatureGroupCard
+            title="Resume Studio"
+            subtitle="Build a resume you're proud to share"
+            icon="📝"
+            items={[
+              {
+                title: "Resume Buddy",
+                subtitle: "Know what recruiters notice",
+                onPress: () => handleResumeFeaturePress("/resume-buddy"),
+              },
+              {
+                title: "Craft your Resume",
+                subtitle: "Design your story, your way",
+                onPress: () => handleResumeFeaturePress("/resume"),
+              },
+            ]}
+          />
+        </ScrollView>
+        <ChatFab onPress={() => router.push("/chat" as never)} />
+      </View>
+    </View>
 
-        <FeatureGroupCard
-          title="Resume Studio"
-          subtitle="Build a resume you're proud to share"
-          icon="📝"
-          items={[
-            {
-              title: "Resume Buddy",
-              subtitle: "Know what recruiters notice",
-              onPress: () => handleResumeFeaturePress("/resume-buddy"),
-            },
-            {
-              title: "Craft your Resume",
-              subtitle: "Design your story, your way",
-              onPress: () => handleResumeFeaturePress("/resume"),
-            },
-          ]}
-        />
-      </ScrollView>
-      <ChatFab onPress={() => router.push("/chat" as never)} />
-    </SafeAreaView>
   );
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -34,7 +35,9 @@ const WAVEFORM_BARS = [
  * learner starts playback the first time so they have to listen before answering.
  */
 export function ListeningActivity({ questions, onComplete }: ListeningActivityProps) {
-  const passage = questions.find((q) => !!q.audio_url);
+  const passage =
+    questions.find((q) => q.question_type === "passage" && !!q.audio_url) ||
+    questions.find((q) => !!q.audio_url);
   const mcqs = questions.filter((q) => q !== passage);
   const audioUrl = resolveApiAssetUrl(passage?.audio_url);
 
@@ -89,7 +92,6 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     } else {
       anims.forEach((anim) => anim.setValue(1));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   useEffect(() => {
@@ -194,9 +196,16 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
           marginHorizontal: 24,
           marginTop: 24,
           padding: 20,
-          borderRadius: 12,
-          backgroundColor: "#f1f5f9",
+          borderRadius: 24,
+          backgroundColor: "#f8fafc",
+          borderWidth: 1,
+          borderColor: "#e2e8f0",
           alignItems: "center",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 2,
+          elevation: 1,
         }}
       >
         <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
@@ -205,15 +214,15 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
         <Pressable
           onPress={togglePlay}
           disabled={hasPlayed || loading}
-          style={{
+          style={({ pressed }) => ({
             width: 72,
             height: 72,
             borderRadius: 36,
-            backgroundColor: hasPlayed ? "#cbd5e1" : "#0f172a",
+            backgroundColor: hasPlayed ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
             alignItems: "center",
             justifyContent: "center",
-            ...Platform.select({ web: { cursor: "pointer" } as any }),
-          }}
+            ...Platform.select({ web: { cursor: hasPlayed ? "default" : "pointer" } as any }),
+          })}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
@@ -258,7 +267,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
                   style={{
                     width: 5, // Thicker bars (5dp)
                     height: baseHeight,
-                    backgroundColor: isPast ? "#22c55e" : "#000000", // Green active progress, Black base waveform
+                    backgroundColor: isPast ? "#3b82f6" : "#cbd5e1", // Blue active progress, slate-300 base waveform
                     borderRadius: 2.5, // Fully rounded thick capsules
                     transform: [{ scaleY: anims[index % anims.length]! }], // Animate all bars for a full continuous wave
                   }}
