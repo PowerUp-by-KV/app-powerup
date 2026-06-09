@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -11,6 +10,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
@@ -61,11 +61,12 @@ export function AchievementsScreen() {
   const [tab, setTab] = useState<"achievements" | "skills">("achievements");
   const { data: profile } = useGetProfileQuery();
   const { data: list, isLoading: listLoading } = useListAchievementsQuery();
+  const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: isTablet ? 32 : 20, paddingBottom: 96 }}
@@ -300,6 +301,6 @@ export function AchievementsScreen() {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

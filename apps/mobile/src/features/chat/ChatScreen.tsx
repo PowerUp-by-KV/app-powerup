@@ -5,16 +5,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery } from "@/services/auth-api";
+import { HomeScreen } from "@/features/home/HomeScreen";
 import {
   ChatMessage,
   useCreateChatThreadMutation,
@@ -32,6 +33,7 @@ const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
 export function ChatScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ thread_id?: string }>();
   const { data: profile } = useGetProfileQuery();
   const [threadId, setThreadId] = useState<string | null>(params.thread_id ?? null);
@@ -95,25 +97,49 @@ export function ChatScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: Platform.OS === "web" ? "rgba(15, 23, 42, 0.35)" : "#fff",
+        backgroundColor: Platform.OS === "web" ? "#0f172a" : "#fff",
       }}
     >
-      <SafeAreaView
+      {Platform.OS === "web" && (
+        <>
+          <View
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+            pointerEvents="none"
+          >
+            <HomeScreen />
+          </View>
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(15, 23, 42, 0.45)",
+            }}
+            pointerEvents="none"
+          />
+        </>
+      )}
+      <View
         style={{
-          flex: 1,
+          height: Platform.OS === "web" ? "82%" : "100%",
+          maxHeight: Platform.OS === "web" ? 750 : "100%",
+          paddingTop: insets.top,
           backgroundColor: "#fff",
           maxWidth: Platform.OS === "web" ? 480 : "100%",
           width: "100%",
           alignSelf: Platform.OS === "web" ? "flex-end" : "auto",
+          marginTop: Platform.OS === "web" ? "auto" : 0,
           margin: Platform.OS === "web" ? 24 : 0,
           borderRadius: Platform.OS === "web" ? 24 : 0,
           overflow: "hidden",
-          borderLeftWidth: Platform.OS === "web" ? 1 : 0,
+          borderWidth: Platform.OS === "web" ? 1 : 0,
           borderColor: "#e2e8f0",
-          shadowColor: "#000",
-          shadowOffset: { width: -4, height: 0 },
-          shadowOpacity: Platform.OS === "web" ? 0.04 : 0,
-          shadowRadius: 10,
+          shadowColor: "#0f172a",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: Platform.OS === "web" ? 0.12 : 0,
+          shadowRadius: 24,
         }}
       >
         <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -230,7 +256,7 @@ export function ChatScreen() {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </View>
   );
 }

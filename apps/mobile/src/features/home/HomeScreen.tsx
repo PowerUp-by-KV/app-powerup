@@ -1,27 +1,17 @@
 import React, { useMemo } from "react";
-import {
-  Image,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { ModuleDay } from "@powerup/shared";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
   useLazyGetModuleDaysQuery,
   useGetDayProgressQuery,
-  useGetPersonalizedPathQuery,
-  PersonalizedModuleItem,
+  useGetModulesQuery,
 } from "@/services/module-api";
-
-import { getAvatarUri } from "@/utils/avatar";
 
 import { WeeklyStreak } from "./components/WeeklyStreak";
 import { MyLearningCard } from "./components/MyLearningCard";
@@ -29,20 +19,6 @@ import { ContinueLearningCard } from "./components/ContinueLearningCard";
 import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
 import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
-
-export interface CombinedModuleDay {
-  id: string;
-  day_number: number;
-  duration_hours: number | null;
-  is_completed: boolean;
-  topic?: string | null;
-  completed_activities?: number;
-  total_activities?: number;
-  progress_percentage?: number;
-  module_no: number;
-  module_title: string;
-  module_id: string;
-}
 
 const PROGRESSION_WAVES = [
   { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
@@ -59,15 +35,27 @@ export function HomeScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
-  const { width } = useWindowDimensions();
-  const isTablet = width >= 768;
+  const insets = useSafeAreaInsets();
 
-  const { data: personalizedPath } = useGetPersonalizedPathQuery(undefined, {
+  const { data: modulesData } = useGetModulesQuery(undefined, {
     skip: !gate.canEnter,
   });
 
+  const personalizedPath = useMemo(() => {
+    if (!modulesData) return null;
+    return {
+      modules: modulesData.map((m) => ({
+        id: m.id,
+        module_no: m.order_index,
+        title: m.title,
+        variant_id: null,
+        is_unlocked: true,
+      })),
+    };
+  }, [modulesData]);
+
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
+  const [allDaysList, setAllDaysList] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
@@ -77,19 +65,43 @@ export function HomeScreen() {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
             const data = await triggerGetModuleDays(m.id).unwrap();
-            return { moduleId: m.id, days: data };
+            return { module: m, days: data };
           } catch (e) {
             console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { moduleId: m.id, days: [] };
+            return { module: m, days: [] };
           }
         });
         const results = await Promise.all(promises);
 
-        const nextData: Record<string, ModuleDay[]> = {};
+        const daysByModuleNo: Record<number, any[]> = {};
+        const moduleByNo: Record<number, any> = {};
+
         for (const res of results) {
-          nextData[res.moduleId] = res.days;
+          daysByModuleNo[res.module.module_no] = res.days;
+          moduleByNo[res.module.module_no] = res.module;
         }
-        setModuleDaysData(nextData);
+
+        const combined = [];
+        for (const waveConfig of PROGRESSION_WAVES) {
+          for (const mNo of waveConfig.modules) {
+            const moduleItem = moduleByNo[mNo];
+            if (!moduleItem) continue;
+
+            const moduleDays = daysByModuleNo[mNo] || [];
+            for (const dNum of waveConfig.days) {
+              const dayObj = moduleDays.find((d) => d.day_number === dNum);
+              if (dayObj) {
+                combined.push({
+                  ...dayObj,
+                  module_no: moduleItem.module_no,
+                  module_title: moduleItem.title,
+                  module_id: moduleItem.id,
+                });
+              }
+            }
+          }
+        }
+        setAllDaysList(combined);
       } catch (err) {
         console.error("Error fetching all days:", err);
       }
@@ -97,40 +109,6 @@ export function HomeScreen() {
 
     fetchAllDays();
   }, [personalizedPath, triggerGetModuleDays]);
-
-  const allDaysList = useMemo<CombinedModuleDay[]>(() => {
-    if (!personalizedPath?.modules?.length) return [];
-    const combined: CombinedModuleDay[] = [];
-    const daysByModuleNo: Record<number, ModuleDay[]> = {};
-    const moduleByNo: Record<number, PersonalizedModuleItem> = {};
-
-    for (const m of personalizedPath.modules) {
-      const days = moduleDaysData[m.id] || [];
-      daysByModuleNo[m.module_no] = days;
-      moduleByNo[m.module_no] = m;
-    }
-
-    for (const waveConfig of PROGRESSION_WAVES) {
-      for (const mNo of waveConfig.modules) {
-        const moduleItem = moduleByNo[mNo];
-        if (!moduleItem) continue;
-
-        const moduleDays = daysByModuleNo[mNo] || [];
-        for (const dNum of waveConfig.days) {
-          const dayObj = moduleDays.find((d) => d.day_number === dNum);
-          if (dayObj) {
-            combined.push({
-              ...dayObj,
-              module_no: moduleItem.module_no,
-              module_title: moduleItem.title,
-              module_id: moduleItem.id,
-            });
-          }
-        }
-      }
-    }
-    return combined;
-  }, [personalizedPath, moduleDaysData]);
 
   const firstIncompleteIdx = useMemo(() => {
     return allDaysList.findIndex((d) => !d.is_completed);
@@ -163,10 +141,7 @@ export function HomeScreen() {
     skip: !activeDay,
   });
 
-  const rawFirstName = profile?.name?.split(" ")[0] ?? "there";
-  const firstName = rawFirstName
-    ? rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
-    : "there";
+  const firstName = profile?.name?.split(" ")[0] ?? "there";
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {
@@ -213,105 +188,104 @@ export function HomeScreen() {
         colors={["#faf5ff", "#f5f3ff", "#fafafd"]}
         style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
       />
-      <SafeAreaView style={{ flex: 1 }} className="flex-1">
-        <View style={{ flex: 1, width: "100%", position: "relative" }}>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: isTablet ? 24 : 20, paddingBottom: 120 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View className="flex-row items-center justify-between mb-6">
-              <View>
-                <Text className="text-2xl font-black tracking-tight">
-                  <Text style={{ color: "#4f46e5" }}>Hi, </Text>
-                  <Text style={{ color: "#84cc16" }}>{firstName}!</Text>
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1">
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View className="flex-row items-center justify-between mb-6">
+            <View>
+              <Text className="text-2xl font-black tracking-tight">
+                <Text style={{ color: "#4f46e5" }}>Hi, </Text>
+                <Text style={{ color: "#94a3b8" }}>
+                  {(firstName?.toUpperCase() || "").slice(0, 2)}
                 </Text>
-                <Text className="text-slate-400 text-sm mt-1 font-semibold">
-                  Ready to learn something new?
+                <Text style={{ color: "#84cc16" }}>
+                  {(firstName?.toUpperCase() || "").slice(2)}!
                 </Text>
+              </Text>
+              <Text className="text-slate-400 text-sm mt-1 font-semibold">
+                Ready to learn something new?
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
+            >
+              <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
+                <Feather name="user" size={20} color="#4f46e5" />
               </View>
-              <Pressable
-                onPress={() => router.push("/profile" as never)}
-                className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
-              >
-                <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                  <Image
-                    source={{ uri: getAvatarUri(profile?.avatar_id, profile?.id) }}
-                    style={{ width: "100%", height: "100%" }}
-                    resizeMode="cover"
-                  />
-                </View>
-              </Pressable>
-            </View>
+            </Pressable>
+          </View>
 
-            {profile && profile.email_verified === false && (
-              <VerifyEmailBanner email={profile.email} />
-            )}
+          {profile && profile.email_verified === false && (
+            <VerifyEmailBanner email={profile.email} />
+          )}
 
-            <WeeklyStreak days={profile?.weekly_streak} />
+          <WeeklyStreak days={profile?.weekly_streak} />
 
-            <MyLearningCard
-              streakCount={profile?.streak_count ?? 0}
-              badgesCount={profile?.badges_count ?? 0}
-              xpPoints={profile?.total_xp ?? 0}
-              daysCompleted={daysCompleted}
-              totalDays={totalDays}
-              onTrack={() => router.push("/(tabs)/achievements" as never)}
-            />
+          <MyLearningCard
+            streakCount={profile?.streak_count ?? 0}
+            badgesCount={profile?.badges_count ?? 0}
+            xpPoints={profile?.total_xp ?? 0}
+            daysCompleted={daysCompleted}
+            totalDays={totalDays}
+            onTrack={() => router.push("/(tabs)/achievements" as never)}
+          />
 
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
-              <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
-                <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
-              </Pressable>
-            </View>
+          <View className="flex-row justify-between items-center mb-3">
+            <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
+            <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
+              <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
+            </Pressable>
+          </View>
 
-            <ContinueLearningCard
-              title={continueTitle}
-              subtitle={continueSubtitle}
-              onPress={handleContinuePress}
-            />
+          <ContinueLearningCard
+            title={continueTitle}
+            subtitle={continueSubtitle}
+            onPress={handleContinuePress}
+          />
 
-            <FeatureGroupCard
-              title="Convo Coach"
-              subtitle="Say it better, every time"
-              icon="✨"
-              items={[
-                {
-                  title: "Interview Playground",
-                  subtitle: "Try, learn and improve — No pressure",
-                  onPress: () => router.push("/interview-playground" as never),
-                },
-                {
-                  title: "Interview Buddy",
-                  subtitle: "Practice with a buddy before it counts",
-                  onPress: () => router.push("/ai-interview" as never),
-                },
-              ]}
-            />
+          <FeatureGroupCard
+            title="Convo Coach"
+            subtitle="Say it better, every time"
+            icon="✨"
+            items={[
+              {
+                title: "Interview Playground",
+                subtitle: "Try, learn and improve — No pressure",
+                onPress: () => router.push("/mock-interview" as never),
+              },
+              {
+                title: "Interview Buddy",
+                subtitle: "Practice with a buddy before it counts",
+                onPress: () => router.push("/ai-interview" as never),
+              },
+            ]}
+          />
 
-            <FeatureGroupCard
-              title="Resume Studio"
-              subtitle="Build a resume you're proud to share"
-              icon="📝"
-              items={[
-                {
-                  title: "Resume Buddy",
-                  subtitle: "Know what recruiters notice",
-                  onPress: () => router.push("/resume-buddy" as never),
-                },
-                {
-                  title: "Craft your Resume",
-                  subtitle: "Design your story, your way",
-                  onPress: () => router.push("/resume" as never),
-                },
-              ]}
-            />
-          </ScrollView>
-          <ChatFab onPress={() => router.push("/chat" as never)} />
-        </View>
-      </SafeAreaView>
+          <FeatureGroupCard
+            title="Resume Studio"
+            subtitle="Build a resume you're proud to share"
+            icon="📝"
+            items={[
+              {
+                title: "Resume Buddy",
+                subtitle: "Know what recruiters notice",
+                onPress: () => router.push("/resume-buddy" as never),
+              },
+              {
+                title: "Craft your Resume",
+                subtitle: "Design your story, your way",
+                onPress: () => router.push("/resume" as never),
+              },
+            ]}
+          />
+        </ScrollView>
+        <ChatFab onPress={() => router.push("/chat" as never)} />
+      </View>
     </View>
   );
 }

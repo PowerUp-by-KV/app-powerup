@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -13,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
@@ -43,6 +43,7 @@ const parseMultiSelect = (text: string): string[] => {
 
 export function EditProfileScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
   const [patch, { isLoading: isPatchSaving }] = usePatchProfileMutation();
 
@@ -499,7 +500,7 @@ export function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -1009,7 +1010,7 @@ export function EditProfileScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

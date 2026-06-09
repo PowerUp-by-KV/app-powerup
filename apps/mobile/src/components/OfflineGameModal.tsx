@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Modal, SafeAreaView, Text, View, Pressable, StyleSheet } from "react-native";
+import { Modal, Text, View, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
 const GAME_HEIGHT = 300;
@@ -20,6 +21,7 @@ interface Obstacle {
 }
 
 export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
+  const insets = useSafeAreaInsets();
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
   const [gameState, setGameState] = useState<"start" | "play" | "gameover">("start");
@@ -163,7 +165,10 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }} className="justify-between">
+      <View
+        style={{ flex: 1, backgroundColor: "#0f172a", paddingTop: insets.top }}
+        className="justify-between"
+      >
         {/* Header */}
         <View className="flex-row justify-between items-center px-6 py-4 border-b border-slate-800">
           <View className="flex-row items-center gap-2">
@@ -313,7 +318,7 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
             Practice makes perfect. The server will reconnect once you're back online!
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

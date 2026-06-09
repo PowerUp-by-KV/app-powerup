@@ -3,13 +3,13 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
 import {
@@ -64,6 +64,7 @@ const getOptimizedRecordingSettings = (): any => {
 
 export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -251,7 +252,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -293,7 +294,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -411,7 +412,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -488,7 +489,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
