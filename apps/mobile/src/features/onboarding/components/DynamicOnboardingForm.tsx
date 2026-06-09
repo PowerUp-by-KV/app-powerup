@@ -241,37 +241,39 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
               className="bg-white border-2 border-dashed border-slate-200 rounded-3xl py-14 px-8 items-center justify-center w-full shadow-sm"
               activeOpacity={0.8}
             >
-              {/* Circular Upload Icon */}
-              <View className="w-20 h-20 rounded-full bg-slate-50 items-center justify-center mb-6">
-                <Feather name="upload" size={28} color="#3b82f6" />
-              </View>
+              <View pointerEvents="none" className="items-center justify-center w-full">
+                {/* Circular Upload Icon */}
+                <View className="w-20 h-20 rounded-full bg-slate-50 items-center justify-center mb-6">
+                  <Feather name="upload" size={28} color="#3b82f6" />
+                </View>
 
-              {/* Upload Title */}
-              <Text className="text-slate-700 font-extrabold text-base mb-6 text-center px-4">
-                {formData[`${question_key}Name`] ? (
-                  <Text className="font-black text-blue-600">
-                    {formData[`${question_key}Name`]}
+                {/* Upload Title */}
+                <Text className="text-slate-700 font-extrabold text-base mb-6 text-center px-4">
+                  {formData[`${question_key}Name`] ? (
+                    <Text className="font-black text-blue-600">
+                      {formData[`${question_key}Name`]}
+                    </Text>
+                  ) : (
+                    "Upload your resume here"
+                  )}
+                </Text>
+
+                {/* Browse Files Button */}
+                <View className="bg-blue-500 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
+                  <Feather name="file" size={16} color="white" style={{ marginRight: 8 }} />
+                  <Text className="text-white font-extrabold text-sm">
+                    {formData[`${question_key}Name`] ? "Change File" : "Browse Files"}
                   </Text>
-                ) : (
-                  "Upload your resume here"
-                )}
-              </Text>
+                </View>
 
-              {/* Browse Files Button */}
-              <View className="bg-blue-500 active:bg-blue-600 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
-                <Feather name="file" size={16} color="white" style={{ marginRight: 8 }} />
-                <Text className="text-white font-extrabold text-sm">
-                  {formData[`${question_key}Name`] ? "Change File" : "Browse Files"}
+                {/* Supported Format Details */}
+                <Text className="text-slate-400 font-semibold text-[12px] text-center mb-1.5">
+                  Supported formats: PDF, DOC, DOCX
+                </Text>
+                <Text className="text-slate-400 font-semibold text-[12px] text-center">
+                  Maximum file size 10MB
                 </Text>
               </View>
-
-              {/* Supported Format Details */}
-              <Text className="text-slate-400 font-semibold text-[12px] text-center mb-1.5">
-                Supported formats: PDF, DOC, DOCX
-              </Text>
-              <Text className="text-slate-400 font-semibold text-[12px] text-center">
-                Maximum file size 10MB
-              </Text>
             </TouchableOpacity>
           </View>
         );

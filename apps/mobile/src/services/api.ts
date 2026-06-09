@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { Platform } from "react-native";
-import { getAuthSession, saveAuthSession } from "./auth-storage";
+import { router } from "expo-router";
+import { getAuthSession, saveAuthSession, clearAuthSession } from "./auth-storage";
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
@@ -119,7 +120,13 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
         });
         // Retry the original request with the new token.
         result = await rawBaseQuery(args, api, extraOptions);
+      } else {
+        await clearAuthSession();
+        router.replace("/login");
       }
+    } else {
+      await clearAuthSession();
+      router.replace("/login");
     }
   }
 

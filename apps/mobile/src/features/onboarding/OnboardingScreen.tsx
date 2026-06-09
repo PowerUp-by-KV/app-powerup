@@ -203,9 +203,8 @@ export default function OnboardingScreen() {
 
     try {
       // 1. Build answers payload — API only accepts question_id + answer_text
-      // Skip file questions (handled earlier) and empty/skipped questions
+      // Include skipped file questions as empty strings, but omit uploaded files (handled earlier)
       const answersPayload = flattenedQuestions
-        .filter((q) => q.input_type !== "file")
         .map((q) => {
           const answerValue = formData[q.question_key];
 
@@ -223,16 +222,26 @@ export default function OnboardingScreen() {
           return {
             question_id: q.id,
             answer_text,
+            input_type: q.input_type,
           };
         })
         .filter((ans) => {
-          // Payload filtering: only send answers that are not empty
+          // If it's a file question and was skipped, send ""
+          if (ans.input_type === "file" && ans.answer_text === "") {
+            return true;
+          }
+          // Omit file questions that have local file URIs (they were uploaded via resume endpoints)
+          if (ans.input_type === "file") {
+            return false;
+          }
+          // For everything else, only send answers that are not empty
           return (
             ans.answer_text !== undefined &&
             ans.answer_text !== null &&
             ans.answer_text.trim() !== ""
           );
-        });
+        })
+        .map(({ question_id, answer_text }) => ({ question_id, answer_text }));
 
       // 2. Submit Onboarding Answers with localized retry loop
       let ansRetries = 3;
