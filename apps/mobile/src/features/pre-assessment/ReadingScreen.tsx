@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   useGetAssessmentSectionQuery,
@@ -29,6 +29,7 @@ import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -36,6 +37,7 @@ interface ReadingScreenProps {
 
 export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -106,7 +108,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -147,7 +149,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -214,24 +216,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       }
 
       // Poll/verify status
-      let checkRetries = 10;
-      while (checkRetries > 0) {
-        try {
-          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
-          if (status.pending_answers > 0) {
-            checkRetries--;
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else {
-            if (status.failed_answers > 0) {
-              console.warn("Some answers failed to score in backend processing:", status);
-            }
-            break;
-          }
-        } catch (pollErr) {
-          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
-          break;
-        }
-      }
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
 
       // Brief delay to allow dev tunnel proxy socket to clean up before loading next route
       await new Promise((res) => setTimeout(res, 600));
@@ -281,7 +266,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const activeParagraph = getActiveParagraph();
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -381,7 +366,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

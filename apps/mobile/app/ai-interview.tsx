@@ -1,13 +1,6 @@
 import React, { useCallback } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import type { Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
@@ -70,6 +63,7 @@ function CheckRow({ label }: { label: string }) {
 // Main screen
 // ---------------------------------------------------------------------------
 export default function InterviewBuddyScreen() {
+  const insets = useSafeAreaInsets();
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "buddy",
@@ -93,16 +87,16 @@ export default function InterviewBuddyScreen() {
 
   if (isLoadingResume) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
         <ActivityIndicator style={styles.loader} size="large" color="#4F46E5" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   // Resume gate
   if (!hasResume) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <View style={[styles.safe, { paddingTop: insets.top }]}>
         <ScrollView contentContainerStyle={styles.content}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color="#475569" />
@@ -120,12 +114,12 @@ export default function InterviewBuddyScreen() {
             </Pressable>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={[styles.safe, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
@@ -213,7 +207,7 @@ export default function InterviewBuddyScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

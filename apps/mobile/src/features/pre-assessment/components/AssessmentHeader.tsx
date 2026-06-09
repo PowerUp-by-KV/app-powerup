@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Modal, SafeAreaView, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Modal, Alert, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -83,6 +83,16 @@ export function AssessmentHeader({
   };
 
   const handleFinishPress = () => {
+    if (Platform.OS === "web") {
+      const confirmExit = window.confirm(
+        "Are you sure you want to exit the assessment? You can resume it later from where you left off.",
+      );
+      if (confirmExit) {
+        router.replace("/(tabs)/my-learning" as any);
+      }
+      return;
+    }
+
     Alert.alert(
       "Exit Assessment",
       "Are you sure you want to exit the assessment? You can resume it later from where you left off.",
@@ -169,7 +179,7 @@ export function AssessmentHeader({
         onRequestClose={() => setModalVisible(false)}
       >
         <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <SafeAreaView className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
+          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
             <View className="flex-row justify-between items-center mb-6">
               <Text className="text-lg font-bold text-slate-900">Assessment Sections</Text>
               <TouchableOpacity
@@ -249,7 +259,7 @@ export function AssessmentHeader({
                 );
               })}
             </View>
-          </SafeAreaView>
+          </View>
         </View>
       </Modal>
     </View>

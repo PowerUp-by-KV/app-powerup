@@ -20,6 +20,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
   const [currentTime, setCurrentTime] = useState(0);
   const [actualDuration, setActualDuration] = useState(duration ?? 30);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [hasPlayed, setHasPlayed] = useState(false);
 
   // Clean up sound on unmount
   useEffect(() => {
@@ -39,6 +40,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     setIsPlaying(false);
     setCurrentTime(0);
     setActualDuration(duration ?? 30);
+    setHasPlayed(false);
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
@@ -58,6 +60,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     if (status.didJustFinish) {
       setIsPlaying(false);
       setCurrentTime(0);
+      setHasPlayed(true);
       onPlayEnd?.();
     }
   };
@@ -101,6 +104,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
       setSound(null);
     }
     setCurrentTime(0);
+    setHasPlayed(true);
     onPlayEnd?.();
   };
 
@@ -111,6 +115,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     if (currentTime >= actualDuration) {
       setIsPlaying(false);
       setCurrentTime(0);
+      setHasPlayed(true);
       onPlayEnd?.();
       return;
     }
@@ -125,13 +130,17 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
   return (
     <View className="flex-row items-center p-5 my-2.5 bg-slate-50 border border-slate-100/60 rounded-3xl shadow-sm w-full">
       <TouchableOpacity
-        className="bg-blue-500 active:bg-blue-600 w-14 h-14 rounded-full items-center justify-center shadow-md border border-blue-400/20"
+        className={`${
+          hasPlayed ? "bg-slate-200 border-slate-300" : "bg-blue-500 active:bg-blue-600"
+        } w-14 h-14 rounded-full items-center justify-center shadow-md border border-blue-400/20`}
         onPress={isPlaying ? handlePause : handlePlay}
-        disabled={isLoading}
+        disabled={isLoading || hasPlayed}
         activeOpacity={0.8}
       >
         {isLoading ? (
           <ActivityIndicator color="white" size="small" />
+        ) : hasPlayed ? (
+          <Feather name="check" size={22} color="#475569" />
         ) : (
           <Feather name={isPlaying ? "square" : "volume-2"} size={22} color="white" />
         )}
@@ -139,7 +148,13 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
 
       <View className="ml-5">
         <Text className="text-slate-900 font-extrabold text-sm mb-0.5">
-          {isLoading ? "Loading Audio..." : isPlaying ? "Playing..." : "Play audio"}
+          {isLoading
+            ? "Loading Audio..."
+            : isPlaying
+              ? "Playing..."
+              : hasPlayed
+                ? "Playback completed"
+                : "Play audio"}
         </Text>
         <Text className="text-slate-400 font-semibold text-xs">
           Duration: {actualDuration}s {isPlaying ? `(${currentTime}s)` : ""}

@@ -3,13 +3,13 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
 import {
@@ -31,6 +31,7 @@ import LottieView from "lottie-react-native";
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -63,6 +64,7 @@ const getOptimizedRecordingSettings = (): any => {
 
 export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -250,7 +252,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -292,7 +294,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -358,24 +360,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       }
 
       // Poll/verify status
-      let checkRetries = 10;
-      while (checkRetries > 0) {
-        try {
-          const status = await getAssessmentStatus({ session_id: sessionId! }).unwrap();
-          if (status.pending_answers > 0) {
-            checkRetries--;
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-          } else {
-            if (status.failed_answers > 0) {
-              console.warn("Some answers failed to score in backend processing:", status);
-            }
-            break;
-          }
-        } catch (pollErr) {
-          console.warn("Polling assessment status failed, continuing anyway:", pollErr);
-          break;
-        }
-      }
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
 
       await saveCompletedSection("B_SPEAKING");
       await new Promise((res) => setTimeout(res, 600));
@@ -427,7 +412,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -504,7 +489,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

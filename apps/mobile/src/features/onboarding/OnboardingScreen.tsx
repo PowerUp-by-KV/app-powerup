@@ -3,7 +3,6 @@ import React from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
@@ -11,7 +10,9 @@ import {
   Platform,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { RootState } from "@/store";
 import {
   updateField,
@@ -46,6 +47,8 @@ import companyEmployees from "../../../assets/mascot/company-employees.json";
 export default function OnboardingScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
+  const insets = useSafeAreaInsets();
+  const safeBack = useSafeBack();
   const formData = useSelector((state: RootState) => state.onboarding);
   const stepNumber = formData.currentStep;
 
@@ -106,7 +109,7 @@ export default function OnboardingScreen() {
 
   if (onboardingError && !isFetching) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -148,7 +151,7 @@ export default function OnboardingScreen() {
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -158,7 +161,7 @@ export default function OnboardingScreen() {
 
   if (!question && !isFetching) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
         <View className="flex-1 justify-center items-center p-8">
           <View className="w-20 h-20 bg-indigo-100 rounded-full items-center justify-center mb-6">
             <Text className="text-4xl">🎯</Text>
@@ -184,7 +187,7 @@ export default function OnboardingScreen() {
             <Text className="text-indigo-600 font-semibold text-base">Review Answers</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -398,7 +401,7 @@ export default function OnboardingScreen() {
     if (stepNumber > 1) {
       dispatch(prevStep());
     } else {
-      router.back();
+      safeBack();
     }
   };
 
@@ -406,7 +409,7 @@ export default function OnboardingScreen() {
   const isFileQuestion = question?.input_type === "file";
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -518,6 +521,6 @@ export default function OnboardingScreen() {
           </TouchableOpacity>
         ) : null}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

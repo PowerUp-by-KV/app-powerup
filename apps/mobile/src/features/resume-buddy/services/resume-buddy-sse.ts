@@ -1,4 +1,9 @@
-import EventSource from "react-native-sse";
+import EventSource, {
+  type ErrorEvent,
+  type ExceptionEvent,
+  type MessageEvent,
+  type TimeoutEvent,
+} from "react-native-sse";
 
 import { API_BASE_URL } from "@/services/api";
 import { getAuthSession } from "@/services/auth-storage";
@@ -43,7 +48,7 @@ export async function subscribeResumeBuddyStatus(
     es.close();
   };
 
-  es.addEventListener("message", (event) => {
+  es.addEventListener("message", (event: MessageEvent) => {
     if (!event.data) return;
     let parsed: ResumeBuddyStatusEvent;
     try {
@@ -57,7 +62,7 @@ export async function subscribeResumeBuddyStatus(
     }
   });
 
-  es.addEventListener("error", (event) => {
+  es.addEventListener("error", (event: ErrorEvent | TimeoutEvent | ExceptionEvent) => {
     if (closed) return;
     const message =
       "message" in event && typeof event.message === "string"

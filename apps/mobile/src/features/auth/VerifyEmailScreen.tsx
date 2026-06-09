@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
@@ -12,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
 import { Feather } from "@expo/vector-icons";
@@ -24,6 +24,7 @@ import { getAuthSession } from "../../services/auth-storage";
 
 export function VerifyEmailScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ email?: string; next?: string }>();
   const [email, setEmail] = useState(params.email ?? "");
   const [code, setCode] = useState("");
@@ -85,7 +86,7 @@ export function VerifyEmailScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -249,6 +250,6 @@ export function VerifyEmailScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
@@ -50,6 +50,7 @@ function formatDuration(ms: number): string {
 
 export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
   const [timeTaken, setTimeTaken] = useState<string | null>(null);
 
@@ -92,7 +93,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const [hasTriggered, setHasTriggered] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [statusData, setStatusData] = useState<AssessmentScoringStatusResponse | null>(null);
-  const [pollCount, setPollCount] = useState(0);
+  const pollCountRef = useRef(0);
 
   // Poll the status API every 3 seconds only when isPolling is true
   const { data: currentStatus } = useGetAssessmentStatusQuery(
@@ -122,15 +123,15 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       if (
         currentStatus.pending_answers === 0 ||
         (total > 0 && processed >= total) ||
-        pollCount >= 6
+        pollCountRef.current >= 6
       ) {
         setIsPolling(false);
         completeSession({ session_id: sessionId! });
       } else {
-        setPollCount((prev) => prev + 1);
+        pollCountRef.current += 1;
       }
     }
-  }, [currentStatus, sessionId, completeSession, pollCount]);
+  }, [currentStatus, sessionId, completeSession]);
 
   // Watch mutation result
   useEffect(() => {
@@ -224,7 +225,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   if (hasError) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#f8fafc" }}>
+      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "#f8fafc" }}>
         <View
           style={{
             flex: 1,
@@ -335,7 +336,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -344,7 +345,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -400,7 +401,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
