@@ -72,8 +72,8 @@ export function StepWizard({ currentStep, totalSteps = 5, onStepChange }: StepWi
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 8,
-    backgroundColor: "white",
+    paddingVertical: 12,
+    backgroundColor: "transparent",
   },
   stepsRow: {
     flexDirection: "row",
@@ -96,21 +96,30 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: "#e5e7eb",
+    backgroundColor: "white",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 2,
   },
   activeCircle: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#3b82f6",
+    borderColor: "#3b82f6",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   completedCircle: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#a3e635",
+    borderColor: "#a3e635",
   },
   circleText: {
     fontSize: 13,
     fontWeight: "bold",
-    color: "#6b7280",
+    color: "#9ca3af",
   },
   activeCircleText: {
     color: "white",
@@ -125,7 +134,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   activeLine: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#a3e635",
   },
   label: {
     fontSize: 10,

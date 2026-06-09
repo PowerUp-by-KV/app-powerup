@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Resume API Service
  * RTK Query endpoints for resume management with comprehensive error handling
@@ -241,7 +240,7 @@ export const resumeApi = api.injectEndpoints({
       providesTags: ["Resume"],
     }),
 
-    updateProfileResume: builder.mutation<ResumeRead, { parsed_data: any }>({
+    updateProfileResume: builder.mutation<ResumeRead, { parsed_data: Partial<ResumeParsedData> }>({
       query: (body) => ({
         url: "/v1/users/profile/resume",
         method: "PUT",
@@ -267,12 +266,16 @@ export interface ResumeScoreResponse {
   got_right: string[];
   improvements: string[];
 }
+export interface ResumeStatusResponse {
+  uploaded: boolean;
+  status: string | null;
+}
 
 export const resumeScoreApi = api.injectEndpoints({
   overrideExisting: false,
   endpoints: (builder) => ({
-    getResumeScore: builder.query<ResumeScoreResponse, string>({
-      query: (userId) => `/v1/resume/${userId}/score`,
+    getResumeScore: builder.query<ResumeScoreResponse, void>({
+      query: () => `/v1/resume/score`,
       providesTags: ["Resume"],
     }),
     enhanceResumeText: builder.mutation<
@@ -281,10 +284,15 @@ export const resumeScoreApi = api.injectEndpoints({
     >({
       query: (body) => ({ url: "/v1/resume/enhance", method: "POST", body }),
     }),
+    getResumeStatus: builder.query<ResumeStatusResponse, void>({
+      query: () => `/v1/resume/status`,
+      providesTags: ["Resume"],
+    }),
   }),
 });
 
-export const { useGetResumeScoreQuery, useEnhanceResumeTextMutation } = resumeScoreApi;
+export const { useGetResumeScoreQuery, useEnhanceResumeTextMutation, useGetResumeStatusQuery } =
+  resumeScoreApi;
 
 export const {
   useUploadResumeMutation,

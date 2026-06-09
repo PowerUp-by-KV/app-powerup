@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, Modal } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -167,333 +175,342 @@ export function Step2ExperienceScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.container}>
-        {/* Step Indicator Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.titleRow}>
-              <Text style={styles.stepNumber}>Step 2 of 5</Text>
-              {isSaving ? (
-                <Text style={styles.saveBadge}>Saving...</Text>
-              ) : lastSavedAt ? (
-                <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
-              ) : null}
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.container}>
+          {/* Step Indicator Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={styles.titleRow}>
+                <Text style={styles.stepNumber}>Step 2 of 5</Text>
+                {isSaving ? (
+                  <Text style={styles.saveBadge}>Saving...</Text>
+                ) : lastSavedAt ? (
+                  <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
+                ) : null}
+              </View>
+              <Text style={styles.headerTitle}>Experience & Education</Text>
+              <Text style={styles.headerSubtitle}>Tell recruiters about your history</Text>
             </View>
-            <Text style={styles.headerTitle}>Experience & Education</Text>
-            <Text style={styles.headerSubtitle}>Tell recruiters about your history</Text>
-          </View>
-        </View>
-
-        <View style={styles.formContainer}>
-          {/* Work Experience Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="work" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Work Experience</Text>
-            </View>
-
-            <DynamicFieldList
-              items={experience}
-              onAdd={() => {
-                setEditingExpId(null);
-                setShowExpModal(true);
-              }}
-              onRemove={(id) => {
-                dispatch(updateExperience(experience.filter((item) => item.id !== id)));
-              }}
-              onEdit={(item) => {
-                setEditingExpId(item.id);
-                setExpForm({
-                  ...item,
-                  currentlyWorking: !item.endDate || item.endDate === "Present",
-                });
-                setShowExpModal(true);
-              }}
-              addButtonLabel="Add Work Experience"
-              emptyMessage="No work experience added yet."
-              renderItem={(item) => (
-                <View>
-                  <Text style={styles.itemTitle}>{item.role}</Text>
-                  <Text style={styles.itemSubtitle}>
-                    {item.company} • {item.startDate} - {item.endDate || "Present"}
-                  </Text>
-                  {item.description ? (
-                    <Text numberOfLines={2} style={styles.itemDesc}>
-                      {item.description}
-                    </Text>
-                  ) : null}
-                </View>
-              )}
-            />
           </View>
 
-          {/* Education Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="school" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Education</Text>
-            </View>
-
-            <DynamicFieldList
-              items={education}
-              onAdd={() => {
-                setEditingEduId(null);
-                setShowEduModal(true);
-              }}
-              onRemove={(id) => {
-                dispatch(updateEducation(education.filter((item) => item.id !== id)));
-              }}
-              onEdit={(item) => {
-                setEditingEduId(item.id);
-                setEduForm(item);
-                setShowEduModal(true);
-              }}
-              addButtonLabel="Add Education"
-              emptyMessage="No education history added yet."
-              renderItem={(item) => (
-                <View>
-                  <Text style={styles.itemTitle}>{item.degree}</Text>
-                  <Text style={styles.itemSubtitle}>
-                    {item.institution} {item.field ? `• ${item.field}` : ""}
-                  </Text>
-                  {item.endYear || item.endDate ? (
-                    <Text style={styles.itemDesc}>
-                      Graduation Year: {item.endYear || item.endDate}
-                    </Text>
-                  ) : null}
-                </View>
-              )}
-            />
-          </View>
-
-          {/* Navigation Buttons footer */}
-          <View style={styles.footerRow}>
-            <Pressable onPress={() => dispatch(setCurrentStep(1))} style={styles.backButton}>
-              <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-              <Text style={styles.backButtonText}>Back</Text>
-            </Pressable>
-            <Pressable onPress={() => dispatch(setCurrentStep(3))} style={styles.nextButton}>
-              <Text style={styles.nextButtonText}>Next Screen</Text>
-              <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
-      {/* Experience Add/Edit Modal */}
-      <Modal
-        visible={showExpModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowExpModal(false);
-          resetExpForm();
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={{ flex: 1 }}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editingExpId ? "Edit Work Experience" : "Add Work Experience"}
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    setShowExpModal(false);
-                    resetExpForm();
-                  }}
-                >
-                  <MaterialIcons name="close" size={20} color="#374151" />
-                </Pressable>
+          <View style={styles.formContainer}>
+            {/* Work Experience Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="work" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Work Experience</Text>
               </View>
 
-              <TextInput
-                label="Company"
-                required
-                placeholder="e.g., Google"
-                value={expForm.company}
-                onChangeText={(text) => setExpForm({ ...expForm, company: text })}
-                error={expErrors.company}
-              />
-
-              <TextInput
-                label="Role / Title"
-                required
-                placeholder="e.g., Senior Software Engineer"
-                value={expForm.role}
-                onChangeText={(text) => setExpForm({ ...expForm, role: text })}
-                error={expErrors.role}
-              />
-
-              <TextInput
-                label="Location"
-                placeholder="e.g., Bangalore, Karnataka"
-                value={expForm.location}
-                onChangeText={(text) => setExpForm({ ...expForm, location: text })}
-              />
-
-              <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <DatePicker
-                    label="Start Date"
-                    required
-                    placeholder="Select Date"
-                    value={expForm.startDate || ""}
-                    onChange={(date) => {
-                      setExpForm((prev) => ({ ...prev, startDate: date }));
-                      if (expErrors.startDate) setExpErrors((prev) => ({ ...prev, startDate: "" }));
-                    }}
-                    error={expErrors.startDate}
-                  />
-                </View>
-                {!expForm.currentlyWorking && (
-                  <View style={{ flex: 1 }}>
-                    <DatePicker
-                      label="End Date"
-                      placeholder="Select Date"
-                      value={expForm.endDate || ""}
-                      onChange={(date) => {
-                        setExpForm((prev) => ({ ...prev, endDate: date }));
-                      }}
-                    />
+              <DynamicFieldList
+                items={experience}
+                onAdd={() => {
+                  setEditingExpId(null);
+                  setShowExpModal(true);
+                }}
+                onRemove={(id) => {
+                  dispatch(updateExperience(experience.filter((item) => item.id !== id)));
+                }}
+                onEdit={(item) => {
+                  setEditingExpId(item.id);
+                  setExpForm({
+                    ...item,
+                    currentlyWorking: !item.endDate || item.endDate === "Present",
+                  });
+                  setShowExpModal(true);
+                }}
+                addButtonLabel="Add Work Experience"
+                emptyMessage="No work experience added yet."
+                renderItem={(item) => (
+                  <View>
+                    <Text style={styles.itemTitle}>{item.role}</Text>
+                    <Text style={styles.itemSubtitle}>
+                      {item.company} • {item.startDate} - {item.endDate || "Present"}
+                    </Text>
+                    {item.description ? (
+                      <Text numberOfLines={2} style={styles.itemDesc}>
+                        {item.description}
+                      </Text>
+                    ) : null}
                   </View>
                 )}
+              />
+            </View>
+
+            {/* Education Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="school" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Education</Text>
               </View>
 
-              <View style={styles.checkboxRow}>
-                <Pressable
-                  onPress={() => {
-                    const isCurrent = !expForm.currentlyWorking;
-                    setExpForm((prev) => ({
-                      ...prev,
-                      currentlyWorking: isCurrent,
-                      endDate: isCurrent ? "" : prev.endDate || "",
-                    }));
-                  }}
-                  style={[styles.checkbox, !!expForm.currentlyWorking && styles.checkboxActive]}
-                >
-                  {!!expForm.currentlyWorking && (
-                    <MaterialIcons name="check" size={14} color="white" />
+              <DynamicFieldList
+                items={education}
+                onAdd={() => {
+                  setEditingEduId(null);
+                  setShowEduModal(true);
+                }}
+                onRemove={(id) => {
+                  dispatch(updateEducation(education.filter((item) => item.id !== id)));
+                }}
+                onEdit={(item) => {
+                  setEditingEduId(item.id);
+                  setEduForm(item);
+                  setShowEduModal(true);
+                }}
+                addButtonLabel="Add Education"
+                emptyMessage="No education history added yet."
+                renderItem={(item) => (
+                  <View>
+                    <Text style={styles.itemTitle}>{item.degree}</Text>
+                    <Text style={styles.itemSubtitle}>
+                      {item.institution} {item.field ? `• ${item.field}` : ""}
+                    </Text>
+                    {item.endYear || item.endDate ? (
+                      <Text style={styles.itemDesc}>
+                        Graduation Year: {item.endYear || item.endDate}
+                      </Text>
+                    ) : null}
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* Navigation Buttons footer */}
+            <View style={styles.footerRow}>
+              <Pressable onPress={() => dispatch(setCurrentStep(1))} style={styles.backButton}>
+                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
+                <Text style={styles.backButtonText}>Back</Text>
+              </Pressable>
+              <Pressable onPress={() => dispatch(setCurrentStep(3))} style={styles.nextButton}>
+                <Text style={styles.nextButtonText}>Next Screen</Text>
+                <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+
+        {/* Experience Add/Edit Modal */}
+        <Modal
+          visible={showExpModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setShowExpModal(false);
+            resetExpForm();
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView style={{ flex: 1 }}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {editingExpId ? "Edit Work Experience" : "Add Work Experience"}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowExpModal(false);
+                      resetExpForm();
+                    }}
+                  >
+                    <MaterialIcons name="close" size={20} color="#374151" />
+                  </Pressable>
+                </View>
+
+                <TextInput
+                  label="Company"
+                  required
+                  placeholder="e.g., Google"
+                  value={expForm.company}
+                  onChangeText={(text) => setExpForm({ ...expForm, company: text })}
+                  error={expErrors.company}
+                />
+
+                <TextInput
+                  label="Role / Title"
+                  required
+                  placeholder="e.g., Senior Software Engineer"
+                  value={expForm.role}
+                  onChangeText={(text) => setExpForm({ ...expForm, role: text })}
+                  error={expErrors.role}
+                />
+
+                <TextInput
+                  label="Location"
+                  placeholder="e.g., Bangalore, Karnataka"
+                  value={expForm.location}
+                  onChangeText={(text) => setExpForm({ ...expForm, location: text })}
+                />
+
+                <View style={styles.row}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <DatePicker
+                      label="Start Date"
+                      required
+                      placeholder="Select Date"
+                      value={expForm.startDate || ""}
+                      onChange={(date) => {
+                        setExpForm((prev) => ({ ...prev, startDate: date }));
+                        if (expErrors.startDate)
+                          setExpErrors((prev) => ({ ...prev, startDate: "" }));
+                      }}
+                      error={expErrors.startDate}
+                    />
+                  </View>
+                  {!expForm.currentlyWorking && (
+                    <View style={{ flex: 1 }}>
+                      <DatePicker
+                        label="End Date"
+                        placeholder="Select Date"
+                        value={expForm.endDate || ""}
+                        onChange={(date) => {
+                          setExpForm((prev) => ({ ...prev, endDate: date }));
+                        }}
+                      />
+                    </View>
                   )}
-                </Pressable>
-                <Text style={styles.checkboxLabel}>I currently work in this role</Text>
-              </View>
-
-              <TextInput
-                label="Description"
-                multiline
-                numberOfLines={4}
-                placeholder="Describe your roles, responsibilities, and achievements..."
-                value={expForm.description}
-                onChangeText={(text) => setExpForm({ ...expForm, description: text })}
-              />
-
-              <Pressable onPress={handleSaveExp} style={styles.saveModalBtn}>
-                <Text style={styles.saveModalBtnText}>Save Experience</Text>
-              </Pressable>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Education Add/Edit Modal */}
-      <Modal
-        visible={showEduModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowEduModal(false);
-          resetEduForm();
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={{ flex: 1 }}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editingEduId ? "Edit Education History" : "Add Education History"}
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    setShowEduModal(false);
-                    resetEduForm();
-                  }}
-                >
-                  <MaterialIcons name="close" size={20} color="#374151" />
-                </Pressable>
-              </View>
-
-              <TextInput
-                label="Institution / School"
-                required
-                placeholder="e.g., IIT Bombay"
-                value={eduForm.institution}
-                onChangeText={(text) => setEduForm({ ...eduForm, institution: text })}
-                error={eduErrors.institution}
-              />
-
-              <TextInput
-                label="Degree"
-                required
-                placeholder="e.g., Bachelor of Technology"
-                value={eduForm.degree}
-                onChangeText={(text) => setEduForm({ ...eduForm, degree: text })}
-                error={eduErrors.degree}
-              />
-
-              <TextInput
-                label="Field of Study"
-                placeholder="e.g., Computer Science & Engineering"
-                value={eduForm.field}
-                onChangeText={(text) => setEduForm({ ...eduForm, field: text })}
-              />
-
-              <TextInput
-                label="Location"
-                placeholder="e.g., Mumbai, Maharashtra"
-                value={eduForm.location}
-                onChangeText={(text) => setEduForm({ ...eduForm, location: text })}
-              />
-
-              <View style={styles.row}>
-                <View style={{ flex: 1, marginRight: 8 }}>
-                  <TextInput
-                    label="Start Year"
-                    placeholder="e.g., 2018"
-                    value={eduForm.startYear?.toString()}
-                    onChangeText={(text) => setEduForm({ ...eduForm, startYear: text })}
-                  />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <TextInput
-                    label="Graduation Year"
-                    placeholder="e.g., 2022"
-                    value={eduForm.endYear?.toString()}
-                    onChangeText={(text) => setEduForm({ ...eduForm, endYear: text })}
-                  />
+
+                <View style={styles.checkboxRow}>
+                  <Pressable
+                    onPress={() => {
+                      const isCurrent = !expForm.currentlyWorking;
+                      setExpForm((prev) => ({
+                        ...prev,
+                        currentlyWorking: isCurrent,
+                        endDate: isCurrent ? "" : prev.endDate || "",
+                      }));
+                    }}
+                    style={[styles.checkbox, !!expForm.currentlyWorking && styles.checkboxActive]}
+                  >
+                    {!!expForm.currentlyWorking && (
+                      <MaterialIcons name="check" size={14} color="white" />
+                    )}
+                  </Pressable>
+                  <Text style={styles.checkboxLabel}>I currently work in this role</Text>
                 </View>
-              </View>
 
-              <TextInput
-                label="GPA / Percentage"
-                placeholder="e.g., 9.2/10"
-                value={eduForm.gpa}
-                onChangeText={(text) => setEduForm({ ...eduForm, gpa: text })}
-              />
+                <TextInput
+                  label="Description"
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Describe your roles, responsibilities, and achievements..."
+                  value={expForm.description}
+                  onChangeText={(text) => setExpForm({ ...expForm, description: text })}
+                />
 
-              <Pressable onPress={handleSaveEdu} style={styles.saveModalBtn}>
-                <Text style={styles.saveModalBtnText}>Save Education</Text>
-              </Pressable>
-            </ScrollView>
+                <Pressable onPress={handleSaveExp} style={styles.saveModalBtn}>
+                  <Text style={styles.saveModalBtnText}>Save Experience</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+
+        {/* Education Add/Edit Modal */}
+        <Modal
+          visible={showEduModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setShowEduModal(false);
+            resetEduForm();
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView style={{ flex: 1 }}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {editingEduId ? "Edit Education History" : "Add Education History"}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowEduModal(false);
+                      resetEduForm();
+                    }}
+                  >
+                    <MaterialIcons name="close" size={20} color="#374151" />
+                  </Pressable>
+                </View>
+
+                <TextInput
+                  label="Institution / School"
+                  required
+                  placeholder="e.g., IIT Bombay"
+                  value={eduForm.institution}
+                  onChangeText={(text) => setEduForm({ ...eduForm, institution: text })}
+                  error={eduErrors.institution}
+                />
+
+                <TextInput
+                  label="Degree"
+                  required
+                  placeholder="e.g., Bachelor of Technology"
+                  value={eduForm.degree}
+                  onChangeText={(text) => setEduForm({ ...eduForm, degree: text })}
+                  error={eduErrors.degree}
+                />
+
+                <TextInput
+                  label="Field of Study"
+                  placeholder="e.g., Computer Science & Engineering"
+                  value={eduForm.field}
+                  onChangeText={(text) => setEduForm({ ...eduForm, field: text })}
+                />
+
+                <TextInput
+                  label="Location"
+                  placeholder="e.g., Mumbai, Maharashtra"
+                  value={eduForm.location}
+                  onChangeText={(text) => setEduForm({ ...eduForm, location: text })}
+                />
+
+                <View style={styles.row}>
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <TextInput
+                      label="Start Year"
+                      placeholder="e.g., 2018"
+                      value={eduForm.startYear?.toString()}
+                      onChangeText={(text) => setEduForm({ ...eduForm, startYear: text })}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <TextInput
+                      label="Graduation Year"
+                      placeholder="e.g., 2022"
+                      value={eduForm.endYear?.toString()}
+                      onChangeText={(text) => setEduForm({ ...eduForm, endYear: text })}
+                    />
+                  </View>
+                </View>
+
+                <TextInput
+                  label="GPA / Percentage"
+                  placeholder="e.g., 9.2/10"
+                  value={eduForm.gpa}
+                  onChangeText={(text) => setEduForm({ ...eduForm, gpa: text })}
+                />
+
+                <Pressable onPress={handleSaveEdu} style={styles.saveModalBtn}>
+                  <Text style={styles.saveModalBtnText}>Save Education</Text>
+                </Pressable>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollContainer: {
     flex: 1,
     backgroundColor: "#f9fafb",
@@ -555,25 +572,29 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 16,
+    gap: 16,
   },
   section: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#111827",
   },
