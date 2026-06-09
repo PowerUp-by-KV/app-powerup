@@ -1,9 +1,17 @@
 import { render } from "@testing-library/react-native";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import appReducer from "../../src/store/slices/app.slice";
 import onboardingReducer from "../../src/store/slices/onboardingSlice";
 import { OnboardingScreen } from "../../src/features/onboarding";
+
+// OnboardingScreen reads useSafeAreaInsets(); supply explicit metrics so the
+// provider resolves synchronously in jsdom (initialWindowMetrics is null in jest).
+const safeAreaMetrics = {
+  frame: { x: 0, y: 0, width: 390, height: 844 },
+  insets: { top: 47, left: 0, right: 0, bottom: 34 },
+};
 
 // OnboardingScreen is a data-driven multi-step wizard. Mock its data/router/
 // storage dependencies so we can smoke-test that it mounts without crashing.
@@ -47,7 +55,14 @@ function renderWithStore(ui: React.ReactElement) {
   const store = configureStore({
     reducer: { app: appReducer, onboarding: onboardingReducer },
   });
-  return { ...render(<Provider store={store}>{ui}</Provider>), store };
+  return {
+    ...render(
+      <Provider store={store}>
+        <SafeAreaProvider initialMetrics={safeAreaMetrics}>{ui}</SafeAreaProvider>
+      </Provider>,
+    ),
+    store,
+  };
 }
 
 describe("OnboardingScreen", () => {
