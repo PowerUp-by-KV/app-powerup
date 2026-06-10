@@ -950,7 +950,7 @@ export function LearningJourneyScreen() {
                       : timelineStyles.stageCircleInProgress,
                   ]}
                 >
-                  <Feather name="check" size={16} color="white" />
+                  <Feather name={isDiagnosticComplete ? "check" : "play"} size={16} color="white" />
                 </View>
               </View>
               <View style={timelineStyles.stageContent}>

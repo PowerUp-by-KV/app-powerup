@@ -100,17 +100,7 @@ export function ChatScreen() {
       }}
     >
       {Platform.OS === "web" && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(15, 23, 42, 0.45)",
-          }}
-          pointerEvents="none"
-        />
+        <Pressable onPress={() => safeBack()} className="absolute inset-0 bg-slate-900/45" />
       )}
       <View
         style={{
