@@ -13,44 +13,67 @@ export function AnalysisCard({ items, type, title }: AnalysisCardProps) {
   const isWeakness = type === "weakness";
 
   let iconName: keyof typeof Feather.glyphMap = "info";
-  let iconColor = "#64748b"; // Neutral slate
-  let cardBg = "bg-slate-50 border-slate-100";
-  let textColor = "text-slate-800";
+  let iconColor = "#6B7280"; // Text Secondary
+  let cardBgColor = "#F8F9FC"; // Neutral Background
+  let cardBorderColor = "#E5E7EB"; // Neutral Border
+  let textColor = "#1F2937"; // Text Primary
+  let titleTextColor = "#1F2937";
 
   if (isStrength) {
     iconName = "check-circle";
-    iconColor = "#22c55e"; // Green
-    cardBg = "bg-emerald-50/50 border-emerald-100/60";
-    textColor = "text-emerald-950";
+    iconColor = "#4CAF50"; // Success Green
+    cardBgColor = "rgba(76, 175, 80, 0.05)";
+    cardBorderColor = "rgba(76, 175, 80, 0.2)";
+    titleTextColor = "#4CAF50";
   } else if (isWeakness) {
     iconName = "alert-triangle";
-    iconColor = "#ef4444"; // Red
-    cardBg = "bg-red-50/50 border-red-100/60";
-    textColor = "text-red-950";
+    iconColor = "#EF5350"; // Error Red
+    cardBgColor = "rgba(239, 83, 80, 0.05)";
+    cardBorderColor = "rgba(239, 83, 80, 0.2)";
+    titleTextColor = "#EF5350";
   } else if (type === "suggestion") {
     iconName = "zap";
-    iconColor = "#d97706"; // Amber
-    cardBg = "bg-amber-50/50 border-amber-100/60";
-    textColor = "text-amber-950";
+    iconColor = "#FF9800"; // Warning Orange
+    cardBgColor = "rgba(255, 152, 0, 0.05)";
+    cardBorderColor = "rgba(255, 152, 0, 0.2)";
+    titleTextColor = "#FF9800";
   }
 
   return (
-    <View className={`rounded-2xl p-5 mb-4 border ${cardBg}`}>
+    <View
+      style={{
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 16,
+        borderWidth: 1,
+        backgroundColor: cardBgColor,
+        borderColor: cardBorderColor,
+      }}
+    >
       <View className="flex-row items-center mb-3">
         <Feather name={iconName} size={18} color={iconColor} />
         <Text
-          className={`font-bold ml-2 text-base ${isStrength ? "text-emerald-900" : isWeakness ? "text-red-900" : type === "suggestion" ? "text-amber-900" : "text-slate-900"}`}
+          style={{
+            fontWeight: "700",
+            marginLeft: 8,
+            fontSize: 16,
+            color: titleTextColor,
+          }}
         >
           {title}
         </Text>
       </View>
       {items.length === 0 ? (
-        <Text className="text-slate-400 text-sm italic">None detected</Text>
+        <Text style={{ color: "#6B7280", fontSize: 14, fontStyle: "italic" }}>None detected</Text>
       ) : (
         items.map((item, idx) => (
           <View key={`${item}-${idx}`} className="flex-row items-start mt-2">
             <Feather name="arrow-right" size={12} color={iconColor} style={{ marginTop: 4 }} />
-            <Text className={`text-sm ml-2 flex-1 leading-5 ${textColor}`}>{item}</Text>
+            <Text
+              style={{ fontSize: 14, marginLeft: 8, flex: 1, lineHeight: 20, color: textColor }}
+            >
+              {item}
+            </Text>
           </View>
         ))
       )}

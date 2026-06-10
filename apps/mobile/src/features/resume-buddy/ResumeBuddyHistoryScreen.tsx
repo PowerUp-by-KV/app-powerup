@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetResumeBuddyHistoryQuery } from "./services/resume-buddy-api";
@@ -30,7 +31,7 @@ export function ResumeBuddyHistoryScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#597AF4" />
         <Text style={styles.loadingText}>Loading analysis history...</Text>
       </View>
     );
@@ -41,7 +42,7 @@ export function ResumeBuddyHistoryScreen() {
     return (
       <View style={styles.centerContainer}>
         <View style={styles.errorIconContainer}>
-          <Feather name="wifi-off" size={32} color="#ef4444" />
+          <Feather name="wifi-off" size={32} color="#EF5350" />
         </View>
         <Text style={styles.errorTitle}>Failed to Load History</Text>
         <Text style={styles.errorDescription}>
@@ -64,7 +65,7 @@ export function ResumeBuddyHistoryScreen() {
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
       >
         <View style={styles.emptyIconContainer}>
-          <Feather name="inbox" size={40} color="#c7d2fe" />
+          <Feather name="inbox" size={40} color="#AFC0FF" />
         </View>
         <Text style={styles.emptyTitle}>No Analysis History</Text>
         <Text style={styles.emptyDescription}>
@@ -87,12 +88,41 @@ export function ResumeBuddyHistoryScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.listHeader}>
-        <Text style={styles.listHeaderTitle}>
+      <LinearGradient
+        colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.headerGradient}
+      >
+        {/* Background overlapping semi-transparent circles */}
+        <View
+          style={{
+            position: "absolute",
+            right: -40,
+            top: -40,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255, 255, 255, 0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: -60,
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+          }}
+        />
+        <Text style={styles.headerTitle}>
           {history.length} {history.length === 1 ? "Analysis" : "Analyses"}
         </Text>
-        <Text style={styles.listHeaderSubtitle}>Tap any card to view the full report</Text>
-      </View>
+        <Text style={styles.headerSubtitle}>Tap a card to view the full report</Text>
+      </LinearGradient>
 
       {/* History cards */}
       {history.map((item, index) => (
@@ -109,7 +139,7 @@ export function ResumeBuddyHistoryScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8F9FC",
   },
   contentContainer: {
     padding: 20,
@@ -120,11 +150,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 32,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8F9FC",
   },
   loadingText: {
     fontSize: 15,
-    color: "#64748b",
+    color: "#6B7280",
     marginTop: 16,
     fontWeight: "500",
   },
@@ -132,7 +162,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#fef2f2",
+    backgroundColor: "rgba(244, 67, 54, 0.05)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -140,12 +170,12 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#1F2937",
     marginBottom: 8,
   },
   errorDescription: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#6B7280",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -154,11 +184,12 @@ const styles = StyleSheet.create({
   retryButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#597AF4",
+    height: 48,
+    borderRadius: 12,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
   },
   retryText: {
     fontSize: 15,
@@ -175,7 +206,7 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: "#eef2ff",
+    backgroundColor: "rgba(89, 122, 244, 0.08)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
@@ -183,12 +214,12 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#1F2937",
     marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#6B7280",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -197,28 +228,41 @@ const styles = StyleSheet.create({
   analyzeButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#597AF4",
+    height: 48,
+    borderRadius: 12,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
   },
   analyzeButtonText: {
     fontSize: 15,
     fontWeight: "600",
     color: "#ffffff",
   },
-  listHeader: {
-    marginBottom: 16,
+  headerGradient: {
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 24,
+    paddingVertical: 28,
+    marginBottom: 20,
+    position: "relative",
+    shadowColor: "#597AF4",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  listHeaderTitle: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 32,
     fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 4,
+    color: "#ffffff",
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
-  listHeaderSubtitle: {
-    fontSize: 13,
-    color: "#64748b",
+  headerSubtitle: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.85)",
+    fontWeight: "500",
   },
 });
