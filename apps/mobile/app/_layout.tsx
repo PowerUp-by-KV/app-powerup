@@ -69,6 +69,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isLoading: isOnboardingLoading,
     isFetching: isOnboardingFetching,
     isError: isOnboardingError,
+    error: onboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
     refetchOnMountOrArgChange: true,
@@ -102,10 +103,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
 
     if (isOnboardingError) {
-      clearAuthSession().then(() => {
-        setSession(null);
-        router.replace("/login");
-      });
+      const isUnauthorized =
+        onboardingError &&
+        typeof onboardingError === "object" &&
+        "status" in onboardingError &&
+        (onboardingError.status === 401 || onboardingError.status === 403);
+
+      if (isUnauthorized) {
+        clearAuthSession().then(() => {
+          setSession(null);
+          router.replace("/login");
+        });
+      }
       return;
     }
 
@@ -118,17 +127,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
         // Logged in but onboarding not complete.
         // They should only be on onboarding or verification routes.
         // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
-        const allowedRoutes = [
-          "onboarding",
-          "onboarding-resume",
-          "verify-email",
-          "verify-phone",
-          "thank-you",
-          "welcome-back",
-          "success",
-          "profile",
-        ];
-        if (currentRoute && !allowedRoutes.includes(currentRoute)) {
+        if (currentRoute && !ALLOWED_BEFORE_ONBOARDING.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
