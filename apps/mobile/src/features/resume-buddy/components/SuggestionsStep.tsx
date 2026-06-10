@@ -178,21 +178,30 @@ export function SuggestionsStep({
         <Pressable
           onPress={onNext}
           style={{
-            backgroundColor: "#597AF4",
-            height: 48,
             borderRadius: 12,
-            alignItems: "center",
-            justifyContent: "center",
+            overflow: "hidden",
             width: "100%",
             marginBottom: 12,
-            shadowColor: "#597AF4",
+            shadowColor: "#3b82f6",
             shadowOffset: { width: 0, height: 4 },
             shadowOpacity: 0.15,
             shadowRadius: 8,
             elevation: 2,
           }}
         >
-          <Text style={styles.primaryButtonText}>Save and Exit</Text>
+          <LinearGradient
+            colors={["#4f46e5", "#3b82f6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              height: 48,
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+            }}
+          >
+            <Text style={styles.primaryButtonText}>Save and Exit</Text>
+          </LinearGradient>
         </Pressable>
         <Pressable onPress={onHistory} style={styles.secondaryButton}>
           <Text style={styles.secondaryButtonText}>View History</Text>
@@ -365,12 +374,12 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#597AF4",
+    borderColor: "#3b82f6",
     alignItems: "center",
     justifyContent: "center",
   },
   secondaryButtonText: {
-    color: "#597AF4",
+    color: "#3b82f6",
     fontSize: 15,
     fontWeight: "700",
   },

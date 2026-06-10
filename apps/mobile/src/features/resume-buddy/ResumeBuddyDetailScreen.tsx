@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#597AF4",
+    backgroundColor: "#3b82f6",
     height: 48,
     borderRadius: 12,
     paddingHorizontal: 24,
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   viewAllButton: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#597AF4",
+    borderColor: "#3b82f6",
     borderRadius: 12,
     height: 48,
     alignItems: "center",
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 15,
-    color: "#597AF4",
+    color: "#3b82f6",
     fontWeight: "700",
   },
   chipRow: {
