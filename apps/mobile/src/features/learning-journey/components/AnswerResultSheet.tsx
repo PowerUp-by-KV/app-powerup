@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 interface AnswerResultSheetProps {
@@ -21,7 +21,11 @@ export function AnswerResultSheet({
   const accent = isCorrect ? "#22c55e" : "#ef4444";
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onDismiss}>
-      <View className="flex-1 justify-end">
+      <View style={{ flex: 1, justifyContent: "flex-end" }}>
+        <Pressable
+          style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" }}
+          onPress={onDismiss}
+        />
         <View
           style={{ backgroundColor: bg, paddingTop: 14, paddingHorizontal: 24, paddingBottom: 16 }}
         >

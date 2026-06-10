@@ -104,8 +104,6 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
       setSound(null);
     }
     setCurrentTime(0);
-    setHasPlayed(true);
-    onPlayEnd?.();
   };
 
   // Fallback simulation timer if no resolvedAudioUrl

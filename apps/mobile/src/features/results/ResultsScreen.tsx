@@ -126,6 +126,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         pollCountRef.current >= 6
       ) {
         setIsPolling(false);
+        pollCountRef.current = 0;
         completeSession({ session_id: sessionId! });
       } else {
         pollCountRef.current += 1;
@@ -138,6 +139,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     if (rawResultData) {
       if ("percentage" in rawResultData) {
         setIsPolling(false);
+        pollCountRef.current = 0;
       } else {
         // Not scored yet: start polling and save initial status
         setIsPolling(true);
@@ -155,6 +157,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
       refetchUserResult?.();
     } else if (sessionId) {
       setIsPolling(true);
+      pollCountRef.current = 0;
       completeSession({ session_id: sessionId });
     }
   };

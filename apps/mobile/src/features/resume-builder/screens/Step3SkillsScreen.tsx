@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, ScrollView, StyleSheet, Pressable, Modal } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Pressable,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -94,267 +102,283 @@ export function Step3SkillsScreen() {
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.container}>
-        {/* Step Indicator Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.titleRow}>
-              <Text style={styles.stepNumber}>Step 3 of 5</Text>
-              {isSaving ? (
-                <Text style={styles.saveBadge}>Saving...</Text>
-              ) : lastSavedAt ? (
-                <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
-              ) : null}
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+        <View style={styles.container}>
+          {/* Step Indicator Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={styles.titleRow}>
+                <Text style={styles.stepNumber}>Step 3 of 5</Text>
+                {isSaving ? (
+                  <Text style={styles.saveBadge}>Saving...</Text>
+                ) : lastSavedAt ? (
+                  <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
+                ) : null}
+              </View>
+              <Text style={styles.headerTitle}>Skills & Projects</Text>
+              <Text style={styles.headerSubtitle}>Showcase your capabilities and credentials</Text>
             </View>
-            <Text style={styles.headerTitle}>Skills & Projects</Text>
-            <Text style={styles.headerSubtitle}>Showcase your capabilities and credentials</Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            {/* Skills TagInput Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="code" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Skills</Text>
+              </View>
+
+              <TagInput
+                label="Technical & Core Skills"
+                placeholder="e.g., React Native, TypeScript, Python"
+                value={skills.map((s) => ({ id: s, name: s }))}
+                onAdd={(chip) => {
+                  if (!skills.includes(chip.name)) {
+                    dispatch(updateSkills([...skills, chip.name]));
+                  }
+                }}
+                onRemove={(id) => {
+                  dispatch(updateSkills(skills.filter((s) => s !== id)));
+                }}
+              />
+            </View>
+
+            {/* Projects Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons
+                  name="folder-open"
+                  size={20}
+                  color="#2563EB"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.sectionTitle}>Featured Projects</Text>
+              </View>
+
+              <DynamicFieldList
+                items={projects}
+                onAdd={() => {
+                  setEditingProjId(null);
+                  setShowProjModal(true);
+                }}
+                onRemove={(id) => {
+                  dispatch(updateProjects(projects.filter((item) => item.id !== id)));
+                }}
+                onEdit={(item) => {
+                  setEditingProjId(item.id);
+                  setProjForm(item);
+                  setShowProjModal(true);
+                }}
+                addButtonLabel="Add Project"
+                emptyMessage="No projects added yet."
+                renderItem={(item) => (
+                  <View>
+                    <Text style={styles.itemTitle}>{item.name}</Text>
+                    {item.date ? <Text style={styles.itemSubtitle}>{item.date}</Text> : null}
+                    {item.description ? (
+                      <Text numberOfLines={2} style={styles.itemDesc}>
+                        {item.description}
+                      </Text>
+                    ) : null}
+                    {item.technologies && item.technologies.length > 0 && (
+                      <View style={styles.techStackRow}>
+                        {item.technologies.map((t) => (
+                          <View key={t} style={styles.techBadge}>
+                            <Text style={styles.techBadgeText}>{t}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* Certifications TagInput Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons
+                  name="verified"
+                  size={20}
+                  color="#2563EB"
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={styles.sectionTitle}>Certifications</Text>
+              </View>
+
+              <TagInput
+                label="Professional Certifications"
+                placeholder="e.g., AWS Developer Associate"
+                value={certifications.map((c) => ({ id: c, name: c }))}
+                onAdd={(chip) => {
+                  if (!certifications.includes(chip.name)) {
+                    dispatch(updateCertifications([...certifications, chip.name]));
+                  }
+                }}
+                onRemove={(id) => {
+                  dispatch(updateCertifications(certifications.filter((c) => c !== id)));
+                }}
+              />
+            </View>
+
+            {/* Languages TagInput Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <MaterialIcons name="public" size={20} color="#2563EB" style={{ marginRight: 8 }} />
+                <Text style={styles.sectionTitle}>Languages</Text>
+              </View>
+
+              <TagInput
+                label="Spoken & Written Languages"
+                placeholder="e.g., English, Hindi, Spanish"
+                value={languages.map((l) => ({ id: l, name: l }))}
+                onAdd={(chip) => {
+                  if (!languages.includes(chip.name)) {
+                    dispatch(updateLanguages([...languages, chip.name]));
+                  }
+                }}
+                onRemove={(id) => {
+                  dispatch(updateLanguages(languages.filter((l) => l !== id)));
+                }}
+              />
+            </View>
+
+            {/* Navigation Buttons footer */}
+            <View style={styles.footerRow}>
+              <Pressable onPress={() => dispatch(setCurrentStep(2))} style={styles.backButton}>
+                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
+                <Text style={styles.backButtonText}>Back</Text>
+              </Pressable>
+              <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.nextButton}>
+                <Text style={styles.nextButtonText}>Next Screen</Text>
+                <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
+              </Pressable>
+            </View>
           </View>
         </View>
 
-        <View style={styles.formContainer}>
-          {/* Skills TagInput Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="code" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Skills</Text>
-            </View>
+        {/* Project Add/Edit Modal */}
+        <Modal
+          visible={showProjModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => {
+            setShowProjModal(false);
+            resetProjForm();
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <ScrollView style={{ flex: 1 }}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>
+                    {editingProjId ? "Edit Project Details" : "Add Project Details"}
+                  </Text>
+                  <Pressable
+                    onPress={() => {
+                      setShowProjModal(false);
+                      resetProjForm();
+                    }}
+                  >
+                    <MaterialIcons name="close" size={20} color="#374151" />
+                  </Pressable>
+                </View>
 
-            <TagInput
-              label="Technical & Core Skills"
-              placeholder="e.g., React Native, TypeScript, Python"
-              value={skills.map((s) => ({ id: s, name: s }))}
-              onAdd={(chip) => {
-                if (!skills.includes(chip.name)) {
-                  dispatch(updateSkills([...skills, chip.name]));
-                }
-              }}
-              onRemove={(id) => {
-                dispatch(updateSkills(skills.filter((s) => s !== id)));
-              }}
-            />
-          </View>
+                <TextInput
+                  label="Project Name"
+                  required
+                  placeholder="e.g., E-Commerce Mobile App"
+                  value={projForm.name}
+                  onChangeText={(text) => setProjForm({ ...projForm, name: text })}
+                  error={projErrors.name}
+                />
 
-          {/* Projects Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons
-                name="folder-open"
-                size={20}
-                color="#2563EB"
-                style={{ marginRight: 8 }}
-              />
-              <Text style={styles.sectionTitle}>Featured Projects</Text>
-            </View>
+                <TextInput
+                  label="Date / Period"
+                  placeholder="e.g., Jan 2024"
+                  value={projForm.date}
+                  onChangeText={(text) => setProjForm({ ...projForm, date: text })}
+                />
 
-            <DynamicFieldList
-              items={projects}
-              onAdd={() => {
-                setEditingProjId(null);
-                setShowProjModal(true);
-              }}
-              onRemove={(id) => {
-                dispatch(updateProjects(projects.filter((item) => item.id !== id)));
-              }}
-              onEdit={(item) => {
-                setEditingProjId(item.id);
-                setProjForm(item);
-                setShowProjModal(true);
-              }}
-              addButtonLabel="Add Project"
-              emptyMessage="No projects added yet."
-              renderItem={(item) => (
-                <View>
-                  <Text style={styles.itemTitle}>{item.name}</Text>
-                  {item.date ? <Text style={styles.itemSubtitle}>{item.date}</Text> : null}
-                  {item.description ? (
-                    <Text numberOfLines={2} style={styles.itemDesc}>
-                      {item.description}
-                    </Text>
-                  ) : null}
-                  {item.technologies && item.technologies.length > 0 && (
-                    <View style={styles.techStackRow}>
-                      {item.technologies.map((t) => (
-                        <View key={t} style={styles.techBadge}>
-                          <Text style={styles.techBadgeText}>{t}</Text>
+                <TextInput
+                  label="Project Description"
+                  multiline
+                  numberOfLines={4}
+                  placeholder="Describe your project contribution, architecture, and goals..."
+                  value={projForm.description}
+                  onChangeText={(text) => setProjForm({ ...projForm, description: text })}
+                />
+
+                {/* Technologies chip tags input list */}
+                <View style={{ marginBottom: 16 }}>
+                  <View style={styles.techInputRow}>
+                    <View style={{ flex: 1 }}>
+                      <TextInput
+                        label="Technologies Used"
+                        placeholder="e.g., Flutter (press add)"
+                        value={techInput}
+                        onChangeText={setTechInput}
+                      />
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        if (
+                          techInput.trim() &&
+                          !projForm.technologies?.includes(techInput.trim())
+                        ) {
+                          setProjForm({
+                            ...projForm,
+                            technologies: [...(projForm.technologies || []), techInput.trim()],
+                          });
+                          setTechInput("");
+                        }
+                      }}
+                      style={styles.techAddBtn}
+                    >
+                      <Text style={styles.techAddBtnText}>Add</Text>
+                    </Pressable>
+                  </View>
+                  {projForm.technologies && projForm.technologies.length > 0 && (
+                    <View style={styles.techBadgesContainer}>
+                      {projForm.technologies.map((t) => (
+                        <View key={t} style={styles.techModalBadge}>
+                          <Text style={styles.techModalBadgeText}>{t}</Text>
+                          <Pressable
+                            onPress={() => {
+                              setProjForm({
+                                ...projForm,
+                                technologies: projForm.technologies?.filter((x) => x !== t) || [],
+                              });
+                            }}
+                          >
+                            <Text style={styles.techModalRemove}>✕</Text>
+                          </Pressable>
                         </View>
                       ))}
                     </View>
                   )}
                 </View>
-              )}
-            />
-          </View>
 
-          {/* Certifications TagInput Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="verified" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Certifications</Text>
-            </View>
-
-            <TagInput
-              label="Professional Certifications"
-              placeholder="e.g., AWS Developer Associate"
-              value={certifications.map((c) => ({ id: c, name: c }))}
-              onAdd={(chip) => {
-                if (!certifications.includes(chip.name)) {
-                  dispatch(updateCertifications([...certifications, chip.name]));
-                }
-              }}
-              onRemove={(id) => {
-                dispatch(updateCertifications(certifications.filter((c) => c !== id)));
-              }}
-            />
-          </View>
-
-          {/* Languages TagInput Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <MaterialIcons name="public" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-              <Text style={styles.sectionTitle}>Languages</Text>
-            </View>
-
-            <TagInput
-              label="Spoken & Written Languages"
-              placeholder="e.g., English, Hindi, Spanish"
-              value={languages.map((l) => ({ id: l, name: l }))}
-              onAdd={(chip) => {
-                if (!languages.includes(chip.name)) {
-                  dispatch(updateLanguages([...languages, chip.name]));
-                }
-              }}
-              onRemove={(id) => {
-                dispatch(updateLanguages(languages.filter((l) => l !== id)));
-              }}
-            />
-          </View>
-
-          {/* Navigation Buttons footer */}
-          <View style={styles.footerRow}>
-            <Pressable onPress={() => dispatch(setCurrentStep(2))} style={styles.backButton}>
-              <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-              <Text style={styles.backButtonText}>Back</Text>
-            </Pressable>
-            <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.nextButton}>
-              <Text style={styles.nextButtonText}>Next Screen</Text>
-              <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
-            </Pressable>
-          </View>
-        </View>
-      </View>
-
-      {/* Project Add/Edit Modal */}
-      <Modal
-        visible={showProjModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => {
-          setShowProjModal(false);
-          resetProjForm();
-        }}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <ScrollView style={{ flex: 1 }}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>
-                  {editingProjId ? "Edit Project Details" : "Add Project Details"}
-                </Text>
-                <Pressable
-                  onPress={() => {
-                    setShowProjModal(false);
-                    resetProjForm();
-                  }}
-                >
-                  <MaterialIcons name="close" size={20} color="#374151" />
+                <Pressable onPress={handleSaveProj} style={styles.saveModalBtn}>
+                  <Text style={styles.saveModalBtnText}>Save Project</Text>
                 </Pressable>
-              </View>
-
-              <TextInput
-                label="Project Name"
-                required
-                placeholder="e.g., E-Commerce Mobile App"
-                value={projForm.name}
-                onChangeText={(text) => setProjForm({ ...projForm, name: text })}
-                error={projErrors.name}
-              />
-
-              <TextInput
-                label="Date / Period"
-                placeholder="e.g., Jan 2024"
-                value={projForm.date}
-                onChangeText={(text) => setProjForm({ ...projForm, date: text })}
-              />
-
-              <TextInput
-                label="Project Description"
-                multiline
-                numberOfLines={4}
-                placeholder="Describe your project contribution, architecture, and goals..."
-                value={projForm.description}
-                onChangeText={(text) => setProjForm({ ...projForm, description: text })}
-              />
-
-              {/* Technologies chip tags input list */}
-              <View style={{ marginBottom: 16 }}>
-                <View style={styles.techInputRow}>
-                  <View style={{ flex: 1 }}>
-                    <TextInput
-                      label="Technologies Used"
-                      placeholder="e.g., Flutter (press add)"
-                      value={techInput}
-                      onChangeText={setTechInput}
-                    />
-                  </View>
-                  <Pressable
-                    onPress={() => {
-                      if (techInput.trim() && !projForm.technologies?.includes(techInput.trim())) {
-                        setProjForm({
-                          ...projForm,
-                          technologies: [...(projForm.technologies || []), techInput.trim()],
-                        });
-                        setTechInput("");
-                      }
-                    }}
-                    style={styles.techAddBtn}
-                  >
-                    <Text style={styles.techAddBtnText}>Add</Text>
-                  </Pressable>
-                </View>
-                {projForm.technologies && projForm.technologies.length > 0 && (
-                  <View style={styles.techBadgesContainer}>
-                    {projForm.technologies.map((t) => (
-                      <View key={t} style={styles.techModalBadge}>
-                        <Text style={styles.techModalBadgeText}>{t}</Text>
-                        <Pressable
-                          onPress={() => {
-                            setProjForm({
-                              ...projForm,
-                              technologies: projForm.technologies?.filter((x) => x !== t) || [],
-                            });
-                          }}
-                        >
-                          <Text style={styles.techModalRemove}>✕</Text>
-                        </Pressable>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              <Pressable onPress={handleSaveProj} style={styles.saveModalBtn}>
-                <Text style={styles.saveModalBtnText}>Save Project</Text>
-              </Pressable>
-            </ScrollView>
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollContainer: {
     flex: 1,
     backgroundColor: "#f9fafb",
@@ -416,25 +440,29 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     padding: 16,
+    gap: 16,
   },
   section: {
     backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
+    borderRadius: 24,
+    padding: 24,
+    marginBottom: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#f3f4f6",
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#111827",
   },
