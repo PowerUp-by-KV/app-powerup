@@ -229,23 +229,32 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
             <Pressable
               onPress={handleSubmit}
               style={{
-                backgroundColor: "#597AF4",
-                height: 48,
                 borderRadius: 12,
-                alignItems: "center",
-                justifyContent: "center",
+                overflow: "hidden",
                 width: "100%",
-                shadowColor: "#597AF4",
+                shadowColor: "#3b82f6",
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.15,
                 shadowRadius: 8,
                 elevation: 2,
               }}
             >
-              <View className="flex-row items-center gap-2">
-                <Feather name="zap" size={16} color="white" />
-                <Text className="text-white font-bold text-[15px]">Analyze Resume</Text>
-              </View>
+              <LinearGradient
+                colors={["#4f46e5", "#3b82f6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  height: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "100%",
+                }}
+              >
+                <View className="flex-row items-center gap-2">
+                  <Feather name="zap" size={16} color="white" />
+                  <Text className="text-white font-bold text-[15px]">Analyze Resume</Text>
+                </View>
+              </LinearGradient>
             </Pressable>
           )}
 
@@ -255,7 +264,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
             style={{
               backgroundColor: "#FFFFFF",
               borderWidth: 1,
-              borderColor: "#597AF4",
+              borderColor: "#3b82f6",
               height: 48,
               borderRadius: 12,
               alignItems: "center",
@@ -264,8 +273,8 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
             }}
           >
             <View className="flex-row items-center gap-2">
-              <Feather name="clock" size={16} color="#597AF4" />
-              <Text style={{ color: "#597AF4", fontWeight: "600", fontSize: 15 }}>
+              <Feather name="clock" size={16} color="#3b82f6" />
+              <Text style={{ color: "#3b82f6", fontWeight: "600", fontSize: 15 }}>
                 View History
               </Text>
             </View>

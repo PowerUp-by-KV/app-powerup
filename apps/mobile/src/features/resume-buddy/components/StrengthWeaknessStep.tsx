@@ -10,6 +10,7 @@ import {
   UIManager,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === "android") {
@@ -165,8 +166,32 @@ export function StrengthWeaknessStep({
 
       {/* Sticky footer action button */}
       <View style={styles.footer}>
-        <Pressable onPress={onNext} style={styles.nextButton}>
-          <Text style={styles.nextButtonText}>Next</Text>
+        <Pressable
+          onPress={onNext}
+          style={{
+            borderRadius: 12,
+            overflow: "hidden",
+            width: "100%",
+            shadowColor: "#3b82f6",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.15,
+            shadowRadius: 8,
+            elevation: 2,
+          }}
+        >
+          <LinearGradient
+            colors={["#4f46e5", "#3b82f6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{
+              height: 48,
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+            }}
+          >
+            <Text style={styles.nextButtonText}>Next</Text>
+          </LinearGradient>
         </Pressable>
       </View>
     </View>
