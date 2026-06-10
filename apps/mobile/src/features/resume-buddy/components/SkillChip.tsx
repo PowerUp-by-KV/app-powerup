@@ -10,11 +10,24 @@ export function SkillChip({ label, variant }: SkillChipProps) {
   const isMissing = variant === "missing";
   return (
     <View
-      className={`px-3 py-1.5 rounded-xl mr-2 mb-2 border ${
-        isMissing ? "bg-red-50 border-red-200/60" : "bg-indigo-50 border-indigo-200/60"
-      }`}
+      style={{
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        marginRight: 8,
+        marginBottom: 8,
+        borderWidth: 1,
+        backgroundColor: isMissing ? "#F8F9FC" : "rgba(89, 122, 244, 0.08)",
+        borderColor: isMissing ? "#E5E7EB" : "rgba(89, 122, 244, 0.2)",
+      }}
     >
-      <Text className={`text-xs font-bold ${isMissing ? "text-red-600" : "text-indigo-600"}`}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: "700",
+          color: isMissing ? "#6B7280" : "#597AF4",
+        }}
+      >
         {label}
       </Text>
     </View>
