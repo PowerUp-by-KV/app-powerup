@@ -88,6 +88,22 @@ export function AvatarPickerScreen() {
           </View>
         </Pressable>
 
+        {/* Custom 2D Avatar Banner Prompt */}
+        <Pressable
+          onPress={() => router.push("/profile/custom-avatar" as never)}
+          className="w-full max-w-xs bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex-row items-center justify-between mb-6 active:opacity-90"
+        >
+          <View className="flex-1 mr-3">
+            <Text className="text-emerald-900 font-bold text-sm">🎨 Custom 2D Avatar</Text>
+            <Text className="text-emerald-600 text-xs mt-1">
+              Design your own vector avatar with custom hair, eyes, and style!
+            </Text>
+          </View>
+          <View className="w-8 h-8 rounded-full bg-emerald-600 items-center justify-center">
+            <Feather name="arrow-right" size={16} color="#fff" />
+          </View>
+        </Pressable>
+
         {isLoading ? (
           <ActivityIndicator color="#6366f1" />
         ) : (

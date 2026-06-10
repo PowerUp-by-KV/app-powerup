@@ -156,31 +156,12 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isOnboardingLoading,
     isOnboardingFetching,
     isOnboardingError,
+    onboardingError,
     networkCheckComplete,
     currentRoute,
     segments,
     router,
   ]);
-
-  // Only block render in the narrow window where we know the user is authenticated,
-  // haven't completed onboarding, and the onboarding status is still loading.
-  // In all other cases render children immediately — redirects fire via the effect above.
-  // Never return null while isLocalReady is false: the splash screen is still visible then.
-  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-  const isAllowedBeforeOnboarding =
-    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
-  const onboardingComplete = onboardingStatus?.answers_present ?? false;
-  const isQueryActive = !!userId;
-  const isQueryLoading =
-    isQueryActive &&
-    (!networkCheckComplete ||
-      isOnboardingLoading ||
-      isOnboardingFetching ||
-      (onboardingStatus === undefined && !isOnboardingError));
-
-  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
-    return null;
-  }
 
   return <>{children}</>;
 }

@@ -15,7 +15,28 @@ export function getAvatarUri(
     return `https://api.dicebear.com/7.x/adventurer/png?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
   }
 
-  // 1. Local Customizable Avatar
+  // 1. Local Customizable Avatar (v2 compressed format)
+  if (avatarId.startsWith("c2d?")) {
+    const data = avatarId.replace("c2d?", "").split("-");
+    if (data.length === 6) {
+      const [s, hc, h, e, m, g] = data as [string, string, string, string, string, string];
+      const params = new URLSearchParams();
+      params.append("skinColor", s);
+      params.append("hairColor", hc);
+      params.append("hair", h.startsWith("s") ? h.replace("s", "short") : h.replace("l", "long"));
+      params.append("eyes", `variant${e}`);
+      params.append("mouth", `variant${m}`);
+      if (g !== "x") {
+        params.append("glasses", `variant${g}`);
+        params.append("glassesProbability", "100");
+      }
+      params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
+      params.append("seed", "user_custom");
+      return `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
+    }
+  }
+
+  // Legacy fallback for v1 uncompressed
   if (avatarId.startsWith("rpm_custom?")) {
     const query = avatarId.replace("rpm_custom?", "");
     return `https://api.dicebear.com/7.x/adventurer/png?seed=user_custom&${query}`;
