@@ -145,7 +145,8 @@ export function LoginScreen() {
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         style={{ flex: 1 }}
       >
         <ScrollView

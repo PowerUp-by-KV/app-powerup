@@ -246,6 +246,13 @@ export default function AuthLayout() {
           <Stack.Screen name="listen" />
           <Stack.Screen name="results" />
           <Stack.Screen name="home" />
+          <Stack.Screen
+            name="chat"
+            options={{
+              presentation: "transparentModal",
+              animation: "fade",
+            }}
+          />
         </Stack>
       </RouteGuard>
     </Provider>
