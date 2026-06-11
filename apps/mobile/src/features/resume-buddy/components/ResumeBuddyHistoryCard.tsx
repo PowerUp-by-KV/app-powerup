@@ -22,9 +22,9 @@ function formatDate(dateStr: string): string {
 
 function getScoreColor(score: number, max = 100): string {
   const pct = (score / max) * 100;
-  if (pct >= 70) return "#4CAF50";
-  if (pct >= 45) return "#FF9800";
-  return "#EF5350";
+  if (pct >= 81) return "#4CAF50"; // Green for 81 to 100
+  if (pct >= 41) return "#FF9800"; // Yellow for 41 to 80
+  return "#EF5350"; // Red for below 41 (40 or lower)
 }
 
 export function ResumeBuddyHistoryCard({ item, onPress }: ResumeBuddyHistoryCardProps) {
@@ -61,20 +61,20 @@ export function ResumeBuddyHistoryCard({ item, onPress }: ResumeBuddyHistoryCard
           <Text style={styles.capsuleLabel}>OVERALL</Text>
         </View>
 
-        {/* ATS Score */}
+        {/* Semantic Score */}
         <View style={styles.capsule}>
           <Text style={[styles.capsuleValue, { color: "#597AF4" }]}>
-            {Math.round(((item.ats_score ?? 0) / 20) * 100)}%
+            {Math.round(item.ai_semantic_score ?? 0)}%
           </Text>
-          <Text style={styles.capsuleLabel}>ATS</Text>
+          <Text style={styles.capsuleLabel}>SEMANTIC</Text>
         </View>
 
-        {/* Skills Match */}
+        {/* Rule-Based Score */}
         <View style={styles.capsule}>
           <Text style={[styles.capsuleValue, { color: "#AFC0FF" }]}>
-            {Math.round(item.skills_match_percentage ?? 0)}%
+            {Math.round(item.rule_based_score ?? 0)}%
           </Text>
-          <Text style={styles.capsuleLabel}>SKILLS</Text>
+          <Text style={styles.capsuleLabel}>RULE BASED</Text>
         </View>
       </View>
     </Pressable>
