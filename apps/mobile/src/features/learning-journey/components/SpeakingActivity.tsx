@@ -432,7 +432,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
           style={{
             marginTop: 24,
             borderRadius: 10,
-            ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
           }}
         >
           {({ pressed }) => (
@@ -528,7 +528,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                   justifyContent: "space-between",
                   height: "100%",
                   width: "100%",
-                  ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                  ...(Platform.OS === "web"
+                    ? ({ cursor: "pointer" } as Record<string, unknown>)
+                    : {}),
                 }}
               >
                 {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -577,7 +579,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     height: 56,
                     borderRadius: 28,
                     overflow: "hidden",
-                    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   {({ pressed }) => (
@@ -613,7 +617,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     backgroundColor: "#dc2626",
                     alignItems: "center",
                     justifyContent: "center",
-                    ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   <Feather name="refresh-cw" size={22} color="#fff" />
@@ -636,7 +642,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
-                ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (
@@ -664,7 +672,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 height: 96,
                 borderRadius: 48,
                 overflow: "hidden",
-                ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (

@@ -672,11 +672,24 @@ export function LearningJourneyScreen() {
     return (
       <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}>
-          <View className="px-6 pt-12">
-            <Text className="text-slate-500 text-sm">
-              Hi{profile?.name ? `, ${profile?.name?.split(" ")[0] || ""}` : ""}!
-            </Text>
-            <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
+          <View className="px-6 pt-12 flex-row justify-between items-center">
+            <View>
+              <Text className="text-slate-500 text-sm">
+                Hi{profile?.name ? `, ${profile?.name?.split(" ")[0] || ""}` : ""}!
+              </Text>
+              <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
+            >
+              <Image
+                source={{
+                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                }}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              />
+            </Pressable>
           </View>
           <GateEmptyState
             reason="onboarding"

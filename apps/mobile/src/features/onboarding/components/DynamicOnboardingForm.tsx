@@ -268,7 +268,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
 
                 {/* Supported Format Details */}
                 <Text className="text-slate-400 font-semibold text-[12px] text-center mb-1.5">
-                  Supported formats: PDF, DOC, DOCX
+                  Supported format: PDF
                 </Text>
                 <Text className="text-slate-400 font-semibold text-[12px] text-center">
                   Maximum file size 10MB

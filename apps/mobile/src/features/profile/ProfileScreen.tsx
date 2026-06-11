@@ -201,33 +201,22 @@ export function ProfileScreen() {
   }, [viewMode, currentDate, allGridDays]);
 
   const headerLabel = useMemo(() => {
-    if (viewMode === "monthly") {
-      return currentDate.toLocaleString("en-US", { month: "long" });
-    }
-
-    // Weekly mode: e.g. "Feb 1 – Feb 7" or "Feb 23 – Mar 1"
-    const weekStart = displayedDays[0];
-    const weekEnd = displayedDays[6];
-    if (!weekStart || !weekEnd) return "";
-
-    const parseLocalDate = (dateStr: string) => {
-      return new Date(dateStr.replace(/-/g, "/"));
-    };
-
-    const startDate = parseLocalDate(weekStart.date);
-    const endDate = parseLocalDate(weekEnd.date);
-
-    const startMonth = startDate.toLocaleString("en-US", { month: "short" });
-    const endMonth = endDate.toLocaleString("en-US", { month: "short" });
-    const startDay = startDate.getDate();
-    const endDay = endDate.getDate();
-
-    if (startMonth === endMonth) {
-      return `${startMonth} ${startDay} – ${endDay}`;
-    } else {
-      return `${startMonth} ${startDay} – ${endMonth} ${endDay}`;
-    }
-  }, [viewMode, currentDate, displayedDays]);
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    return monthNames[currentDate.getMonth()];
+  }, [currentDate]);
 
   const handlePrev = () => {
     if (viewMode === "weekly") {

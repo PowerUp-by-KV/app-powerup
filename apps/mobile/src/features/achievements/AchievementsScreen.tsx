@@ -5,6 +5,7 @@ import {
   ScrollView,
   Text,
   View,
+  Image,
   useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
+import { getAvatarUri } from "@/utils/avatar";
 
 import { StatTile } from "./components/StatTile";
 
@@ -72,7 +74,22 @@ export function AchievementsScreen() {
         contentContainerStyle={{ padding: isTablet ? 32 : 20, paddingBottom: 96 }}
       >
         <View style={{ width: "100%" }}>
-          <Text className="text-slate-900 text-2xl font-extrabold mb-4">Your Achievements!</Text>
+          <View className="flex-row justify-between items-center mb-4">
+            <View>
+              <Text className="text-slate-900 text-2xl font-extrabold">Your Achievements!</Text>
+            </View>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
+            >
+              <Image
+                source={{
+                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                }}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              />
+            </Pressable>
+          </View>
 
           {/* Trophy Header Display */}
           <View className="items-center mb-6 py-2">
