@@ -165,22 +165,17 @@ export function CustomAvatarScreen() {
       {options.map((opt) => {
         const isSelected = current === opt;
 
-        // Build URL specifically for this option
-        const params = new URLSearchParams();
-        params.append("skinColor", categoryKey === "skinColor" ? opt : skinColor);
-        params.append("hairColor", categoryKey === "hairColor" ? opt : hairColor);
-        params.append("hair", categoryKey === "hair" ? opt : hair);
-        params.append("eyes", categoryKey === "eyes" ? opt : eyes);
-        params.append("mouth", categoryKey === "mouth" ? opt : mouth);
-
+        const s = categoryKey === "skinColor" ? opt : skinColor;
+        const hc = categoryKey === "hairColor" ? opt : hairColor;
+        const h = categoryKey === "hair" ? opt : hair;
+        const e = categoryKey === "eyes" ? opt : eyes;
+        const m = categoryKey === "mouth" ? opt : mouth;
         const g = categoryKey === "glasses" ? opt : glasses;
+
+        let optUrl = `https://api.dicebear.com/7.x/adventurer/png?skinColor=${s}&hairColor=${hc}&hair=${h}&eyes=${e}&mouth=${m}&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
         if (g !== "none") {
-          params.append("glasses", g);
-          params.append("glassesProbability", "100");
+          optUrl += `&glasses=${g}&glassesProbability=100`;
         }
-        params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
-        params.append("seed", "user_custom");
-        const optUrl = `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
 
         return (
           <Pressable
