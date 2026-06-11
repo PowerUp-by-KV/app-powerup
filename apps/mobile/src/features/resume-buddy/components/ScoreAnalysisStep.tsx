@@ -278,7 +278,7 @@ export function ScoreAnalysisStep({
         </View>
 
         {/* Score Breakdown items */}
-        {breakdownList.map((item, idx) => {
+        {breakdownList.map((item) => {
           const barColor = getScoreColor(item.score);
           return (
             <View key={item.label} style={styles.breakdownCard}>

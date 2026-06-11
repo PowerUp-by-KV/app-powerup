@@ -101,13 +101,6 @@ export function ResumeBuddyDetailScreen() {
     setWeaknessesExpanded(!weaknessesExpanded);
   };
 
-  // Helper to extract criteria percentage score
-  const getCritScore = (key: string): number => {
-    const crit = item.criteria_scores?.find((c) => c.key === key);
-    if (!crit) return 0;
-    return Math.round((crit.score / crit.max_score) * 100);
-  };
-
   // Helper to get raw percentage score for radiating nodes
   const getCritVal = (key: string, defaultVal: number): number => {
     const crit = item.criteria_scores?.find((c) => c.key === key);
