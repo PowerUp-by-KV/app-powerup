@@ -67,8 +67,12 @@ export function SplashScreen() {
           duration: 900,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        router.replace("/login");
+      ]).start(async () => {
+        const { getAuthSession } = await import("@/services/auth-storage");
+        const session = await getAuthSession();
+        if (!session) {
+          router.replace("/login");
+        }
       });
     }, 4000);
 
