@@ -15,7 +15,11 @@ interface ScoreAnalysisStepProps {
   onDone: () => void;
 }
 
-const BAR_COLORS = ["#4CAF50", "#597AF4", "#AFC0FF", "#6B7280"];
+const getScoreColor = (pct: number): string => {
+  if (pct >= 81) return "#4CAF50"; // Green for 81 to 100
+  if (pct >= 41) return "#FF9800"; // Yellow for 41 to 80
+  return "#EF5350"; // Red for below 41 (40 or lower)
+};
 
 const getHeadline = (score: number) => {
   if (score >= 85) return "Excellent! You are ready to apply!";
@@ -39,26 +43,46 @@ export function ScoreAnalysisStep({
     return Math.round((crit.score / crit.max_score) * 100);
   };
 
-  // 5 dynamic radiating nodes based on weightings
-  const basicInfoPct = Math.round((getCritScore("professional_presence") / 100) * 15);
-  const atsPct = Math.round((getCritScore("ats_compatibility") / 100) * 15);
-  const sectionCompletenessPct = Math.round((getCritScore("resume_structure") / 100) * 30);
-  const resumeQualityPct = Math.round((getCritScore("grammar_clarity") / 100) * 20);
-  const professionalSummaryPct = Math.round((getCritScore("projects_experience") / 100) * 20);
+  // Helper to get raw percentage score for radiating nodes
+  const getCritVal = (key: string, defaultVal: number): number => {
+    const crit = criteriaScores.find((c) => c.key === key);
+    if (!crit) return defaultVal;
+    return Math.round((crit.score / crit.max_score) * 100);
+  };
 
-  // Four items for bottom list
-  const breakdownList = [
-    {
-      label: "ATS Score",
-      score: getCritScore("ats_compatibility") || Math.round((atsScore / 20) * 100),
-    },
-    {
-      label: "Content Score",
-      score: getCritScore("skills_relevance") || Math.round(semanticScore * 10),
-    },
-    { label: "Resume Quality", score: getCritScore("grammar_clarity") || 78 },
-    { label: "Professional Summary", score: getCritScore("projects_experience") || 75 },
-  ];
+  const skillsRelevanceScore = getCritVal("skills_relevance", 33);
+  const atsCompatibilityScore = getCritVal("ats_compatibility", 100);
+  const resumeStructureScore = getCritVal("resume_structure", 100);
+  const grammarClarityScore = getCritVal("grammar_clarity", 100);
+  const projectsExperienceScore = getCritVal("projects_experience", 95);
+
+  const atsPct = Math.round((atsScore / 20) * 100);
+  const atsColor = getScoreColor(atsPct);
+  const semPct = semanticScore > 100 ? Math.round(semanticScore / 10) : Math.round(semanticScore);
+  const semColor = getScoreColor(semPct);
+  const rulePct =
+    ruleBasedScore > 100 ? Math.round(ruleBasedScore / 10) : Math.round(ruleBasedScore);
+  const ruleColor = getScoreColor(rulePct);
+
+  // Dynamic list mapped from criteriaScores if available, else static fallback
+  const breakdownList =
+    criteriaScores.length > 0
+      ? criteriaScores.map((c) => ({
+          label: c.label,
+          score: Math.min(Math.round((c.score / c.max_score) * 100), 100),
+        }))
+      : [
+          {
+            label: "ATS Score",
+            score: getCritScore("ats_compatibility") || Math.round((atsScore / 20) * 100),
+          },
+          {
+            label: "Content Score",
+            score: getCritScore("skills_relevance") || Math.round(semanticScore * 10),
+          },
+          { label: "Resume Quality", score: getCritScore("grammar_clarity") || 78 },
+          { label: "Professional Summary", score: getCritScore("projects_experience") || 75 },
+        ];
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F8F9FC" }}>
@@ -165,53 +189,83 @@ export function ScoreAnalysisStep({
 
             {/* Central Score Circle */}
             <View style={styles.centerCircle}>
-              <Text style={styles.centerScoreText}>{overallScore}%</Text>
+              <Text style={styles.centerScoreText}>{Math.round(overallScore)}%</Text>
               <Text style={styles.centerScoreLabel}>OVERALL SCORE</Text>
             </View>
 
-            {/* Radiating Node 1: Basic Information */}
+            {/* Radiating Node 1: Skills Relevance */}
             <View style={[styles.radiatingNode, { top: 10, left: 110, width: 100 }]}>
               <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{basicInfoPct}%</Text>
+                <Text style={styles.outerText}>{skillsRelevanceScore}%</Text>
               </View>
-              <Text style={styles.outerLabel}>Basic Information</Text>
+              <Text style={styles.outerLabel}>Skills Relevance</Text>
             </View>
 
-            {/* Radiating Node 2: ATS */}
+            {/* Radiating Node 2: ATS Compatibility */}
             <View style={[styles.radiatingNode, { top: 73, right: 15, width: 80 }]}>
               <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{atsPct}%</Text>
+                <Text style={styles.outerText}>{atsCompatibilityScore}%</Text>
               </View>
-              <Text style={styles.outerLabel}>ATS</Text>
+              <Text style={styles.outerLabel}>ATS Compatibility</Text>
             </View>
 
-            {/* Radiating Node 3: Section completeness */}
+            {/* Radiating Node 3: Resume Structure */}
             <View style={[styles.radiatingNode, { bottom: 20, right: 10, width: 120 }]}>
               <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{sectionCompletenessPct}%</Text>
+                <Text style={styles.outerText}>{resumeStructureScore}%</Text>
               </View>
-              <Text style={styles.outerLabel}>Section completeness</Text>
+              <Text style={styles.outerLabel}>Resume Structure</Text>
             </View>
 
-            {/* Radiating Node 4: Resume Quality */}
+            {/* Radiating Node 4: Grammar & Clarity */}
             <View style={[styles.radiatingNode, { bottom: 20, left: 10, width: 120 }]}>
               <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{resumeQualityPct}%</Text>
+                <Text style={styles.outerText}>{grammarClarityScore}%</Text>
               </View>
-              <Text style={styles.outerLabel}>Resume Quality</Text>
+              <Text style={styles.outerLabel}>Grammar & Clarity</Text>
             </View>
 
-            {/* Radiating Node 5: Professional Summary */}
+            {/* Radiating Node 5: Projects & Experience */}
             <View style={[styles.radiatingNode, { top: 73, left: 15, width: 80 }]}>
               <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{professionalSummaryPct}%</Text>
+                <Text style={styles.outerText}>{projectsExperienceScore}%</Text>
               </View>
-              <Text style={styles.outerLabel}>Professional Summary</Text>
+              <Text style={styles.outerLabel}>Projects & Experience</Text>
             </View>
           </View>
 
           {/* Bottom Card quality summary */}
           <Text style={styles.cardSummary}>{qualitySummary}</Text>
+        </LinearGradient>
+
+        {/* Dynamic Score Rings Card */}
+        <LinearGradient
+          colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+          locations={[0, 0.6, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.threeScoresCardGradient}
+        >
+          <View style={styles.threeScoresCard}>
+            <View style={styles.scoreCircleWrapper}>
+              <View style={[styles.scoreCircleRing, { borderColor: atsColor }]}>
+                <Text style={[styles.scoreCircleText, { color: atsColor }]}>{atsPct}%</Text>
+              </View>
+              <Text style={styles.scoreCircleLabel}>ATS Score</Text>
+            </View>
+            <View style={styles.scoreCircleWrapper}>
+              <View style={[styles.scoreCircleRing, { borderColor: semColor }]}>
+                <Text style={[styles.scoreCircleText, { color: semColor }]}>{semPct}%</Text>
+              </View>
+              <Text style={styles.scoreCircleLabel}>Semantic Score</Text>
+            </View>
+            <View style={styles.scoreCircleWrapper}>
+              <View style={[styles.scoreCircleRing, { borderColor: ruleColor }]}>
+                <Text style={[styles.scoreCircleText, { color: ruleColor }]}>{rulePct}%</Text>
+              </View>
+              <Text style={styles.scoreCircleLabel}>Rule-Based</Text>
+            </View>
+          </View>
         </LinearGradient>
 
         {/* Score Breakdown Section Header */}
@@ -225,7 +279,7 @@ export function ScoreAnalysisStep({
 
         {/* Score Breakdown items */}
         {breakdownList.map((item, idx) => {
-          const barColor = BAR_COLORS[idx % BAR_COLORS.length];
+          const barColor = getScoreColor(item.score);
           return (
             <View key={item.label} style={styles.breakdownCard}>
               <View style={styles.breakdownCardRow}>
@@ -462,5 +516,50 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 15,
     fontWeight: "800",
+  },
+  threeScoresCardGradient: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 24,
+    marginTop: 16,
+    width: "100%",
+    shadowColor: "#597AF4",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  threeScoresCard: {
+    backgroundColor: "transparent",
+    padding: 20,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  scoreCircleWrapper: {
+    alignItems: "center",
+    flex: 1,
+  },
+  scoreCircleRing: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3.5,
+    borderColor: "#597AF4",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  scoreCircleText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  scoreCircleLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginTop: 8,
+    textAlign: "center",
   },
 });
