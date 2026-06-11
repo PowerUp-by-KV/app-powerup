@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -17,6 +17,12 @@ export function AvatarPickerScreen() {
   const { data: avatars = [], isLoading } = useGetAvatarsQuery();
   const [patch, { isLoading: isSaving }] = usePatchProfileMutation();
   const [selected, setSelected] = useState<string | null>(profile?.avatar_id ?? null);
+
+  useEffect(() => {
+    if (profile?.avatar_id) {
+      setSelected(profile.avatar_id);
+    }
+  }, [profile?.avatar_id]);
 
   const defaultAvatars = [
     { id: "adventurer1", locked: false },
