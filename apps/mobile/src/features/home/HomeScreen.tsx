@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ModuleDay } from "@powerup/shared";
