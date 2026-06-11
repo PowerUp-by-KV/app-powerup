@@ -69,6 +69,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isLoading: isOnboardingLoading,
     isFetching: isOnboardingFetching,
     isError: isOnboardingError,
+    error: onboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
     refetchOnMountOrArgChange: true,
@@ -102,10 +103,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
 
     if (isOnboardingError) {
-      clearAuthSession().then(() => {
-        setSession(null);
-        router.replace("/login");
-      });
+      const isUnauthorized =
+        onboardingError &&
+        typeof onboardingError === "object" &&
+        "status" in onboardingError &&
+        (onboardingError.status === 401 || onboardingError.status === 403);
+
+      if (isUnauthorized) {
+        clearAuthSession().then(() => {
+          setSession(null);
+          router.replace("/login");
+        });
+      }
       return;
     }
 
@@ -118,17 +127,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
         // Logged in but onboarding not complete.
         // They should only be on onboarding or verification routes.
         // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
-        const allowedRoutes = [
-          "onboarding",
-          "onboarding-resume",
-          "verify-email",
-          "verify-phone",
-          "thank-you",
-          "welcome-back",
-          "success",
-          "profile",
-        ];
-        if (currentRoute && !allowedRoutes.includes(currentRoute)) {
+        if (currentRoute && !ALLOWED_BEFORE_ONBOARDING.includes(currentRoute)) {
           router.replace("/onboarding" as never);
         }
       } else {
@@ -157,31 +156,12 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isOnboardingLoading,
     isOnboardingFetching,
     isOnboardingError,
+    onboardingError,
     networkCheckComplete,
     currentRoute,
     segments,
     router,
   ]);
-
-  // Only block render in the narrow window where we know the user is authenticated,
-  // haven't completed onboarding, and the onboarding status is still loading.
-  // In all other cases render children immediately — redirects fire via the effect above.
-  // Never return null while isLocalReady is false: the splash screen is still visible then.
-  const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-  const isAllowedBeforeOnboarding =
-    isPublic || (currentRoute && ALLOWED_BEFORE_ONBOARDING.includes(currentRoute));
-  const onboardingComplete = onboardingStatus?.answers_present ?? false;
-  const isQueryActive = !!userId;
-  const isQueryLoading =
-    isQueryActive &&
-    (!networkCheckComplete ||
-      isOnboardingLoading ||
-      isOnboardingFetching ||
-      (onboardingStatus === undefined && !isOnboardingError));
-
-  if (session && !onboardingComplete && !isAllowedBeforeOnboarding && isQueryLoading) {
-    return null;
-  }
 
   return <>{children}</>;
 }

@@ -152,6 +152,18 @@ export const authApi = api.injectEndpoints({
 
     patchProfile: builder.mutation<UserProfile, UserUpdate>({
       query: (body) => ({ url: "/v1/auth/me", method: "PATCH", body }),
+      async onQueryStarted(body, { dispatch, queryFulfilled }) {
+        const patchResult = dispatch(
+          authApi.util.updateQueryData("getProfile", undefined, (draft) => {
+            Object.assign(draft, body);
+          }),
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchResult.undo();
+        }
+      },
       invalidatesTags: ["Auth"],
     }),
 

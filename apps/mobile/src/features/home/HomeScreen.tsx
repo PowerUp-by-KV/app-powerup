@@ -1,12 +1,13 @@
 import React, { useMemo } from "react";
-import { Platform, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { Feather } from "@expo/vector-icons";
+
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ModuleDay } from "@powerup/shared";
 
 import { useGetProfileQuery } from "@/services/auth-api";
+import { getAvatarUri } from "@/utils/avatar";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
   useLazyGetModuleDaysQuery,
@@ -262,7 +263,12 @@ export function HomeScreen() {
               className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
             >
               <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                <Feather name="user" size={20} color="#4f46e5" />
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+                />
               </View>
             </Pressable>
           </View>

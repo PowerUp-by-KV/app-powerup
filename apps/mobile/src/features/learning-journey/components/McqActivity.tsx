@@ -207,7 +207,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           style={{
             marginTop: 24,
             borderRadius: 10,
-            ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
           }}
         >
           {({ pressed }) => (
@@ -390,7 +390,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                 marginBottom: 12,
                 flexDirection: "row",
                 alignItems: "center",
-                ...(Platform.OS === "web" ? { cursor: "pointer" } : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               <View
@@ -423,7 +425,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               {
                 borderRadius: 10,
                 ...(Platform.OS === "web"
-                  ? { cursor: selected === null ? "default" : "pointer" }
+                  ? ({ cursor: selected === null ? "default" : "pointer" } as Record<
+                      string,
+                      unknown
+                    >)
                   : {}),
               } as any
             }

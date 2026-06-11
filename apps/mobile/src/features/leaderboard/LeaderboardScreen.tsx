@@ -5,12 +5,16 @@ import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { resolveApiAssetUrl } from "@/services/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 
 import {
   useGetLeaderboardQuery,
   type LeaderboardPeriod,
   type LeaderboardEntry,
 } from "@/services/social-api";
+
+import { useGetProfileQuery } from "@/services/auth-api";
+import { getAvatarUri } from "@/utils/avatar";
 
 import { FriendsModal } from "./components/FriendsModal";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
@@ -23,6 +27,8 @@ const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
 >;
 
 export function LeaderboardScreen() {
+  const router = useRouter();
+  const { data: profile } = useGetProfileQuery();
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
@@ -153,8 +159,21 @@ export function LeaderboardScreen() {
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <View style={{ flex: 1, width: "100%", position: "relative" }}>
-        <View className="px-5 pt-10 pb-3">
-          <Text className="text-slate-900 text-2xl font-extrabold">Leaderboards</Text>
+        <View className="px-5 pt-10 pb-3 flex-row justify-between items-center">
+          <View>
+            <Text className="text-slate-900 text-2xl font-extrabold">Leaderboards</Text>
+          </View>
+          <Pressable
+            onPress={() => router.push("/profile" as never)}
+            className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
+          >
+            <Image
+              source={{
+                uri: getAvatarUri(profile?.avatar_id, profile?.id),
+              }}
+              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            />
+          </Pressable>
         </View>
 
         {/* Tab Selector */}
