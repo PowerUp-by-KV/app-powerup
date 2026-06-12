@@ -533,32 +533,46 @@ export function LearningJourneyScreen() {
   }, [fetchAllDays, gate.canEnter]);
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
-    if (!personalizedPath?.modules?.length) return [];
-
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
-    const moduleByNo: Record<number, (typeof personalizedPath.modules)[0]> = {};
+    const moduleByNo: Record<
+      number,
+      { id: string; title: string; module_no: number; [key: string]: unknown }
+    > = {};
 
-    for (const m of personalizedPath.modules) {
-      daysByModuleNo[m.module_no] = moduleDaysData[m.id] || [];
-      moduleByNo[m.module_no] = m;
+    if (personalizedPath?.modules?.length) {
+      for (const m of personalizedPath.modules) {
+        daysByModuleNo[m.module_no] = moduleDaysData[m.id] || [];
+        moduleByNo[m.module_no] = m;
+      }
     }
 
     const combined: CombinedModuleDay[] = [];
     for (const waveConfig of PROGRESSION_WAVES) {
       for (const mNo of waveConfig.modules) {
         const moduleItem = moduleByNo[mNo];
-        if (!moduleItem) continue;
-
         const moduleDays = daysByModuleNo[mNo] || [];
+
         for (const dNum of waveConfig.days) {
           const dayObj = moduleDays.find((d) => d.day_number === dNum);
-          if (dayObj) {
+          if (dayObj && moduleItem) {
             combined.push({
               ...dayObj,
               module_no: moduleItem.module_no,
               module_title: moduleItem.title,
               module_id: moduleItem.id,
             });
+          } else {
+            // Push a placeholder for missing/locked days to ensure 156 total days are shown
+            combined.push({
+              id: `placeholder_m${mNo}_d${dNum}`,
+              day_number: dNum,
+              topic: "Locked Activity",
+              duration_hours: 0,
+              is_completed: false,
+              module_no: mNo,
+              module_title: moduleItem?.title || `Module ${mNo}`,
+              module_id: moduleItem?.id || `locked_m${mNo}`,
+            } as CombinedModuleDay);
           }
         }
       }

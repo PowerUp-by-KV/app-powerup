@@ -263,8 +263,11 @@ export function ModuleScreen() {
     return <GamifiedMascotLoader title="Loading Activities..." />;
   }
 
-  const totalSteps = activitiesToPlay.length;
-  const currentStep = activityIdx + 1;
+  const totalSteps = activities.length;
+  const currentStepIndex = currentActivity
+    ? activities.findIndex((a) => a.id === currentActivity.id)
+    : 0;
+  const currentStep = currentStepIndex + 1;
   const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
 
   return (

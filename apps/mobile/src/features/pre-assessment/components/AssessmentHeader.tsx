@@ -4,7 +4,11 @@ import { View, Text, TouchableOpacity, Modal, Alert, Platform } from "react-nati
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { getCompletedSections } from "@/services/auth-storage";
+import {
+  getCompletedSections,
+  getAssessmentElapsedTime,
+  saveAssessmentElapsedTime,
+} from "@/services/auth-storage";
 import { useGetAssessmentStatusQuery } from "@/services/assessment-api";
 
 export type SectionCode =
@@ -68,11 +72,32 @@ export function AssessmentHeader({
   }, [backendStatus, modalVisible]);
 
   useEffect(() => {
-    if (stopTimer) return;
-    const timer = setInterval(() => {
-      setSecondsElapsed((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(timer);
+    let interval: NodeJS.Timeout;
+    let isActive = true;
+    let currentElapsed = 0;
+
+    getAssessmentElapsedTime().then((elapsed) => {
+      if (!isActive) return;
+      currentElapsed = elapsed;
+      setSecondsElapsed(currentElapsed);
+
+      if (!stopTimer) {
+        interval = setInterval(() => {
+          currentElapsed += 1;
+          setSecondsElapsed(currentElapsed);
+          // Save every 5 seconds to minimize storage writes
+          if (currentElapsed % 5 === 0) {
+            saveAssessmentElapsedTime(currentElapsed);
+          }
+        }, 1000);
+      }
+    });
+
+    return () => {
+      isActive = false;
+      if (interval) clearInterval(interval);
+      saveAssessmentElapsedTime(currentElapsed); // Save accurately on unmount
+    };
   }, [stopTimer]);
 
   const formatTime = (totalSeconds: number) => {

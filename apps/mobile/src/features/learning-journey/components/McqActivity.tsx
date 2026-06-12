@@ -126,12 +126,18 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     const nextCorrectCount = correct ? correctCount + 1 : correctCount;
     if (correct) setCorrectCount(nextCorrectCount);
 
+    const correctIndex = options.findIndex(
+      (opt) => opt.id.trim() === (current.correct_answer ?? "").trim(),
+    );
+    const correctLetter =
+      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : (current.correct_answer ?? "");
+
     setLastCorrect(correct);
-    setLastCorrectAnswer(current.correct_answer ?? "");
+    setLastCorrectAnswer(correctLetter);
 
     setLastResult({
       correct,
-      correctAnswer: current.correct_answer ?? "",
+      correctAnswer: correctLetter,
       totalCorrect: nextCorrectCount,
     });
   };

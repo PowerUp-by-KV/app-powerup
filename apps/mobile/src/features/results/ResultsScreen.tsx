@@ -32,6 +32,7 @@ import {
 } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { refreshAccessToken } from "@/services/api";
 
 interface ResultsScreenProps {
   sessionId?: string;
@@ -148,7 +149,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [rawResultData]);
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    try {
+      await refreshAccessToken();
+    } catch (e) {
+      console.warn("Failed to refresh access token after assessment:", e);
+    }
     router.replace("/(tabs)/my-learning" as never);
   };
 
