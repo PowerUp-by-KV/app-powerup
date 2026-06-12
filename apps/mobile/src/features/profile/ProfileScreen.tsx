@@ -240,7 +240,7 @@ export function ProfileScreen() {
     if (!weekStart || !weekEnd) return "";
 
     const parseDateStr = (dateStr: string) => {
-      const [y, m, d] = dateStr.split("-").map(Number);
+      const [, m, d] = dateStr.split("-").map(Number);
       return { month: monthNames[(m ?? 1) - 1], day: d ?? 1 };
     };
 

@@ -114,47 +114,50 @@ export function AvatarPickerScreen() {
           <ActivityIndicator color="#6366f1" />
         ) : (
           <View className="flex-row flex-wrap justify-center" style={{ gap: 12, maxWidth: 320 }}>
-            {displayAvatars.map((a: any) => {
-              const isSel = a.id === selected;
-              const imageUrl = getAvatarUri(a.id);
-              return (
-                <Pressable
-                  key={a.id}
-                  onPress={() => {
-                    if (a.locked) {
-                      Alert.alert(
-                        "Avatar Locked",
-                        a.unlock_criteria || "Keep learning and earning XP to unlock this avatar!",
-                      );
-                    } else {
-                      setSelected(a.id);
-                    }
-                  }}
-                  className="relative"
-                >
-                  <View
-                    className="w-16 h-16 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-100"
-                    style={{
-                      borderWidth: isSel ? 3 : 1,
-                      borderColor: isSel ? "#0f172a" : "#f1f5f9",
-                      opacity: a.locked ? 0.4 : 1,
+            {displayAvatars.map(
+              (a: { id: string; locked: boolean; unlock_criteria?: string | null }) => {
+                const isSel = a.id === selected;
+                const imageUrl = getAvatarUri(a.id);
+                return (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => {
+                      if (a.locked) {
+                        Alert.alert(
+                          "Avatar Locked",
+                          a.unlock_criteria ||
+                            "Keep learning and earning XP to unlock this avatar!",
+                        );
+                      } else {
+                        setSelected(a.id);
+                      }
                     }}
+                    className="relative"
                   >
-                    <Image source={{ uri: imageUrl }} className="w-full h-full" />
-                  </View>
-                  {a.locked && (
-                    <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-slate-900 items-center justify-center">
-                      <Feather name="lock" size={10} color="#fff" />
+                    <View
+                      className="w-16 h-16 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-100"
+                      style={{
+                        borderWidth: isSel ? 3 : 1,
+                        borderColor: isSel ? "#0f172a" : "#f1f5f9",
+                        opacity: a.locked ? 0.4 : 1,
+                      }}
+                    >
+                      <Image source={{ uri: imageUrl }} className="w-full h-full" />
                     </View>
-                  )}
-                  {isSel && (
-                    <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-emerald-500 items-center justify-center">
-                      <Feather name="check" size={12} color="#fff" />
-                    </View>
-                  )}
-                </Pressable>
-              );
-            })}
+                    {a.locked && (
+                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-slate-900 items-center justify-center">
+                        <Feather name="lock" size={10} color="#fff" />
+                      </View>
+                    )}
+                    {isSel && (
+                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-emerald-500 items-center justify-center">
+                        <Feather name="check" size={12} color="#fff" />
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              },
+            )}
           </View>
         )}
 
