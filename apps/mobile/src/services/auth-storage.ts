@@ -143,6 +143,7 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
     await deleteItem(COMPLETED_SECTIONS_KEY);
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
+    await deleteItem(ASSESSMENT_ELAPSED_TIME_KEY);
     await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
     await deleteItem(ONBOARDING_ANSWERS_KEY);
     await deleteItem(ONBOARDING_WIZARD_STATE_KEY);
@@ -201,6 +202,7 @@ export async function clearCompletedSections(): Promise<void> {
 }
 
 const ASSESSMENT_START_TIME_KEY = "powerup.assessment_start_time";
+const ASSESSMENT_ELAPSED_TIME_KEY = "powerup.assessment_elapsed_time";
 
 export async function saveAssessmentStartTime(time: number): Promise<void> {
   const existing = await getItem(ASSESSMENT_START_TIME_KEY);
@@ -216,6 +218,19 @@ export async function getAssessmentStartTime(): Promise<number | null> {
 
 export async function clearAssessmentStartTime(): Promise<void> {
   await deleteItem(ASSESSMENT_START_TIME_KEY);
+}
+
+export async function saveAssessmentElapsedTime(seconds: number): Promise<void> {
+  await setItem(ASSESSMENT_ELAPSED_TIME_KEY, String(seconds));
+}
+
+export async function getAssessmentElapsedTime(): Promise<number> {
+  const raw = await getItem(ASSESSMENT_ELAPSED_TIME_KEY);
+  return raw ? Number(raw) : 0;
+}
+
+export async function clearAssessmentElapsedTime(): Promise<void> {
+  await deleteItem(ASSESSMENT_ELAPSED_TIME_KEY);
 }
 
 export interface StoredPreAssessmentResult {

@@ -90,6 +90,8 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
+let isRedirectingToLogin = false;
+
 // On 401: try refresh once, update stored session, retry original request.
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
@@ -122,11 +124,23 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
         await clearAuthSession();
-        router.replace("/login");
+        if (!isRedirectingToLogin) {
+          isRedirectingToLogin = true;
+          router.replace("/login");
+          setTimeout(() => {
+            isRedirectingToLogin = false;
+          }, 1000);
+        }
       }
     } else {
       await clearAuthSession();
-      router.replace("/login");
+      if (!isRedirectingToLogin) {
+        isRedirectingToLogin = true;
+        router.replace("/login");
+        setTimeout(() => {
+          isRedirectingToLogin = false;
+        }, 1000);
+      }
     }
   }
 

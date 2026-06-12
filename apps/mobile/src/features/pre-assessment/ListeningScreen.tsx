@@ -283,6 +283,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
                         text={opt.value}
                         isSelected={currentAnswer === opt.value}
                         onSelect={() => selectAnswer(q.id, opt.value)}
+                        disabled={!hasAudioFinished}
                       />
                     ))}
                   </View>

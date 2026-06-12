@@ -114,14 +114,22 @@ export function AvatarPickerScreen() {
           <ActivityIndicator color="#6366f1" />
         ) : (
           <View className="flex-row flex-wrap justify-center" style={{ gap: 12, maxWidth: 320 }}>
-            {displayAvatars.map((a) => {
+            {displayAvatars.map((a: any) => {
               const isSel = a.id === selected;
               const imageUrl = getAvatarUri(a.id);
               return (
                 <Pressable
                   key={a.id}
-                  onPress={() => !a.locked && setSelected(a.id)}
-                  disabled={a.locked}
+                  onPress={() => {
+                    if (a.locked) {
+                      Alert.alert(
+                        "Avatar Locked",
+                        a.unlock_criteria || "Keep learning and earning XP to unlock this avatar!",
+                      );
+                    } else {
+                      setSelected(a.id);
+                    }
+                  }}
                   className="relative"
                 >
                   <View
