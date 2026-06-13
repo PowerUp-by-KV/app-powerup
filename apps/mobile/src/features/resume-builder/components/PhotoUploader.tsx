@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, Pressable, ActivityIndicator, Image, Alert, StyleSheet } from "react-native";
+import {
+  View,
+  Pressable,
+  ActivityIndicator,
+  Image,
+  Alert,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import { Text } from "@/components/Themed";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
@@ -53,7 +61,7 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
 
       // Construct upload multi-part body
       const formData = new FormData();
-      if (typeof window !== "undefined" && "File" in window) {
+      if (Platform.OS === "web") {
         // Web Platform: fetch the file uri and transform to blob for append
         const response = await fetch(asset.uri);
         const blob = await response.blob();

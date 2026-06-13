@@ -1,7 +1,7 @@
 import React from "react";
 import {
   ActivityIndicator,
-  Pressable,
+  TouchableOpacity,
   SafeAreaView,
   ScrollView,
   Text,
@@ -116,9 +116,9 @@ export function ResumeScoreScreen() {
 
       {/* Top Header */}
       <View style={styles.header}>
-        <Pressable onPress={() => safeBack()} style={styles.backButton}>
+        <TouchableOpacity activeOpacity={0.7} onPress={() => safeBack()} style={styles.backButton}>
           <Feather name="arrow-left" size={20} color="#9ca3af" />
-        </Pressable>
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Resume Building</Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
@@ -130,12 +130,13 @@ export function ResumeScoreScreen() {
           <View style={styles.errorContainer}>
             <Feather name="alert-circle" size={32} color="#ef4444" />
             <Text style={styles.errorText}>Failed to load score. Please try again.</Text>
-            <Pressable
+            <TouchableOpacity
+              activeOpacity={0.7}
               onPress={() => router.replace("/resume" as never)}
               style={styles.errorButton}
             >
               <Text style={styles.errorButtonText}>Go to Resume Studio</Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.content}>
@@ -187,15 +188,13 @@ export function ResumeScoreScreen() {
       {/* Floating Continue Button */}
       {!isLoading && !isError && (
         <View style={styles.floatingFooter}>
-          <Pressable
+          <TouchableOpacity
+            activeOpacity={0.7}
             onPress={() => router.replace("/resume/builder" as never)}
-            style={({ pressed }) => [
-              styles.continueButton,
-              pressed && styles.continueButtonPressed,
-            ]}
+            style={[styles.continueButton]}
           >
             <Text style={styles.continueButtonText}>Continue</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
       )}
     </SafeAreaView>

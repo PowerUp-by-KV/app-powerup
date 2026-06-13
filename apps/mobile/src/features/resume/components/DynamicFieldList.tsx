@@ -3,8 +3,7 @@
  * Displays list of items with delete button
  */
 
-import { View, Pressable } from "react-native";
-import { Text } from "@/components/Themed";
+import { View, Pressable, Text } from "react-native";
 import { Button } from "./Button";
 
 interface DynamicListItem {
@@ -60,7 +59,7 @@ export function DynamicFieldList<T extends DynamicListItem>({
           ))}
 
           {/* Add More Button */}
-          <Button variant="secondary" onPress={onAdd} size="md">
+          <Button variant="primary" onPress={onAdd} size="md">
             {`+ ${addButtonLabel}`}
           </Button>
         </View>

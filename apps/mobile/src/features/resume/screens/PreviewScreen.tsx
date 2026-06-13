@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Platform,
   Modal,
+  TouchableOpacity,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
@@ -471,11 +472,11 @@ export function PreviewScreen() {
           {/* Navigation Buttons */}
           {!showSuccess && (
             <View style={styles.buttonContainer}>
-              <Pressable
-                style={({ pressed }) => [
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[
                   styles.button,
                   styles.secondaryButton,
-                  pressed && styles.buttonPressed,
                   (isSaving || isUpdating || isDeletingLocal) && styles.buttonDisabled,
                 ]}
                 onPress={() => dispatch(previousStep())}
@@ -483,13 +484,13 @@ export function PreviewScreen() {
               >
                 <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
                 <Text style={styles.secondaryButtonText}>Back</Text>
-              </Pressable>
+              </TouchableOpacity>
 
-              <Pressable
-                style={({ pressed }) => [
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[
                   styles.button,
                   styles.primaryButton,
-                  pressed && styles.buttonPressed,
                   (isSaving || isUpdating || isDeletingLocal) && styles.buttonDisabled,
                 ]}
                 onPress={handleSubmit}
@@ -506,18 +507,15 @@ export function PreviewScreen() {
                     <Text style={styles.primaryButtonText}>Save & Submit</Text>
                   </>
                 )}
-              </Pressable>
+              </TouchableOpacity>
             </View>
           )}
 
           {/* Delete Button */}
           {!showSuccess && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.deleteButton,
-                pressed && styles.deleteButtonPressed,
-                (isSaving || isDeletingLocal) && styles.buttonDisabled,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.deleteButton, (isSaving || isDeletingLocal) && styles.buttonDisabled]}
               onPress={handleDelete}
               disabled={isSaving || isDeletingLocal}
             >
@@ -532,7 +530,7 @@ export function PreviewScreen() {
                   <Text style={styles.deleteButtonText}>Delete Resume</Text>
                 </>
               )}
-            </Pressable>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -554,27 +552,21 @@ export function PreviewScreen() {
               Are you sure you want to delete this resume? This action cannot be undone.
             </Text>
             <View style={styles.modalButtons}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  styles.modalCancelButton,
-                  pressed && { opacity: 0.7 },
-                ]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => setShowDeleteConfirm(false)}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  styles.modalDeleteButton,
-                  pressed && { opacity: 0.7 },
-                ]}
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.modalButton, styles.modalDeleteButton]}
                 onPress={confirmDelete}
               >
                 <MaterialIcons name="delete" size={18} color="white" style={{ marginRight: 6 }} />
                 <Text style={styles.modalDeleteText}>Delete</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

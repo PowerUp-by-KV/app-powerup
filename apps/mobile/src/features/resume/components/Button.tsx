@@ -3,8 +3,7 @@
  * Enterprise-grade styling with Tailwind CSS
  */
 
-import { ActivityIndicator, Pressable, PressableProps, View } from "react-native";
-import { Text } from "@/components/Themed";
+import { ActivityIndicator, Pressable, PressableProps, View, Text } from "react-native";
 
 interface ButtonProps extends PressableProps {
   variant?: "primary" | "secondary" | "danger";

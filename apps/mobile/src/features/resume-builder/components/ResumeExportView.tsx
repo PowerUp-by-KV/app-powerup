@@ -8,6 +8,7 @@ import {
   Linking,
   ScrollView,
   Share,
+  TouchableOpacity,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -37,16 +38,23 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
   const [updateBuiltResume] = useUpdateBuiltResumeMutation();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cachedPdfUrl, setCachedPdfUrl] = useState<string | null>(null);
 
   // Helper to ensure we have a saved & generated PDF URL
   const getPdfUrl = async (): Promise<string | null> => {
     try {
+      // If we already generated it and no changes were made, use the cached URL instantly!
+      if (cachedPdfUrl && !isDirty) {
+        return cachedPdfUrl;
+      }
+
       setIsProcessing(true);
       if (isDirty) {
         await updateBuiltResume(draftResume).unwrap();
       }
       const result = await triggerExport({ auto_enhance: false }).unwrap();
       if (result?.url) {
+        setCachedPdfUrl(result.url);
         return result.url;
       }
       throw new Error("Export response did not contain PDF URL");
@@ -124,23 +132,25 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
 
         {/* Action Buttons */}
         <View style={styles.actionButtonsContainer}>
-          <Pressable
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.actionButton]}
             onPress={handleDownloadPdf}
             disabled={isProcessing}
           >
             <Feather name="download" size={20} color="#374151" style={styles.actionIcon} />
             <Text style={styles.actionText}>Download as PDF</Text>
-          </Pressable>
+          </TouchableOpacity>
 
-          <Pressable
-            style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.actionButton]}
             onPress={handleEmailToMyself}
             disabled={isProcessing}
           >
             <Feather name="mail" size={20} color="#374151" style={styles.actionIcon} />
             <Text style={styles.actionText}>Email to Myself</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
 
         {/* Share Box */}
@@ -173,12 +183,9 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
 
         {/* Primary Action */}
         <View style={styles.primaryActionContainer}>
-          <Pressable
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
-            onPress={handleDone}
-          >
+          <TouchableOpacity activeOpacity={0.8} style={[styles.primaryButton]} onPress={handleDone}>
             <Text style={styles.primaryButtonText}>Create another Resume</Text>
-          </Pressable>
+          </TouchableOpacity>
         </View>
 
         {/* Footer */}

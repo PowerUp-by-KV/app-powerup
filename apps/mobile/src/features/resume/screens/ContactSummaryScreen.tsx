@@ -7,10 +7,10 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  Pressable,
   TextInput as RNTextInput,
   Modal,
   FlatList,
+  TouchableOpacity,
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
@@ -171,13 +171,14 @@ export function ContactSummaryScreen() {
 
               <View style={styles.phoneContainer}>
                 {/* Country Code Selector */}
-                <Pressable
+                <TouchableOpacity
+                  activeOpacity={0.7}
                   style={styles.countryCodeButton}
                   onPress={() => setShowCountryCodeModal(true)}
                 >
                   <Text style={styles.countryCodeText}>{selectedCountryCode}</Text>
                   <MaterialIcons name="arrow-drop-down" size={20} color="#2563EB" />
-                </Pressable>
+                </TouchableOpacity>
 
                 {/* Phone Number Input */}
                 <RNTextInput
@@ -233,14 +234,15 @@ export function ContactSummaryScreen() {
                 <View style={styles.modalContent}>
                   <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Select Country Code</Text>
-                    <Pressable
+                    <TouchableOpacity
+                      activeOpacity={0.7}
                       onPress={() => {
                         setShowCountryCodeModal(false);
                         setCountryCodeSearch("");
                       }}
                     >
                       <MaterialIcons name="close" size={24} color="#111827" />
-                    </Pressable>
+                    </TouchableOpacity>
                   </View>
 
                   {/* Country Code Search Input */}
@@ -259,7 +261,8 @@ export function ContactSummaryScreen() {
                     data={getFilteredCountryCodes()}
                     keyExtractor={(item: CountryCodeItem) => item.code}
                     renderItem={({ item }: { item: CountryCodeItem }) => (
-                      <Pressable
+                      <TouchableOpacity
+                        activeOpacity={0.7}
                         style={styles.countryCodeOption}
                         onPress={() => {
                           setSelectedCountryCode(item.code);
@@ -274,7 +277,7 @@ export function ContactSummaryScreen() {
                           <Text style={styles.countryCodeOptionCountry}>{item.country}</Text>
                         </View>
                         <Text style={styles.digitCount}>({item.digits} digits)</Text>
-                      </Pressable>
+                      </TouchableOpacity>
                     )}
                   />
                 </View>
@@ -322,7 +325,8 @@ export function ContactSummaryScreen() {
               {showLocationSuggestions && locationSuggestions.length > 0 && (
                 <View style={styles.suggestionsContainer}>
                   {locationSuggestions.map((suggestion) => (
-                    <Pressable
+                    <TouchableOpacity
+                      activeOpacity={0.7}
                       key={suggestion.id}
                       style={styles.suggestionItem}
                       onPress={() => {
@@ -356,7 +360,7 @@ export function ContactSummaryScreen() {
                           </Text>
                         </View>
                       </View>
-                    </Pressable>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -390,29 +394,23 @@ export function ContactSummaryScreen() {
 
           {/* Navigation Buttons */}
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.secondaryButton]}
               onPress={handleBack}
             >
               <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
               <Text style={styles.secondaryButtonText}>Back</Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.primaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.primaryButton]}
               onPress={handleNext}
             >
               <Text style={styles.primaryButtonText}>Next</Text>
               <MaterialIcons name="arrow-forward" size={20} color="white" />
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
