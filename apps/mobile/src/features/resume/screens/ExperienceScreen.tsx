@@ -3,8 +3,7 @@
  * Collect work experience and educational background
  */
 
-import { View, ScrollView, StyleSheet, TouchableOpacity, Switch } from "react-native";
-import { Text } from "@/components/Themed";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Switch, Text } from "react-native";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addExperience,

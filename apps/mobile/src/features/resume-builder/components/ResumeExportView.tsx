@@ -59,7 +59,7 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
       }
       throw new Error("Export response did not contain PDF URL");
     } catch (error) {
-      console.error("PDF Export failure:", error);
+      console.warn("PDF Export failure:", error);
       Alert.alert("Export Failed", "Failed to generate your resume. Please try again.");
       return null;
     } finally {

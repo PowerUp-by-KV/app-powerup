@@ -7,14 +7,13 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  Pressable,
   Alert,
   ActivityIndicator,
   Platform,
   Modal,
   TouchableOpacity,
+  Text,
 } from "react-native";
-import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {

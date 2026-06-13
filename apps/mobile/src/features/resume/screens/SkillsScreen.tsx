@@ -9,8 +9,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput as RNTextInput,
+  Text,
 } from "react-native";
-import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addSkill,
