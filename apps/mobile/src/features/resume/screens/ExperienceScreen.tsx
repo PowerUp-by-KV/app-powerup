@@ -3,8 +3,7 @@
  * Collect work experience and educational background
  */
 
-import { View, ScrollView, StyleSheet, Pressable, Switch } from "react-native";
-import { Text } from "@/components/Themed";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Switch, Text } from "react-native";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addExperience,
@@ -213,24 +212,20 @@ export function ExperienceScreen() {
                       </Text>
                     </View>
                     <View style={styles.listItemActions}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.iconButton,
-                          pressed && styles.buttonPressed,
-                        ]}
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        style={[styles.iconButton]}
                         onPress={() => handleEditExperience(exp)}
                       >
                         <MaterialIcons name="edit" size={18} color="#2563EB" />
-                      </Pressable>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.iconButton,
-                          pressed && styles.buttonPressed,
-                        ]}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        style={[styles.iconButton]}
                         onPress={() => dispatch(removeExperience(exp.id))}
                       >
                         <MaterialIcons name="delete" size={18} color="#dc2626" />
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
@@ -317,38 +312,33 @@ export function ExperienceScreen() {
                 />
 
                 <View style={styles.formButtonContainer}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.secondaryButton,
-                      pressed && styles.buttonPressed,
-                    ]}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={[styles.button, styles.secondaryButton]}
                     onPress={handleCancelExperienceForm}
                   >
                     <Text style={styles.secondaryButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.primaryButton,
-                      pressed && styles.buttonPressed,
-                    ]}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={[styles.button, styles.primaryButton]}
                     onPress={handleAddExperience}
                   >
                     <Text style={styles.primaryButtonText}>
                       {editingExperienceId ? "Update" : "Add"}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <Pressable
-                style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.addButton]}
                 onPress={() => setShowExperienceForm(true)}
               >
                 <MaterialIcons name="add" size={20} color="#2563EB" />
                 <Text style={styles.addButtonText}>Add Experience</Text>
-              </Pressable>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -371,24 +361,20 @@ export function ExperienceScreen() {
                       <Text style={styles.listItemDate}>{edu.field}</Text>
                     </View>
                     <View style={styles.listItemActions}>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.iconButton,
-                          pressed && styles.buttonPressed,
-                        ]}
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        style={[styles.iconButton]}
                         onPress={() => handleEditEducation(edu)}
                       >
                         <MaterialIcons name="edit" size={18} color="#2563EB" />
-                      </Pressable>
-                      <Pressable
-                        style={({ pressed }) => [
-                          styles.iconButton,
-                          pressed && styles.buttonPressed,
-                        ]}
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        style={[styles.iconButton]}
                         onPress={() => dispatch(removeEducation(edu.id))}
                       >
                         <MaterialIcons name="delete" size={18} color="#dc2626" />
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
@@ -448,66 +434,55 @@ export function ExperienceScreen() {
                 />
 
                 <View style={styles.formButtonContainer}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.secondaryButton,
-                      pressed && styles.buttonPressed,
-                    ]}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={[styles.button, styles.secondaryButton]}
                     onPress={handleCancelEducationForm}
                   >
                     <Text style={styles.secondaryButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.button,
-                      styles.primaryButton,
-                      pressed && styles.buttonPressed,
-                    ]}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    style={[styles.button, styles.primaryButton]}
                     onPress={handleAddEducation}
                   >
                     <Text style={styles.primaryButtonText}>
                       {editingEducationId ? "Update" : "Add"}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <Pressable
-                style={({ pressed }) => [styles.addButton, pressed && styles.buttonPressed]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.addButton]}
                 onPress={() => setShowEducationForm(true)}
               >
                 <MaterialIcons name="add" size={20} color="#2563EB" />
                 <Text style={styles.addButtonText}>Add Education</Text>
-              </Pressable>
+              </TouchableOpacity>
             )}
           </View>
 
           {/* Navigation Buttons */}
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.secondaryButton]}
               onPress={() => dispatch(previousStep())}
             >
               <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
               <Text style={styles.secondaryButtonText}>Back</Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.primaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.primaryButton]}
               onPress={() => dispatch(nextStep())}
             >
               <Text style={styles.primaryButtonText}>Next</Text>
               <MaterialIcons name="arrow-forward" size={20} color="white" />
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

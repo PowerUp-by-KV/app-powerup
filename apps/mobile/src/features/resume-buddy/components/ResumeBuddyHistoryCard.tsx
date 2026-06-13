@@ -32,7 +32,7 @@ export function ResumeBuddyHistoryCard({ item, onPress }: ResumeBuddyHistoryCard
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : undefined]}
       onPress={onPress}
     >
       {/* Header row */}

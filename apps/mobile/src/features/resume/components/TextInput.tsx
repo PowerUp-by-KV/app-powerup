@@ -3,8 +3,12 @@
  * With label, error state, and multiline support
  */
 
-import { View, TextInput as RNTextInput, TextInputProps as RNTextInputProps } from "react-native";
-import { Text } from "@/components/Themed";
+import {
+  View,
+  Text,
+  TextInput as RNTextInput,
+  TextInputProps as RNTextInputProps,
+} from "react-native";
 
 interface TextInputProps extends RNTextInputProps {
   label?: string;
