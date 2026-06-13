@@ -143,6 +143,7 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
     await deleteItem(COMPLETED_SECTIONS_KEY);
     await deleteItem(ASSESSMENT_SESSION_KEY);
     await deleteItem(ASSESSMENT_START_TIME_KEY);
+    await deleteItem(ASSESSMENT_ELAPSED_TIME_KEY);
     await deleteItem(PRE_ASSESSMENT_RESULTS_KEY);
     await deleteItem(ONBOARDING_ANSWERS_KEY);
     await deleteItem(ONBOARDING_WIZARD_STATE_KEY);
@@ -154,14 +155,14 @@ export async function clearStaleLocalFlagsIfUserChanged(newEmail: string): Promi
 
 export async function saveOnboardingWizardState(state: {
   currentStep: number;
-  formData: any;
+  formData: Record<string, unknown>;
 }): Promise<void> {
   await setItem(ONBOARDING_WIZARD_STATE_KEY, JSON.stringify(state));
 }
 
 export async function getOnboardingWizardState(): Promise<{
   currentStep: number;
-  formData: any;
+  formData: Record<string, unknown>;
 } | null> {
   const raw = await getItem(ONBOARDING_WIZARD_STATE_KEY);
   if (!raw) return null;
@@ -201,6 +202,7 @@ export async function clearCompletedSections(): Promise<void> {
 }
 
 const ASSESSMENT_START_TIME_KEY = "powerup.assessment_start_time";
+const ASSESSMENT_ELAPSED_TIME_KEY = "powerup.assessment_elapsed_time";
 
 export async function saveAssessmentStartTime(time: number): Promise<void> {
   const existing = await getItem(ASSESSMENT_START_TIME_KEY);
@@ -216,6 +218,19 @@ export async function getAssessmentStartTime(): Promise<number | null> {
 
 export async function clearAssessmentStartTime(): Promise<void> {
   await deleteItem(ASSESSMENT_START_TIME_KEY);
+}
+
+export async function saveAssessmentElapsedTime(seconds: number): Promise<void> {
+  await setItem(ASSESSMENT_ELAPSED_TIME_KEY, String(seconds));
+}
+
+export async function getAssessmentElapsedTime(): Promise<number> {
+  const raw = await getItem(ASSESSMENT_ELAPSED_TIME_KEY);
+  return raw ? Number(raw) : 0;
+}
+
+export async function clearAssessmentElapsedTime(): Promise<void> {
+  await deleteItem(ASSESSMENT_ELAPSED_TIME_KEY);
 }
 
 export interface StoredPreAssessmentResult {
@@ -250,11 +265,11 @@ export async function clearPreAssessmentResults(): Promise<void> {
 
 const ONBOARDING_ANSWERS_KEY = "powerup.onboarding_answers";
 
-export async function saveLocalOnboardingAnswers(answers: Record<string, any>): Promise<void> {
+export async function saveLocalOnboardingAnswers(answers: Record<string, unknown>): Promise<void> {
   await setItem(ONBOARDING_ANSWERS_KEY, JSON.stringify(answers));
 }
 
-export async function getLocalOnboardingAnswers(): Promise<Record<string, any> | null> {
+export async function getLocalOnboardingAnswers(): Promise<Record<string, unknown> | null> {
   const raw = await getItem(ONBOARDING_ANSWERS_KEY);
   if (!raw) return null;
   try {

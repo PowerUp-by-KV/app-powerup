@@ -1,7 +1,8 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { Platform } from "react-native";
-import { getAuthSession, saveAuthSession } from "./auth-storage";
+import { router } from "expo-router";
+import { getAuthSession, saveAuthSession, clearAuthSession } from "./auth-storage";
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
@@ -47,6 +48,32 @@ export function resolveApiAssetUrl(url?: string | null): string | null {
   }
 }
 
+export async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const currentSession = await getAuthSession();
+    if (currentSession?.refresh_token) {
+      const refreshResp = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: currentSession.refresh_token }),
+      });
+      if (refreshResp.ok) {
+        const refreshed = await refreshResp.json();
+        const newAccessToken = refreshed.access_token;
+        await saveAuthSession({
+          ...currentSession,
+          access_token: newAccessToken,
+          refresh_token: refreshed.refresh_token ?? currentSession.refresh_token,
+        });
+        return newAccessToken;
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to refresh access token:", error);
+  }
+  return null;
+}
+
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: async (headers) => {
@@ -62,6 +89,8 @@ const rawBaseQuery = fetchBaseQuery({
     return headers;
   },
 });
+
+let isRedirectingToLogin = false;
 
 // On 401: try refresh once, update stored session, retry original request.
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
@@ -93,6 +122,24 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
         });
         // Retry the original request with the new token.
         result = await rawBaseQuery(args, api, extraOptions);
+      } else {
+        await clearAuthSession();
+        if (!isRedirectingToLogin) {
+          isRedirectingToLogin = true;
+          router.replace("/login");
+          setTimeout(() => {
+            isRedirectingToLogin = false;
+          }, 1000);
+        }
+      }
+    } else {
+      await clearAuthSession();
+      if (!isRedirectingToLogin) {
+        isRedirectingToLogin = true;
+        router.replace("/login");
+        setTimeout(() => {
+          isRedirectingToLogin = false;
+        }, 1000);
       }
     }
   }
@@ -120,6 +167,7 @@ export const api = createApi({
     "Subscription",
     "Avatars",
     "PracticeHistory",
+    "InterviewPlayground",
   ] as const,
   endpoints: () => ({}),
 });

@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useState, useRef } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View, Animated } from "react-native";
+import { ActivityIndicator, Text, View, Animated } from "react-native";
 import LottieView from "lottie-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ONBOARDING_TIPS = [
   "A complete profile helps your AI coach personalize your journey.",
@@ -17,6 +19,7 @@ interface LoaderScreenProps {
 const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
   const [tipIdx, setTipIdx] = useState(0);
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const tipInterval = setInterval(() => {
@@ -41,11 +44,10 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
         }),
       ]),
     ).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <SafeAreaView
+    <View
       style={{
         flex: 1,
         backgroundColor: "transparent",
@@ -53,6 +55,7 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
         height: "100%",
         alignItems: "center",
         justifyContent: "center",
+        paddingTop: insets.top,
       }}
       className="items-center justify-center p-6"
     >
@@ -100,7 +103,7 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
           </Text>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

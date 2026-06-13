@@ -1,14 +1,8 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useEffect, useRef } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  ActivityIndicator,
-  ScrollView,
-  SafeAreaView,
-  Animated,
-} from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ScrollView, Animated } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { Href } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -37,7 +31,6 @@ function ScoreCircle({ pct, label }: { pct: number; label: string }) {
       duration: 800,
       useNativeDriver: true,
     }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalised]);
 
   return (
@@ -155,6 +148,7 @@ function ControlBtn({
 
 export function MockInterviewQuestionScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const sessionId = useAppSelector((s) => s.mockInterview.sessionId);
   const currentQuestionText = useAppSelector((s) => s.mockInterview.currentQuestionText);
@@ -192,7 +186,10 @@ export function MockInterviewQuestionScreen() {
   }, [isRecording, startRecording, stopRecording]);
 
   const handleSubmit = useCallback(async () => {
-    if (!sessionId || !currentQuestionId) return;
+    if (!sessionId || !currentQuestionId) {
+      setSubmitError("Question not loaded yet. Please wait a moment and try again.");
+      return;
+    }
     setSubmitError(null);
     try {
       const result = await submitAnswer({
@@ -222,7 +219,11 @@ export function MockInterviewQuestionScreen() {
   const confidencePct = findByName("confidence", 2);
   const behaviourPct = lastScore ? Math.round((relevancePct + confidencePct) / 2) : 0;
 
-  const canSubmit = !isSubmitting && (audioFile !== null || transcript.length > 0) && !isRecording;
+  const canSubmit =
+    !isSubmitting &&
+    !!currentQuestionId &&
+    (audioFile !== null || transcript.length > 0) &&
+    !isRecording;
 
   if (isLoadingQuestion) {
     return (
@@ -258,7 +259,7 @@ export function MockInterviewQuestionScreen() {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#0f172a" }}>
+    <View style={{ flex: 1, backgroundColor: "#0f172a", paddingTop: insets.top }}>
       {/* ── Top header ────────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", textAlign: "center" }}>
@@ -500,6 +501,6 @@ export function MockInterviewQuestionScreen() {
           )}
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

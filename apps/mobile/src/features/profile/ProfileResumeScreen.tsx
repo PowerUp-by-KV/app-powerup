@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
@@ -5,13 +6,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import {
@@ -33,6 +34,7 @@ interface ExtendedResume extends Omit<ResumeRead, "contact"> {
 
 export function ProfileResumeScreen() {
   const safeBack = useSafeBack();
+  const insets = useSafeAreaInsets();
   const { data: resume, isLoading: isFetching, refetch } = useGetProfileResumeQuery();
   const [updateProfileResume, { isLoading: isUpdating }] = useUpdateProfileResumeMutation();
 
@@ -119,7 +121,7 @@ export function ProfileResumeScreen() {
     .filter((s) => s.length > 0);
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-slate-50">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -142,7 +144,7 @@ export function ProfileResumeScreen() {
         <View className="flex-row p-2 bg-white border-b border-slate-100">
           <Pressable
             onPress={() => setActiveTab("view")}
-            className={`flex-1 py-3 items-center justify-center rounded-2xl ${activeTab === "view" ? "bg-slate-900 shadow-sm" : "bg-transparent"}`}
+            className={`flex-1 py-3 items-center justify-center rounded-2xl ${activeTab === "view" ? "bg-blue-500 shadow-sm" : "bg-transparent"}`}
           >
             <Text
               className={`font-bold text-sm ${activeTab === "view" ? "text-white" : "text-slate-500"}`}
@@ -152,7 +154,7 @@ export function ProfileResumeScreen() {
           </Pressable>
           <Pressable
             onPress={() => setActiveTab("edit")}
-            className={`flex-1 py-3 items-center justify-center rounded-2xl ${activeTab === "edit" ? "bg-slate-900 shadow-sm" : "bg-transparent"}`}
+            className={`flex-1 py-3 items-center justify-center rounded-2xl ${activeTab === "edit" ? "bg-blue-500 shadow-sm" : "bg-transparent"}`}
           >
             <Text
               className={`font-bold text-sm ${activeTab === "edit" ? "text-white" : "text-slate-500"}`}
@@ -247,7 +249,7 @@ export function ProfileResumeScreen() {
               {/* Interactive Edit Callout */}
               <Pressable
                 onPress={() => setActiveTab("edit")}
-                className="bg-slate-900 active:bg-slate-800 py-4 rounded-2xl flex-row items-center justify-center gap-2.5 shadow-sm"
+                className="bg-blue-500 active:bg-blue-600 py-4 rounded-2xl flex-row items-center justify-center gap-2.5 shadow-sm"
               >
                 <Feather name="edit-3" size={16} color="#fff" />
                 <Text className="text-white font-extrabold text-sm">Edit Resume Details</Text>
@@ -359,7 +361,7 @@ export function ProfileResumeScreen() {
               <Pressable
                 onPress={handleSave}
                 disabled={isUpdating}
-                className={`py-4 rounded-2xl items-center justify-center flex-row shadow-sm ${isUpdating ? "bg-slate-300" : "bg-emerald-600 active:bg-emerald-700"}`}
+                className={`py-4 rounded-2xl items-center justify-center flex-row shadow-sm ${isUpdating ? "bg-slate-300" : "bg-blue-500 active:bg-blue-600"}`}
               >
                 {isUpdating ? (
                   <ActivityIndicator color="#fff" />
@@ -374,6 +376,6 @@ export function ProfileResumeScreen() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }

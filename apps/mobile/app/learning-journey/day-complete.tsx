@@ -2,7 +2,6 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  SafeAreaView,
   ScrollView,
   Text,
   View,
@@ -10,6 +9,7 @@ import {
   Dimensions,
   StyleSheet,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -24,10 +24,11 @@ interface CelebrationOverlayProps {
   score?: number | null;
 }
 
+const PARTICLE_COUNT = 30;
+const EMOJIS = ["🎉", "✨", "🔥", "⭐", "🏅", "🏆", "🍭", "💫", "🎯", "⚡", "👑", "💖"];
+
 function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: CelebrationOverlayProps) {
   const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
-  const PARTICLE_COUNT = 30;
-  const EMOJIS = ["🎉", "✨", "🔥", "⭐", "🏅", "🏆", "🍭", "💫", "🎯", "⚡", "👑", "💖"];
 
   // Confetti particles setup
   const particles = useMemo(() => {
@@ -39,7 +40,6 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
       scale: Math.random() * 0.7 + 0.6,
       emoji: EMOJIS[i % EMOJIS.length],
     }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenWidth]);
 
   const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -104,8 +104,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
 
       Animated.parallel(animations).start();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, screenHeight, particles]);
+  }, [visible, screenHeight, particles, opacityAnim, pulseAnim, scaleAnim]);
 
   const handleClose = () => {
     Animated.parallel([
@@ -219,6 +218,7 @@ function CelebrationOverlay({ visible, onClose, type, xpEarned, score }: Celebra
  */
 export default function DayCompleteScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     day_number?: string;
     module_id?: string;
@@ -257,7 +257,7 @@ export default function DayCompleteScreen() {
   const goHome = () => {
     if (moduleId) {
       router.replace({
-        pathname: "/(tabs)/my-learning" as any,
+        pathname: "/(tabs)/my-learning" as never,
         params: { module_id: moduleId },
       });
     } else {
@@ -278,7 +278,7 @@ export default function DayCompleteScreen() {
   // ── State 2: Module check passed ───────────────────────────────────────
   if (state === "check-passed") {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
         <CelebrationOverlay
           visible={overlayVisible}
           onClose={() => setOverlayVisible(false)}
@@ -362,14 +362,14 @@ export default function DayCompleteScreen() {
             </Pressable>
           )}
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ── State 3: Module check failed ───────────────────────────────────────
   if (state === "check-failed") {
     return (
-      <SafeAreaView className="flex-1 bg-white">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
         <ScrollView contentContainerStyle={{ padding: 24, alignItems: "center" }}>
           <Feather name="refresh-ccw" size={64} color="#64748b" style={{ marginTop: 20 }} />
           <Text className="text-2xl font-extrabold text-slate-900 mt-4 text-center">
@@ -400,13 +400,13 @@ export default function DayCompleteScreen() {
             <Text style={{ color: "#fff", fontWeight: "700" }}>Review weak days</Text>
           </Pressable>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ── State 1: Normal day complete ───────────────────────────────────────
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
       <CelebrationOverlay
         visible={overlayVisible}
         onClose={() => setOverlayVisible(false)}
@@ -448,7 +448,7 @@ export default function DayCompleteScreen() {
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,0 +1,115 @@
+import React, { useEffect, useRef } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+
+import type { TranscriptTurn } from "../types";
+
+interface TranscriptPanelProps {
+  turns: TranscriptTurn[];
+}
+
+const ROLE_LABELS: Record<TranscriptTurn["role"], string> = {
+  interviewer: "AI Interviewer",
+  candidate: "You",
+};
+
+export function TranscriptPanel({ turns }: TranscriptPanelProps) {
+  const scrollRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [turns]);
+
+  if (turns.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Text style={styles.emptyText}>The conversation will appear here…</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.content}>
+      {turns.map((turn, index) => {
+        const isAI = turn.role === "interviewer";
+        return (
+          <View key={index} style={[styles.row, isAI ? styles.rowLeft : styles.rowRight]}>
+            <Text style={[styles.speaker, isAI ? styles.speakerAI : styles.speakerUser]}>
+              {ROLE_LABELS[turn.role]}
+            </Text>
+            <View style={[styles.bubble, isAI ? styles.bubbleAI : styles.bubbleUser]}>
+              <Text style={[styles.text, isAI ? styles.textAI : styles.textUser]}>{turn.text}</Text>
+            </View>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    padding: 16,
+    gap: 14,
+  },
+  row: {
+    maxWidth: "88%",
+  },
+  rowLeft: {
+    alignSelf: "flex-start",
+    alignItems: "flex-start",
+  },
+  rowRight: {
+    alignSelf: "flex-end",
+    alignItems: "flex-end",
+  },
+  speaker: {
+    fontSize: 11,
+    fontWeight: "700",
+    marginBottom: 4,
+    marginHorizontal: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  speakerAI: {
+    color: "#A5B4FC",
+  },
+  speakerUser: {
+    color: "#7DD3FC",
+  },
+  bubble: {
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  bubbleAI: {
+    backgroundColor: "#312E81",
+    borderTopLeftRadius: 4,
+  },
+  bubbleUser: {
+    backgroundColor: "#1E293B",
+    borderTopRightRadius: 4,
+  },
+  text: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  textAI: {
+    color: "#EEF2FF",
+  },
+  textUser: {
+    color: "#E2E8F0",
+  },
+  empty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 32,
+  },
+  emptyText: {
+    color: "#64748B",
+    fontSize: 14,
+  },
+});

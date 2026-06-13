@@ -369,6 +369,7 @@ export function ResumeHomeScreen() {
           <View
             style={[
               styles.skeletonPaper,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               Platform.OS === "web" ? ({ filter: "blur(4px)" } as any) : {},
             ]}
           >
@@ -1050,8 +1051,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    maxWidth: 600,
-    alignSelf: "center",
     width: "100%",
   },
   headerSection: {

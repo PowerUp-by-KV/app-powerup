@@ -25,4 +25,8 @@ export const resumeBuddyApi = api.injectEndpoints({
   }),
 });
 
-export const { useAnalyzeResumeMutation, useGetResumeBuddyHistoryQuery } = resumeBuddyApi;
+export const {
+  useAnalyzeResumeMutation,
+  useGetResumeBuddyHistoryQuery,
+  useLazyGetResumeBuddyHistoryQuery,
+} = resumeBuddyApi;

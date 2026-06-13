@@ -75,7 +75,7 @@ export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: 
   const cefrInfo = getCefrInfo(cefr);
   const percentage =
     cefrInfo.percentage > 0 ? cefrInfo.percentage : total > 0 ? ((score || 0) / total) * 100 : 0;
-  const activeColor = cefrInfo.percentage > 0 ? cefrInfo.color : "#4f46e5";
+  const activeColor = cefrInfo.percentage > 0 ? cefrInfo.color : "#3b82f6";
 
   // Rotation for progress arc:
   // 0% -> -90deg, 100% -> 90deg (for a 180 degree gauge)

@@ -1,14 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Platform } from "react-native";
 import {
@@ -16,6 +17,7 @@ import {
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   BSpeakingSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { SpeakingQuestion } from "./components/SpeakingQuestion";
 import { RecordingControls } from "./components/RecordingControls";
@@ -28,6 +30,8 @@ import LottieView from "lottie-react-native";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -60,6 +64,7 @@ const getOptimizedRecordingSettings = (): any => {
 
 export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -81,6 +86,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -143,7 +149,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached (double safety)
@@ -151,7 +156,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     if (isRecording && recordingDuration >= maxDuration) {
       stopRecording();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingDuration, isRecording, maxDuration]);
 
   useEffect(() => {
@@ -248,15 +252,26 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Server Connection Lost
@@ -272,14 +287,14 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             <View className="w-full gap-3">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -344,14 +359,18 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
         }
       }
 
+      // Poll/verify status
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
+
       await saveCompletedSection("B_SPEAKING");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
+      console.error("B_SPEAKING submission failed:", err);
       setIsFinished(false);
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
     }
   };
@@ -393,7 +412,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -470,7 +489,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

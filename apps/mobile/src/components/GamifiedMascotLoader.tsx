@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Text, View, TouchableOpacity } from "react-native";
 import LottieView from "lottie-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const TIPS = [
   "Consistency is key! Just 10 minutes a day builds strong neural paths.",
@@ -15,14 +16,17 @@ interface GamifiedMascotLoaderProps {
   title?: string;
   buttonText?: string;
   onButtonPress?: () => void;
+  subtitle?: string;
 }
 
 export function GamifiedMascotLoader({
   title = "Preparing your session...",
   buttonText,
   onButtonPress,
+  subtitle,
 }: GamifiedMascotLoaderProps) {
   const [tipIdx, setTipIdx] = useState(0);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -32,7 +36,7 @@ export function GamifiedMascotLoader({
   }, []);
 
   return (
-    <SafeAreaView
+    <View
       style={{
         flex: 1,
         backgroundColor: "transparent",
@@ -40,6 +44,7 @@ export function GamifiedMascotLoader({
         height: "100%",
         alignItems: "center",
         justifyContent: "center",
+        paddingTop: insets.top,
       }}
       className="items-center justify-center p-6"
     >
@@ -69,7 +74,7 @@ export function GamifiedMascotLoader({
 
         {/* Floating pulse status text */}
         <Text className="text-indigo-600 font-extrabold text-xs uppercase tracking-widest mb-8">
-          Connecting.......
+          {subtitle || "Connecting......."}
         </Text>
 
         {/* Beautiful Floating glassmorphic Pro Tip Box */}
@@ -90,6 +95,6 @@ export function GamifiedMascotLoader({
           </TouchableOpacity>
         )}
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

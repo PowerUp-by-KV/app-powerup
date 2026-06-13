@@ -12,35 +12,162 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
-import { getAuthSession } from "@/services/auth-storage";
+import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
+import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 
 SplashScreen.preventAutoHideAsync();
 
-const PUBLIC_ROUTES = ["login", "register", "otp", "splash"];
+const PUBLIC_ROUTES = ["login", "register", "otp", "splash", "verify-email", "verify-phone"];
+const ALLOWED_BEFORE_ONBOARDING = [
+  "onboarding",
+  "onboarding-resume",
+  "verify-email",
+  "verify-phone",
+  "thank-you",
+  "welcome-back",
+  "success",
+  "profile",
+];
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
-  const [checked, setChecked] = useState(false);
+  const currentRoute = segments[0] as string | undefined;
+
+  const [session, setSession] = useState<StoredSession | null>(null);
+  // Tracks the route for which the session read has completed.
+  const [readyForRoute, setReadyForRoute] = useState<string | undefined>(undefined);
+  // Ensures we wait for at least one successful or failed network check before proceeding.
+  const [hasStartedFetching, setHasStartedFetching] = useState(false);
+  const [networkCheckComplete, setNetworkCheckComplete] = useState(false);
 
   useEffect(() => {
-    getAuthSession().then((session) => {
-      const currentRoute = segments[0] as string | undefined;
-      const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
-      if (!session && !isPublic) {
-        router.replace("/login");
-      }
-      setChecked(true);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [segments]);
+    let active = true;
+    getAuthSession()
+      .then((sess) => {
+        if (!active) return;
+        setSession(sess);
+      })
+      .catch((err) => {
+        console.warn("Failed to load session in guard:", err);
+      })
+      .finally(() => {
+        if (active) setReadyForRoute(currentRoute);
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentRoute]);
 
-  if (!checked) return null;
+  // Stale while a navigation has changed the route but its session read has not
+  // resolved yet — redirect logic must wait for this to become true.
+  const isLocalReady = readyForRoute === currentRoute;
+
+  const userId = session?.user?.id;
+  const {
+    data: onboardingStatus,
+    isLoading: isOnboardingLoading,
+    isFetching: isOnboardingFetching,
+    isError: isOnboardingError,
+    error: onboardingError,
+  } = useGetOnboardingStatusQuery(userId ?? "", {
+    skip: !userId,
+    refetchOnMountOrArgChange: true,
+  });
+
+  useEffect(() => {
+    if (userId) {
+      if (isOnboardingFetching) {
+        setHasStartedFetching(true);
+      } else if (hasStartedFetching && !isOnboardingFetching) {
+        setNetworkCheckComplete(true);
+      }
+    }
+  }, [userId, isOnboardingFetching, hasStartedFetching]);
+
+  useEffect(() => {
+    if (!isLocalReady) return;
+
+    const isQueryActive = !!userId;
+    if (
+      session &&
+      isQueryActive &&
+      (!networkCheckComplete ||
+        isOnboardingLoading ||
+        isOnboardingFetching ||
+        (onboardingStatus === undefined && !isOnboardingError))
+    ) {
+      return;
+    }
+
+    const isPublic = !currentRoute || PUBLIC_ROUTES.includes(currentRoute);
+
+    if (isOnboardingError) {
+      const isUnauthorized =
+        onboardingError &&
+        typeof onboardingError === "object" &&
+        "status" in onboardingError &&
+        (onboardingError.status === 401 || onboardingError.status === 403);
+
+      if (isUnauthorized) {
+        clearAuthSession().then(() => {
+          setSession(null);
+          router.replace("/login");
+        });
+      }
+      return;
+    }
+
+    if (!session) {
+      if (!isPublic) router.replace("/login");
+    } else {
+      const onboardingComplete = onboardingStatus?.answers_present ?? false;
+
+      if (!onboardingComplete) {
+        // Logged in but onboarding not complete.
+        // They should only be on onboarding or verification routes.
+        // If they are on a public route that is not verify-email/verify-phone (like splash, login, register), redirect to onboarding.
+        if (currentRoute && !ALLOWED_BEFORE_ONBOARDING.includes(currentRoute)) {
+          router.replace("/onboarding" as never);
+        }
+      } else {
+        // Logged in and onboarding complete.
+        // They should NOT be on any auth/onboarding routes (login, register, otp, splash, verify-email, verify-phone, onboarding).
+        const blockedRoutes = [
+          "login",
+          "register",
+          "otp",
+          "splash",
+          "verify-email",
+          "verify-phone",
+          "onboarding",
+        ];
+        if (currentRoute && blockedRoutes.includes(currentRoute)) {
+          router.replace("/(tabs)/my-learning" as never);
+        }
+      }
+    }
+  }, [
+    session,
+    readyForRoute,
+    isLocalReady,
+    userId,
+    onboardingStatus,
+    isOnboardingLoading,
+    isOnboardingFetching,
+    isOnboardingError,
+    onboardingError,
+    networkCheckComplete,
+    currentRoute,
+    segments,
+    router,
+  ]);
+
   return <>{children}</>;
 }
 
 export default function AuthLayout() {
-  const [loaded, error] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter: Inter_400Regular,
     "Inter-Regular": Inter_400Regular,
     "Inter-Medium": Inter_500Medium,
@@ -49,14 +176,29 @@ export default function AuthLayout() {
     "Inter-ExtraBold": Inter_800ExtraBold,
   });
 
+  const [authChecked, setAuthChecked] = useState(false);
+
   useEffect(() => {
-    if (loaded || error) {
+    getAuthSession()
+      .catch((err) => {
+        console.warn("Failed to load session on mount:", err);
+      })
+      .finally(() => {
+        // Always mark as checked even if SecureStore throws — prevents
+        // the app being permanently stuck on the splash screen.
+        setAuthChecked(true);
+      });
+  }, []);
+
+  // Only hide splash once BOTH fonts and the initial auth check are done.
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && authChecked) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [fontsLoaded, fontError, authChecked]);
 
-  if (!loaded && !error) {
-    return null;
+  if ((!fontsLoaded && !fontError) || !authChecked) {
+    return null; // Splash is still visible — no black frame.
   }
 
   return (
@@ -84,6 +226,13 @@ export default function AuthLayout() {
           <Stack.Screen name="listen" />
           <Stack.Screen name="results" />
           <Stack.Screen name="home" />
+          <Stack.Screen
+            name="chat"
+            options={{
+              presentation: "transparentModal",
+              animation: "fade",
+            }}
+          />
         </Stack>
       </RouteGuard>
     </Provider>

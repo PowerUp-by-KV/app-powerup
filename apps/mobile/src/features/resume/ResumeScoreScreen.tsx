@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import * as SecureStore from "expo-secure-store";
+
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
@@ -21,7 +22,9 @@ const { width } = Dimensions.get("window");
 // Clamp the radius so it doesn't explode on large screens, and keep it tight
 const SATELLITE_RADIUS = Math.min(width * 0.28, 140);
 
-function ScoreDiagram({ data }: { data: any }) {
+import { ResumeScoreResponse, ResumeScoreSection } from "@/services/resume-api";
+
+function ScoreDiagram({ data }: { data: Partial<ResumeScoreResponse> | undefined | null }) {
   const overall = data?.overall_score ?? 0;
   const sections = data?.sections ?? [];
 
@@ -51,14 +54,14 @@ function ScoreDiagram({ data }: { data: any }) {
       </View>
 
       {/* Satellite Nodes */}
-      {nodes.map((n: any, i: number) => {
+      {nodes.map((n: Partial<ResumeScoreSection>, i: number) => {
         const angle = ((angles[i % angles.length] ?? 0) * Math.PI) / 180;
         const x = SATELLITE_RADIUS * Math.cos(angle);
         const y = SATELLITE_RADIUS * Math.sin(angle);
 
         // Calculate the score (assuming score is absolute or out of max)
         const scoreVal = n.max
-          ? Math.round((n.score / Math.max(1, n.max)) * 100)
+          ? Math.round(((n.score || 0) / Math.max(1, n.max)) * 100)
           : Math.round(n.score || 0);
 
         return (
@@ -106,7 +109,7 @@ export function ResumeScoreScreen() {
   }, []);
 
   const userId = profile?.id || localUserId;
-  const { data, isLoading, isError } = useGetResumeScoreQuery(userId, { skip: !userId });
+  const { data, isLoading, isError } = useGetResumeScoreQuery(undefined, { skip: !userId });
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -184,7 +187,6 @@ export function ResumeScoreScreen() {
           </View>
         )}
       </ScrollView>
-
       {/* Floating Continue Button */}
       {!isLoading && !isError && (
         <View style={styles.floatingFooter}>

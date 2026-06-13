@@ -2,6 +2,10 @@ import { Platform } from "react-native";
 import { getAuthSession } from "./auth-storage";
 import { normalizeBaseUrlForRuntime } from "./api";
 
+interface TransientError extends Error {
+  status?: number;
+}
+
 /**
  * Uploads an audio recording to Azure Blob Storage via the backend.
  * Returns the SAS URL to use in assessment answer submissions.
@@ -36,7 +40,7 @@ export async function uploadAudioFile(
     fd.append("file", new File([blob], fileName, { type: mimeType }));
   } else {
     const mimeType = fileName.endsWith(".webm") ? "audio/webm" : "audio/m4a";
-    fd.append("file", { uri: audioUri, name: fileName, type: mimeType } as any);
+    fd.append("file", { uri: audioUri, name: fileName, type: mimeType } as unknown as Blob);
   }
 
   const performUpload = () => {
@@ -60,8 +64,8 @@ export async function uploadAudioFile(
             reject(new Error("Invalid response from audio upload"));
           }
         } else if (xhr.status === 504 || xhr.status === 502 || xhr.status === 503) {
-          const error = new Error(`Audio upload transient failure (${xhr.status})`);
-          (error as any).status = xhr.status;
+          const error: TransientError = new Error(`Audio upload transient failure (${xhr.status})`);
+          error.status = xhr.status;
           reject(error);
         } else {
           reject(new Error(`Audio upload failed (${xhr.status})`));
@@ -72,21 +76,21 @@ export async function uploadAudioFile(
     });
   };
 
-  let lastError: any;
+  let lastError: unknown;
   let retries = 5;
   let delay = 1000;
 
   while (retries > 0) {
     try {
       return await performUpload();
-    } catch (err: any) {
+    } catch (err) {
       lastError = err;
-      if (
-        err.message.includes("network error") ||
-        err.status === 504 ||
-        err.status === 502 ||
-        err.status === 503
-      ) {
+      const status =
+        typeof err === "object" && err !== null && "status" in err
+          ? (err as { status: number }).status
+          : undefined;
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("network error") || status === 504 || status === 502 || status === 503) {
         retries--;
         if (retries > 0) {
           const jitter = Math.random() * 1000;

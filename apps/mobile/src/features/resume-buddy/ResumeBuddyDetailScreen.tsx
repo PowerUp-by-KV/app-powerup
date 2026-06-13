@@ -1,12 +1,30 @@
-import React from "react";
-import { View, Text, ScrollView, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  StyleSheet,
+  ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import Svg, { Line } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetResumeBuddyHistoryQuery } from "./services/resume-buddy-api";
-import { AnalysisCard } from "./components/AnalysisCard";
-import { ScoreRing } from "./components/ScoreRing";
 import { SkillChip } from "./components/SkillChip";
+
+// Enable LayoutAnimation for Android
+if (Platform.OS === "android") {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
 
 function formatDate(dateStr: string): string {
   try {
@@ -21,10 +39,27 @@ function formatDate(dateStr: string): string {
   }
 }
 
+const getScoreColor = (pct: number): string => {
+  if (pct >= 81) return "#4CAF50"; // Green for 81 to 100
+  if (pct >= 41) return "#FF9800"; // Yellow for 41 to 80
+  return "#EF5350"; // Red for below 41 (40 or lower)
+};
+
+const getHeadline = (score: number) => {
+  if (score >= 85) return "Excellent! You are ready to apply!";
+  if (score >= 70) return "You're half way to a great start!";
+  return "Let's polish your resume to stand out!";
+};
+
 export function ResumeBuddyDetailScreen() {
   const router = useRouter();
   const { index } = useLocalSearchParams<{ index: string }>();
   const { data: history, isLoading } = useGetResumeBuddyHistoryQuery();
+
+  const [strengthsExpanded, setStrengthsExpanded] = useState(true);
+  const [weaknessesExpanded, setWeaknessesExpanded] = useState(true);
+  const [showAllStrengths, setShowAllStrengths] = useState(false);
+  const [showAllWeaknesses, setShowAllWeaknesses] = useState(false);
 
   const itemIndex = parseInt(index ?? "0", 10);
   const item = history?.[itemIndex];
@@ -32,7 +67,7 @@ export function ResumeBuddyDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
+        <ActivityIndicator size="large" color="#597AF4" />
         <Text style={styles.loadingText}>Loading analysis...</Text>
       </View>
     );
@@ -56,6 +91,51 @@ export function ResumeBuddyDetailScreen() {
     );
   }
 
+  const toggleStrengths = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setStrengthsExpanded(!strengthsExpanded);
+  };
+
+  const toggleWeaknesses = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setWeaknessesExpanded(!weaknessesExpanded);
+  };
+
+  // Helper to get raw percentage score for radiating nodes
+  const getCritVal = (key: string, defaultVal: number): number => {
+    const crit = item.criteria_scores?.find((c) => c.key === key);
+    if (!crit) return defaultVal;
+    return Math.round((crit.score / crit.max_score) * 100);
+  };
+
+  const skillsRelevanceScore = getCritVal("skills_relevance", 33);
+  const atsCompatibilityScore = getCritVal("ats_compatibility", 100);
+  const resumeStructureScore = getCritVal("resume_structure", 100);
+  const grammarClarityScore = getCritVal("grammar_clarity", 100);
+  const projectsExperienceScore = getCritVal("projects_experience", 95);
+
+  const atsPct = Math.round((item.ats_score / 20) * 100);
+  const atsColor = getScoreColor(atsPct);
+  const semPct =
+    item.ai_semantic_score > 100
+      ? Math.round(item.ai_semantic_score / 10)
+      : Math.round(item.ai_semantic_score);
+  const semColor = getScoreColor(semPct);
+  const rulePct =
+    item.rule_based_score > 100
+      ? Math.round(item.rule_based_score / 10)
+      : Math.round(item.rule_based_score);
+  const ruleColor = getScoreColor(rulePct);
+
+  const limit = 4;
+  const strengths = item.strengths ?? [];
+  const weaknesses = item.weaknesses ?? [];
+  const hasMoreStrengths = strengths.length > limit;
+  const hasMoreWeaknesses = weaknesses.length > limit;
+
+  const visibleStrengths = showAllStrengths ? strengths : strengths.slice(0, limit);
+  const visibleWeaknesses = showAllWeaknesses ? weaknesses : weaknesses.slice(0, limit);
+
   return (
     <ScrollView
       style={styles.scrollContainer}
@@ -64,35 +144,209 @@ export function ResumeBuddyDetailScreen() {
     >
       {/* Back Navigation */}
       <Pressable style={styles.backNav} onPress={() => router.back()}>
-        <Feather name="arrow-left" size={18} color="#4f46e5" />
+        <Feather name="arrow-left" size={18} color="#597AF4" />
         <Text style={styles.backNavText}>Back to History</Text>
       </Pressable>
 
-      {/* Header */}
+      {/* Header Card */}
       <View style={styles.headerCard}>
-        <View style={styles.roleRow}>
-          <Feather name="briefcase" size={16} color="#4f46e5" style={{ marginRight: 8 }} />
-          <Text style={styles.roleText}>{item.target_role}</Text>
+        <View style={styles.iconContainer}>
+          <Feather name="briefcase" size={20} color="#597AF4" />
         </View>
-        <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+        <View style={styles.headerTextContainer}>
+          <Text style={styles.roleText} numberOfLines={1}>
+            {item.target_role}
+          </Text>
+          <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+        </View>
       </View>
 
       {/* ── Score Overview ── */}
       <Text style={styles.sectionHeading}>Score Overview</Text>
-      <View style={styles.card}>
-        <View style={styles.scoreRingsRow}>
-          <ScoreRing score={item.overall_resume_score} maxScore={100} label="Overall" />
-          <ScoreRing score={item.ats_score} maxScore={20} label="ATS Score" />
-          <ScoreRing score={item.skills_match_percentage} maxScore={100} label="Skills Match" />
+      <LinearGradient
+        colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.cardGradient}
+      >
+        {/* Background overlapping semi-transparent circles */}
+        <View
+          style={{
+            position: "absolute",
+            right: -60,
+            top: -60,
+            width: 200,
+            height: 200,
+            borderRadius: 100,
+            backgroundColor: "rgba(255, 255, 255, 0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: -80,
+            width: 160,
+            height: 160,
+            borderRadius: 80,
+            backgroundColor: "rgba(255, 255, 255, 0.12)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -80,
+            bottom: -40,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255, 255, 255, 0.04)",
+          }}
+        />
+
+        <Text style={styles.cardHeader}>{getHeadline(item.overall_resume_score)}</Text>
+
+        {/* Web Chart Diagram Wrapper */}
+        <View style={styles.diagramWrapper}>
+          <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
+            <Line
+              x1={160}
+              y1={130}
+              x2={160}
+              y2={32}
+              stroke="rgba(255, 255, 255, 0.3)"
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+            <Line
+              x1={160}
+              y1={130}
+              x2={255}
+              y2={95}
+              stroke="rgba(255, 255, 255, 0.3)"
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+            <Line
+              x1={160}
+              y1={130}
+              x2={230}
+              y2={195}
+              stroke="rgba(255, 255, 255, 0.3)"
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+            <Line
+              x1={160}
+              y1={130}
+              x2={90}
+              y2={195}
+              stroke="rgba(255, 255, 255, 0.3)"
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+            <Line
+              x1={160}
+              y1={130}
+              x2={65}
+              y2={95}
+              stroke="rgba(255, 255, 255, 0.3)"
+              strokeWidth={1}
+              strokeDasharray="4,4"
+            />
+          </Svg>
+
+          <View style={styles.centerCircle}>
+            <Text style={styles.centerScoreText}>{Math.round(item.overall_resume_score)}%</Text>
+            <Text style={styles.centerScoreLabel}>OVERALL SCORE</Text>
+          </View>
+
+          {/* Radiating Nodes */}
+          <View style={[styles.radiatingNode, { top: 10, left: 110, width: 100 }]}>
+            <View style={styles.outerCircle}>
+              <Text style={styles.outerText}>{skillsRelevanceScore}%</Text>
+            </View>
+            <Text style={styles.outerLabel}>Skills Relevance</Text>
+          </View>
+
+          <View style={[styles.radiatingNode, { top: 73, right: 15, width: 80 }]}>
+            <View style={styles.outerCircle}>
+              <Text style={styles.outerText}>{atsCompatibilityScore}%</Text>
+            </View>
+            <Text style={styles.outerLabel}>ATS Compatibility</Text>
+          </View>
+
+          <View style={[styles.radiatingNode, { bottom: 20, right: 10, width: 120 }]}>
+            <View style={styles.outerCircle}>
+              <Text style={styles.outerText}>{resumeStructureScore}%</Text>
+            </View>
+            <Text style={styles.outerLabel}>Resume Structure</Text>
+          </View>
+
+          <View style={[styles.radiatingNode, { bottom: 20, left: 10, width: 120 }]}>
+            <View style={styles.outerCircle}>
+              <Text style={styles.outerText}>{grammarClarityScore}%</Text>
+            </View>
+            <Text style={styles.outerLabel}>Grammar & Clarity</Text>
+          </View>
+
+          <View style={[styles.radiatingNode, { top: 73, left: 15, width: 80 }]}>
+            <View style={styles.outerCircle}>
+              <Text style={styles.outerText}>{projectsExperienceScore}%</Text>
+            </View>
+            <Text style={styles.outerLabel}>Projects & Experience</Text>
+          </View>
         </View>
+
         {!!item.resume_quality_summary && (
-          <Text style={styles.qualitySummary}>{item.resume_quality_summary}</Text>
+          <Text style={styles.cardSummary}>{item.resume_quality_summary}</Text>
         )}
-      </View>
+      </LinearGradient>
+
+      {/* Dynamic Score Rings Card */}
+      <LinearGradient
+        colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.threeScoresCardGradient}
+      >
+        <View style={styles.threeScoresCard}>
+          <View style={styles.scoreCircleWrapper}>
+            <View style={[styles.scoreCircleRing, { borderColor: atsColor }]}>
+              <Text style={[styles.scoreCircleText, { color: atsColor }]}>{atsPct}%</Text>
+            </View>
+            <Text style={styles.scoreCircleLabel}>ATS Score</Text>
+          </View>
+          <View style={styles.scoreCircleWrapper}>
+            <View style={[styles.scoreCircleRing, { borderColor: semColor }]}>
+              <Text style={[styles.scoreCircleText, { color: semColor }]}>{semPct}%</Text>
+            </View>
+            <Text style={styles.scoreCircleLabel}>Semantic Score</Text>
+          </View>
+          <View style={styles.scoreCircleWrapper}>
+            <View style={[styles.scoreCircleRing, { borderColor: ruleColor }]}>
+              <Text style={[styles.scoreCircleText, { color: ruleColor }]}>{rulePct}%</Text>
+            </View>
+            <Text style={styles.scoreCircleLabel}>Rule-Based</Text>
+          </View>
+        </View>
+      </LinearGradient>
 
       {/* ── ATS Analysis ── */}
       <Text style={styles.sectionHeading}>ATS Analysis</Text>
       <View style={styles.card}>
+        <View style={styles.cardHeaderWithIcon}>
+          <View style={[styles.badgeCircle, { backgroundColor: "rgba(89, 122, 244, 0.1)" }]}>
+            <Feather name="shield" size={18} color="#597AF4" />
+          </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.cardTitle}>ATS Layout Findings</Text>
+            <Text style={styles.cardSubtitle}>ATS compatibility checklist</Text>
+          </View>
+        </View>
+
         {(
           [
             ["Single Column Layout", item.ats_analysis?.single_column_layout],
@@ -103,22 +357,28 @@ export function ResumeBuddyDetailScreen() {
           ] as [string, boolean][]
         ).map(([label, passed]) => (
           <View key={label} style={styles.atsCheckRow}>
-            <Feather
-              name={passed ? "check-circle" : "x-circle"}
-              size={16}
-              color={passed ? "#22c55e" : "#ef4444"}
-            />
-            <Text style={[styles.atsCheckLabel, { color: passed ? "#166534" : "#991b1b" }]}>
-              {label}
-            </Text>
+            <View
+              style={[
+                styles.checkIconWrapper,
+                { backgroundColor: passed ? "rgba(76, 175, 80, 0.1)" : "rgba(107, 114, 128, 0.1)" },
+              ]}
+            >
+              <Feather
+                name={passed ? "check" : "x"}
+                size={13}
+                color={passed ? "#4CAF50" : "#6B7280"}
+              />
+            </View>
+            <Text style={styles.atsCheckLabel}>{label}</Text>
           </View>
         ))}
+
         {!!item.ats_analysis?.findings?.length && (
-          <View style={{ marginTop: 12 }}>
+          <View style={{ marginTop: 16 }}>
             <Text style={styles.atsSubheading}>Findings</Text>
             {item.ats_analysis.findings.map((f, idx) => (
               <View key={idx} style={styles.findingRow}>
-                <Feather name="arrow-right" size={11} color="#64748b" style={{ marginTop: 3 }} />
+                <Feather name="arrow-right" size={12} color="#94a3b8" style={{ marginTop: 3 }} />
                 <Text style={styles.findingText}>{f}</Text>
               </View>
             ))}
@@ -131,17 +391,21 @@ export function ResumeBuddyDetailScreen() {
         <>
           <Text style={styles.sectionHeading}>Criteria Scores</Text>
           {item.criteria_scores.map((c, idx) => {
-            const pct = Math.min((c.score / c.max_score) * 100, 100);
+            const pct = Math.min(Math.round((c.score / c.max_score) * 100), 100);
+            const barColor = getScoreColor(pct);
             return (
-              <View key={`${c.key}-${idx}`} style={[styles.card, { marginBottom: 10 }]}>
-                <View style={styles.criteriaHeader}>
-                  <Text style={styles.criteriaLabel}>{c.label}</Text>
-                  <Text style={styles.criteriaScore}>
-                    {c.score}/{c.max_score}
-                  </Text>
+              <View key={`${c.key}-${idx}`} style={styles.card}>
+                <View style={styles.breakdownCardRow}>
+                  <Text style={styles.breakdownCardLabel}>{c.label}</Text>
+                  <Text style={styles.breakdownCardValue}>{pct}%</Text>
                 </View>
-                <View style={styles.progressBg}>
-                  <View style={[styles.progressFill, { width: `${pct}%` as any }]} />
+                <View style={styles.progressBarBg}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${pct}%`, backgroundColor: barColor },
+                    ]}
+                  />
                 </View>
                 <Text style={styles.criteriaFeedback}>{c.feedback}</Text>
               </View>
@@ -152,14 +416,117 @@ export function ResumeBuddyDetailScreen() {
 
       {/* ── Strengths & Weaknesses ── */}
       <Text style={styles.sectionHeading}>Strengths & Weaknesses</Text>
-      <AnalysisCard items={item.strengths ?? []} type="strength" title="Key Strengths" />
-      <AnalysisCard items={item.weaknesses ?? []} type="weakness" title="Areas to Improve" />
+
+      {/* Key Strengths */}
+      <View style={styles.card}>
+        <Pressable onPress={toggleStrengths} style={styles.collapsibleHeader}>
+          <View style={[styles.badgeCircle, { backgroundColor: "rgba(76, 175, 80, 0.1)" }]}>
+            <Feather name="check-circle" size={18} color="#4CAF50" />
+          </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.cardTitle}>Key Strengths</Text>
+            <Text style={styles.cardSubtitle}>{strengths.length} items</Text>
+          </View>
+          <Feather
+            name={strengthsExpanded ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#94a3b8"
+          />
+        </Pressable>
+
+        {strengthsExpanded && (
+          <View style={styles.listContainer}>
+            {strengths.length === 0 ? (
+              <Text style={styles.emptyText}>No key strengths detected yet.</Text>
+            ) : (
+              <>
+                {visibleStrengths.map((s, idx) => (
+                  <View key={`strength-${idx}`} style={styles.listItem}>
+                    <View style={[styles.bullet, { backgroundColor: "#4CAF50" }]} />
+                    <Text style={styles.itemText}>{s}</Text>
+                  </View>
+                ))}
+
+                {hasMoreStrengths && !showAllStrengths && (
+                  <Pressable onPress={() => setShowAllStrengths(true)} style={styles.viewAllButton}>
+                    <Text style={styles.viewAllText}>View All</Text>
+                  </Pressable>
+                )}
+                {showAllStrengths && (
+                  <Pressable
+                    onPress={() => setShowAllStrengths(false)}
+                    style={styles.viewAllButton}
+                  >
+                    <Text style={styles.viewAllText}>Show Less</Text>
+                  </Pressable>
+                )}
+              </>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* Areas to Improve */}
+      <View style={styles.card}>
+        <Pressable onPress={toggleWeaknesses} style={styles.collapsibleHeader}>
+          <View style={[styles.badgeCircle, { backgroundColor: "rgba(107, 114, 128, 0.1)" }]}>
+            <Feather name="alert-triangle" size={18} color="#6B7280" />
+          </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.cardTitle}>Areas to Improve</Text>
+            <Text style={styles.cardSubtitle}>{weaknesses.length} items</Text>
+          </View>
+          <Feather
+            name={weaknessesExpanded ? "chevron-up" : "chevron-down"}
+            size={20}
+            color="#94a3b8"
+          />
+        </Pressable>
+
+        {weaknessesExpanded && (
+          <View style={styles.listContainer}>
+            {weaknesses.length === 0 ? (
+              <Text style={styles.emptyText}>No areas to improve detected yet.</Text>
+            ) : (
+              <>
+                {visibleWeaknesses.map((w, idx) => (
+                  <View key={`weakness-${idx}`} style={styles.listItem}>
+                    <View style={[styles.bullet, { backgroundColor: "#6B7280" }]} />
+                    <Text style={styles.itemText}>{w}</Text>
+                  </View>
+                ))}
+
+                {hasMoreWeaknesses && !showAllWeaknesses && (
+                  <Pressable
+                    onPress={() => setShowAllWeaknesses(true)}
+                    style={styles.viewAllButton}
+                  >
+                    <Text style={styles.viewAllText}>View All</Text>
+                  </Pressable>
+                )}
+                {showAllWeaknesses && (
+                  <Pressable
+                    onPress={() => setShowAllWeaknesses(false)}
+                    style={styles.viewAllButton}
+                  >
+                    <Text style={styles.viewAllText}>Show Less</Text>
+                  </Pressable>
+                )}
+              </>
+            )}
+          </View>
+        )}
+      </View>
 
       {/* ── Missing Skills ── */}
       {!!item.missing_skills?.length && (
         <>
           <Text style={styles.sectionHeading}>Missing Skills</Text>
-          <View style={[styles.card, { marginBottom: 20 }]}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Missing Skills</Text>
+              <Text style={styles.cardSubtitle}>Add these to match the role</Text>
+            </View>
             <View style={styles.chipRow}>
               {item.missing_skills.map((s, idx) => (
                 <SkillChip key={`${s}-${idx}`} label={s} variant="missing" />
@@ -173,7 +540,13 @@ export function ResumeBuddyDetailScreen() {
       {!!item.skills_analysis?.recommended_technologies?.length && (
         <>
           <Text style={styles.sectionHeading}>Recommended Technologies</Text>
-          <View style={[styles.card, { marginBottom: 20 }]}>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Recommended Tech Stack</Text>
+              <Text style={styles.cardSubtitle}>
+                Trending for {item.target_role || "Full Stack Dev"}
+              </Text>
+            </View>
             <View style={styles.chipRow}>
               {item.skills_analysis.recommended_technologies.map((t, idx) => (
                 <SkillChip key={`${t}-${idx}`} label={t} variant="recommended" />
@@ -184,12 +557,32 @@ export function ResumeBuddyDetailScreen() {
       )}
 
       {/* ── Personalized Suggestions ── */}
-      <Text style={styles.sectionHeading}>Personalized Suggestions</Text>
-      <AnalysisCard
-        items={item.personalized_suggestions ?? []}
-        type="suggestion"
-        title="Suggestions"
-      />
+      {!!item.personalized_suggestions?.length && (
+        <>
+          <Text style={styles.sectionHeading}>Personalized Suggestions</Text>
+          <View style={styles.card}>
+            <View style={styles.cardHeaderWithIcon}>
+              <View style={[styles.badgeCircle, { backgroundColor: "rgba(89, 122, 244, 0.1)" }]}>
+                <Feather name="zap" size={18} color="#597AF4" />
+              </View>
+              <View style={styles.titleContainer}>
+                <Text style={styles.cardTitle}>Personalized Suggestions</Text>
+                <Text style={styles.cardSubtitle}>From AI Coach</Text>
+              </View>
+            </View>
+            <View style={styles.listContainer}>
+              {item.personalized_suggestions.map((sug, idx) => (
+                <View key={`suggestion-${idx}`} style={styles.listItem}>
+                  <View style={styles.numberBadge}>
+                    <Text style={styles.numberBadgeText}>{idx + 1}</Text>
+                  </View>
+                  <Text style={styles.itemText}>{sug}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </>
+      )}
 
       {/* Bottom padding */}
       <View style={{ height: 40 }} />
@@ -200,7 +593,7 @@ export function ResumeBuddyDetailScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8F9FC",
   },
   contentContainer: {
     padding: 20,
@@ -211,11 +604,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 32,
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8F9FC",
   },
   loadingText: {
     fontSize: 15,
-    color: "#64748b",
+    color: "#6B7280",
     marginTop: 16,
     fontWeight: "500",
   },
@@ -223,7 +616,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "rgba(107, 114, 128, 0.05)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
@@ -231,12 +624,12 @@ const styles = StyleSheet.create({
   notFoundTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#1F2937",
     marginBottom: 8,
   },
   notFoundDescription: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#6B7280",
     textAlign: "center",
     lineHeight: 20,
     marginBottom: 24,
@@ -245,11 +638,12 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    backgroundColor: "#4f46e5",
+    backgroundColor: "#3b82f6",
+    height: 48,
+    borderRadius: 12,
     paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 14,
   },
   backButtonText: {
     fontSize: 15,
@@ -264,136 +658,368 @@ const styles = StyleSheet.create({
   },
   backNavText: {
     fontSize: 15,
-    color: "#4f46e5",
+    color: "#597AF4",
     fontWeight: "600",
   },
   headerCard: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 18,
+    padding: 20,
     marginBottom: 24,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  roleRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: "rgba(89, 122, 244, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   roleText: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
+    color: "#1F2937",
+    marginBottom: 4,
   },
   dateText: {
     fontSize: 13,
-    color: "#64748b",
+    color: "#6B7280",
+    fontWeight: "500",
   },
   sectionHeading: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 12,
+    color: "#1F2937",
+    marginBottom: 16,
     marginTop: 8,
   },
   card: {
     backgroundColor: "#ffffff",
     borderRadius: 16,
-    padding: 18,
+    padding: 20,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderColor: "#E5E7EB",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 10,
+    elevation: 1,
   },
-  scoreRingsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 16,
+  cardGradient: {
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 24,
+    paddingVertical: 28,
+    marginBottom: 24,
+    width: "100%",
+    position: "relative",
+    shadowColor: "#597AF4",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  qualitySummary: {
-    fontSize: 13,
-    color: "#475569",
-    lineHeight: 20,
-    fontStyle: "italic",
+  cardHeader: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#ffffff",
     textAlign: "center",
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+    marginBottom: 10,
+  },
+  diagramWrapper: {
+    width: 320,
+    height: 260,
+    alignSelf: "center",
+    position: "relative",
+  },
+  centerCircle: {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    transform: [{ translateX: -45 }, { translateY: -45 }],
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  centerScoreText: {
+    fontSize: 26,
+    fontWeight: "900",
+    color: "#1F2937",
+    letterSpacing: -1,
+  },
+  centerScoreLabel: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  radiatingNode: {
+    position: "absolute",
+    alignItems: "center",
+  },
+  outerCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.25)",
+  },
+  outerText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#ffffff",
+  },
+  outerLabel: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    marginTop: 4,
+    lineHeight: 11,
+  },
+  cardSummary: {
+    fontSize: 14,
+    color: "#ffffff",
+    textAlign: "center",
+    lineHeight: 20,
+    fontWeight: "600",
+    paddingHorizontal: 12,
+    marginTop: 10,
+  },
+  cardHeaderWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  badgeCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  titleContainer: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  cardSubtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    fontWeight: "600",
+    marginTop: 2,
   },
   atsCheckRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    paddingVertical: 6,
+    gap: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f8fafc",
+    borderBottomColor: "#E5E7EB",
+  },
+  checkIconWrapper: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   atsCheckLabel: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
+    color: "#1F2937",
   },
   atsSubheading: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#334155",
-    marginBottom: 6,
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#1F2937",
+    marginBottom: 8,
   },
   findingRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 6,
-    marginTop: 4,
+    gap: 8,
+    marginTop: 6,
   },
   findingText: {
     fontSize: 13,
-    color: "#64748b",
+    color: "#6B7280",
     flex: 1,
     lineHeight: 18,
+    fontWeight: "500",
   },
-  criteriaHeader: {
+  breakdownCardRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  criteriaLabel: {
-    fontSize: 14,
+  breakdownCardLabel: {
+    fontSize: 15,
     fontWeight: "700",
-    color: "#1e293b",
+    color: "#1F2937",
   },
-  criteriaScore: {
-    fontSize: 12,
+  breakdownCardValue: {
+    fontSize: 15,
     fontWeight: "700",
-    color: "#64748b",
+    color: "#1F2937",
   },
-  progressBg: {
-    height: 6,
-    backgroundColor: "#f1f5f9",
+  progressBarBg: {
+    height: 8,
+    backgroundColor: "#E5E7EB",
     borderRadius: 4,
     overflow: "hidden",
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  progressFill: {
+  progressBarFill: {
     height: "100%",
-    backgroundColor: "#4f46e5",
     borderRadius: 4,
   },
   criteriaFeedback: {
-    fontSize: 12,
-    color: "#64748b",
-    lineHeight: 18,
+    fontSize: 13,
+    color: "#6B7280",
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  collapsibleHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  listContainer: {
+    marginTop: 18,
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 14,
+    gap: 12,
+  },
+  bullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 8,
+  },
+  itemText: {
+    fontSize: 14,
+    color: "#1F2937",
+    lineHeight: 20,
+    flex: 1,
+    fontWeight: "500",
+  },
+  emptyText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 12,
+  },
+  viewAllButton: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#3b82f6",
+    borderRadius: 12,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  viewAllText: {
+    fontSize: 15,
+    color: "#3b82f6",
+    fontWeight: "700",
   },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  numberBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(89, 122, 244, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  numberBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#597AF4",
+  },
+  threeScoresCardGradient: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginBottom: 24,
+    marginTop: 16,
+    width: "100%",
+    shadowColor: "#597AF4",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  threeScoresCard: {
+    backgroundColor: "transparent",
+    padding: 20,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+  },
+  scoreCircleWrapper: {
+    alignItems: "center",
+    flex: 1,
+  },
+  scoreCircleRing: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3.5,
+    borderColor: "#597AF4",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#ffffff",
+  },
+  scoreCircleText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#1F2937",
+  },
+  scoreCircleLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#ffffff",
+    marginTop: 8,
+    textAlign: "center",
   },
 });

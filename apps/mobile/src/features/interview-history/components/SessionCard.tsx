@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * SessionCard Component - Displays a single practice session in the list
  * Shows session date, status, response count, and navigation to detail view

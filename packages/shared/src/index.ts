@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Unified Shared Types for PowerUp Application
 
 export interface Module {
@@ -17,6 +18,10 @@ export interface ModuleDay {
   day_number: number;
   duration_hours: number | null;
   is_completed: boolean;
+  topic?: string | null;
+  completed_activities?: number;
+  total_activities?: number;
+  progress_percentage?: number;
 }
 
 export interface Activity {

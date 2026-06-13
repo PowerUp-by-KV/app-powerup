@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -181,7 +182,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
         <Pressable
           onPress={() => onComplete({ passed, score: currentScore })}
-          className="w-full max-w-sm mt-8 bg-slate-900 py-4 rounded-2xl items-center active:opacity-90"
+          className="w-full max-w-sm mt-8 bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center shadow-md"
           style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
         >
           <Text className="text-white font-bold text-base">Continue</Text>
@@ -228,7 +229,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
       <View className="flex-row justify-between" style={{ gap: 16 }}>
         {/* Vocabulary Column */}
         <View className="flex-1" style={{ gap: 12 }}>
-          <Text className="text-xs font-bold uppercase tracking-wider text-indigo-500 mb-1">
+          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">
             Verbs
           </Text>
           {leftItems.map((word) => {
@@ -246,8 +247,8 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
               bgStyle = "bg-rose-100 border-rose-400";
               textStyle = "text-rose-700";
             } else if (isSelected) {
-              bgStyle = "bg-indigo-50 border-indigo-500 shadow-sm shadow-indigo-100";
-              textStyle = "text-indigo-900";
+              bgStyle = "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100";
+              textStyle = "text-blue-900";
             }
 
             return (
@@ -273,7 +274,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
         {/* Definitions Column */}
         <View className="flex-[1.5]" style={{ gap: 12 }}>
-          <Text className="text-xs font-bold uppercase tracking-wider text-purple-500 mb-1">
+          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">
             Definitions
           </Text>
           {rightItemsShuffled.map((definition) => {
@@ -291,8 +292,8 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
               bgStyle = "bg-rose-100 border-rose-400";
               textStyle = "text-rose-700";
             } else if (isSelected) {
-              bgStyle = "bg-purple-50 border-purple-500 shadow-sm shadow-purple-100";
-              textStyle = "text-purple-900";
+              bgStyle = "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100";
+              textStyle = "text-blue-900";
             }
 
             return (

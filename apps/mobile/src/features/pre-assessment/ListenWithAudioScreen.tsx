@@ -1,20 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Text,
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
   useGetAssessmentSectionQuery,
   useSubmitAssessmentSectionMutation,
   getNextRouteForSection,
   AListenSectionResponse,
+  useLazyGetAssessmentStatusQuery,
 } from "@/services/assessment-api";
 import { ListenWithAudioQuestion } from "./components/ListenWithAudioQuestion";
 import { AudioPlayer } from "./components/AudioPlayer";
@@ -29,6 +31,8 @@ import { OfflineGameView } from "@/components/OfflineGameView";
 
 import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -61,6 +65,7 @@ const getOptimizedRecordingSettings = (): any => {
 
 export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAudioScreenProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
 
   useEffect(() => {
@@ -82,11 +87,13 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   );
 
   const [submitSection, { isLoading: isSubmitting }] = useSubmitAssessmentSectionMutation();
+  const [getAssessmentStatus] = useLazyGetAssessmentStatusQuery();
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [hasRecorded, setHasRecorded] = useState<Record<string, boolean>>({});
   const [isFinished, setIsFinished] = useState(false);
+  const [hasAudioFinished, setHasAudioFinished] = useState(false);
 
   const listenData = sectionData as AListenSectionResponse | undefined;
   const questions = listenData?.items || [];
@@ -131,6 +138,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       setHasStartedRecording(false);
       setCurrentLocalUri(null);
       setCurrentLocalDuration(0);
+      setHasAudioFinished(false);
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
@@ -154,7 +162,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }, 1000);
 
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached
@@ -162,7 +169,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     if (isRecording && recordingDuration >= maxDuration) {
       stopRecording();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordingDuration, isRecording, maxDuration]);
 
   useEffect(() => {
@@ -174,6 +180,10 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   }, [isRecording]);
 
   async function startRecording() {
+    if (!hasAudioFinished) {
+      Alert.alert("Locked", "Please listen to the audio completely before recording.");
+      return;
+    }
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
@@ -270,15 +280,26 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   if (isError) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-50">
+      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <LottieView
-              source={require("../../../assets/mascot/Error 404.lottie")}
-              autoPlay
-              loop
-              style={{ width: 140, height: 140, marginBottom: 12 }}
-            />
+            <View
+              style={{
+                width: 140,
+                height: 140,
+                marginBottom: 12,
+                overflow: "hidden",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <LottieView
+                source={require("../../../assets/mascot/Error 404.lottie")}
+                autoPlay
+                loop
+                style={{ width: "100%", height: "100%" }}
+              />
+            </View>
 
             <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
               Connection Timeout
@@ -293,14 +314,14 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             <View className="w-full gap-3 mt-2">
               <TouchableOpacity
                 onPress={() => refetch()}
-                className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -368,13 +389,17 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         }
       }
 
+      // Poll/verify status
+      await pollAssessmentScoringStatus(sessionId!, getAssessmentStatus);
+
       await saveCompletedSection("A_LISTEN");
       await new Promise((res) => setTimeout(res, 600));
 
       const nextRoute = getNextRouteForSection(response.next_section);
       router.replace({ pathname: nextRoute, params: { session_id: sessionId } });
     } catch (err: any) {
-      const msg = err?.data?.message || err?.message || "Could not submit answers.";
+      console.error("A_LISTEN submission failed:", err);
+      const msg = getApiErrorMessage(err, "Could not submit answers.");
       Alert.alert("Submission Failed", msg);
       setIsFinished(false);
     }
@@ -417,7 +442,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -449,6 +474,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             audioUrl={currentQuestion?.audio_url}
             audioText={currentQuestion?.text || "Please listen to the audio carefully."}
             duration={currentQuestion?.recording_time_seconds || 30}
+            onPlayEnd={() => setHasAudioFinished(true)}
           />
 
           {currentLocalUri ? (
@@ -468,6 +494,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
                 maxDuration={maxDuration}
                 onStartRecording={startRecording}
                 onStopRecording={stopRecording}
+                disabled={!hasAudioFinished}
               />
 
               {uploadingQuestions[currentQuestion?.id] && (
@@ -500,7 +527,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

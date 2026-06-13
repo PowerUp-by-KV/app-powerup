@@ -2,15 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
 
-import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import { getAuthSession } from "@/services/auth-storage";
 
-const ACTIVE_COLOR = "#0f172a";
+const ACTIVE_COLOR = "#4f46e5";
 const INACTIVE_COLOR = "#94a3b8";
 
 export default function TabLayout() {
   const router = useRouter();
-  const headerShown = useClientOnlyValue(false, true);
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -21,7 +19,10 @@ export default function TabLayout() {
     });
   }, [router]);
 
-  if (isAuthed !== true) return null;
+  // Only block render if we've confirmed the user is NOT authenticated.
+  // While isAuthed is null (check still in flight) we render the tabs —
+  // the root RouteGuard has already verified auth before mounting this layout.
+  if (isAuthed === false) return null;
 
   return (
     <Tabs
@@ -34,9 +35,9 @@ export default function TabLayout() {
           elevation: 8,
           height: 64,
           paddingBottom: 8,
-          paddingTop: 6,
+          width: "100%",
         },
-        headerShown,
+        headerShown: false,
       }}
     >
       <Tabs.Screen

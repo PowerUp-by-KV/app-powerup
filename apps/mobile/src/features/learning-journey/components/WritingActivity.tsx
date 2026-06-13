@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -88,14 +89,14 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         )}
         <Pressable
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={{
+          style={({ pressed }) => ({
             marginTop: 8,
-            backgroundColor: "#0f172a",
+            backgroundColor: pressed ? "#2563eb" : "#3b82f6",
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
             ...Platform.select({ web: { cursor: "pointer" } as any }),
-          }}
+          })}
         >
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
         </Pressable>
@@ -138,16 +139,17 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
       <Pressable
         onPress={handleSubmit}
         disabled={submitting || text.trim().length === 0}
-        style={{
+        style={({ pressed }) => ({
           marginTop: 24,
-          backgroundColor: submitting || text.trim().length === 0 ? "#cbd5e1" : "#0f172a",
+          backgroundColor:
+            submitting || text.trim().length === 0 ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
           paddingVertical: 14,
           borderRadius: 10,
           alignItems: "center",
           ...Platform.select({
             web: { cursor: submitting || text.trim().length === 0 ? "default" : "pointer" } as any,
           }),
-        }}
+        })}
       >
         {submitting ? (
           <ActivityIndicator color="#fff" />

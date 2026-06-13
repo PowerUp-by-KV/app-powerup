@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -125,12 +126,18 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     const nextCorrectCount = correct ? correctCount + 1 : correctCount;
     if (correct) setCorrectCount(nextCorrectCount);
 
+    const correctIndex = options.findIndex(
+      (opt) => opt.id.trim() === (current.correct_answer ?? "").trim(),
+    );
+    const correctLetter =
+      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : (current.correct_answer ?? "");
+
     setLastCorrect(correct);
-    setLastCorrectAnswer(current.correct_answer ?? "");
+    setLastCorrectAnswer(correctLetter);
 
     setLastResult({
       correct,
-      correctAnswer: current.correct_answer ?? "",
+      correctAnswer: correctLetter,
       totalCorrect: nextCorrectCount,
     });
   };
@@ -157,10 +164,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   if (scoreView) {
     return (
       <ScrollView
-        style={{
-          flex: 1,
-          ...Platform.select({ web: { userSelect: "none" } as any }),
-        }}
+        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
         <View style={{ alignItems: "center", marginVertical: 32 }}>
@@ -208,14 +212,22 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
           style={{
             marginTop: 24,
-            backgroundColor: "#0f172a",
-            paddingVertical: 14,
             borderRadius: 10,
-            alignItems: "center",
-            ...Platform.select({ web: { cursor: "pointer" } as any }),
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
+          {({ pressed }) => (
+            <View
+              style={{
+                backgroundColor: pressed ? "#2563eb" : "#3b82f6",
+                paddingVertical: 14,
+                borderRadius: 10,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
+            </View>
+          )}
         </Pressable>
       </ScrollView>
     );
@@ -229,10 +241,13 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
 
   return (
     <View
-      style={{
-        flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as any }),
-      }}
+      style={[
+        // When nested inside a parent ScrollView (e.g. ListeningActivity), flex:1
+        // collapses on Android and clips the Submit button below the fold. Size to
+        // content instead so the parent ScrollView can reach the button.
+        isNested ? {} : { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as any),
+      ]}
     >
       <ContentWrapper {...wrapperProps}>
         {passage?.question_text ? (
@@ -360,11 +375,11 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               feedbackIcon = <Feather name="x-circle" size={20} color="#ef4444" />;
             }
           } else if (isSelected) {
-            borderColor = "#2f95dc"; // Blue border
+            borderColor = "#3b82f6"; // Blue border
             backgroundColor = "#eff6ff"; // Light blue bg
-            dotBorderColor = "#2f95dc";
-            dotTextColor = "#2f95dc";
-            feedbackIcon = <Feather name="check-circle" size={20} color="#2f95dc" />;
+            dotBorderColor = "#3b82f6";
+            dotTextColor = "#3b82f6";
+            feedbackIcon = <Feather name="check-circle" size={20} color="#3b82f6" />;
           }
 
           return (
@@ -381,7 +396,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                 marginBottom: 12,
                 flexDirection: "row",
                 alignItems: "center",
-                ...Platform.select({ web: { cursor: "pointer" } as any }),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               <View
@@ -410,15 +427,30 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           <Pressable
             onPress={handleSubmit}
             disabled={selected === null}
-            style={{
-              backgroundColor: selected === null ? "#cbd5e1" : "#0f172a",
-              paddingVertical: 14,
-              borderRadius: 10,
-              alignItems: "center",
-              ...Platform.select({ web: { cursor: "pointer" } as any }),
-            }}
+            style={
+              {
+                borderRadius: 10,
+                ...(Platform.OS === "web"
+                  ? ({ cursor: selected === null ? "default" : "pointer" } as Record<
+                      string,
+                      unknown
+                    >)
+                  : {}),
+              } as any
+            }
           >
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
+            {({ pressed }) => (
+              <View
+                style={{
+                  backgroundColor: selected === null ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+                  paddingVertical: 14,
+                  borderRadius: 10,
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
+              </View>
+            )}
           </Pressable>
         </View>
       </ContentWrapper>

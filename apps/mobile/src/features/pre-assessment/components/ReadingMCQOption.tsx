@@ -6,13 +6,18 @@ interface MCQOptionProps {
   text: string;
   isSelected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }
 
-export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps) {
+export function MCQOption({ label: _label, text, isSelected, onSelect, disabled }: MCQOptionProps) {
   return (
-    <Pressable onPress={onSelect} className="mb-3">
+    <Pressable
+      onPress={onSelect}
+      disabled={disabled}
+      className={`mb-3 ${disabled ? "opacity-50" : ""}`}
+    >
       <View
-        className={`flex-row items-start p-3 rounded-lg border-2 ${
+        className={`flex-row items-center p-4 rounded-xl border-2 ${
           isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"
         }`}
       >
@@ -24,8 +29,7 @@ export function MCQOption({ label, text, isSelected, onSelect }: MCQOptionProps)
           {isSelected && <View className="w-2 h-2 bg-white rounded-full" />}
         </View>
         <View className="flex-1">
-          <Text className="font-semibold text-gray-800">{label}</Text>
-          <Text className="text-gray-700 mt-1">{text}</Text>
+          <Text className="text-gray-800 text-sm font-semibold leading-relaxed">{text}</Text>
         </View>
       </View>
     </Pressable>

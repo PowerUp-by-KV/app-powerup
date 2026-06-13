@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -136,7 +137,7 @@ export function TapToBuild({
       <Pressable
         onPress={handleCheck}
         disabled={!canCheck}
-        className={`rounded-2xl py-4 items-center ${canCheck ? "bg-slate-900" : "bg-slate-300"}`}
+        className={`rounded-2xl py-4 items-center ${canCheck ? "bg-blue-500 active:bg-blue-600" : "bg-slate-300"}`}
         style={{ ...Platform.select({ web: { cursor: canCheck ? "pointer" : "default" } as any }) }}
       >
         <Text className="text-white font-bold text-base">Check Answers</Text>
