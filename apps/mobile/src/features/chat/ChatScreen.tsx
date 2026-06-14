@@ -92,15 +92,15 @@ function shouldShowTimestamp(curr: string, prev?: string): boolean {
 }
 
 // ─── Optimistic local message ───────────────────────────────────────
-interface LocalUserMessage {
+interface LocalMessage {
   id: string;
   content: string;
-  role: "user";
+  role: "user" | "assistant";
   created_at: string;
   isLocal: true;
 }
 
-type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalUserMessage;
+type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalMessage;
 
 // ─── Animated Orb for Screen 1 (uses the user's orb image) ──────────
 const AnimatedOrb = React.memo(function AnimatedOrb() {
