@@ -16,4 +16,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
+// Ensure Metro resolves symlinks correctly for pnpm
+config.resolver.unstable_enableSymlinks = true;
+config.resolver.unstable_enablePackageExports = true;
+
+// Add Rive and Lottie extension support
+config.resolver.assetExts.push("riv");
+config.resolver.assetExts.push("lottie");
+
 module.exports = withNativeWind(config, { input: "./global.css" });

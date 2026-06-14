@@ -1,4 +1,4 @@
-import { ProfileScreen } from "@/features/pre-profile";
+import { ProfileScreen } from "@/features/profile";
 
 export default function ProfileRoute() {
   return <ProfileScreen />;

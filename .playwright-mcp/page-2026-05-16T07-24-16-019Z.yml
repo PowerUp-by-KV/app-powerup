@@ -1,0 +1,5 @@
+- generic [ref=e9]:
+  - generic [ref=e10]: PowerUp Admin
+  - textbox "Password" [ref=e11]: powerup-admin-2026
+  - generic [ref=e14]: EXPO_PUBLIC_ADMIN_PASSWORD is not configured.
+  - generic [ref=e13] [cursor=pointer]: Sign in

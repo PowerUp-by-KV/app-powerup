@@ -1,0 +1,3 @@
+# Strip AI-attribution trailers from commit messages.
+# See root CLAUDE.md → "No AI attribution (hard rule)".
+sed -i.bak -E '/^[Cc]o-[Aa]uthored-[Bb]y:.*([Cc]laude|[Aa]nthropic).*$/d;/[Gg]enerated with \[?Claude Code/d;/🤖/d' "$1" && rm -f "$1.bak"

@@ -1,116 +1,163 @@
-import React, { useRef, useState } from "react";
-import { View, Text, Animated, TouchableOpacity, Image } from "react-native";
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useEffect, useRef } from "react";
+import { View, Text, Animated } from "react-native";
 import { useRouter } from "expo-router";
-import { restoreSession } from "@/services/auth-service";
-
-const slides = [
-  {
-    title: "Read",
-    subtitle: "Improve vocabulary and comprehension",
-    image: {
-      uri: "https://cdn-icons-png.flaticon.com/512/3135/3135755.png",
-    },
-  },
-  {
-    title: "Listen",
-    subtitle: "Understand real conversations",
-    image: {
-      uri: "https://cdn-icons-png.flaticon.com/512/4712/4712027.png",
-    },
-  },
-  {
-    title: "Speak",
-    subtitle: "Practice fluency with confidence",
-    image: {
-      uri: "https://cdn-icons-png.flaticon.com/512/1995/1995574.png",
-    },
-  },
-];
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, {
+  Circle,
+  Path,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from "react-native-svg";
 
 export function SplashScreen() {
   const router = useRouter();
 
-  const [step, setStep] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // Animation drivers
+  const logoScale = useRef(new Animated.Value(0.85)).current;
+  const logoOpacity = useRef(new Animated.Value(0)).current;
+  const sparkScale = useRef(new Animated.Value(0)).current;
+  const sparkRotation = useRef(new Animated.Value(0)).current;
+  const splashOpacity = useRef(new Animated.Value(1)).current;
 
-  const handleNext = () => {
-    if (step < slides.length - 1) {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
+  useEffect(() => {
+    // 1. Cinematic entrance timeline
+    Animated.parallel([
+      // Logo zoom and fade-in
+      Animated.timing(logoOpacity, {
+        toValue: 1,
+        duration: 1600,
         useNativeDriver: true,
-      }).start(() => {
-        setStep((prev) => prev + 1);
-        fadeAnim.setValue(0);
+      }),
+      Animated.timing(logoScale, {
+        toValue: 1,
+        duration: 1600,
+        useNativeDriver: true,
+      }),
+      // Pinch diamond spark spring scale and rotation
+      Animated.sequence([
+        Animated.delay(700),
+        Animated.parallel([
+          Animated.spring(sparkScale, {
+            toValue: 1,
+            friction: 7,
+            tension: 20,
+            useNativeDriver: true,
+          }),
+          Animated.timing(sparkRotation, {
+            toValue: 1,
+            duration: 1400,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ]).start();
 
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
+    // 2. Seamless automatic redirect with cinematic fade out
+    const transitionTimer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(splashOpacity, {
+          toValue: 0,
+          duration: 900,
           useNativeDriver: true,
-        }).start();
+        }),
+        Animated.timing(logoScale, {
+          toValue: 1.12,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]).start(async () => {
+        const { getAuthSession } = await import("@/services/auth-storage");
+        const session = await getAuthSession();
+        if (!session) {
+          router.replace("/login");
+        }
       });
-    } else {
-      handleStart();
-    }
-  };
+    }, 4000);
 
-  const handleStart = async () => {
-    try {
-      const session = await restoreSession();
+    return () => clearTimeout(transitionTimer);
+  }, []);
 
-      if (session?.profile_completed) {
-        router.replace("/(tabs)");
-      } else {
-        router.replace("/login");
-      }
-    } catch {
-      router.replace("/login");
-    }
-  };
-
-  const currentSlide = slides[step];
-
-  if (!currentSlide) {
-    return null; // Safety check
-  }
+  // Spin interpolation: 0 -> 1 maps to 0deg -> 45deg
+  const spin = sparkRotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "45deg"],
+  });
 
   return (
-    <View className="flex-1 justify-center items-center bg-indigo-600 px-6">
-      {/* Slide Content */}
-      <Animated.View className="items-center" style={{ opacity: fadeAnim }}>
-        {/* Image */}
-        <Image
-          source={currentSlide.image}
-          className="w-[220px] h-[220px] mb-8"
-          resizeMode="contain"
-        />
-
-        {/* Title */}
-        <Text className="text-white text-4xl font-bold text-center">{currentSlide.title}</Text>
-
-        {/* Subtitle */}
-        <Text className="text-white/80 text-lg mt-3 text-center">{currentSlide.subtitle}</Text>
-      </Animated.View>
-
-      {/* Dots Indicator */}
-      <View className="flex-row mt-10">
-        {slides.map((_, index) => (
-          <View
-            key={index}
-            className={`h-2 w-2 mx-1 rounded-full ${step === index ? "bg-white" : "bg-white/40"}`}
-          />
-        ))}
-      </View>
-
-      {/* Button */}
-      <TouchableOpacity
-        onPress={handleNext}
-        className="absolute bottom-5 right-5 bg-white px-4 py-2 rounded-full items-center shadow-lg"
+    <Animated.View style={{ flex: 1, opacity: splashOpacity }}>
+      {/* Pastel Gradient Backdrop matching your mockup */}
+      <LinearGradient
+        colors={["#e0e7ff", "#ffffff", "#fef9c3"]}
+        style={{
+          flex: 1,
+          width: "100%",
+          height: "100%",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
-        <Text className="text-indigo-600 font-bold text-sm">
-          {step === slides.length - 1 ? "Get Started" : "Next"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <Animated.View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: [{ scale: logoScale }],
+            opacity: logoOpacity,
+          }}
+        >
+          {/* Lumino "lumin" lettering */}
+          <Text
+            style={{
+              fontSize: 52,
+              fontFamily: "Inter-Bold",
+              color: "#3b82f6",
+              letterSpacing: -2,
+              marginRight: 2,
+            }}
+          >
+            lumin
+          </Text>
+
+          {/* Stylized vector circular "o" frame */}
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              justifyContent: "center",
+              alignItems: "center",
+              marginTop: 4,
+            }}
+          >
+            <Svg width={46} height={46} viewBox="0 0 48 48" fill="none">
+              <Defs>
+                <SvgLinearGradient id="gradientO" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor="#86efac" />
+                  <Stop offset="50%" stopColor="#22d3ee" />
+                  <Stop offset="100%" stopColor="#3b82f6" />
+                </SvgLinearGradient>
+              </Defs>
+              <Circle cx="24" cy="24" r="22" fill="url(#gradientO)" />
+            </Svg>
+
+            {/* Pinch Diamond Spark overlay */}
+            <Animated.View
+              style={{
+                position: "absolute",
+                transform: [{ scale: sparkScale }, { rotate: spin }],
+              }}
+            >
+              <Svg width={46} height={46} viewBox="0 0 48 48" fill="none">
+                <Path
+                  d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
+                  fill="#ffffff"
+                />
+              </Svg>
+            </Animated.View>
+          </View>
+        </Animated.View>
+      </LinearGradient>
+    </Animated.View>
   );
 }
