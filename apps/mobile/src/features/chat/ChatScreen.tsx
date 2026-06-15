@@ -14,6 +14,8 @@ import {
   View,
 } from "react-native";
 import { Alert } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -92,15 +94,15 @@ function shouldShowTimestamp(curr: string, prev?: string): boolean {
 }
 
 // ─── Optimistic local message ───────────────────────────────────────
-interface LocalUserMessage {
+interface LocalMessage {
   id: string;
   content: string;
-  role: "user";
+  role: "user" | "assistant";
   created_at: string;
   isLocal: true;
 }
 
-type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalUserMessage;
+type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalMessage;
 
 // ─── Animated Orb for Screen 1 (uses the user's orb image) ──────────
 const AnimatedOrb = React.memo(function AnimatedOrb() {
@@ -208,6 +210,7 @@ interface MessageBubbleProps {
   item: DisplayMessage;
   prevMsg?: DisplayMessage;
   avatarUri: string;
+  isBookmarked: boolean;
   onToggleBookmark: (id: string) => void;
 }
 
@@ -215,11 +218,11 @@ const MessageBubble = React.memo(function MessageBubble({
   item,
   prevMsg,
   avatarUri,
+  isBookmarked,
   onToggleBookmark,
 }: MessageBubbleProps) {
   const isUser = item.role === "user";
   const showTime = shouldShowTimestamp(item.created_at, prevMsg?.created_at);
-  const isBookmarked = !("isLocal" in item && item.isLocal) && (item as ChatMessage).bookmarked;
 
   return (
     <View>
@@ -273,8 +276,9 @@ export function ChatScreen() {
   const [threadId, setThreadId] = useState<string | null>(params.thread_id ?? null);
   const [input, setInput] = useState("");
   const [creating, setCreating] = useState(false);
-  const [localMessages, setLocalMessages] = useState<LocalUserMessage[]>([]);
+  const [localMessages, setLocalMessages] = useState<LocalMessage[]>([]);
   const [savedInput, setSavedInput] = useState("");
+  const [localBookmarks, setLocalBookmarks] = useState<Record<string, boolean>>({});
   const sendLockRef = useRef(false);
 
   // ── Existing API hooks (NOT modified) ──
@@ -288,8 +292,15 @@ export function ChatScreen() {
   const listRef = useRef<FlatList<ChatMessage>>(null);
 
   // ── SSE streaming hook (POST /api/v1/chat/threads/{id}/messages/stream) ──
-  const { sendStreamMessage, streamingContent, isStreaming, streamError, clearStream } =
-    useChatStream();
+  const {
+    sendStreamMessage,
+    streamingContent,
+    isStreaming,
+    streamError,
+    assistantMessageId,
+    userMessageId,
+    clearStream,
+  } = useChatStream();
 
   const firstName = profile?.name?.split(" ")[0] ?? "there";
   const avatarUri = getAvatarUri(profile?.avatar_id, profile?.id);
@@ -326,7 +337,7 @@ export function ChatScreen() {
       if (!threadId) {
         setCreating(true);
         const messageId = `msg-${Date.now()}-${Math.random()}`;
-        const localMsg: LocalUserMessage = {
+        const localMsg: LocalMessage = {
           id: messageId,
           content,
           role: "user",
@@ -355,7 +366,7 @@ export function ChatScreen() {
         }
       } else {
         const messageId = `msg-${Date.now()}-${Math.random()}`;
-        const localMsg: LocalUserMessage = {
+        const localMsg: LocalMessage = {
           id: messageId,
           content,
           role: "user",
@@ -373,9 +384,10 @@ export function ChatScreen() {
         sendStreamMessage(threadId, content);
       }
     } finally {
-      // UNLOCK only after streaming starts
-      // This allows one message at a time
-      sendLockRef.current = false;
+      // Keep lock slightly longer to prevent rapid double clicks before isStreaming updates
+      setTimeout(() => {
+        sendLockRef.current = false;
+      }, 500);
     }
   }, [input, threadId, isStreaming, creating, createThread, sendStreamMessage, clearStream]);
 
@@ -393,7 +405,7 @@ export function ChatScreen() {
         if (!threadId) {
           setCreating(true);
           const messageId = `msg-${Date.now()}-${Math.random()}`;
-          const localMsg: LocalUserMessage = {
+          const localMsg: LocalMessage = {
             id: messageId,
             content: label,
             role: "user",
@@ -420,7 +432,7 @@ export function ChatScreen() {
           }
         } else {
           const messageId = `msg-${Date.now()}-${Math.random()}`;
-          const localMsg: LocalUserMessage = {
+          const localMsg: LocalMessage = {
             id: messageId,
             content: label,
             role: "user",
@@ -437,7 +449,9 @@ export function ChatScreen() {
           sendStreamMessage(threadId, content, id);
         }
       } finally {
-        sendLockRef.current = false;
+        setTimeout(() => {
+          sendLockRef.current = false;
+        }, 500);
       }
     },
     [threadId, isStreaming, creating, createThread, sendStreamMessage, clearStream],
@@ -446,6 +460,10 @@ export function ChatScreen() {
   // ── Memoized bookmark toggle ──
   const handleToggleBookmark = useCallback(
     (messageId: string) => {
+      setLocalBookmarks((prev) => ({
+        ...prev,
+        [messageId]: !prev[messageId],
+      }));
       toggleBookmark(messageId);
     },
     [toggleBookmark],
@@ -459,12 +477,41 @@ export function ChatScreen() {
     }
   }, [streamError, savedInput]);
 
+  // ── Update local User message ID to match backend ──
+  React.useEffect(() => {
+    if (userMessageId) {
+      setLocalMessages((prev) =>
+        prev.map((m) =>
+          m.role === "user" && m.id.startsWith("msg-") ? { ...m, id: userMessageId } : m,
+        ),
+      );
+    }
+  }, [userMessageId]);
+
   // ── Clear local messages when API refreshes ──
   React.useEffect(() => {
-    if (!isStreaming && messages.length > 0) {
-      setLocalMessages([]);
+    if (messages.length > 0) {
+      // Keep only local messages that are NOT YET in the API messages
+      setLocalMessages((prev) => prev.filter((lm) => !messages.some((m) => m.id === lm.id)));
     }
-  }, [isStreaming, messages]);
+  }, [messages]);
+
+  // ── Keep assistant message local when stream ends ──
+  React.useEffect(() => {
+    if (!isStreaming && assistantMessageId && streamingContent) {
+      const localAiMsg: LocalMessage = {
+        id: assistantMessageId,
+        content: streamingContent,
+        role: "assistant",
+        created_at: new Date().toISOString(),
+        isLocal: true,
+      };
+      setLocalMessages((prev) => {
+        if (prev.some((m) => m.id === assistantMessageId)) return prev;
+        return [...prev, localAiMsg];
+      });
+    }
+  }, [isStreaming, assistantMessageId, streamingContent]);
 
   const empty = !threadId;
   const busy = isStreaming || creating;
@@ -472,6 +519,7 @@ export function ChatScreen() {
   // Capture quick actions into local vars for type narrowing in callbacks
   const qa0 = quickActions[0];
   const qa1 = quickActions[1];
+  const qa2 = quickActions[2];
 
   // ═══════════════════════════════════════════════════════════════════
   // RENDER: Single message bubble (uses memoized MessageBubble component)
@@ -479,16 +527,23 @@ export function ChatScreen() {
   const renderMessage = useCallback(
     ({ item, index }: { item: DisplayMessage; index: number }) => {
       const prevMsg = index > 0 ? displayMessages[index - 1] : undefined;
+      const baseBookmarked =
+        (!("isLocal" in item && item.isLocal) && (item as ChatMessage).bookmarked) ?? false;
+      const isBookmarked = !!(localBookmarks[item.id] !== undefined
+        ? localBookmarks[item.id]
+        : baseBookmarked);
+
       return (
         <MessageBubble
           item={item}
           prevMsg={prevMsg}
           avatarUri={avatarUri}
+          isBookmarked={isBookmarked}
           onToggleBookmark={handleToggleBookmark}
         />
       );
     },
-    [displayMessages, avatarUri, handleToggleBookmark],
+    [displayMessages, avatarUri, handleToggleBookmark, localBookmarks],
   );
 
   // ═══════════════════════════════════════════════════════════════════
@@ -512,9 +567,24 @@ export function ChatScreen() {
           disabled={busy || sendLockRef.current}
           onPress={() =>
             Alert.alert("Attach Media", "Choose an option", [
-              { text: "Camera", onPress: () => {} },
-              { text: "Photo Library", onPress: () => {} },
-              { text: "Document", onPress: () => {} },
+              {
+                text: "Camera",
+                onPress: async () => {
+                  await ImagePicker.launchCameraAsync({ mediaTypes: "images" });
+                },
+              },
+              {
+                text: "Photo Library",
+                onPress: async () => {
+                  await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images" });
+                },
+              },
+              {
+                text: "Document",
+                onPress: async () => {
+                  await DocumentPicker.getDocumentAsync({});
+                },
+              },
               { text: "Cancel", style: "cancel" },
             ])
           }
@@ -616,136 +686,127 @@ export function ChatScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={s.suggestionChipsRow}
-                style={s.suggestionChipsContainer}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 12 }}
+                style={[s.suggestionChipsContainer, { marginBottom: 16 }]}
               >
-                <Pressable
-                  onPress={() => {
-                    setInput("How do I introduce myself?");
-                  }}
-                  style={s.suggestionChip}
-                >
-                  <Text style={s.suggestionChipText}>How do I introduce myself?</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setInput("Practice a job interview");
-                  }}
-                  style={s.suggestionChip}
-                >
-                  <Text style={s.suggestionChipText}>Practice a job interview</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    setInput("Help me with small talk");
-                  }}
-                  style={s.suggestionChip}
-                >
-                  <Text style={s.suggestionChipText}>Help me with small talk</Text>
-                </Pressable>
+                {[
+                  "Draft an email for...",
+                  "How to structure a...",
+                  "Review my resume...",
+                  "Give me feedback on...",
+                ].map((txt, i) => (
+                  <Pressable key={i} onPress={() => setInput(txt)} style={s.inCardSuggestionChip}>
+                    <Text style={s.inCardSuggestionChipText}>{txt}</Text>
+                  </Pressable>
+                ))}
               </ScrollView>
 
-              {/* Quick Action Cards — 2 side-by-side */}
-              <View style={s.cardsRow}>
-                {/* Card 1: Practice */}
-                {qa0 ? (
-                  <View style={s.qaCard}>
-                    <View style={s.qaCardHeader}>
-                      <Text style={s.qaCardIcon}>✦</Text>
-                      <Text style={s.qaCardTitle}>Practice</Text>
-                    </View>
-                    {/* Pre-filled suggestion chip inside card */}
-                    <View style={s.inCardSuggestionChip}>
-                      <Text style={s.inCardSuggestionChipText} numberOfLines={1}>
-                        How do I introduce myself?
+              {/* Dynamic Action Cards (Matches Screenshot Layout) */}
+              <View
+                style={{ flexDirection: "row", paddingHorizontal: 24, gap: 12, marginBottom: 16 }}
+              >
+                {/* LEFT: Practice Card */}
+                {qa0 && (
+                  <View
+                    style={{
+                      flex: 1,
+                      backgroundColor: "#EEFACC",
+                      borderRadius: 24,
+                      padding: 16,
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <View>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Text style={{ fontSize: 16 }}>🏋️</Text>
+                        <Text style={{ fontWeight: "700", color: "#111", fontSize: 15 }}>
+                          {qa0.label}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 11, color: "#666" }}>
+                        "How do I introduce myself?"
                       </Text>
                     </View>
                     <Pressable
                       onPress={() => handleQuickAction(qa0.id, qa0.label, qa0.prompt_template)}
-                      disabled={busy}
-                      style={[s.qaCardBtn, { opacity: busy ? 0.5 : 1 }]}
+                      disabled={busy || sendLockRef.current}
+                      style={{
+                        marginTop: 24,
+                        backgroundColor: "#3B5BF6",
+                        borderRadius: 20,
+                        paddingVertical: 12,
+                        paddingHorizontal: 16,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        opacity: busy ? 0.5 : 1,
+                      }}
                     >
-                      <Text style={s.qaCardBtnText}>Start practice</Text>
+                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 13 }}>
+                        Start Practice
+                      </Text>
                       <Feather name="arrow-right" size={14} color="#fff" />
                     </Pressable>
                   </View>
-                ) : (
-                  <View style={s.qaCard}>
-                    <View style={s.qaCardHeader}>
-                      <Text style={s.qaCardIcon}>✦</Text>
-                      <Text style={s.qaCardTitle}>Practice</Text>
-                    </View>
-                    {/* Pre-filled suggestion chip inside card */}
-                    <View style={s.inCardSuggestionChip}>
-                      <Text style={s.inCardSuggestionChipText}>How do I introduce myself?</Text>
-                    </View>
-                    <View style={[s.qaCardBtn, { opacity: 0.4 }]}>
-                      <Text style={s.qaCardBtnText}>Start practice</Text>
-                      <Feather name="arrow-right" size={14} color="#fff" />
-                    </View>
-                  </View>
                 )}
 
-                {/* Card 2: Voice analysis / second action */}
-                {qa1 ? (
-                  <View style={s.qaCard}>
-                    <View style={s.qaCardHeader}>
-                      <Feather name="edit-3" size={14} color={C.cardBtn} />
-                      <Text style={s.qaCardTitle}>Voice analysis</Text>
-                      <Feather name="arrow-right" size={14} color={C.textMuted} />
-                    </View>
-                    <View style={{ flex: 1 }} />
+                {/* RIGHT: Stack of pills */}
+                <View style={{ flex: 1, gap: 12 }}>
+                  {qa1 && (
                     <Pressable
                       onPress={() => handleQuickAction(qa1.id, qa1.label, qa1.prompt_template)}
-                      disabled={busy}
-                      style={[s.qaCardBtnAlt, { opacity: busy ? 0.5 : 1 }]}
+                      disabled={busy || sendLockRef.current}
+                      style={{
+                        backgroundColor: "#F5F5FF",
+                        borderRadius: 24,
+                        padding: 16,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        flex: 1,
+                        opacity: busy ? 0.5 : 1,
+                      }}
                     >
-                      <Feather name="arrow-left" size={14} color="#fff" />
-                      <Text style={s.qaCardBtnText}> Start analysis</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <Feather name="mic" size={16} color="#3B5BF6" />
+                        <Text style={{ color: "#3B5BF6", fontWeight: "600", fontSize: 14 }}>
+                          {qa1.label}
+                        </Text>
+                      </View>
+                      <Feather name="arrow-right" size={16} color="#3B5BF6" />
                     </Pressable>
-                  </View>
-                ) : (
-                  <View style={s.qaCard}>
-                    <View style={s.qaCardHeader}>
-                      <Feather name="edit-3" size={14} color={C.cardBtn} />
-                      <Text style={s.qaCardTitle}>Voice analysis</Text>
-                      <Feather name="arrow-right" size={14} color={C.textMuted} />
-                    </View>
-                    <View style={{ flex: 1 }} />
-                    <View style={[s.qaCardBtnAlt, { opacity: 0.4 }]}>
-                      <Feather name="arrow-left" size={14} color="#fff" />
-                      <Text style={s.qaCardBtnText}> Start analysis</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-
-              {/* Remaining quick actions as horizontal pills */}
-              {quickActions.length > 2 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.extraPillsRow}
-                  style={{ marginTop: 10 }}
-                >
-                  {quickActions.slice(2).map((qa) => (
+                  )}
+                  {qa2 && (
                     <Pressable
-                      key={qa.id}
-                      onPress={() => handleQuickAction(qa.id, qa.label, qa.prompt_template)}
-                      disabled={busy}
-                      style={[s.extraPill, { opacity: busy ? 0.5 : 1 }]}
+                      onPress={() => handleQuickAction(qa2.id, qa2.label, qa2.prompt_template)}
+                      disabled={busy || sendLockRef.current}
+                      style={{
+                        backgroundColor: "#3B5BF6",
+                        borderRadius: 24,
+                        padding: 16,
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        flex: 1,
+                        opacity: busy ? 0.5 : 1,
+                      }}
                     >
-                      <Text style={s.extraPillText}>{qa.label}</Text>
-                      <Feather
-                        name="arrow-right"
-                        size={13}
-                        color="#fff"
-                        style={{ marginLeft: 4 }}
-                      />
+                      <Text style={{ fontSize: 16 }}>✍️</Text>
+                      <Text style={{ color: "#fff", fontWeight: "600", fontSize: 14 }}>
+                        {qa2.label}
+                      </Text>
                     </Pressable>
-                  ))}
-                </ScrollView>
-              )}
+                  )}
+                </View>
+              </View>
             </ScrollView>
           ) : (
             /* ═══ SCREEN 2: CHAT CONVERSATION ═════════════════════ */
