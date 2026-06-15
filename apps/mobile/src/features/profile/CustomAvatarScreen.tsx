@@ -139,7 +139,7 @@ export function CustomAvatarScreen() {
               backgroundColor: `#${opt}`,
               borderWidth: isSelected ? 4 : 2,
               borderColor: isSelected ? "#4f46e5" : "#e2e8f0",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {isSelected && (
@@ -184,7 +184,7 @@ export function CustomAvatarScreen() {
             className="w-20 h-20 rounded-xl bg-slate-100 items-center justify-center border-2 overflow-hidden"
             style={{
               borderColor: isSelected ? "#4f46e5" : "transparent",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {opt === "none" && categoryKey !== "glasses" ? (
@@ -208,7 +208,14 @@ export function CustomAvatarScreen() {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-slate-50"
+    >
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable

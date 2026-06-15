@@ -632,6 +632,7 @@ export function ChatScreen() {
           s.card,
           {
             paddingTop: insets.top,
+            paddingBottom: insets.bottom,
             height: Platform.OS === "web" ? "82%" : "100%",
             maxHeight: Platform.OS === "web" ? 750 : "100%",
             maxWidth: Platform.OS === "web" ? 480 : "100%",

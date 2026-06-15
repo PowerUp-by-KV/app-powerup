@@ -322,7 +322,14 @@ export function MedalsScreen() {
   }, [list]);
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-slate-50"
+    >
       {/* Dynamic Detailed Modal */}
       <BadgeDetailModal
         visible={selectedBadge !== null}

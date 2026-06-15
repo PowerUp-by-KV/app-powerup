@@ -31,7 +31,7 @@ export function InterviewResultsScreen({
 
   if (!sessionId) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.center}>
           <Text style={styles.errorText}>No session ID provided.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
@@ -44,7 +44,7 @@ export function InterviewResultsScreen({
 
   if (isLoading) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#4F46E5" />
           <Text style={styles.loadingText}>Loading results…</Text>
@@ -55,7 +55,7 @@ export function InterviewResultsScreen({
 
   if (isError || !session) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load session results.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
@@ -69,7 +69,7 @@ export function InterviewResultsScreen({
   const hasEvaluation = !!session.evaluation;
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.topBar}>
         <Text style={styles.title} numberOfLines={1}>
           {mode === "buddy" ? (session.derived_role ?? "Interview Results") : "Practice Session"}

@@ -131,6 +131,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
+          flexGrow: 1,
           padding: 24,
           paddingBottom: 120,
           alignItems: "center",
@@ -193,7 +194,10 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   return (
     <ScrollView
-      style={{ flex: 1, ...Platform.select({ web: { userSelect: "none" } as any }) }}
+      style={{
+        flex: 1,
+        ...Platform.select({ web: { userSelect: "none" } as any }),
+      }}
       contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
     >
       {/* Gamified Header */}
@@ -258,7 +262,9 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 onPress={() => setSelectedLeft(word)}
                 className={`p-4 rounded-2xl border-2 min-h-[72px] items-center justify-center ${bgStyle}`}
                 style={{
-                  ...Platform.select({ web: { cursor: isMatched ? "default" : "pointer" } as any }),
+                  ...Platform.select({
+                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                  }),
                 }}
               >
                 <Text className={`font-bold text-center text-base ${textStyle}`}>{word}</Text>
@@ -303,7 +309,9 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 onPress={() => setSelectedRight(definition)}
                 className={`p-3 rounded-2xl border-2 min-h-[72px] justify-center ${bgStyle}`}
                 style={{
-                  ...Platform.select({ web: { cursor: isMatched ? "default" : "pointer" } as any }),
+                  ...Platform.select({
+                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                  }),
                 }}
               >
                 <Text className={`font-semibold text-xs leading-4 ${textStyle}`}>{definition}</Text>
