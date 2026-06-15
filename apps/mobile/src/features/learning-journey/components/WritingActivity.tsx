@@ -155,7 +155,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             ...Platform.select({
               web: {
                 cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
-              } as any,
+              } as Record<string, unknown>,
             }),
           })}
         >

@@ -166,7 +166,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     const scoreWrapperProps = isNested
       ? { style: { padding: 24, paddingBottom: 120 } }
       : {
-          style: [{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)],
+          style: [
+            { flex: 1 },
+            Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+          ],
           contentContainerStyle: { padding: 24, paddingBottom: 120 },
         };
 
@@ -251,7 +254,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
         // collapses on Android and clips the Submit button below the fold. Size to
         // content instead so the parent ScrollView can reach the button.
         isNested ? {} : { flex: 1 },
-        Platform.OS === "web" && ({ userSelect: "none" } as any),
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
       ]}
     >
       <ContentWrapper {...wrapperProps}>
