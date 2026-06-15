@@ -70,7 +70,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     readingData?.sentences ||
     readingData?.items ||
     readingData?.prompts ||
-    (readingData as any)?.stories ||
+    (readingData as Record<string, unknown>)?.stories ||
     [];
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
@@ -265,8 +265,8 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
     }
     return (
       readingData?.paragraph ||
-      (readingData as any)?.passage_text ||
-      (readingData as any)?.text ||
+      (readingData as Record<string, unknown>)?.passage_text ||
+      (readingData as Record<string, unknown>)?.text ||
       ""
     );
   };
@@ -309,7 +309,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
             <ReadingQuestionComponent
               question={
                 currentQuestion.question ||
-                (currentQuestion as any).question_text ||
+                (currentQuestion as Record<string, unknown>).question_text ||
                 currentQuestion.text ||
                 currentQuestion.sentence ||
                 currentQuestion.prompt ||

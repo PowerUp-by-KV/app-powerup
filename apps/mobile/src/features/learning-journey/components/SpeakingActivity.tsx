@@ -297,7 +297,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
       const passed = res?.passed ?? score >= 60;
       const breakdown: Breakdown =
         (res as unknown as { score_breakdown?: Breakdown }).score_breakdown ?? {};
-      const feedback = (res as any)?.feedback ?? breakdown?.feedback ?? "";
+      const feedback = (res as Record<string, unknown>)?.feedback ?? breakdown?.feedback ?? "";
       setScoreView({ score, passed, feedback, breakdown });
     } catch {
       setError("Scoring failed. Tap retry to send again.");
@@ -357,7 +357,10 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
     return (
       <ScrollView
-        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+        style={[
+          { flex: 1 },
+          Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+        ]}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
         <Text className="text-slate-900 text-xl font-bold mb-2">Your speaking score</Text>
@@ -454,7 +457,10 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
     >
       <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Speaking</Text>

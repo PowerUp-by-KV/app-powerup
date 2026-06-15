@@ -411,7 +411,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
                 title={cat.title}
                 score={cat.score}
                 total={100}
-                icon={cat.icon as any}
+                icon={cat.icon as Record<string, unknown>}
               />
             ))}
           </View>

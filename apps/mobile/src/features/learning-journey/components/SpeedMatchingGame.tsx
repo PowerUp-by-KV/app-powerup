@@ -184,7 +184,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
         <Pressable
           onPress={() => onComplete({ passed, score: currentScore })}
           className="w-full max-w-sm mt-8 bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center shadow-md"
-          style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
+          style={{ ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }) }}
         >
           <Text className="text-white font-bold text-base">Continue</Text>
         </Pressable>
@@ -194,7 +194,10 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   return (
     <ScrollView
-      style={{ flex: 1, ...Platform.select({ web: { userSelect: "none" } as any }) }}
+      style={{
+        flex: 1,
+        ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
+      }}
       contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
     >
       {/* Gamified Header */}
@@ -259,7 +262,9 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 onPress={() => setSelectedLeft(word)}
                 className={`p-4 rounded-2xl border-2 min-h-[72px] items-center justify-center ${bgStyle}`}
                 style={{
-                  ...Platform.select({ web: { cursor: isMatched ? "default" : "pointer" } as any }),
+                  ...Platform.select({
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
+                  }),
                 }}
               >
                 <Text className={`font-bold text-center text-base ${textStyle}`}>{word}</Text>
@@ -304,7 +309,9 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 onPress={() => setSelectedRight(definition)}
                 className={`p-3 rounded-2xl border-2 min-h-[72px] justify-center ${bgStyle}`}
                 style={{
-                  ...Platform.select({ web: { cursor: isMatched ? "default" : "pointer" } as any }),
+                  ...Platform.select({
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
+                  }),
                 }}
               >
                 <Text className={`font-semibold text-xs leading-4 ${textStyle}`}>{definition}</Text>

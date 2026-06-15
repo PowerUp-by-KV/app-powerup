@@ -23,9 +23,9 @@ export function SentenceDisplay({
     question.prompt ||
     question.story ||
     "No sentence text found.";
-  const noOfLines = (question as any).noOfLines || question.no_of_lines || 1;
+  const noOfLines = (question as Record<string, unknown>).noOfLines || question.no_of_lines || 1;
   const recordingTime =
-    (question as any).recordingTime ||
+    (question as Record<string, unknown>).recordingTime ||
     question.recording_time_seconds ||
     (question.complexity === "Advanced" || question.complexity === "Difficult" ? 30 : 15);
 

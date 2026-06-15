@@ -39,11 +39,15 @@ export function ListeningQuestion({
         <View>
           <Text className="text-sm text-gray-600 mb-1">
             Time Allotted:{" "}
-            {question.recordingTime || (question as any).recording_time_seconds || 45}s
+            {question.recordingTime ||
+              (question as Record<string, unknown>).recording_time_seconds ||
+              45}
+            s
           </Text>
-          {(question.noOfLines || (question as any).no_of_lines) && (
+          {(question.noOfLines || (question as Record<string, unknown>).no_of_lines) && (
             <Text className="text-sm text-gray-600">
-              Content Lines: {question.noOfLines || (question as any).no_of_lines}
+              Content Lines:{" "}
+              {question.noOfLines || (question as Record<string, unknown>).no_of_lines}
             </Text>
           )}
         </View>

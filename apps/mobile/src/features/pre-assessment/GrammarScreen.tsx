@@ -212,7 +212,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
           />
 
           <GrammarQuestionComponent
-            question={currentQuestion as any}
+            question={currentQuestion as Record<string, unknown>}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
           />

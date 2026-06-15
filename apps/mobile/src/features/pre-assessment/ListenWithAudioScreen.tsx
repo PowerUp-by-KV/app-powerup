@@ -478,7 +478,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           />
 
           <ListenWithAudioQuestion
-            question={currentQuestion as any}
+            question={currentQuestion as Record<string, unknown>}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
             timeLeft={timeLeft}

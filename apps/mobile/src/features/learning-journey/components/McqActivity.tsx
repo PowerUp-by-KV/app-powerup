@@ -444,7 +444,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                       unknown
                     >)
                   : {}),
-              } as any
+              } as Record<string, unknown>
             }
           >
             {({ pressed }) => (

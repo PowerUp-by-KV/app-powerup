@@ -87,7 +87,7 @@ export default function OnboardingScreen() {
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/(tabs)/my-learning" as any);
+        router.replace("/(tabs)/my-learning" as Record<string, unknown>);
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -190,7 +190,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/(tabs)/my-learning" as any);
+              router.replace("/(tabs)/my-learning" as Record<string, unknown>);
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -308,7 +308,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/(tabs)/my-learning" as any);
+      router.replace("/(tabs)/my-learning" as Record<string, unknown>);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
@@ -384,7 +384,12 @@ export default function OnboardingScreen() {
                 text: "Continue Without Resume",
                 onPress: async () => {
                   // Clear the file answer so we proceed with only questionnaire answers
-                  dispatch(updateField({ field: question.question_key as any, value: "" }));
+                  dispatch(
+                    updateField({
+                      field: question.question_key as Record<string, unknown>,
+                      value: "",
+                    }),
+                  );
                   setResumeUploaded(false);
                   if (stepNumber < flattenedQuestions.length) {
                     dispatch(nextStep());
@@ -411,7 +416,9 @@ export default function OnboardingScreen() {
     if (!question) return;
 
     // Clear value when skipping
-    dispatch(updateField({ field: question.question_key as any, value: "null" }));
+    dispatch(
+      updateField({ field: question.question_key as Record<string, unknown>, value: "null" }),
+    );
 
     if (question.input_type === "file") {
       setResumeUploaded(false);

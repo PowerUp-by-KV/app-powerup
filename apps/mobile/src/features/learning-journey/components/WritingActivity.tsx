@@ -58,7 +58,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
       <ScrollView
         style={{
           flex: 1,
-          ...Platform.select({ web: { userSelect: "none" } as any }),
+          ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
         }}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
@@ -96,7 +96,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
-            ...Platform.select({ web: { cursor: "pointer" } as any }),
+            ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }),
           })}
         >
           <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
@@ -113,7 +113,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
       <ScrollView
         style={{
           flex: 1,
-          ...Platform.select({ web: { userSelect: "none" } as any }),
+          ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
         }}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
         keyboardShouldPersistTaps="handled"

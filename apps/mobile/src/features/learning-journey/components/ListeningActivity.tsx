@@ -191,7 +191,10 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View
@@ -226,7 +229,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               ...(Platform.OS === "web"
                 ? ({ cursor: hasPlayed ? "default" : "pointer" } as Record<string, unknown>)
                 : {}),
-            } as any
+            } as Record<string, unknown>
           }
         >
           {({ pressed }) => (
