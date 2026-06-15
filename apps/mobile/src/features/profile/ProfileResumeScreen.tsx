@@ -126,7 +126,6 @@ export function ProfileResumeScreen() {
         flex: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
       className="bg-slate-50"
     >

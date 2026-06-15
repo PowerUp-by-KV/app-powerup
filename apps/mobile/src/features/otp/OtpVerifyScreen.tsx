@@ -27,7 +27,6 @@ export function OtpVerifyScreen() {
         flex: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
       className="bg-white"
     >

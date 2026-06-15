@@ -14,7 +14,7 @@ export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessSc
   const insets = useSafeAreaInsets();
   return (
     <View
-      style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom }}
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       className="flex-1 bg-white"
     >
       <View className="flex-1 items-center justify-center px-8">

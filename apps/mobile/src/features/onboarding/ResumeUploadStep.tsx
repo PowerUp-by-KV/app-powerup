@@ -157,7 +157,6 @@ export function ResumeUploadStep() {
         flex: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
       className="flex-1 bg-white"
     >

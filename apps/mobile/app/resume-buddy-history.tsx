@@ -15,7 +15,6 @@ export default function ResumeBuddyHistoryPage() {
         backgroundColor: "#f8fafc",
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
     >
       {/* Header */}

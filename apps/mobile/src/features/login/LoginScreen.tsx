@@ -148,7 +148,6 @@ export function LoginScreen() {
         flex: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
       className="bg-white"
     >

@@ -257,7 +257,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           flex: 1,
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-          paddingBottom: insets.bottom,
         }}
         className="flex-1 bg-slate-50"
       >
@@ -424,7 +423,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       style={{
         flex: 1,
         paddingTop: insets.top,
-        paddingBottom: insets.bottom,
         paddingBottom: insets.bottom,
       }}
       className="bg-white"

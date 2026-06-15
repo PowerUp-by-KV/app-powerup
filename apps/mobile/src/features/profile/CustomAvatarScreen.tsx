@@ -213,7 +213,6 @@ export function CustomAvatarScreen() {
         flex: 1,
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
       className="bg-slate-50"
     >

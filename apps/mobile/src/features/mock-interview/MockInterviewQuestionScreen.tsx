@@ -265,7 +265,6 @@ export function MockInterviewQuestionScreen() {
         backgroundColor: "#0f172a",
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
     >
       {/* ── Top header ────────────────────────────────────────────────────── */}

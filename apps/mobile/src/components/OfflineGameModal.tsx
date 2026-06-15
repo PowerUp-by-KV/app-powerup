@@ -171,7 +171,6 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
           backgroundColor: "#0f172a",
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-          paddingBottom: insets.bottom,
         }}
         className="justify-between"
       >

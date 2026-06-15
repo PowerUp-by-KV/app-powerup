@@ -91,12 +91,7 @@ export function InterviewEntryScreen() {
   );
 
   return (
-    <View
-      style={[
-        styles.safe,
-        { paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom },
-      ]}
-    >
+    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <ScrollView contentContainerStyle={styles.listContent}>
         {renderHeader()}
         {isLoadingSessions && <ActivityIndicator style={styles.loader} />}

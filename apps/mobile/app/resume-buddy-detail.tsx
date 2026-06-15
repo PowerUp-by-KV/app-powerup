@@ -11,7 +11,6 @@ export default function ResumeBuddyDetailPage() {
         backgroundColor: "#f8fafc",
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
-        paddingBottom: insets.bottom,
       }}
     >
       <ResumeBuddyDetailScreen />
