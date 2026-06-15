@@ -11,6 +11,7 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -36,6 +37,7 @@ import { useRouter } from "expo-router";
 
 export function Step1ContactScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
@@ -422,7 +424,7 @@ export function Step1ContactScreen() {
           onRequestClose={() => setShowCountryCodeModal(false)}
         >
           <View style={styles.modalBackdrop}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Country Code</Text>
                 <Pressable onPress={() => setShowCountryCodeModal(false)}>

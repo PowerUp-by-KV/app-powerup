@@ -139,7 +139,7 @@ export function CustomAvatarScreen() {
               backgroundColor: `#${opt}`,
               borderWidth: isSelected ? 4 : 2,
               borderColor: isSelected ? "#4f46e5" : "#e2e8f0",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {isSelected && (
@@ -165,22 +165,17 @@ export function CustomAvatarScreen() {
       {options.map((opt) => {
         const isSelected = current === opt;
 
-        // Build URL specifically for this option
-        const params = new URLSearchParams();
-        params.append("skinColor", categoryKey === "skinColor" ? opt : skinColor);
-        params.append("hairColor", categoryKey === "hairColor" ? opt : hairColor);
-        params.append("hair", categoryKey === "hair" ? opt : hair);
-        params.append("eyes", categoryKey === "eyes" ? opt : eyes);
-        params.append("mouth", categoryKey === "mouth" ? opt : mouth);
-
+        const s = categoryKey === "skinColor" ? opt : skinColor;
+        const hc = categoryKey === "hairColor" ? opt : hairColor;
+        const h = categoryKey === "hair" ? opt : hair;
+        const e = categoryKey === "eyes" ? opt : eyes;
+        const m = categoryKey === "mouth" ? opt : mouth;
         const g = categoryKey === "glasses" ? opt : glasses;
+
+        let optUrl = `https://api.dicebear.com/7.x/adventurer/png?skinColor=${s}&hairColor=${hc}&hair=${h}&eyes=${e}&mouth=${m}&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
         if (g !== "none") {
-          params.append("glasses", g);
-          params.append("glassesProbability", "100");
+          optUrl += `&glasses=${g}&glassesProbability=100`;
         }
-        params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
-        params.append("seed", "user_custom");
-        const optUrl = `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
 
         return (
           <Pressable
@@ -189,7 +184,7 @@ export function CustomAvatarScreen() {
             className="w-20 h-20 rounded-xl bg-slate-100 items-center justify-center border-2 overflow-hidden"
             style={{
               borderColor: isSelected ? "#4f46e5" : "transparent",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {opt === "none" && categoryKey !== "glasses" ? (
@@ -213,7 +208,14 @@ export function CustomAvatarScreen() {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-slate-50"
+    >
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable

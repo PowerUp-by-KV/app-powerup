@@ -126,12 +126,18 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     const nextCorrectCount = correct ? correctCount + 1 : correctCount;
     if (correct) setCorrectCount(nextCorrectCount);
 
+    const correctIndex = options.findIndex(
+      (opt) => opt.id.trim() === (current.correct_answer ?? "").trim(),
+    );
+    const correctLetter =
+      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : (current.correct_answer ?? "");
+
     setLastCorrect(correct);
-    setLastCorrectAnswer(current.correct_answer ?? "");
+    setLastCorrectAnswer(correctLetter);
 
     setLastResult({
       correct,
-      correctAnswer: current.correct_answer ?? "",
+      correctAnswer: correctLetter,
       totalCorrect: nextCorrectCount,
     });
   };
@@ -156,11 +162,19 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   };
 
   if (scoreView) {
+    const ScoreWrapper = isNested ? View : ScrollView;
+    const scoreWrapperProps = isNested
+      ? { style: { padding: 24, paddingBottom: 120 } }
+      : {
+          style: [
+            { flex: 1 },
+            Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+          ],
+          contentContainerStyle: { padding: 24, paddingBottom: 120 },
+        };
+
     return (
-      <ScrollView
-        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
-      >
+      <ScoreWrapper {...scoreWrapperProps}>
         <View style={{ alignItems: "center", marginVertical: 32 }}>
           <View
             style={{
@@ -223,7 +237,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             </View>
           )}
         </Pressable>
-      </ScrollView>
+      </ScoreWrapper>
     );
   }
 
@@ -240,7 +254,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
         // collapses on Android and clips the Submit button below the fold. Size to
         // content instead so the parent ScrollView can reach the button.
         isNested ? {} : { flex: 1 },
-        Platform.OS === "web" && ({ userSelect: "none" } as any),
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
       ]}
     >
       <ContentWrapper {...wrapperProps}>
@@ -430,7 +444,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                       unknown
                     >)
                   : {}),
-              } as any
+              } as Record<string, unknown>
             }
           >
             {({ pressed }) => (

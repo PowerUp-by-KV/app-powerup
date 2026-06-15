@@ -140,7 +140,11 @@ export const resumeApi = api.injectEndpoints({
             userId: arg,
             userMessage: apiError.userMessage,
           });
-          console.error("Fetch error:", apiError.userMessage);
+          if ((queryError as unknown as { status?: number })?.status === 404) {
+            console.info("Resume not found (normal if not uploaded or just deleted)");
+          } else {
+            console.error("Fetch error:", apiError.userMessage);
+          }
         }
       },
     }),
@@ -272,7 +276,7 @@ export interface ResumeStatusResponse {
 }
 
 export const resumeScoreApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     getResumeScore: builder.query<ResumeScoreResponse, void>({
       query: () => `/v1/resume/score`,

@@ -62,7 +62,7 @@ export function SessionCard({ session, onPress }: SessionCardProps) {
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : undefined]}
       onPress={onPress}
     >
       <View style={styles.cardHeader}>

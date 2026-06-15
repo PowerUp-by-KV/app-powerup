@@ -202,21 +202,57 @@ export function ProfileScreen() {
 
   const headerLabel = useMemo(() => {
     const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
       "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
-    return monthNames[currentDate.getMonth()];
-  }, [currentDate]);
+
+    if (viewMode === "monthly") {
+      const fullMonthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      return fullMonthNames[currentDate.getMonth()];
+    }
+
+    // Weekly mode: e.g. "Feb 1 – Feb 7" or "Feb 23 – Mar 1"
+    const weekStart = displayedDays[0];
+    const weekEnd = displayedDays[6];
+    if (!weekStart || !weekEnd) return "";
+
+    const parseDateStr = (dateStr: string) => {
+      const [, m, d] = dateStr.split("-").map(Number);
+      return { month: monthNames[(m ?? 1) - 1], day: d ?? 1 };
+    };
+
+    const start = parseDateStr(weekStart.date);
+    const end = parseDateStr(weekEnd.date);
+
+    if (start.month === end.month) {
+      return `${start.month} ${start.day} – ${end.day}`;
+    } else {
+      return `${start.month} ${start.day} – ${end.month} ${end.day}`;
+    }
+  }, [viewMode, currentDate, displayedDays]);
 
   const handlePrev = () => {
     if (viewMode === "weekly") {

@@ -187,7 +187,7 @@ export function ModuleScreen() {
   if (!dayId) {
     return (
       <View
-        style={{ paddingTop: insets.top }}
+        style={{ paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, 16) }}
         className="flex-1 bg-white items-center justify-center"
       >
         <Text className="text-slate-500">Missing day id.</Text>
@@ -206,6 +206,7 @@ export function ModuleScreen() {
           justifyContent: "center",
           alignItems: "center",
           paddingTop: insets.top,
+          paddingBottom: Math.max(insets.bottom, 16),
         }}
         className="p-6"
       >
@@ -263,12 +264,18 @@ export function ModuleScreen() {
     return <GamifiedMascotLoader title="Loading Activities..." />;
   }
 
-  const totalSteps = activitiesToPlay.length;
-  const currentStep = activityIdx + 1;
+  const totalSteps = activities.length;
+  const currentStepIndex = currentActivity
+    ? activities.findIndex((a) => a.id === currentActivity.id)
+    : 0;
+  const currentStep = currentStepIndex + 1;
   const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+    <View
+      style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
+      className="bg-white"
+    >
       <View className="px-4 pt-4 pb-2 border-b border-slate-100 bg-white">
         {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
         <View className="flex-row items-center w-full mb-3">

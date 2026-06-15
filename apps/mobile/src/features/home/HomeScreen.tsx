@@ -150,12 +150,12 @@ export function HomeScreen() {
   }, [activeDay]);
 
   const daysCompleted = useMemo(() => {
-    return firstIncompleteIdx !== -1 ? firstIncompleteIdx : allDaysList.length;
-  }, [allDaysList, firstIncompleteIdx]);
+    return allDaysList.filter((d) => d.is_completed).length;
+  }, [allDaysList]);
 
   const totalDays = useMemo(() => {
-    return allDaysList.length || 156;
-  }, [allDaysList]);
+    return 156; // The course contains exactly 156 activities/days
+  }, []);
 
   const { data: dayProgress } = useGetDayProgressQuery(activeDay?.id ?? "", {
     skip: !activeDay,

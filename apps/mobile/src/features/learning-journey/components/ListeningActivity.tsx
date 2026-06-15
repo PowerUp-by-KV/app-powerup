@@ -224,7 +224,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               borderRadius: 36,
               overflow: "hidden",
               ...(Platform.OS === "web"
-                ? ({ cursor: hasPlayed ? "default" : "pointer" } as Record<string, unknown>)
+                ? ({ cursor: hasPlayed ? "default" : "pointer" } as any)
                 : {}),
             } as any
           }
@@ -270,7 +270,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {

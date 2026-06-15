@@ -109,7 +109,14 @@ export default function OnboardingScreen() {
 
   if (onboardingError && !isFetching) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+        className="bg-slate-50"
+      >
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -161,7 +168,14 @@ export default function OnboardingScreen() {
 
   if (!question && !isFetching) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+        className="bg-white"
+      >
         <View className="flex-1 justify-center items-center p-8">
           <View className="w-20 h-20 bg-indigo-100 rounded-full items-center justify-center mb-6">
             <Text className="text-4xl">🎯</Text>
@@ -208,9 +222,14 @@ export default function OnboardingScreen() {
         .map((q) => {
           const answerValue = formData[q.question_key];
 
-          let answer_text: string;
-          if (answerValue === undefined || answerValue === null || answerValue === "") {
-            answer_text = "";
+          let answer_text: any; // Allow null
+          if (
+            answerValue === undefined ||
+            answerValue === null ||
+            answerValue === "" ||
+            answerValue === "null"
+          ) {
+            answer_text = null;
           } else if (Array.isArray(answerValue)) {
             answer_text = answerValue.join(", ");
           } else if (typeof answerValue === "object") {
@@ -226,8 +245,8 @@ export default function OnboardingScreen() {
           };
         })
         .filter((ans) => {
-          // If it's a file question and was skipped, send ""
-          if (ans.input_type === "file" && ans.answer_text === "") {
+          // If it's a file question and was skipped, send null
+          if (ans.input_type === "file" && ans.answer_text === null) {
             return true;
           }
           // Omit file questions that have local file URIs (they were uploaded via resume endpoints)
@@ -236,9 +255,7 @@ export default function OnboardingScreen() {
           }
           // For everything else, only send answers that are not empty
           return (
-            ans.answer_text !== undefined &&
-            ans.answer_text !== null &&
-            ans.answer_text.trim() !== ""
+            ans.answer_text !== undefined && ans.answer_text !== null && ans.answer_text !== ""
           );
         })
         .map(({ question_id, answer_text }) => ({ question_id, answer_text }));
@@ -367,7 +384,12 @@ export default function OnboardingScreen() {
                 text: "Continue Without Resume",
                 onPress: async () => {
                   // Clear the file answer so we proceed with only questionnaire answers
-                  dispatch(updateField({ field: question.question_key as any, value: "" }));
+                  dispatch(
+                    updateField({
+                      field: question.question_key as any,
+                      value: "",
+                    }),
+                  );
                   setResumeUploaded(false);
                   if (stepNumber < flattenedQuestions.length) {
                     dispatch(nextStep());
@@ -394,9 +416,34 @@ export default function OnboardingScreen() {
     if (!question) return;
 
     // Clear value when skipping
-    dispatch(updateField({ field: question.question_key as any, value: "" }));
+    dispatch(updateField({ field: question.question_key as any, value: "null" }));
+
     if (question.input_type === "file") {
       setResumeUploaded(false);
+      try {
+        const fd = new FormData();
+        if (Platform.OS === "web") {
+          // Create a valid File object containing the string "null"
+          fd.append("file", new File(["null"], "skipped_resume.pdf", { type: "application/pdf" }));
+        } else {
+          // React Native format
+          const rnFile = {
+            uri: "data:application/pdf;base64,bnVsbA==",
+            name: "skipped_resume.pdf",
+            type: "application/pdf",
+          };
+          fd.append("file", rnFile as unknown as Blob, "skipped_resume.pdf");
+        }
+
+        const extractRes = await extractResume(fd).unwrap();
+        const resumeId = extractRes?.resume_id || "null";
+        await confirmResume({
+          resume_id: resumeId,
+          confirmed_data: "null",
+        }).unwrap();
+      } catch (err) {
+        console.warn("Skip resume dummy file API failed:", err);
+      }
     }
 
     if (stepNumber < flattenedQuestions.length) {
@@ -418,7 +465,14 @@ export default function OnboardingScreen() {
   const isFileQuestion = question?.input_type === "file";
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-slate-50"
+    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{

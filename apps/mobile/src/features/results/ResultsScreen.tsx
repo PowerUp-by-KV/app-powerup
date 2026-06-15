@@ -32,6 +32,7 @@ import {
 } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { refreshAccessToken } from "@/services/api";
 
 interface ResultsScreenProps {
   sessionId?: string;
@@ -148,7 +149,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
     }
   }, [rawResultData]);
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    try {
+      await refreshAccessToken();
+    } catch (e) {
+      console.warn("Failed to refresh access token after assessment:", e);
+    }
     router.replace("/(tabs)/my-learning" as never);
   };
 
@@ -228,7 +234,14 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   if (hasError) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "#f8fafc" }}>
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          backgroundColor: "#f8fafc",
+        }}
+      >
         <View
           style={{
             flex: 1,
@@ -348,7 +361,14 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-white"
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}

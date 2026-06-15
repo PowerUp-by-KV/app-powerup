@@ -259,7 +259,14 @@ export function MockInterviewQuestionScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0f172a", paddingTop: insets.top }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#0f172a",
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+    >
       {/* ── Top header ────────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
         <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff", textAlign: "center" }}>

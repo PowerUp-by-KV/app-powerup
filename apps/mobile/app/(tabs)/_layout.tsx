@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+
 import { Feather } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getAuthSession } from "@/services/auth-storage";
 
@@ -9,6 +11,7 @@ const INACTIVE_COLOR = "#94a3b8";
 
 export default function TabLayout() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -33,8 +36,8 @@ export default function TabLayout() {
         tabBarStyle: {
           borderTopWidth: 0,
           elevation: 8,
-          height: 64,
-          paddingBottom: 8,
+          height: 64 + Math.max(0, insets.bottom),
+          paddingBottom: 8 + Math.max(0, insets.bottom),
           width: "100%",
         },
         headerShown: false,
