@@ -448,7 +448,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
           />
 
           <SpeakingQuestion
-            question={currentQuestion as Record<string, unknown>}
+            question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
             timeLeft={timeLeft}

@@ -14,4 +14,8 @@ export interface SafeFlatListProps<T> {
   className?: string;
   ref?: React.Ref<FlatList<T>> | any;
   onContentSizeChange?: (w: number, h: number) => void;
+  initialNumToRender?: number;
+  maxToRenderPerBatch?: number;
+  windowSize?: number;
+  ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
 }

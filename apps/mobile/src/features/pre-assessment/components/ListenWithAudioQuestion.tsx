@@ -16,9 +16,8 @@ export function ListenWithAudioQuestion({
   totalQuestions,
   timeLeft,
 }: ListenWithAudioQuestionProps) {
-  const recordingTime =
-    (question as Record<string, unknown>).recordingTime || question.recording_time_seconds || 30;
-  const noOfLines = (question as Record<string, unknown>).noOfLines || question.no_of_lines;
+  const recordingTime = (question as any).recordingTime || question.recording_time_seconds || 30;
+  const noOfLines = (question as any).noOfLines || question.no_of_lines;
 
   return (
     <View className="mb-6">

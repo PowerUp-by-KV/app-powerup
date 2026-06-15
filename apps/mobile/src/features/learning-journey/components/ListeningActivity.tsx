@@ -191,10 +191,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   return (
     <ScrollView
-      style={[
-        { flex: 1 },
-        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
-      ]}
+      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View
@@ -227,9 +224,9 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               borderRadius: 36,
               overflow: "hidden",
               ...(Platform.OS === "web"
-                ? ({ cursor: hasPlayed ? "default" : "pointer" } as Record<string, unknown>)
+                ? ({ cursor: hasPlayed ? "default" : "pointer" } as any)
                 : {}),
-            } as Record<string, unknown>
+            } as any
           }
         >
           {({ pressed }) => (
@@ -273,7 +270,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {

@@ -297,7 +297,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
       const passed = res?.passed ?? score >= 60;
       const breakdown: Breakdown =
         (res as unknown as { score_breakdown?: Breakdown }).score_breakdown ?? {};
-      const feedback = (res as Record<string, unknown>)?.feedback ?? breakdown?.feedback ?? "";
+      const feedback = (res as any)?.feedback ?? breakdown?.feedback ?? "";
       setScoreView({ score, passed, feedback, breakdown });
     } catch {
       setError("Scoring failed. Tap retry to send again.");
@@ -357,10 +357,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
     return (
       <ScrollView
-        style={[
-          { flex: 1 },
-          Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
-        ]}
+        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
         <Text className="text-slate-900 text-xl font-bold mb-2">Your speaking score</Text>
@@ -435,7 +432,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
           style={{
             marginTop: 24,
             borderRadius: 10,
-            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
           }}
         >
           {({ pressed }) => (
@@ -457,10 +454,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
   return (
     <ScrollView
-      style={[
-        { flex: 1 },
-        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
-      ]}
+      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
       contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
     >
       <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Speaking</Text>
@@ -534,9 +528,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                   justifyContent: "space-between",
                   height: "100%",
                   width: "100%",
-                  ...(Platform.OS === "web"
-                    ? ({ cursor: "pointer" } as Record<string, unknown>)
-                    : {}),
+                  ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
                 }}
               >
                 {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -585,9 +577,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     height: 56,
                     borderRadius: 28,
                     overflow: "hidden",
-                    ...(Platform.OS === "web"
-                      ? ({ cursor: "pointer" } as Record<string, unknown>)
-                      : {}),
+                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
                   }}
                 >
                   {({ pressed }) => (
@@ -623,9 +613,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     backgroundColor: "#dc2626",
                     alignItems: "center",
                     justifyContent: "center",
-                    ...(Platform.OS === "web"
-                      ? ({ cursor: "pointer" } as Record<string, unknown>)
-                      : {}),
+                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
                   }}
                 >
                   <Feather name="refresh-cw" size={22} color="#fff" />
@@ -648,9 +636,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
-                ...(Platform.OS === "web"
-                  ? ({ cursor: "pointer" } as Record<string, unknown>)
-                  : {}),
+                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
               }}
             >
               {({ pressed }) => (
@@ -678,9 +664,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 height: 96,
                 borderRadius: 48,
                 overflow: "hidden",
-                ...(Platform.OS === "web"
-                  ? ({ cursor: "pointer" } as Record<string, unknown>)
-                  : {}),
+                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
               }}
             >
               {({ pressed }) => (

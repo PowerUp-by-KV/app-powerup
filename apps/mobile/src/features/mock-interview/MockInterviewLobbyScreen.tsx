@@ -150,9 +150,9 @@ export function MockInterviewLobbyScreen() {
 
       if (attempt.status === "in_progress") {
         // getNextQuestion in QuestionScreen picks up from where user left off
-        router.push("/mock-interview/question" as Record<string, unknown>);
+        router.push("/mock-interview/question" as any);
       } else {
-        router.push("/mock-interview/result" as Record<string, unknown>);
+        router.push("/mock-interview/result" as any);
       }
     },
     [dispatch, router],
@@ -175,7 +175,7 @@ export function MockInterviewLobbyScreen() {
         }),
       );
 
-      router.push("/mock-interview/question" as Record<string, unknown>);
+      router.push("/mock-interview/question" as any);
     } catch {
       // TODO: wire up toast utility once available in the project
     }

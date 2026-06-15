@@ -210,7 +210,7 @@ export function MockInterviewResultScreen() {
 
   const handleTryAgain = useCallback(() => {
     dispatch(resetInterview());
-    router.replace("/mock-interview" as Record<string, unknown>);
+    router.replace("/mock-interview" as any);
   }, [dispatch, router]);
 
   const handleGoToDashboard = useCallback(() => {

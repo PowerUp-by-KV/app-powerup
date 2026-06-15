@@ -17,9 +17,9 @@ export function SpeakingQuestion({
   timeLeft,
 }: SpeakingQuestionProps) {
   const recordingTime =
-    (question as Record<string, unknown>).recordingTime ||
+    (question as any).recordingTime ||
     question.recording_time_seconds ||
-    (question as Record<string, unknown>).time_seconds ||
+    (question as any).time_seconds ||
     30;
 
   return (

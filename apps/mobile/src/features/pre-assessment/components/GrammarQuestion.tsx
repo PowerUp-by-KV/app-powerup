@@ -35,9 +35,9 @@ export function GrammarQuestion({ question, questionIndex, totalQuestions }: Gra
             <Text className="text-white text-xs font-bold">{question.topic}</Text>
           </View>
         )}
-        {(question.questionType || (question as Record<string, unknown>).question_type) && (
+        {(question.questionType || (question as any).question_type) && (
           <Text className="text-xs text-gray-600">
-            {question.questionType || (question as Record<string, unknown>).question_type}
+            {question.questionType || (question as any).question_type}
           </Text>
         )}
       </View>

@@ -80,11 +80,11 @@ export function MockInterviewFeedbackScreen() {
   const handleNext = useCallback(() => {
     if (isComplete) {
       // Last question was just answered — go to final result
-      router.replace("/mock-interview/result" as Record<string, unknown>);
+      router.replace("/mock-interview/result" as any);
     } else {
       // More questions remaining — go back to question screen;
       // getNextQuestion will auto-fetch the next one
-      router.replace("/mock-interview/question" as Record<string, unknown>);
+      router.replace("/mock-interview/question" as any);
     }
   }, [isComplete, router]);
 

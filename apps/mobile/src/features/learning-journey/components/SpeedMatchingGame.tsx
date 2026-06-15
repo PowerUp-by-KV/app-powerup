@@ -184,7 +184,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
         <Pressable
           onPress={() => onComplete({ passed, score: currentScore })}
           className="w-full max-w-sm mt-8 bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center shadow-md"
-          style={{ ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }) }}
+          style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
         >
           <Text className="text-white font-bold text-base">Continue</Text>
         </Pressable>
@@ -196,7 +196,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     <ScrollView
       style={{
         flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
+        ...Platform.select({ web: { userSelect: "none" } as any }),
       }}
       contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
     >
@@ -263,7 +263,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-4 rounded-2xl border-2 min-h-[72px] items-center justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
+                    web: { cursor: isMatched ? "default" : "pointer" } as any,
                   }),
                 }}
               >
@@ -310,7 +310,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-3 rounded-2xl border-2 min-h-[72px] justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
+                    web: { cursor: isMatched ? "default" : "pointer" } as any,
                   }),
                 }}
               >

@@ -60,9 +60,7 @@ export function AssessmentHeader({
 
   useEffect(() => {
     if (backendStatus) {
-      const sections =
-        backendStatus.completed_sections ||
-        (backendStatus as Record<string, unknown>).completedSections;
+      const sections = backendStatus.completed_sections || (backendStatus as any).completedSections;
       if (sections && Array.isArray(sections)) {
         setCompletedSections(sections);
       } else {

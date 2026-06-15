@@ -71,11 +71,7 @@ export function SessionCard({ session, onPress }: SessionCardProps) {
           <Text style={styles.dateText}>{formatSessionDate(session.created_at)}</Text>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
-          <MaterialIcons
-            name={statusCfg.icon as Record<string, unknown>}
-            size={14}
-            color={statusCfg.color}
-          />
+          <MaterialIcons name={statusCfg.icon as any} size={14} color={statusCfg.color} />
           <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
         </View>
       </View>

@@ -72,7 +72,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
 
   const [timeLeft, setTimeLeft] = useState(60); // Default 60s for story comprehension
 
-  const maxDuration = (currentQuestion as Record<string, unknown>)?.recording_time_seconds || 60;
+  const maxDuration = (currentQuestion as any)?.recording_time_seconds || 60;
 
   // Reset timer on question change
   useEffect(() => {
@@ -262,18 +262,15 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
           />
 
           <ListeningQuestion
-            question={currentQuestion as Record<string, unknown>}
+            question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
             timeLeft={timeLeft}
           />
 
           <AudioPlayer
-            audioUrl={(currentQuestion as Record<string, unknown>)?.audio_url}
-            audioText={
-              (currentQuestion as Record<string, unknown>)?.script ||
-              "Please listen to the audio carefully."
-            }
+            audioUrl={(currentQuestion as any)?.audio_url}
+            audioText={(currentQuestion as any)?.script || "Please listen to the audio carefully."}
             duration={30}
             onPlayEnd={() => setHasAudioFinished(true)}
           />
