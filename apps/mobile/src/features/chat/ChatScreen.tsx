@@ -29,6 +29,7 @@ import {
   useListQuickActionsQuery,
   useToggleBookmarkMutation,
 } from "@/services/chat-api";
+import { SafeFlatListProps } from "@/types";
 import { getAvatarUri } from "@/utils/avatar";
 
 import { useChatStream } from "./useChatStream";
@@ -61,6 +62,11 @@ const C = {
   errorBg: "#FEE2E2",
   errorText: "#B91C1C",
 } as const;
+
+// ─── FlatList type workaround ───────────────────────────────────────
+const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
+  SafeFlatListProps<ChatMessage> & React.RefAttributes<FlatList<ChatMessage>>
+>;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 function formatTime(dateStr: string): string {
@@ -804,7 +810,7 @@ export function ChatScreen() {
             /* ═══ SCREEN 2: CHAT CONVERSATION ═════════════════════ */
             <>
               <View style={{ flex: 1 }}>
-                <FlatList
+                <MessageFlatList
                   ref={listRef}
                   data={displayMessages as ChatMessage[]}
                   keyExtractor={(m: ChatMessage) => m.id}
