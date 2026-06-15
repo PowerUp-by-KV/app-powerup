@@ -29,13 +29,10 @@ import {
   useListQuickActionsQuery,
   useToggleBookmarkMutation,
 } from "@/services/chat-api";
-import { SafeFlatListProps } from "@/types";
 import { getAvatarUri } from "@/utils/avatar";
 
-import { ChatOrb, ChatOrbMini } from "./ChatOrb";
 import { useChatStream } from "./useChatStream";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const AI_ORB_IMAGE = require("@/../assets/images/ai-orb.png");
 
 // ─── Color palette (exact design spec) ─────────────────────────────
@@ -64,11 +61,6 @@ const C = {
   errorBg: "#FEE2E2",
   errorText: "#B91C1C",
 } as const;
-
-// ─── FlatList type workaround ───────────────────────────────────────
-const MessageFlatList = FlatList as unknown as React.ForwardRefExoticComponent<
-  SafeFlatListProps<ChatMessage> & React.RefAttributes<FlatList<ChatMessage>>
->;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 function formatTime(dateStr: string): string {

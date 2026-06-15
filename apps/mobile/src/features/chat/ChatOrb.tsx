@@ -6,7 +6,6 @@ import Svg, {
   Defs,
   LinearGradient,
   Stop,
-  RadialGradient,
   Filter,
   FeGaussianBlur,
   G,
