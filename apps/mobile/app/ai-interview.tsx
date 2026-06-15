@@ -87,7 +87,12 @@ export default function InterviewBuddyScreen() {
 
   if (isLoadingResume) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom },
+        ]}
+      >
         <ActivityIndicator style={styles.loader} size="large" color="#4F46E5" />
       </View>
     );
@@ -96,7 +101,12 @@ export default function InterviewBuddyScreen() {
   // Resume gate
   if (!hasResume) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom },
+        ]}
+      >
         <ScrollView contentContainerStyle={styles.content}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color="#475569" />
@@ -119,7 +129,12 @@ export default function InterviewBuddyScreen() {
   }
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
         <Pressable onPress={() => router.back()} style={styles.backBtn}>

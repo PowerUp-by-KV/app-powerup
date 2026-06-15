@@ -9,7 +9,15 @@ export default function ResumeBuddyHistoryPage() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc", paddingTop: insets.top }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#f8fafc",
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+    >
       {/* Header */}
       <View
         style={{

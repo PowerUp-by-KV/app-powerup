@@ -461,7 +461,15 @@ export function ReadyPlayerMe() {
   }, [background]);
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       {/* Header Bar */}
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 bg-white shadow-sm z-10">
         <Pressable

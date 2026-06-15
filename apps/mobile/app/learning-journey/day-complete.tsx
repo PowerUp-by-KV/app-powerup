@@ -278,7 +278,15 @@ export default function DayCompleteScreen() {
   // ── State 2: Module check passed ───────────────────────────────────────
   if (state === "check-passed") {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
+        className="flex-1 bg-white"
+      >
         <CelebrationOverlay
           visible={overlayVisible}
           onClose={() => setOverlayVisible(false)}
@@ -369,7 +377,15 @@ export default function DayCompleteScreen() {
   // ── State 3: Module check failed ───────────────────────────────────────
   if (state === "check-failed") {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
+        className="flex-1 bg-white"
+      >
         <ScrollView contentContainerStyle={{ padding: 24, alignItems: "center" }}>
           <Feather name="refresh-ccw" size={64} color="#64748b" style={{ marginTop: 20 }} />
           <Text className="text-2xl font-extrabold text-slate-900 mt-4 text-center">
@@ -406,7 +422,15 @@ export default function DayCompleteScreen() {
 
   // ── State 1: Normal day complete ───────────────────────────────────────
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       <CelebrationOverlay
         visible={overlayVisible}
         onClose={() => setOverlayVisible(false)}

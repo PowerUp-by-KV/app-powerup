@@ -166,7 +166,13 @@ export function OfflineGameModal({ visible, onClose }: OfflineGameModalProps) {
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
       <View
-        style={{ flex: 1, backgroundColor: "#0f172a", paddingTop: insets.top }}
+        style={{
+          flex: 1,
+          backgroundColor: "#0f172a",
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
         className="justify-between"
       >
         {/* Header */}

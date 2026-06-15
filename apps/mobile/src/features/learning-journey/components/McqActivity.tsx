@@ -162,11 +162,16 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   };
 
   if (scoreView) {
+    const ScoreWrapper = isNested ? View : ScrollView;
+    const scoreWrapperProps = isNested
+      ? { style: { padding: 24, paddingBottom: 120 } }
+      : {
+          style: [{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)],
+          contentContainerStyle: { padding: 24, paddingBottom: 120 },
+        };
+
     return (
-      <ScrollView
-        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
-      >
+      <ScoreWrapper {...scoreWrapperProps}>
         <View style={{ alignItems: "center", marginVertical: 32 }}>
           <View
             style={{
@@ -229,7 +234,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             </View>
           )}
         </Pressable>
-      </ScrollView>
+      </ScoreWrapper>
     );
   }
 

@@ -11,7 +11,15 @@ export function SuccessScreen() {
   const isRegister = mode === "register";
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       <View className="flex-1 justify-center items-center px-6">
         <View className="w-full max-w-[360px] items-center">
           <View className="w-20 h-20 rounded-full bg-gray-100 mb-8 items-center justify-center">

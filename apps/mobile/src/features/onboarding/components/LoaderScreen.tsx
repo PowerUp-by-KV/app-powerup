@@ -56,6 +56,7 @@ const LoaderScreen = ({ title = "Adding Profile..." }: LoaderScreenProps) => {
         alignItems: "center",
         justifyContent: "center",
         paddingTop: insets.top,
+        paddingBottom: insets.bottom,
       }}
       className="items-center justify-center p-6"
     >

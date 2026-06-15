@@ -208,7 +208,15 @@ export function CustomAvatarScreen() {
   );
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-slate-50"
+    >
       {/* Header */}
       <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
         <Pressable

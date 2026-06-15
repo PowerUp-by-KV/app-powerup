@@ -13,7 +13,10 @@ interface AuthSuccessScreenProps {
 export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessScreenProps) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom, paddingBottom: insets.bottom }}
+      className="flex-1 bg-white"
+    >
       <View className="flex-1 items-center justify-center px-8">
         <View className="w-16 h-16 rounded-full bg-[#3b82f6] items-center justify-center mb-6 shadow-md shadow-blue-100">
           <Feather name="check" size={28} color="#fff" />

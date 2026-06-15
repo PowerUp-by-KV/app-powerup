@@ -252,7 +252,15 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
   if (isError) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-slate-50">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
+        className="flex-1 bg-slate-50"
+      >
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -412,7 +420,15 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-white"
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}

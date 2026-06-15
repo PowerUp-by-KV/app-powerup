@@ -107,6 +107,7 @@ export function ChatScreen() {
           height: Platform.OS === "web" ? "82%" : "100%",
           maxHeight: Platform.OS === "web" ? 750 : "100%",
           paddingTop: insets.top,
+          paddingBottom: insets.bottom,
           backgroundColor: "#fff",
           maxWidth: Platform.OS === "web" ? 480 : "100%",
           width: "100%",

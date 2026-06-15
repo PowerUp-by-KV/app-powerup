@@ -34,7 +34,15 @@ export function LoginOtpScreen() {
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-white"
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}

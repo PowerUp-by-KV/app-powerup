@@ -5,7 +5,15 @@ import { ResumeBuddyDetailScreen } from "@/features/resume-buddy";
 export default function ResumeBuddyDetailPage() {
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: "#f8fafc", paddingTop: insets.top }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: "#f8fafc",
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+    >
       <ResumeBuddyDetailScreen />
     </View>
   );

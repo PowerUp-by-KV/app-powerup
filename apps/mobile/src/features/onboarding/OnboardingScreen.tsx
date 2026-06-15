@@ -109,7 +109,15 @@ export default function OnboardingScreen() {
 
   if (onboardingError && !isFetching) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
+        className="bg-slate-50"
+      >
         <View className="flex-1 w-full items-center justify-center p-6">
           <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
@@ -161,7 +169,15 @@ export default function OnboardingScreen() {
 
   if (!question && !isFetching) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          paddingBottom: insets.bottom,
+        }}
+        className="bg-white"
+      >
         <View className="flex-1 justify-center items-center p-8">
           <View className="w-20 h-20 bg-indigo-100 rounded-full items-center justify-center mb-6">
             <Text className="text-4xl">🎯</Text>
@@ -446,7 +462,15 @@ export default function OnboardingScreen() {
   const isFileQuestion = question?.input_type === "file";
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="bg-slate-50"
+    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{

@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -105,62 +106,70 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
   }
 
   return (
-    <ScrollView
-      style={{
-        flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as any }),
-      }}
-      contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
-      <Text className="text-slate-900 text-lg font-bold mb-4">{prompt?.question_text ?? ""}</Text>
-
-      <TextInput
-        multiline
-        textAlignVertical="top"
-        placeholder="Write your answer here…"
-        value={text}
-        onChangeText={setText}
+      <ScrollView
         style={{
-          minHeight: 180,
-          padding: 14,
-          borderRadius: 10,
-          borderWidth: 1,
-          borderColor: "#e5e7eb",
-          backgroundColor: "#ffffff",
-          fontSize: 15,
-          color: "#0f172a",
+          flex: 1,
+          ...Platform.select({ web: { userSelect: "none" } as any }),
         }}
-      />
-      <Text style={{ marginTop: 6, color: "#94a3b8", fontSize: 12 }}>
-        {text.trim().split(/\s+/).filter(Boolean).length} words
-      </Text>
-
-      <Pressable
-        onPress={handleSubmit}
-        disabled={submitting || text.trim().length === 0}
-        style={({ pressed }) => ({
-          marginTop: 24,
-          backgroundColor:
-            submitting || text.trim().length === 0 ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
-          paddingVertical: 14,
-          borderRadius: 10,
-          alignItems: "center",
-          ...Platform.select({
-            web: { cursor: submitting || text.trim().length === 0 ? "default" : "pointer" } as any,
-          }),
-        })}
+        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
       >
-        {submitting ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
-        )}
-      </Pressable>
+        <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
+        <Text className="text-slate-900 text-lg font-bold mb-4">{prompt?.question_text ?? ""}</Text>
 
-      {error ? (
-        <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
-      ) : null}
-    </ScrollView>
+        <TextInput
+          multiline
+          textAlignVertical="top"
+          placeholder="Write your answer here…"
+          value={text}
+          onChangeText={setText}
+          style={{
+            minHeight: 180,
+            padding: 14,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: "#e5e7eb",
+            backgroundColor: "#ffffff",
+            fontSize: 15,
+            color: "#0f172a",
+          }}
+        />
+        <Text style={{ marginTop: 6, color: "#94a3b8", fontSize: 12 }}>
+          {text.trim().split(/\s+/).filter(Boolean).length} words
+        </Text>
+
+        <Pressable
+          onPress={handleSubmit}
+          disabled={submitting || text.trim().length === 0}
+          style={({ pressed }) => ({
+            marginTop: 24,
+            backgroundColor:
+              submitting || text.trim().length === 0 ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+            paddingVertical: 14,
+            borderRadius: 10,
+            alignItems: "center",
+            ...Platform.select({
+              web: {
+                cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
+              } as any,
+            }),
+          })}
+        >
+          {submitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
+          )}
+        </Pressable>
+
+        {error ? (
+          <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
+        ) : null}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

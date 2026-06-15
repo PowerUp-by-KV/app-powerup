@@ -19,7 +19,15 @@ export function AccuracyScreen() {
   const { data, isLoading } = useGetAccuracyQuery(scope);
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />

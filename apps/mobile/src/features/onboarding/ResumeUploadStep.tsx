@@ -114,7 +114,14 @@ export function ResumeUploadStep() {
   // Success overlay
   if (uploadSuccess) {
     return (
-      <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "#fff" }}>
+      <View
+        style={{
+          flex: 1,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          backgroundColor: "#fff",
+        }}
+      >
         <View
           style={{
             flex: 1,
@@ -145,7 +152,15 @@ export function ResumeUploadStep() {
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       <View className="h-1 bg-slate-100 w-full">
         <View className="h-full bg-indigo-600 w-full" />
       </View>

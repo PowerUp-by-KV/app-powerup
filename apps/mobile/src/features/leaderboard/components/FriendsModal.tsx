@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
   useAcceptFriendRequestMutation,
@@ -38,6 +39,7 @@ interface FriendsModalProps {
 type Tab = "requests" | "friends" | "add";
 
 export function FriendsModal({ visible, onClose }: FriendsModalProps) {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<Tab>("requests");
   const [query, setQuery] = useState("");
 
@@ -57,8 +59,11 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-white">
-        <View className="px-4 pt-12 pb-3 flex-row items-center border-b border-slate-100">
+      <View
+        className="flex-1 bg-white"
+        style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+      >
+        <View className="px-4 pt-4 pb-3 flex-row items-center border-b border-slate-100">
           <Pressable onPress={onClose} className="w-9 h-9 items-center justify-center">
             <Feather name="chevron-left" size={22} color="#0f172a" />
           </Pressable>

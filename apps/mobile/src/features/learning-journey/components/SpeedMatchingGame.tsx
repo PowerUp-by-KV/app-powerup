@@ -131,6 +131,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
+          flexGrow: 1,
           padding: 24,
           paddingBottom: 120,
           alignItems: "center",
