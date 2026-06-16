@@ -101,7 +101,7 @@ export const onboardingApi = api.injectEndpoints({
     }),
     uploadResume: builder.mutation<void, FormData>({
       query: (formData) => ({
-        url: "/v1/onboarding/resume",
+        url: "/v1/resume/upload",
         method: "POST",
         body: formData,
         formData: true,

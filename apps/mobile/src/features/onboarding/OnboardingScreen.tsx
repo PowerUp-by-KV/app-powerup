@@ -291,7 +291,7 @@ export default function OnboardingScreen() {
           if (!apiUrl) throw new Error("EXPO_PUBLIC_API_URL is not set");
           const rawBase = apiUrl.replace(/\/$/, "");
           const baseUrl = normalizeBaseUrlForRuntime(rawBase);
-          const uploadUrl = `${baseUrl}/v1/onboarding/resume`;
+          const uploadUrl = `${baseUrl}/v1/resume/upload`;
 
           const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
           const fd = new FormData();
