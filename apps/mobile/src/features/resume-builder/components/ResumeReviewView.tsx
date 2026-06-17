@@ -248,7 +248,7 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
               <Text style={styles.backButtonText}>Back</Text>
             </Pressable>
             <Pressable onPress={onContinue} style={styles.continueButton}>
-              <Text style={styles.continueButtonText}>Continue to Export</Text>
+              <Text style={styles.continueButtonText}>Export</Text>
               <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
             </Pressable>
           </View>

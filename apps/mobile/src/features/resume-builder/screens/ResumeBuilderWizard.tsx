@@ -54,7 +54,7 @@ export function ResumeBuilderWizard() {
   }
 
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top }]}>
+    <View style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.container}>
         <View style={styles.wizardContainer}>
           <StepWizard

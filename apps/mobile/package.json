@@ -47,6 +47,7 @@
     "expo-file-system": "~55.0.22",
     "expo-font": "~55.0.8",
     "expo-gl": "^56.0.5",
+    "expo-image-picker": "~55.0.20",
     "expo-linear-gradient": "^55.0.14",
     "expo-linking": "~55.0.15",
     "expo-print": "^55.0.15",

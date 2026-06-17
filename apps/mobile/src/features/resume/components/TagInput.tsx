@@ -3,8 +3,7 @@
  * Add and remove skills as tags/chips
  */
 
-import { View, TextInput, Pressable } from "react-native";
-import { Text } from "@/components/Themed";
+import { View, TextInput, Pressable, Text } from "react-native";
 import { useState } from "react";
 
 interface Chip {
@@ -79,8 +78,8 @@ export function TagInput({
               key={chip.id}
               className="flex-row items-center gap-2 rounded-full bg-blue-100 px-3 py-2"
             >
-              <Text className="text-sm font-medium text-blue-900">{chip.name}</Text>
-              <Pressable onPress={() => onRemove(chip.id)}>
+              <Text className="flex-shrink text-sm font-medium text-blue-900">{chip.name}</Text>
+              <Pressable onPress={() => onRemove(chip.id)} className="ml-1">
                 <Text className="text-base text-blue-600">✕</Text>
               </Pressable>
             </View>

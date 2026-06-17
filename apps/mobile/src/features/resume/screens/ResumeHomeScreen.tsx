@@ -13,8 +13,9 @@ import {
   StyleSheet,
   Platform,
   Modal,
+  TouchableOpacity,
+  Text,
 } from "react-native";
-import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
@@ -37,7 +38,14 @@ import {
 } from "@/store/slices/resume.slice";
 import { selectHasExistingResume, selectFormData } from "@/store/slices/resume.slice";
 import { validatePDFFile, formatFileSize, type FileInfo } from "@/services/pdf-validation";
-import type { ResumeRead } from "@/services/resume-api";
+import type {
+  ResumeRead,
+  Skill,
+  Experience,
+  Education,
+  Project,
+  Certification,
+} from "@/services/resume-api";
 
 type SelectedResumeFile = Omit<FileInfo, "uri"> & {
   uri: string | Blob;
@@ -111,6 +119,7 @@ export function ResumeHomeScreen() {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [parsedResume, setParsedResume] = useState<ResumeRead | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -232,10 +241,7 @@ export function ResumeHomeScreen() {
 
       Alert.alert("Success", "Resume uploaded and parsed successfully!", [
         {
-          text: "Continue",
-          onPress: () => {
-            router.push("/resume/score" as never);
-          },
+          text: "OK",
         },
       ]);
     } catch (error: unknown) {
@@ -295,6 +301,7 @@ export function ResumeHomeScreen() {
     if (isSubmittingRef.current) return;
     try {
       isSubmittingRef.current = true;
+      setIsDeleting(true);
 
       let storedUserId: string | null = null;
       if (Platform.OS === "web") {
@@ -348,6 +355,7 @@ export function ResumeHomeScreen() {
       console.error("Delete error:", apiError);
     } finally {
       isSubmittingRef.current = false;
+      setIsDeleting(false);
     }
   };
 
@@ -368,8 +376,9 @@ export function ResumeHomeScreen() {
           <View
             style={[
               styles.skeletonPaper,
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              Platform.OS === "web" ? ({ filter: "blur(4px)" } as any) : {},
+              Platform.OS === "web"
+                ? ({ filter: "blur(4px)" } as unknown as React.CSSProperties)
+                : {},
             ]}
           >
             {/* Left sidebar block */}
@@ -483,8 +492,9 @@ export function ResumeHomeScreen() {
               <Text style={styles.successSubtext}>Your resume has been successfully parsed.</Text>
             </View>
           ) : (
-            <Pressable
-              style={({ pressed }) => [styles.uploadBox, pressed && styles.uploadBoxPressed]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.uploadBox]}
               onPress={handleBrowseFiles}
             >
               <View style={styles.uploadIconContainer}>
@@ -497,7 +507,7 @@ export function ResumeHomeScreen() {
               <View style={styles.formatBadge}>
                 <Text style={styles.formatText}>PDF only • Max 5MB</Text>
               </View>
-            </Pressable>
+            </TouchableOpacity>
           )}
 
           {Platform.OS === "web" && (
@@ -544,20 +554,22 @@ export function ResumeHomeScreen() {
         {/* Upload Buttons */}
         {selectedFile && !uploadSuccess && !uploading && (
           <View style={styles.buttonGroup}>
-            <Pressable
-              style={({ pressed }) => [styles.uploadButton, pressed && styles.uploadButtonPressed]}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.uploadButton]}
               onPress={handleUpload}
             >
               <MaterialIcons name="send" size={20} color="white" style={styles.buttonIcon} />
               <Text style={styles.uploadButtonText}>Upload Resume</Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable
-              style={({ pressed }) => [styles.cancelButton, pressed && styles.cancelButtonPressed]}
+            <TouchableOpacity
+              activeOpacity={0.5}
+              style={[styles.cancelButton]}
               onPress={() => setSelectedFile(null)}
             >
               <Text style={styles.cancelButtonText}>Cancel</Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -651,7 +663,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Skills ({formData.skills.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {formData.skills?.map((skill, index) => (
+                  {formData.skills?.map((skill: string | Skill, index: number) => (
                     <View key={index} style={styles.skillBadge}>
                       <Text style={styles.skillText}>
                         {typeof skill === "string" ? skill : skill.name}
@@ -670,7 +682,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Experience ({formData.experience.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.experience?.map((exp, index) => (
+                  {formData.experience?.map((exp: Experience, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{exp.position}</Text>
                       <Text style={styles.expCompany}>
@@ -694,7 +706,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Education ({formData.education.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.education?.map((edu, index) => (
+                  {formData.education?.map((edu: Education, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{edu.degree}</Text>
                       <Text style={styles.expCompany}>
@@ -715,7 +727,7 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Projects ({formData.projects.length})</Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.projects?.map((proj, index) => (
+                  {formData.projects?.map((proj: Project, index: number) => (
                     <View key={index} style={styles.experienceItem}>
                       <Text style={styles.expTitle}>{proj.name}</Text>
                       {proj.description ? (
@@ -746,7 +758,7 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.certifications?.map((cert, index) => {
+                  {formData.certifications?.map((cert: string | Certification, index: number) => {
                     if (typeof cert === "string") {
                       return (
                         <View key={index} style={styles.experienceItem}>
@@ -779,15 +791,17 @@ export function ResumeHomeScreen() {
                   <Text style={styles.cardTitle}>Languages ({formData.languages.length})</Text>
                 </View>
                 <View style={styles.skillsContainer}>
-                  {formData.languages?.map((lang, index) => (
-                    <View key={index} style={styles.languageBadge}>
-                      <Text style={styles.languageText}>
-                        {typeof lang === "string"
-                          ? lang
-                          : `${lang.name || ""}${lang.proficiency ? ` - ${lang.proficiency}` : ""}`}
-                      </Text>
-                    </View>
-                  ))}
+                  {formData.languages?.map(
+                    (lang: string | { name?: string; proficiency?: string }, index: number) => (
+                      <View key={index} style={styles.languageBadge}>
+                        <Text style={styles.languageText}>
+                          {typeof lang === "string"
+                            ? lang
+                            : `${lang.name || ""}${lang.proficiency ? ` - ${lang.proficiency}` : ""}`}
+                        </Text>
+                      </View>
+                    ),
+                  )}
                 </View>
               </View>
             )}
@@ -801,7 +815,7 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.achievements?.map((achievement, index) => (
+                  {formData.achievements?.map((achievement: string, index: number) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#10b981" />
                       <Text style={styles.achievementText}>{achievement}</Text>
@@ -821,7 +835,7 @@ export function ResumeHomeScreen() {
                   </Text>
                 </View>
                 <View style={styles.cardContent}>
-                  {formData.extracurricular?.map((activity, index) => (
+                  {formData.extracurricular?.map((activity: string, index: number) => (
                     <View key={index} style={styles.achievementItem}>
                       <MaterialIcons name="done" size={18} color="#2563EB" />
                       <Text style={styles.achievementText}>{activity}</Text>
@@ -833,23 +847,20 @@ export function ResumeHomeScreen() {
 
             {/* Action Buttons */}
             <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.uploadAnotherButton,
-                  { flex: 1 },
-                  pressed && styles.uploadAnotherPressed,
-                ]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.uploadAnotherButton, { flex: 1 }]}
                 onPress={handleUploadAnother}
               >
                 <MaterialIcons name="refresh" size={20} color="#2563EB" />
                 <Text style={styles.uploadAnotherText}>Upload Another</Text>
-              </Pressable>
+              </TouchableOpacity>
 
-              <Pressable
-                style={({ pressed }) => [
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={[
                   styles.uploadAnotherButton,
                   { flex: 1, backgroundColor: "#2563EB", borderColor: "#2563EB" },
-                  pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => router.push("/resume/score" as never)}
               >
@@ -860,7 +871,7 @@ export function ResumeHomeScreen() {
                   color="white"
                   style={{ marginLeft: 4 }}
                 />
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -892,34 +903,34 @@ export function ResumeHomeScreen() {
         {!selectedFile && !uploadSuccess && (
           <View style={styles.altActionContainer}>
             {hasExistingResume && (
-              <Pressable
+              <TouchableOpacity
+                activeOpacity={0.8}
                 onPress={handleEditResume}
-                style={({ pressed }) => [
+                style={[
                   styles.altActionButton,
                   { backgroundColor: "#10b981", marginBottom: 16, shadowColor: "#10b981" },
-                  pressed && { backgroundColor: "#059669" },
                 ]}
               >
                 <MaterialIcons name="restore" size={24} color="white" />
                 <Text style={styles.altActionText}>Continue with Existing Resume</Text>
-              </Pressable>
+              </TouchableOpacity>
             )}
 
-            <Pressable
+            <TouchableOpacity
+              activeOpacity={0.8}
               onPress={handleBuildFromScratch}
-              style={({ pressed }) => [
-                styles.altActionButton,
-                pressed && styles.altActionButtonPressed,
-              ]}
+              style={[styles.altActionButton]}
             >
               <MaterialIcons name="edit" size={24} color="white" />
               <Text style={styles.altActionText}>Build from Scratch</Text>
-            </Pressable>
+            </TouchableOpacity>
 
             {hasExistingResume && (
-              <Pressable
+              <TouchableOpacity
+                activeOpacity={0.6}
                 onPress={handleDeleteResume}
-                style={({ pressed }) => [
+                disabled={isDeleting}
+                style={[
                   styles.altActionButton,
                   {
                     backgroundColor: "transparent",
@@ -928,15 +939,19 @@ export function ResumeHomeScreen() {
                     borderColor: "#ef4444",
                     shadowOpacity: 0,
                     elevation: 0,
+                    opacity: isDeleting ? 0.5 : 1,
                   },
-                  pressed && { backgroundColor: "#fef2f2" },
                 ]}
               >
-                <MaterialIcons name="delete" size={24} color="#ef4444" />
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#ef4444" style={{ marginRight: 8 }} />
+                ) : (
+                  <MaterialIcons name="delete" size={24} color="#ef4444" />
+                )}
                 <Text style={[styles.altActionText, { color: "#ef4444" }]}>
-                  Delete Existing Resume
+                  {isDeleting ? "Deleting..." : "Delete Existing Resume"}
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             )}
           </View>
         )}
@@ -959,27 +974,21 @@ export function ResumeHomeScreen() {
               Are you sure you want to delete your resume? This action cannot be undone.
             </Text>
             <View style={styles.modalButtons}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  styles.modalCancelButton,
-                  pressed && { opacity: 0.7 },
-                ]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.modalButton, styles.modalCancelButton]}
                 onPress={() => setShowDeleteConfirm(false)}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.modalButton,
-                  styles.modalDeleteButton,
-                  pressed && { opacity: 0.7 },
-                ]}
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.modalButton, styles.modalDeleteButton]}
                 onPress={confirmDelete}
               >
                 <MaterialIcons name="delete" size={18} color="white" style={{ marginRight: 6 }} />
                 <Text style={styles.modalDeleteText}>Delete</Text>
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

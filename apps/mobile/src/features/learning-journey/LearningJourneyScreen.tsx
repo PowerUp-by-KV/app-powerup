@@ -642,7 +642,7 @@ export function LearningJourneyScreen() {
               style={{ width: 140, height: 140, marginBottom: 12 }}
             />
 
-            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            <Text className="text-slate-900 font-extrabold text-xl mb-2">
               Server Connection Lost
             </Text>
             <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-2">

@@ -22,7 +22,7 @@ export function ErrorMascot({
 
   return (
     <View
-      style={{ paddingTop: insets.top }}
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
       className="flex-1 bg-white items-center justify-center px-6"
     >
       <View

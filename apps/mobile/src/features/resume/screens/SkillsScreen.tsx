@@ -3,8 +3,14 @@
  * Add skills, projects, and certifications
  */
 
-import { View, ScrollView, StyleSheet, Pressable, TextInput as RNTextInput } from "react-native";
-import { Text } from "@/components/Themed";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput as RNTextInput,
+  Text,
+} from "react-native";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   addSkill,
@@ -184,15 +190,13 @@ export function SkillsScreen() {
                 {skills.map((skill) => (
                   <View key={skill.id} style={styles.skillTag}>
                     <Text style={styles.skillTagText}>{skill.name}</Text>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.skillTagRemove,
-                        pressed && styles.buttonPressed,
-                      ]}
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={[styles.skillTagRemove]}
                       onPress={() => handleRemoveSkill(skill.id || skill.name || "")}
                     >
                       <MaterialIcons name="close" size={16} color="white" />
-                    </Pressable>
+                    </TouchableOpacity>
                   </View>
                 ))}
               </View>
@@ -221,20 +225,22 @@ export function SkillsScreen() {
                     }
                   }}
                 />
-                <Pressable
-                  style={({ pressed }) => [styles.skillAddButton, pressed && styles.buttonPressed]}
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[styles.skillAddButton]}
                   onPress={handleAddSkill}
                 >
                   <MaterialIcons name="add" size={20} color="white" />
-                </Pressable>
+                </TouchableOpacity>
               </View>
 
               {/* Skill Suggestions Dropdown */}
               {showSuggestions && skillSuggestions.length > 0 && (
                 <View style={styles.suggestionsContainer}>
                   {skillSuggestions.map((suggestion, index) => (
-                    <Pressable
+                    <TouchableOpacity
                       key={`${suggestion.id}-${index}`}
+                      activeOpacity={0.7}
                       style={styles.suggestionItem}
                       onPress={() => handleAddSuggestionSkill(suggestion)}
                     >
@@ -251,7 +257,7 @@ export function SkillsScreen() {
                         </View>
                         <MaterialIcons name="arrow-forward" size={16} color="#9ca3af" />
                       </View>
-                    </Pressable>
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -283,14 +289,15 @@ export function SkillsScreen() {
                       )}
                     </View>
                     <View style={{ flexDirection: "row", gap: 8, marginLeft: 12 }}>
-                      <Pressable onPress={() => handleEditProject(proj)}>
+                      <TouchableOpacity activeOpacity={0.7} onPress={() => handleEditProject(proj)}>
                         <MaterialIcons name="edit" size={16} color="white" />
-                      </Pressable>
-                      <Pressable
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
                         onPress={() => dispatch(removeProject(proj.id || proj.name || ""))}
                       >
                         <MaterialIcons name="close" size={16} color="#fca5a5" />
-                      </Pressable>
+                      </TouchableOpacity>
                     </View>
                   </View>
                 ))}
@@ -338,7 +345,8 @@ export function SkillsScreen() {
                         ]}
                       >
                         <Text style={styles.skillTagText}>{tech}</Text>
-                        <Pressable
+                        <TouchableOpacity
+                          activeOpacity={0.7}
                           onPress={() => setProjectTechs(projectTechs.filter((t) => t !== tech))}
                         >
                           <MaterialIcons
@@ -347,7 +355,7 @@ export function SkillsScreen() {
                             color="white"
                             style={{ marginLeft: 4 }}
                           />
-                        </Pressable>
+                        </TouchableOpacity>
                       </View>
                     ))}
                   </View>
@@ -371,24 +379,27 @@ export function SkillsScreen() {
                 </View>
 
                 <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                  <Pressable
+                  <TouchableOpacity
+                    activeOpacity={0.7}
                     style={[styles.button, styles.secondaryButton]}
                     onPress={() => setShowProjectForm(false)}
                   >
                     <Text style={styles.secondaryButtonText}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
                     style={[styles.button, styles.primaryButton]}
                     onPress={handleSaveProject}
                   >
                     <Text style={styles.primaryButtonText}>
                       {editingProjectId ? "Update" : "Save"}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </View>
               </View>
             ) : (
-              <Pressable
+              <TouchableOpacity
+                activeOpacity={0.7}
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
@@ -411,7 +422,7 @@ export function SkillsScreen() {
                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#2563EB" }}>
                   Add Project
                 </Text>
-              </Pressable>
+              </TouchableOpacity>
             )}
           </View>
 
@@ -436,15 +447,13 @@ export function SkillsScreen() {
                     style={[styles.skillTag, { backgroundColor: "#047857" }]}
                   >
                     <Text style={styles.skillTagText}>{cert.name}</Text>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.skillTagRemove,
-                        pressed && styles.buttonPressed,
-                      ]}
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      style={[styles.skillTagRemove]}
                       onPress={() => dispatch(removeCertification(cert.id || cert.name || ""))}
                     >
                       <MaterialIcons name="close" size={16} color="white" />
-                    </Pressable>
+                    </TouchableOpacity>
                   </View>
                 ))}
               </View>
@@ -458,16 +467,13 @@ export function SkillsScreen() {
                 value={certInput}
                 onChangeText={setCertInput}
               />
-              <Pressable
-                style={({ pressed }) => [
-                  styles.skillAddButton,
-                  pressed && styles.buttonPressed,
-                  { backgroundColor: "#047857" },
-                ]}
+              <TouchableOpacity
+                activeOpacity={0.7}
+                style={[styles.skillAddButton, { backgroundColor: "#047857" }]}
                 onPress={handleAddCert}
               >
                 <MaterialIcons name="add" size={20} color="white" />
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -488,29 +494,23 @@ export function SkillsScreen() {
 
           {/* Navigation Buttons */}
           <View style={styles.buttonContainer}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.secondaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.secondaryButton]}
               onPress={() => dispatch(previousStep())}
             >
               <MaterialIcons name="arrow-back" size={20} color="#2563EB" />
               <Text style={styles.secondaryButtonText}>Back</Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                styles.primaryButton,
-                pressed && styles.buttonPressed,
-              ]}
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={[styles.button, styles.primaryButton]}
               onPress={handleNext}
             >
               <Text style={styles.primaryButtonText}>Next</Text>
               <MaterialIcons name="arrow-forward" size={20} color="white" />
-            </Pressable>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

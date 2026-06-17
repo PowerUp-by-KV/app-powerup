@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -26,6 +27,7 @@ import { useAutoSave } from "../hooks/useAutoSave";
 import { DatePicker } from "../components/DatePicker";
 
 export function Step2ExperienceScreen() {
+  const insets = useSafeAreaInsets();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
@@ -304,7 +306,7 @@ export function Step2ExperienceScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
               <ScrollView style={{ flex: 1 }}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>
@@ -421,7 +423,7 @@ export function Step2ExperienceScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
               <ScrollView style={{ flex: 1 }}>
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>

@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
+import { SafeAreaView, View, Text, Pressable, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useResumeBuddyAnalysis } from "./hooks/useResumeBuddyAnalysis";
 import type { ResumeBuddyStep } from "./types";
@@ -17,7 +16,6 @@ import { ScoreAnalysisStep } from "./components/ScoreAnalysisStep";
 export function ResumeBuddyScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
-  const insets = useSafeAreaInsets();
 
   const [step, setStep] = useState<ResumeBuddyStep>("input");
   const { phase, activeStage, result: analysis, error, analyze, reset } = useResumeBuddyAnalysis();
@@ -74,19 +72,25 @@ export function ResumeBuddyScreen() {
   const isOnResultsStep = step === "strengths" || step === "suggestions" || step === "scores";
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-slate-50">
+    <SafeAreaView style={{ flex: 1 }} className="bg-white">
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
+      <View className="flex-row items-center px-4 py-3 bg-white">
         <Pressable
           onPress={handleBack}
           disabled={step === "loading"}
-          className={`w-9 h-9 items-center justify-center active:opacity-60 ${
+          className={`w-9 h-9 items-center justify-center rounded-full bg-slate-100/80 active:opacity-60 ${
             step === "loading" ? "opacity-30" : ""
           }`}
         >
-          <Feather name="chevron-left" size={22} color="#0f172a" />
+          <Feather name="chevron-left" size={18} color="#0f172a" />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-slate-900 text-base">Resume Buddy</Text>
+        <Text className="flex-1 text-center font-bold text-slate-900 text-base">
+          {step === "scores"
+            ? "Resume Score"
+            : step === "strengths"
+              ? "Strengths & Weaknesses"
+              : "AI Resume Coach"}
+        </Text>
         {/* Step indicator on result steps */}
         {isOnResultsStep ? (
           <Text className="text-xs text-slate-400 font-semibold w-9 text-right">
@@ -124,6 +128,9 @@ export function ResumeBuddyScreen() {
             atsFindings={analysis.ats_analysis.findings}
             suggestions={analysis.personalized_suggestions}
             onNext={handleDone}
+            onHistory={handleHistory}
+            qualitySummary={analysis.resume_quality_summary}
+            targetRole={analysis.target_role}
           />
         )}
 
@@ -139,6 +146,6 @@ export function ResumeBuddyScreen() {
           />
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 }

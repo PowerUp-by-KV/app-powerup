@@ -23,7 +23,14 @@ export function EmailOtpScreen() {
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1 bg-white">
+    <View
+      style={{
+        flex: 1,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+      }}
+      className="flex-1 bg-white"
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}

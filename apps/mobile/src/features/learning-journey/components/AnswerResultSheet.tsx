@@ -1,6 +1,7 @@
 import React from "react";
 import { Modal, Pressable, Text, View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface AnswerResultSheetProps {
   visible: boolean;
@@ -17,17 +18,23 @@ export function AnswerResultSheet({
   onContinue,
   onDismiss,
 }: AnswerResultSheetProps) {
+  const insets = useSafeAreaInsets();
   const bg = isCorrect ? "#0f172a" : "#7f1d1d";
   const accent = isCorrect ? "#22c55e" : "#ef4444";
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onDismiss}>
       <View style={{ flex: 1, justifyContent: "flex-end" }}>
         <Pressable
-          style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.4)" }}
+          style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "transparent" }}
           onPress={onDismiss}
         />
         <View
-          style={{ backgroundColor: bg, paddingTop: 14, paddingHorizontal: 24, paddingBottom: 16 }}
+          style={{
+            backgroundColor: bg,
+            paddingTop: 14,
+            paddingHorizontal: 24,
+            paddingBottom: Math.max(insets.bottom, 16),
+          }}
         >
           <View className="flex-row items-center justify-between mb-2.5">
             <View className="flex-row items-center">

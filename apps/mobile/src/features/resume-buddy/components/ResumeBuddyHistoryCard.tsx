@@ -22,77 +22,60 @@ function formatDate(dateStr: string): string {
 
 function getScoreColor(score: number, max = 100): string {
   const pct = (score / max) * 100;
-  if (pct >= 70) return "#22c55e";
-  if (pct >= 45) return "#f59e0b";
-  return "#ef4444";
+  if (pct >= 81) return "#4CAF50"; // Green for 81 to 100
+  if (pct >= 41) return "#FF9800"; // Yellow for 41 to 80
+  return "#EF5350"; // Red for below 41 (40 or lower)
 }
 
 export function ResumeBuddyHistoryCard({ item, onPress }: ResumeBuddyHistoryCardProps) {
   const scoreColor = getScoreColor(item.overall_resume_score);
-  const skillsMatch = item.skills_match_percentage?.toFixed(1) ?? "0.0";
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [styles.card, pressed ? styles.cardPressed : undefined]}
       onPress={onPress}
     >
       {/* Header row */}
       <View style={styles.headerRow}>
         <View style={styles.roleContainer}>
-          <Feather name="briefcase" size={14} color="#4f46e5" style={{ marginRight: 6 }} />
-          <Text style={styles.roleText} numberOfLines={1}>
-            {item.target_role}
-          </Text>
+          <View style={styles.iconContainer}>
+            <Feather name="briefcase" size={18} color="#597AF4" />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.roleText} numberOfLines={1}>
+              {item.target_role}
+            </Text>
+            <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+          </View>
         </View>
-        <Text style={styles.dateText}>{formatDate(item.created_at)}</Text>
+        <Feather name="chevron-right" size={20} color="#6B7280" />
       </View>
 
-      {/* Score pills */}
-      <View style={styles.scoresRow}>
+      {/* Metric Capsules Row */}
+      <View style={styles.capsulesRow}>
         {/* Overall Score */}
-        <View style={styles.scoreItem}>
-          <View style={[styles.scoreBadge, { backgroundColor: `${scoreColor}18` }]}>
-            <Text style={[styles.scoreBadgeValue, { color: scoreColor }]}>
-              {item.overall_resume_score?.toFixed(1) ?? "0"}
-            </Text>
-          </View>
-          <Text style={styles.scoreItemLabel}>Overall</Text>
+        <View style={styles.capsule}>
+          <Text style={[styles.capsuleValue, { color: scoreColor }]}>
+            {Math.round(item.overall_resume_score)}%
+          </Text>
+          <Text style={styles.capsuleLabel}>OVERALL</Text>
         </View>
 
-        <View style={styles.scoreDivider} />
-
-        {/* ATS Score */}
-        <View style={styles.scoreItem}>
-          <View style={[styles.scoreBadge, { backgroundColor: "#eff6ff" }]}>
-            <Text style={[styles.scoreBadgeValue, { color: "#3b82f6" }]}>
-              {item.ats_score ?? 0}/20
-            </Text>
-          </View>
-          <Text style={styles.scoreItemLabel}>ATS</Text>
+        {/* Semantic Score */}
+        <View style={styles.capsule}>
+          <Text style={[styles.capsuleValue, { color: "#597AF4" }]}>
+            {Math.round(item.ai_semantic_score ?? 0)}%
+          </Text>
+          <Text style={styles.capsuleLabel}>SEMANTIC</Text>
         </View>
 
-        <View style={styles.scoreDivider} />
-
-        {/* Skills Match */}
-        <View style={styles.scoreItem}>
-          <View style={[styles.scoreBadge, { backgroundColor: "#f5f3ff" }]}>
-            <Text style={[styles.scoreBadgeValue, { color: "#7c3aed" }]}>{skillsMatch}%</Text>
-          </View>
-          <Text style={styles.scoreItemLabel}>Skills Match</Text>
+        {/* Rule-Based Score */}
+        <View style={styles.capsule}>
+          <Text style={[styles.capsuleValue, { color: "#AFC0FF" }]}>
+            {Math.round(item.rule_based_score ?? 0)}%
+          </Text>
+          <Text style={styles.capsuleLabel}>RULE BASED</Text>
         </View>
-      </View>
-
-      {/* Quality summary */}
-      {!!item.resume_quality_summary && (
-        <Text style={styles.summary} numberOfLines={2}>
-          {item.resume_quality_summary}
-        </Text>
-      )}
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.viewText}>View Full Analysis</Text>
-        <Feather name="chevron-right" size={16} color="#4f46e5" />
       </View>
     </Pressable>
   );
@@ -101,98 +84,79 @@ export function ResumeBuddyHistoryCard({ item, onPress }: ResumeBuddyHistoryCard
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 14,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
+    borderColor: "#E5E7EB",
   },
   cardPressed: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#F8F9FC",
     transform: [{ scale: 0.985 }],
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 14,
   },
   roleContainer: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(89, 122, 244, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  textContainer: {
+    flex: 1,
+    justifyContent: "center",
   },
   roleText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: "700",
-    color: "#0f172a",
-    flex: 1,
+    color: "#1F2937",
+    marginBottom: 4,
   },
   dateText: {
-    fontSize: 12,
-    color: "#94a3b8",
+    fontSize: 13,
+    color: "#6B7280",
     fontWeight: "500",
   },
-  scoresRow: {
+  capsulesRow: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    marginBottom: 12,
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 18,
   },
-  scoreItem: {
+  capsule: {
     flex: 1,
+    backgroundColor: "#F8F9FC",
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
   },
-  scoreBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
+  capsuleValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 4,
   },
-  scoreBadgeValue: {
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  scoreItemLabel: {
+  capsuleLabel: {
     fontSize: 10,
-    color: "#94a3b8",
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  scoreDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#e2e8f0",
-  },
-  summary: {
-    fontSize: 12,
-    color: "#64748b",
-    lineHeight: 18,
-    marginBottom: 12,
-    fontStyle: "italic",
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 4,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
-  },
-  viewText: {
-    fontSize: 13,
-    color: "#4f46e5",
-    fontWeight: "600",
+    color: "#6B7280",
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 });
