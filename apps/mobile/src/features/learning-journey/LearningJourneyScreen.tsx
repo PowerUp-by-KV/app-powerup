@@ -534,10 +534,8 @@ export function LearningJourneyScreen() {
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
-    const moduleByNo: Record<
-      number,
-      { id: string; title: string; module_no: number; [key: string]: unknown }
-    > = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const moduleByNo: Record<number, any> = {};
 
     if (personalizedPath?.modules?.length) {
       for (const m of personalizedPath.modules) {

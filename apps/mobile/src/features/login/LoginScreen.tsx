@@ -44,7 +44,6 @@ export function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [login] = useLoginMutation();
   const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
-  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Prefetch onboarding questions in the background during the authentication handshake
@@ -77,17 +76,9 @@ export function LoginScreen() {
         router.replace("/onboarding" as never);
         return;
       }
-      try {
-        const status = await getOnboardingStatus(userId).unwrap();
-        if (status?.answers_present) {
-          router.replace("/(tabs)/my-learning" as never);
-        } else {
-          router.replace("/onboarding" as never);
-        }
-      } catch (err) {
-        console.warn("Failed to fetch onboarding status, falling back to /onboarding:", err);
-        router.replace("/onboarding" as never);
-      }
+
+      // Instantly route to the main app. The LearningJourneyGate will fetch onboarding status asynchronously
+      router.replace("/(tabs)/my-learning" as never);
     } catch (err) {
       Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }

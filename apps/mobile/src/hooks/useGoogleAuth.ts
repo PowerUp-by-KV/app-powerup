@@ -28,7 +28,6 @@ import {
   saveAuthSession,
   saveLastLoggedInEmail,
 } from "@/services/auth-storage";
-import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
 
@@ -42,7 +41,6 @@ export function useGoogleAuth() {
   const router = useRouter();
   const dispatch = useDispatch();
   const [socialGoogleLogin] = useSocialGoogleLoginMutation();
-  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
 
   // useIdTokenAuthRequest (NOT useAuthRequest): the backend validates a Google
   // **id_token**, so we must request one. On web this uses responseType=id_token
@@ -94,16 +92,8 @@ export function useGoogleAuth() {
         return;
       }
 
-      try {
-        const status = await getOnboardingStatus(userId).unwrap();
-        if (status?.answers_present) {
-          router.replace("/(tabs)/my-learning");
-        } else {
-          router.replace("/onboarding");
-        }
-      } catch {
-        router.replace("/onboarding");
-      }
+      // Instantly route to the main app. The LearningJourneyGate will fetch onboarding status asynchronously
+      router.replace("/(tabs)/my-learning");
     } catch (err) {
       // Do NOT rethrow: this runs from a `void handleGoogleToken(...)` call inside
       // a useEffect, so a rejection here would be an unhandled promise rejection.
