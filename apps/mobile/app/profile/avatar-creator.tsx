@@ -1,12 +1,14 @@
 import React from "react";
-import { View, SafeAreaView, Text, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AvatarCreatorWebView } from "@/features/avatar/components/AvatarCreatorWebView";
 import { usePatchProfileMutation } from "@/services/auth-api";
 
 export default function AvatarCreatorScreen() {
   const router = useRouter();
   const [patchProfile] = usePatchProfileMutation();
+  const insets = useSafeAreaInsets();
 
   const handleAvatarExported = async (avatarUrl: string) => {
     try {
@@ -32,7 +34,7 @@ export default function AvatarCreatorScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={{ flex: 1, paddingTop: insets.top, backgroundColor: "white" }}>
       <View className="flex-row px-4 py-3 border-b border-slate-100 bg-white">
         <View className="flex-1" />
         <Pressable
@@ -48,9 +50,9 @@ export default function AvatarCreatorScreen() {
           <Text className="text-white font-bold">Done</Text>
         </Pressable>
       </View>
-      <View className="flex-1">
+      <View style={{ flex: 1, height: "100%" }}>
         <AvatarCreatorWebView onAvatarExported={handleAvatarExported} subdomain="powerup" />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }

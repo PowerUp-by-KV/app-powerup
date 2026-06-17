@@ -73,10 +73,10 @@ export function AvatarCreatorWebView({
 
   if (Platform.OS === "web") {
     return (
-      <View className="flex-1 bg-white">
+      <View style={{ flex: 1, height: "100%", width: "100%", backgroundColor: "white" }}>
         <iframe
           src={url}
-          style={{ width: "100%", height: "100%", border: "none" }}
+          style={{ width: "100%", height: "100%", border: "none", minHeight: "100vh" }}
           allow="camera *; microphone *"
         />
       </View>

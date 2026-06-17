@@ -66,7 +66,7 @@ export function VerifyEmailScreen() {
         try {
           const status = await getOnboardingStatus(userId).unwrap();
           if (status?.answers_present) {
-            const next = params.next ?? "/(tabs)/my-learning";
+            const next = params.next ?? "/(tabs)";
             router.replace(next as never);
           } else {
             router.replace("/onboarding" as never);

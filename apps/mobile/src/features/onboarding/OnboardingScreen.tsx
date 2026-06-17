@@ -87,7 +87,7 @@ export default function OnboardingScreen() {
         }
 
         // Onboarding is completed! Redirect directly to My Learning tab
-        router.replace("/(tabs)/my-learning" as any);
+        router.replace("/(tabs)" as any);
         return;
       } catch (err) {
         console.warn("Failed to check onboarding state:", err);
@@ -190,7 +190,7 @@ export default function OnboardingScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              router.replace("/(tabs)/my-learning" as any);
+              router.replace("/(tabs)" as any);
             }}
             className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
           >
@@ -308,7 +308,7 @@ export default function OnboardingScreen() {
       await clearCompletedSections();
 
       // 4. Redirect directly to My Learning tab
-      router.replace("/(tabs)/my-learning" as any);
+      router.replace("/(tabs)" as any);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }

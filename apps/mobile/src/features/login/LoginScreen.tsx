@@ -78,7 +78,7 @@ export function LoginScreen() {
       }
 
       // Instantly route to the main app. The LearningJourneyGate will fetch onboarding status asynchronously
-      router.replace("/(tabs)/my-learning" as never);
+      router.replace("/(tabs)");
     } catch (err) {
       Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }
