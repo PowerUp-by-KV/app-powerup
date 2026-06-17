@@ -139,7 +139,7 @@ export function CustomAvatarScreen() {
               backgroundColor: `#${opt}`,
               borderWidth: isSelected ? 4 : 2,
               borderColor: isSelected ? "#4f46e5" : "#e2e8f0",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, string>) : {}),
             }}
           >
             {isSelected && (
@@ -184,7 +184,7 @@ export function CustomAvatarScreen() {
             className="w-20 h-20 rounded-xl bg-slate-100 items-center justify-center border-2 overflow-hidden"
             style={{
               borderColor: isSelected ? "#4f46e5" : "transparent",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, string>) : {}),
             }}
           >
             {opt === "none" && categoryKey !== "glasses" ? (

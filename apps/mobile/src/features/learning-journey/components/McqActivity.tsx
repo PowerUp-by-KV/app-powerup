@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -28,6 +27,21 @@ function asOption(opt: unknown): { id: string; text: string } {
   if (typeof opt === "string") return { id: opt, text: opt };
   const o = opt as { id?: string; text?: string };
   return { id: o.id ?? o.text ?? "", text: o.text ?? o.id ?? "" };
+}
+
+// Helper to check if an option matches the correct answer
+function isMatch(opt: { id: string; text: string }, index: number, correctAnswer: string): boolean {
+  const optId = opt.id.trim();
+  const ans = correctAnswer.trim();
+  if (optId === ans) return true;
+
+  const letter = String.fromCharCode(65 + index);
+  if (ans.toUpperCase() === letter) return true;
+  if (ans.startsWith(`${letter}: `) && ans.substring(3).trim() === optId) return true;
+  if (ans.startsWith(`${letter}. `) && ans.substring(3).trim() === optId) return true;
+  if (ans.startsWith(`${letter}) `) && ans.substring(3).trim() === optId) return true;
+
+  return false;
 }
 
 /**
@@ -122,15 +136,18 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
 
   const handleSubmit = () => {
     if (selected === null) return;
-    const correct = selected.trim() === (current.correct_answer ?? "").trim();
+
+    const correctAnswerStr = current.correct_answer ?? "";
+    const correctIndex = options.findIndex((opt, i) => isMatch(opt, i, correctAnswerStr));
+
+    const selectedIndex = options.findIndex((opt) => opt.id === selected);
+    const correct = selectedIndex !== -1 && selectedIndex === correctIndex;
+
     const nextCorrectCount = correct ? correctCount + 1 : correctCount;
     if (correct) setCorrectCount(nextCorrectCount);
 
-    const correctIndex = options.findIndex(
-      (opt) => opt.id.trim() === (current.correct_answer ?? "").trim(),
-    );
     const correctLetter =
-      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : (current.correct_answer ?? "");
+      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : correctAnswerStr;
 
     setLastCorrect(correct);
     setLastCorrectAnswer(correctLetter);
@@ -368,7 +385,8 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           let feedbackIcon = null;
 
           if (hasSubmitted) {
-            const isCorrectAnswer = opt.id.trim() === (current.correct_answer ?? "").trim();
+            const correctAnswerStr = current.correct_answer ?? "";
+            const isCorrectAnswer = isMatch(opt, i, correctAnswerStr);
             if (isCorrectAnswer) {
               borderColor = "#22c55e"; // Green border
               backgroundColor = "#f0fdf4"; // Light green bg
