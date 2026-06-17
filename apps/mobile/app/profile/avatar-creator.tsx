@@ -1,7 +1,7 @@
 import React from "react";
 import { View, SafeAreaView, Text, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { AvatarCreatorWebView } from "@/features/avatar";
+import { AvatarCreatorWebView } from "@/features/avatar/components/AvatarCreatorWebView";
 import { usePatchProfileMutation } from "@/services/auth-api";
 
 export default function AvatarCreatorScreen() {
