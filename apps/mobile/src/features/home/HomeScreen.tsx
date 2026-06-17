@@ -273,7 +273,7 @@ export function HomeScreen() {
               {
                 title: "Interview Playground",
                 subtitle: "Try, learn and improve — No pressure",
-                onPress: () => router.push("/mock-interview" as never),
+                onPress: () => router.push("/interview-playground" as never),
               },
               {
                 title: "Interview Buddy",
