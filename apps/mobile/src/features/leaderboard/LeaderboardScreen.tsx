@@ -3,7 +3,7 @@ import { FlatList, Pressable, Text, View, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { resolveApiAssetUrl } from "@/services/api";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 

@@ -46,7 +46,7 @@ export function AvatarCreatorWebView({
             onAvatarExported(url);
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore parsing errors from non-JSON messages
       }
     },
@@ -55,8 +55,8 @@ export function AvatarCreatorWebView({
 
   useEffect(() => {
     if (Platform.OS === "web") {
-      window.addEventListener("message", handleMessage as any);
-      return () => window.removeEventListener("message", handleMessage as any);
+      window.addEventListener("message", handleMessage as EventListener);
+      return () => window.removeEventListener("message", handleMessage as EventListener);
     }
   }, [handleMessage]);
 
