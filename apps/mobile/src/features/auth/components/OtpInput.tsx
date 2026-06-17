@@ -33,9 +33,27 @@ export function OtpInput({
     if (value.length === length) onComplete?.(value);
   }, [value, length, onComplete]);
 
-  const setCharAt = (idx: number, char: string) => {
-    const digit = char.replace(/[^0-9]/g, "").slice(0, 1);
-    const arr = value.split("");
+  const setCharAt = (idx: number, text: string) => {
+    const digits = text.replace(/[^0-9]/g, "");
+
+    if (digits.length > 1) {
+      // Handle paste
+      const arr = (value || "").split("");
+      for (let i = 0; i < digits.length && idx + i < length; i++) {
+        arr[idx + i] = digits[i] || "";
+      }
+      const next = arr.join("").slice(0, length);
+      onChange(next);
+
+      // Focus the last filled input or the next available one
+      const nextFocusIdx = Math.min(idx + digits.length, length - 1);
+      inputs[nextFocusIdx]?.current?.focus();
+      return;
+    }
+
+    // Normal single-character entry
+    const digit = digits.slice(0, 1);
+    const arr = (value || "").split("");
     arr[idx] = digit;
     const next = arr.join("").slice(0, length);
     onChange(next);
@@ -58,7 +76,8 @@ export function OtpInput({
           onChangeText={(t) => setCharAt(i, t)}
           onKeyPress={({ nativeEvent }) => handleKey(i, nativeEvent.key)}
           keyboardType="number-pad"
-          maxLength={1}
+          maxLength={length}
+          textContentType="oneTimeCode"
           className="text-center text-2xl font-bold text-slate-900"
           style={{
             width: 48,

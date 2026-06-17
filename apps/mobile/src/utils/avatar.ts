@@ -48,12 +48,38 @@ export function getAvatarUri(
     return `https://models.readyplayer.me/${rpmId}.png?scene=halfbody-portrait-v1-transparent`;
   }
 
-  // 2. DiceBear composite style-seed keys (e.g. 'bottts-seed3')
+  // 3. Avaturn Avatar (fallback 2D)
+  if (avatarId.startsWith("avaturn_")) {
+    // Avaturn doesn't have a public 2D PNG endpoint by default without the render API.
+    // Return a sleek 3D-like generic placeholder
+    return `https://api.dicebear.com/7.x/shapes/png?seed=${fallbackProfileId || "user"}&backgroundColor=3b82f6`;
+  }
+
+  // 4. DiceBear composite style-seed keys (e.g. 'bottts-seed3')
   if (avatarId.includes("-")) {
     const [style, seed] = avatarId.split("-");
     return `https://api.dicebear.com/7.x/${style}/png?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
   }
 
-  // 3. Fallback for custom or legacy adventurer seeds (e.g. 'adventurer1')
+  // 5. Fallback for custom or legacy adventurer seeds (e.g. 'adventurer1')
   return `https://api.dicebear.com/7.x/adventurer/png?seed=${avatarId}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
+}
+
+/**
+ * Returns the GLB URL for a given avatar ID if it's a Ready Player Me or Avaturn avatar.
+ * Otherwise returns null.
+ */
+export function getAvatarGlbUrl(avatarId: string | null | undefined): string | null {
+  if (!avatarId) return null;
+
+  if (avatarId.startsWith("rpm_")) {
+    const rpmId = avatarId.replace("rpm_", "");
+    return `https://models.readyplayer.me/${rpmId}.glb`;
+  }
+
+  if (avatarId.startsWith("avaturn_")) {
+    return avatarId.replace("avaturn_", "");
+  }
+
+  return null;
 }

@@ -3,7 +3,7 @@ import { FlatList, Pressable, Text, View, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { resolveApiAssetUrl } from "@/services/api";
+
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
@@ -98,14 +98,10 @@ export function LeaderboardScreen() {
               alignItems: "center",
             }}
           >
-            {e.avatar ? (
-              <Image
-                source={{ uri: resolveApiAssetUrl(`/static/avatars/${e.avatar}.png`) ?? undefined }}
-                style={{ width: "100%", height: "100%" }}
-              />
-            ) : (
-              <Feather name="user" size={isFirst ? 28 : 20} color="#94a3b8" />
-            )}
+            <Image
+              source={{ uri: getAvatarUri(e.avatar, e.user_id) }}
+              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            />
           </LinearGradient>
         </View>
 
@@ -304,16 +300,13 @@ export function LeaderboardScreen() {
                 }}
               >
                 <View className="w-10 h-10 rounded-full bg-slate-100 mr-3 overflow-hidden justify-center items-center border border-slate-200/50">
-                  {item.avatar ? (
-                    <Image
-                      source={{
-                        uri: resolveApiAssetUrl(`/static/avatars/${item.avatar}.png`) ?? undefined,
-                      }}
-                      className="w-full h-full"
-                    />
-                  ) : (
-                    <Feather name="user" size={18} color="#94a3b8" />
-                  )}
+                  <Image
+                    source={{
+                      uri: getAvatarUri(item.avatar, item.user_id),
+                    }}
+                    className="w-full h-full"
+                    style={{ resizeMode: "cover" }}
+                  />
                 </View>
                 <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
                   <Text className="text-slate-800 font-extrabold text-sm" numberOfLines={1}>

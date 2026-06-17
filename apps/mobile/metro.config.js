@@ -24,4 +24,7 @@ config.resolver.unstable_enablePackageExports = true;
 config.resolver.assetExts.push("riv");
 config.resolver.assetExts.push("lottie");
 
+// Add support for .mjs files (Required for Three.js / @react-three/drei to bundle correctly)
+config.resolver.sourceExts.push("mjs");
+
 module.exports = withNativeWind(config, { input: "./global.css" });
