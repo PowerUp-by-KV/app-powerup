@@ -69,7 +69,7 @@ export function TapToBuild({
 
   return (
     <View style={{ ...Platform.select({ web: { userSelect: "none" } as any }) }}>
-      <Text className="text-slate-900 text-lg font-bold mb-4">{promptText}</Text>
+      <Text className="text-slate-900 text-base leading-6 mb-4">{promptText}</Text>
 
       {audioUrl && (
         <Pressable

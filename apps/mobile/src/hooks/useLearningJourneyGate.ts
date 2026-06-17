@@ -56,7 +56,7 @@ export function useLearningJourneyGate(): LearningJourneyGate {
 
   // Fetch live user profile dynamically from the backend
   const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery(undefined, {
-    skip: !userId || localAssessmentDone,
+    skip: !userId,
   });
 
   // 1. Authoritatively check Onboarding status from backend endpoint

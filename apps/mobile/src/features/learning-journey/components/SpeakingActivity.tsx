@@ -478,7 +478,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
         </Text>
       </View>
 
-      <Text className="text-slate-900 text-lg font-bold mb-4">{prompt?.question_text ?? ""}</Text>
+      <Text className="text-slate-900 text-base leading-6 mb-4">{prompt?.question_text ?? ""}</Text>
 
       {(prompt?.criteria ?? []).length > 0 ? (
         <View

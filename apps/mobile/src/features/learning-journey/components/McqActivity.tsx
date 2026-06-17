@@ -371,7 +371,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             </Text>
           </View>
         ) : (
-          <Text className="text-slate-900 text-lg font-bold mb-6">{current.question_text}</Text>
+          <Text className="text-slate-900 text-base leading-6 mb-6">{current.question_text}</Text>
         )}
 
         {options.map((opt, i) => {

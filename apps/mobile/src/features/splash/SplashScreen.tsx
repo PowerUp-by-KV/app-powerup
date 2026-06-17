@@ -54,26 +54,26 @@ export function SplashScreen() {
       ]),
     ]).start();
 
-    // 2. Seamless automatic redirect with cinematic fade out
-    const transitionTimer = setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(splashOpacity, {
-          toValue: 0,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 1.12,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ]).start(async () => {
-        const { getAuthSession } = await import("@/services/auth-storage");
-        const session = await getAuthSession();
-        if (!session) {
+    // 2. Seamless automatic redirect with cinematic fade out ONLY if going to login
+    const transitionTimer = setTimeout(async () => {
+      const { getAuthSession } = await import("@/services/auth-storage");
+      const session = await getAuthSession();
+      if (!session) {
+        Animated.parallel([
+          Animated.timing(splashOpacity, {
+            toValue: 0,
+            duration: 900,
+            useNativeDriver: true,
+          }),
+          Animated.timing(logoScale, {
+            toValue: 1.12,
+            duration: 900,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
           router.replace("/login");
-        }
-      });
+        });
+      }
     }, 4000);
 
     return () => clearTimeout(transitionTimer);

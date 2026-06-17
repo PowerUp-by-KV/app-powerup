@@ -24,8 +24,8 @@ export function AvatarModel({ url, action = "idle", animationUrl }: AvatarModelP
   // Example: Play skeletal animation if found
   useEffect(() => {
     if (actions && Object.keys(actions).length > 0) {
-      // Just play the first available animation as a fallback if specific action isn't found
-      const animName = Object.keys(actions)[0];
+      // Play the animation matching the requested action, or fallback to the first available
+      const animName = actions[action] ? action : Object.keys(actions)[0];
       if (animName && actions[animName]) {
         actions[animName]?.reset().fadeIn(0.5).play();
         return () => {
@@ -35,63 +35,74 @@ export function AvatarModel({ url, action = "idle", animationUrl }: AvatarModelP
     }
   }, [actions, action]);
 
+  const skinnedMeshesRef = useRef<THREE.SkinnedMesh[]>([]);
+
+  useEffect(() => {
+    const meshes: THREE.SkinnedMesh[] = [];
+    if (scene) {
+      scene.traverse((object: THREE.Object3D) => {
+        if ((object as THREE.SkinnedMesh).isSkinnedMesh) {
+          meshes.push(object as THREE.SkinnedMesh);
+        }
+      });
+    }
+    skinnedMeshesRef.current = meshes;
+  }, [scene]);
+
   // Handle ARKit Blendshapes (Blinking & Smiling)
   useFrame((state) => {
     if (!scene) return;
 
-    scene.traverse((object: THREE.Object3D) => {
-      if ((object as THREE.SkinnedMesh).isSkinnedMesh) {
-        const mesh = object as THREE.SkinnedMesh;
-        const dict = mesh.morphTargetDictionary as { [key: string]: number };
-        const influences = mesh.morphTargetInfluences as number[];
-        if (!dict || !influences) return;
+    for (const mesh of skinnedMeshesRef.current) {
+      const dict = mesh.morphTargetDictionary as { [key: string]: number } | undefined;
+      const influences = mesh.morphTargetInfluences;
+      if (!dict || !influences) continue;
 
-        // 1. Procedural Blinking
-        const blinkLeftIdx = dict["eyeBlinkLeft"];
-        const blinkRightIdx = dict["eyeBlinkRight"];
+      // 1. Procedural Blinking
+      const blinkLeftIdx = dict["eyeBlinkLeft"];
+      const blinkRightIdx = dict["eyeBlinkRight"];
 
-        if (blinkLeftIdx !== undefined && blinkRightIdx !== undefined) {
-          // Blink every ~4 seconds
-          const time = state.clock.elapsedTime;
-          const blinkCycle = time % 4;
-          let blinkAmount = 0;
-          if (blinkCycle > 3.8) {
-            // Rapid blink
-            blinkAmount = Math.sin((blinkCycle - 3.8) * Math.PI * 5);
-            blinkAmount = Math.max(0, Math.min(1, blinkAmount));
-          }
-          influences[blinkLeftIdx] = blinkAmount;
-          influences[blinkRightIdx] = blinkAmount;
+      if (blinkLeftIdx !== undefined && blinkRightIdx !== undefined) {
+        // Blink every ~4 seconds
+        const time = state.clock.elapsedTime;
+        const blinkCycle = time % 4;
+        let blinkAmount = 0;
+        if (blinkCycle > 3.8) {
+          // Rapid blink
+          blinkAmount = Math.sin((blinkCycle - 3.8) * Math.PI * 5);
+          blinkAmount = Math.max(0, Math.min(1, blinkAmount));
         }
-
-        // 2. Smiling
-        const smileLeftIdx = dict["mouthSmileLeft"];
-        const smileRightIdx = dict["mouthSmileRight"];
-
-        if (smileLeftIdx !== undefined && smileRightIdx !== undefined) {
-          // Gentle constant smile
-          const targetSmile = 0.5;
-          // Smoothly interpolate to target
-          const currentLeft = influences[smileLeftIdx] ?? 0;
-          const currentRight = influences[smileRightIdx] ?? 0;
-          influences[smileLeftIdx] = currentLeft + (targetSmile - currentLeft) * 0.1;
-          influences[smileRightIdx] = currentRight + (targetSmile - currentRight) * 0.1;
-        }
-
-        // 3. Talking (Jaw Open) - if action is talking
-        const jawOpenIdx = dict["jawOpen"];
-        if (jawOpenIdx !== undefined) {
-          let targetJaw = 0;
-          if (action === "talking") {
-            // Procedural babble
-            const time = state.clock.elapsedTime;
-            targetJaw = (Math.sin(time * 15) * 0.5 + 0.5) * 0.3;
-          }
-          const currentJaw = influences[jawOpenIdx] ?? 0;
-          influences[jawOpenIdx] = currentJaw + (targetJaw - currentJaw) * 0.2;
-        }
+        influences[blinkLeftIdx] = blinkAmount;
+        influences[blinkRightIdx] = blinkAmount;
       }
-    });
+
+      // 2. Smiling
+      const smileLeftIdx = dict["mouthSmileLeft"];
+      const smileRightIdx = dict["mouthSmileRight"];
+
+      if (smileLeftIdx !== undefined && smileRightIdx !== undefined) {
+        // Gentle constant smile
+        const targetSmile = 0.5;
+        // Smoothly interpolate to target
+        const currentLeft = influences[smileLeftIdx] ?? 0;
+        const currentRight = influences[smileRightIdx] ?? 0;
+        influences[smileLeftIdx] = currentLeft + (targetSmile - currentLeft) * 0.1;
+        influences[smileRightIdx] = currentRight + (targetSmile - currentRight) * 0.1;
+      }
+
+      // 3. Talking (Jaw Open) - if action is talking
+      const jawOpenIdx = dict["jawOpen"];
+      if (jawOpenIdx !== undefined) {
+        let targetJaw = 0;
+        if (action === "talking") {
+          // Procedural babble
+          const time = state.clock.elapsedTime;
+          targetJaw = (Math.sin(time * 15) * 0.5 + 0.5) * 0.3;
+        }
+        const currentJaw = influences[jawOpenIdx] ?? 0;
+        influences[jawOpenIdx] = currentJaw + (targetJaw - currentJaw) * 0.2;
+      }
+    }
   });
 
   return (

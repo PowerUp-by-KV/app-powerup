@@ -93,7 +93,7 @@ export function useGoogleAuth() {
       }
 
       // Instantly route to the main app. The LearningJourneyGate will fetch onboarding status asynchronously
-      router.replace("/(tabs)/my-learning");
+      router.replace("/(tabs)");
     } catch (err) {
       // Do NOT rethrow: this runs from a `void handleGoogleToken(...)` call inside
       // a useEffect, so a rejection here would be an unhandled promise rejection.

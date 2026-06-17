@@ -73,6 +73,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
     refetchOnMountOrArgChange: true,
+    pollingInterval: 5000, // keep polling every 5s until successful
   });
 
   useEffect(() => {
@@ -114,7 +115,11 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           setSession(null);
           router.replace("/login");
         });
+        return;
       }
+
+      // If it's a network error (not 401/403), we just return and wait for the pollingInterval to retry it.
+      // The splash screen will stay visible.
       return;
     }
 
@@ -143,7 +148,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
           "onboarding",
         ];
         if (currentRoute && blockedRoutes.includes(currentRoute)) {
-          router.replace("/(tabs)/my-learning" as never);
+          router.replace("/(tabs)" as never);
         }
       }
     }

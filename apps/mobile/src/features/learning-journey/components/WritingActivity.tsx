@@ -118,7 +118,9 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
-        <Text className="text-slate-900 text-lg font-bold mb-4">{prompt?.question_text ?? ""}</Text>
+        <Text className="text-slate-900 text-base leading-6 mb-4">
+          {prompt?.question_text ?? ""}
+        </Text>
 
         <TextInput
           multiline

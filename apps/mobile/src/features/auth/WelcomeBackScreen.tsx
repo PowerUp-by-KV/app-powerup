@@ -25,7 +25,7 @@ export function WelcomeBackScreen() {
       subtitle={`Good to see you again, ${name}. You've successfully signed in.`}
       cta="Get Started"
       onCta={() => {
-        router.replace("/(tabs)/my-learning" as never);
+        router.replace("/(tabs)" as never);
       }}
     />
   );
