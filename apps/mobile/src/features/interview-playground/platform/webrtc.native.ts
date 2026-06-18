@@ -1,7 +1,5 @@
 /* eslint-disable */
 // @ts-nocheck
-import { DeviceEventEmitter } from "react-native";
-
 export { RTCPeerConnection, mediaDevices } from "@stream-io/react-native-webrtc";
 
 // On native, @stream-io/react-native-webrtc routes and plays the remote audio
@@ -10,55 +8,57 @@ export function attachRemoteAudio(_stream: unknown): void {}
 export function detachRemoteAudio(): void {}
 
 // ---------------------------------------------------------------------------
-// Audio routing (native)
-// By default a WebRTC voice session plays through the phone's earpiece (the
-// "phone call" speaker). For an interview we want the loudspeaker so the user
-// can hear the AI hands-free — unless a wired headset is connected, in which
-// case the audio should follow the headset.
+// Audio routing (native) — loudspeaker by default
 //
-// react-native-incall-manager is a native module, so it only exists in EAS
-// dev/preview/production builds (not Expo Go / web). We lazy-require it and
-// wrap every call so a missing module degrades gracefully instead of crashing.
+// A WebRTC voice session defaults to the phone's earpiece (the "phone call"
+// route), so the AI interviewer was barely audible. We force the loudspeaker
+// via expo-av's audio mode (`playThroughEarpieceAndroid: false`).
+//
+// Why expo-av and not react-native-incall-manager: incall-manager (4.2.1) is
+// an old-architecture native module and crashes at process init on Expo SDK 55
+// (New Architecture is on by default, required by react-native-reanimated v4) —
+// the app never reached the splash screen. expo-av is an Expo module that is
+// New-Arch compatible. It's lazy-required and fully guarded so audio routing
+// can never crash the app.
 // ---------------------------------------------------------------------------
-let headsetSub: { remove: () => void } | null = null;
-
-function getInCallManager(): any | null {
+function getAudio(): typeof import("expo-av").Audio | null {
   try {
-    const mod = require("react-native-incall-manager");
-    return mod?.default ?? mod ?? null;
+    return require("expo-av").Audio ?? null;
   } catch {
     return null;
   }
 }
 
+// setAudioModeAsync mutates global native audio-session state, so concurrent
+// calls can resolve out of order (e.g. quickly entering then leaving the
+// interview could leave the mic active or the route wrong). Serialize every
+// call through a single promise chain so the last requested mode wins.
+let audioModeQueue: Promise<void> = Promise.resolve();
+
+function setAudioModeSafe(
+  options: Parameters<typeof import("expo-av").Audio.setAudioModeAsync>[0],
+): void {
+  const Audio = getAudio();
+  if (!Audio?.setAudioModeAsync) return;
+  audioModeQueue = audioModeQueue.then(() => Audio.setAudioModeAsync(options)).catch(() => {});
+}
+
 export function startAudioRouting(): void {
-  const InCallManager = getInCallManager();
-  if (!InCallManager) return;
-  try {
-    InCallManager.start({ media: "audio" });
-    // Loudspeaker by default.
-    InCallManager.setForceSpeakerphoneOn(true);
-    // Follow the wired headset if it is plugged/unplugged mid-session:
-    // headset present → earpiece/headset route, absent → loudspeaker.
-    headsetSub = DeviceEventEmitter.addListener("WiredHeadset", (data: { isPlugged?: boolean }) => {
-      try {
-        InCallManager.setForceSpeakerphoneOn(!data?.isPlugged);
-      } catch {}
-    });
-  } catch {
-    // Best-effort; never let audio routing crash the interview.
-  }
+  // playThroughEarpieceAndroid:false → loudspeaker on Android.
+  // playsInSilentModeIOS keeps the AI audible if the ring switch is silent.
+  setAudioModeSafe({
+    allowsRecordingIOS: true,
+    playsInSilentModeIOS: true,
+    staysActiveInBackground: false,
+    playThroughEarpieceAndroid: false,
+    shouldDuckAndroid: true,
+  });
 }
 
 export function stopAudioRouting(): void {
-  const InCallManager = getInCallManager();
-  try {
-    headsetSub?.remove();
-  } catch {}
-  headsetSub = null;
-  if (!InCallManager) return;
-  try {
-    InCallManager.setForceSpeakerphoneOn(false);
-    InCallManager.stop();
-  } catch {}
+  // Release the recording session; keep output off the earpiece.
+  setAudioModeSafe({
+    allowsRecordingIOS: false,
+    playThroughEarpieceAndroid: false,
+  });
 }
