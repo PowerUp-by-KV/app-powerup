@@ -21,7 +21,7 @@ export function detachRemoteAudio(): void {}
 // New-Arch compatible. It's lazy-required and fully guarded so audio routing
 // can never crash the app.
 // ---------------------------------------------------------------------------
-function getAudio(): any | null {
+function getAudio(): typeof import("expo-av").Audio | null {
   try {
     return require("expo-av").Audio ?? null;
   } catch {
@@ -29,34 +29,36 @@ function getAudio(): any | null {
   }
 }
 
-export function startAudioRouting(): void {
+// setAudioModeAsync mutates global native audio-session state, so concurrent
+// calls can resolve out of order (e.g. quickly entering then leaving the
+// interview could leave the mic active or the route wrong). Serialize every
+// call through a single promise chain so the last requested mode wins.
+let audioModeQueue: Promise<void> = Promise.resolve();
+
+function setAudioModeSafe(
+  options: Parameters<typeof import("expo-av").Audio.setAudioModeAsync>[0],
+): void {
   const Audio = getAudio();
   if (!Audio?.setAudioModeAsync) return;
-  try {
-    // playThroughEarpieceAndroid:false → loudspeaker on Android.
-    // playsInSilentModeIOS keeps the AI audible if the ring switch is silent.
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      playThroughEarpieceAndroid: false,
-      shouldDuckAndroid: true,
-    }).catch(() => {});
-  } catch {
-    // best-effort
-  }
+  audioModeQueue = audioModeQueue.then(() => Audio.setAudioModeAsync(options)).catch(() => {});
+}
+
+export function startAudioRouting(): void {
+  // playThroughEarpieceAndroid:false → loudspeaker on Android.
+  // playsInSilentModeIOS keeps the AI audible if the ring switch is silent.
+  setAudioModeSafe({
+    allowsRecordingIOS: true,
+    playsInSilentModeIOS: true,
+    staysActiveInBackground: false,
+    playThroughEarpieceAndroid: false,
+    shouldDuckAndroid: true,
+  });
 }
 
 export function stopAudioRouting(): void {
-  const Audio = getAudio();
-  if (!Audio?.setAudioModeAsync) return;
-  try {
-    // Release the recording session; keep output off the earpiece.
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      playThroughEarpieceAndroid: false,
-    }).catch(() => {});
-  } catch {
-    // best-effort
-  }
+  // Release the recording session; keep output off the earpiece.
+  setAudioModeSafe({
+    allowsRecordingIOS: false,
+    playThroughEarpieceAndroid: false,
+  });
 }
