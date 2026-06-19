@@ -21,7 +21,6 @@ import { OtpResendTimer } from "./components/OtpResendTimer";
 import { useSendEmailOtpMutation, useVerifyEmailOtpMutation } from "../../services/auth-api";
 import { onboardingApi } from "../../services/onboarding-api";
 import {
-  getAuthSession,
   saveAuthSession,
   clearStaleLocalFlagsIfUserChanged,
   saveLastLoggedInEmail,
