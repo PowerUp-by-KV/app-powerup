@@ -92,6 +92,21 @@ const rawBaseQuery = fetchBaseQuery({
 
 let isRedirectingToLogin = false;
 
+// Wipe the session and send the user to /login. Only call this for a genuine
+// auth failure (the refresh token is invalid/expired), never for a transient
+// network/5xx/timeout error — otherwise a flaky or cold-starting backend would
+// log users out and bounce them back to login right after a successful sign-in.
+async function forceLogout(): Promise<void> {
+  await clearAuthSession();
+  if (!isRedirectingToLogin) {
+    isRedirectingToLogin = true;
+    router.replace("/login");
+    setTimeout(() => {
+      isRedirectingToLogin = false;
+    }, 1000);
+  }
+}
+
 // On 401: try refresh once, update stored session, retry original request.
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
@@ -123,24 +138,19 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
         // Retry the original request with the new token.
         result = await rawBaseQuery(args, api, extraOptions);
       } else {
-        await clearAuthSession();
-        if (!isRedirectingToLogin) {
-          isRedirectingToLogin = true;
-          router.replace("/login");
-          setTimeout(() => {
-            isRedirectingToLogin = false;
-          }, 1000);
+        // Refresh failed. Only log out if the refresh token was genuinely
+        // rejected (401/403). For transient failures (network error, timeout,
+        // 5xx — e.g. a cold-starting backend) keep the session and let the
+        // request be retried; otherwise we'd bounce a just-logged-in user out.
+        const refreshStatus = refreshResult.error?.status;
+        if (refreshStatus === 401 || refreshStatus === 403) {
+          await forceLogout();
         }
       }
     } else {
-      await clearAuthSession();
-      if (!isRedirectingToLogin) {
-        isRedirectingToLogin = true;
-        router.replace("/login");
-        setTimeout(() => {
-          isRedirectingToLogin = false;
-        }, 1000);
-      }
+      // The access token was rejected (401) and there is no refresh token to
+      // recover with — the session can't be salvaged, so log out.
+      await forceLogout();
     }
   }
 
