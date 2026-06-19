@@ -306,23 +306,26 @@ export function ProfileScreen() {
         >
           {/* Profile Header section */}
           <View className="flex-row px-5 py-5 items-center bg-white" style={{ gap: 16 }}>
-            {/* Left: Avatar with gradient background */}
             <Pressable
               onPress={() => router.push("/profile/avatar" as never)}
               className="active:opacity-85"
             >
-              <LinearGradient
-                colors={["#8ef34b", "#dcf434"]}
-                className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm"
-              >
-                <Image
-                  source={{
-                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                  }}
-                  className="w-full h-full"
-                  style={{ resizeMode: "cover" }}
-                />
-              </LinearGradient>
+              {(() => {
+                const gradientColors = ["#8ef34b", "#dcf434"];
+
+                return (
+                  <LinearGradient
+                    colors={gradientColors as [string, string]}
+                    className="w-24 h-24 rounded-full items-center justify-center overflow-hidden border border-slate-100 shadow-sm relative"
+                  >
+                    <Image
+                      source={{ uri: getAvatarUri(profile?.avatar_id, profile?.id) }}
+                      className="w-full h-full"
+                      style={{ resizeMode: "cover" }}
+                    />
+                  </LinearGradient>
+                );
+              })()}
             </Pressable>
 
             {/* Right Details */}

@@ -60,12 +60,19 @@ export function useLearningJourneyGate(): LearningJourneyGate {
   });
 
   // 1. Authoritatively check Onboarding status from backend endpoint
+  const [hasFetchedOnboarding, setHasFetchedOnboarding] = useState(false);
   const { data: onboardingStatus, isLoading: isOnboardingLoading } = useGetOnboardingStatusQuery(
     userId ?? "",
     {
-      skip: !userId || localProfileDone,
+      skip: !userId || localProfileDone || hasFetchedOnboarding,
     },
   );
+
+  useEffect(() => {
+    if (onboardingStatus) {
+      setHasFetchedOnboarding(true);
+    }
+  }, [onboardingStatus]);
 
   // profileDone only requires answers_present — resume upload is optional
   const isCefrDone = !!profile?.cefr_range;
@@ -83,12 +90,19 @@ export function useLearningJourneyGate(): LearningJourneyGate {
   const shouldCheckAssessment = !!userId && profileDone && !isCefrDone && !localAssessmentDone;
 
   // 2. Authoritatively query the assessment status from the backend
+  const [hasFetchedAssessment, setHasFetchedAssessment] = useState(false);
   const { data: assessmentSession, isLoading: isAssessmentLoading } = useCheckAssessmentStatusQuery(
     undefined,
     {
-      skip: !shouldCheckAssessment,
+      skip: !shouldCheckAssessment || hasFetchedAssessment,
     },
   );
+
+  useEffect(() => {
+    if (assessmentSession) {
+      setHasFetchedAssessment(true);
+    }
+  }, [assessmentSession]);
 
   // Auto-save session ID and sync completed sections when fetched successfully
   useEffect(() => {

@@ -20,10 +20,19 @@ import { OtpInput } from "./components/OtpInput";
 import { OtpResendTimer } from "./components/OtpResendTimer";
 import { useSendEmailOtpMutation, useVerifyEmailOtpMutation } from "../../services/auth-api";
 import { onboardingApi } from "../../services/onboarding-api";
-import { getAuthSession } from "../../services/auth-storage";
+import {
+  getAuthSession,
+  saveAuthSession,
+  clearStaleLocalFlagsIfUserChanged,
+  saveLastLoggedInEmail,
+} from "../../services/auth-storage";
+import { useDispatch } from "react-redux";
+import { api } from "../../services/api";
+import { resetOnboarding } from "../../store/slices/onboardingSlice";
 
 export function VerifyEmailScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ email?: string; next?: string }>();
   const [email, setEmail] = useState(params.email ?? "");
@@ -32,7 +41,7 @@ export function VerifyEmailScreen() {
 
   const [sendOtp, { isLoading: isSending }] = useSendEmailOtpMutation();
   const [verifyOtp, { isLoading: isVerifying }] = useVerifyEmailOtpMutation();
-  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Auto-send the OTP when arriving with an email pre-filled (post-signup flow).
   useEffect(() => {
@@ -59,25 +68,37 @@ export function VerifyEmailScreen() {
   const handleContinue = async () => {
     if (code.length !== 6) return;
     try {
-      await verifyOtp({ email: email.trim(), code }).unwrap();
-      const session = await getAuthSession();
-      const userId = session?.user?.id;
-      if (userId) {
-        try {
-          const status = await getOnboardingStatus(userId).unwrap();
-          if (status?.answers_present) {
-            const next = params.next ?? "/(tabs)";
-            router.replace(next as never);
-          } else {
-            router.replace("/onboarding" as never);
-          }
-        } catch (err) {
-          console.warn("Failed to check onboarding status, defaulting to /onboarding:", err);
-          router.replace("/onboarding" as never);
-        }
-      } else {
+      const resp = await verifyOtp({ email: email.trim(), code }).unwrap();
+
+      const loginEmail = email.trim();
+      await saveAuthSession(resp);
+
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
+      // If a different email has logged in on this device, wipe stale local flags
+      // so they don't mistakenly mark the new user's onboarding/assessment as done.
+      await clearStaleLocalFlagsIfUserChanged(loginEmail);
+      // Persist the current email for future login comparisons
+      await saveLastLoggedInEmail(loginEmail);
+
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      const userId = resp?.user?.id;
+      if (!userId) {
         router.replace("/onboarding" as never);
+        return;
       }
+
+      // Instantly route to onboarding. The RouteGuard will redirect to home if already onboarded.
+      const next = params.next ?? "/onboarding";
+      router.replace(next as never);
     } catch (err) {
       const data = (err as { data?: { detail?: string } })?.data;
       Alert.alert("Invalid code", data?.detail ?? "That code didn't match. Try again.");
