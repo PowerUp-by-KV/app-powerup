@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AvatarCreatorWebView } from "@/features/avatar/components/AvatarCreatorWebView";
@@ -50,7 +50,9 @@ export default function AvatarCreatorScreen() {
           <Text className="text-white font-bold">Done</Text>
         </Pressable>
       </View>
-      <View style={{ flex: 1, height: "100%" }}>
+      <View
+        style={[{ flex: 1 }, Platform.OS === "web" && ({ minHeight: "calc(100vh - 65px)" } as any)]}
+      >
         <AvatarCreatorWebView onAvatarExported={handleAvatarExported} subdomain="powerup" />
       </View>
     </View>

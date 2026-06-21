@@ -13,7 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { Audio } from "expo-av";
 
-import type { ActivityQuestion } from "@powerup/shared";
+import type { Activity, ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitSpeakingAnswerMutation } from "@/services/module-api";
 
@@ -23,7 +23,7 @@ export interface SpeakingActivityResult {
 }
 
 interface SpeakingActivityProps {
-  activityId: string;
+  activity: Activity;
   questions: ActivityQuestion[];
   onComplete: (result: SpeakingActivityResult) => void;
 }
@@ -44,8 +44,43 @@ const WAVEFORM_BARS = [
 /**
  * Record → review with waveform (playback/retake) → submit → AI score.
  */
-export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProps) {
+export function SpeakingActivity({ activity, questions, onComplete }: SpeakingActivityProps) {
   const prompt = questions[0];
+
+  const questionText =
+    typeof prompt?.question_text === "object" && prompt?.question_text !== null
+      ? (prompt.question_text as any).text || JSON.stringify(prompt.question_text)
+      : (prompt?.question_text ?? "");
+
+  const isReadAloud = questionText.toLowerCase().includes("read");
+
+  const textToRead = (() => {
+    if (!isReadAloud) return "";
+
+    const val = activity?.content;
+    if (val && typeof val === "object") {
+      if (val.text) return String(val.text).trim();
+      if (val.name) return String(val.name).trim();
+      return "";
+    } else if (val) {
+      const str = String(val).trim();
+      if (str !== "{}" && str !== "[]") return str;
+    }
+
+    if (prompt?.correct_answer) {
+      return String(prompt.correct_answer).trim();
+    }
+    return "";
+  })();
+
+  const cleanedTextToRead = (() => {
+    let t = textToRead;
+    if (t.startsWith('"') && t.endsWith('"') && t.length >= 2) {
+      t = t.slice(1, -1);
+    }
+    return t.trim();
+  })();
+
   const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Recording states
@@ -473,12 +508,24 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
       >
         <Feather name="info" size={16} color="#2563eb" />
         <Text style={{ flex: 1, fontSize: 13, color: "#1e3a8a", marginLeft: 8, lineHeight: 18 }}>
-          Practice speaking the conversation dialogue below. Tap the microphone and read it out
-          loud.
+          {isReadAloud
+            ? "Practice speaking the conversation dialogue below. Tap the microphone and read it out loud."
+            : "Practice speaking your response. Tap the microphone and record your answer."}
         </Text>
       </View>
 
-      <Text className="text-slate-900 text-base leading-6 mb-4">{prompt?.question_text ?? ""}</Text>
+      <Text className="text-slate-900 text-base leading-6 mb-4">{questionText}</Text>
+
+      {isReadAloud && cleanedTextToRead ? (
+        <View className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5 mb-5 shadow-sm">
+          <Text className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-2">
+            Text to read
+          </Text>
+          <Text className="text-slate-800 text-base leading-7 font-semibold">
+            "{cleanedTextToRead}"
+          </Text>
+        </View>
+      ) : null}
 
       {(prompt?.criteria ?? []).length > 0 ? (
         <View
@@ -492,11 +539,17 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
           <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">
             You'll be scored on
           </Text>
-          {(prompt?.criteria ?? []).map((c, i) => (
-            <Text key={i} style={{ color: "#475569", marginBottom: 4 }}>
-              • {c}
-            </Text>
-          ))}
+          {(prompt?.criteria ?? []).map((c, i) => {
+            const textVal =
+              typeof c === "object" && c !== null
+                ? (c as any).text || (c as any).name || JSON.stringify(c)
+                : String(c);
+            return (
+              <Text key={i} style={{ color: "#475569", marginBottom: 4 }}>
+                • {textVal}
+              </Text>
+            );
+          })}
         </View>
       ) : null}
 
