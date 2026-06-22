@@ -64,6 +64,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
+  const [isPolling, setIsPolling] = useState(true);
+
   const {
     data: onboardingStatus,
     isLoading: isOnboardingLoading,
@@ -73,8 +75,14 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
     refetchOnMountOrArgChange: true,
-    pollingInterval: 5000, // keep polling every 5s until successful
+    pollingInterval: isPolling ? 5000 : 0, // stop polling once successful
   });
+
+  useEffect(() => {
+    if (onboardingStatus && !isOnboardingError) {
+      setIsPolling(false);
+    }
+  }, [onboardingStatus, isOnboardingError]);
 
   useEffect(() => {
     if (userId) {
