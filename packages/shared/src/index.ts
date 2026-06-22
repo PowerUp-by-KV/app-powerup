@@ -33,7 +33,7 @@ export interface Activity {
   status: "not_started" | "in_progress" | "completed";
   score: number | null;
   passed: boolean;
-  content?: any;
+  content?: Record<string, unknown>;
 }
 
 export interface ActivityQuestion {

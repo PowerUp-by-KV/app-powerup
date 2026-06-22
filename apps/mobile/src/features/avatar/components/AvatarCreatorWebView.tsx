@@ -77,7 +77,10 @@ export function AvatarCreatorWebView({
         style={[
           { width: "100%", backgroundColor: "#fff" },
           Platform.OS === "web" &&
-            ({ height: "calc(100vh - 65px)", minHeight: "calc(100vh - 65px)" } as any),
+            ({ height: "calc(100vh - 65px)", minHeight: "calc(100vh - 65px)" } as Record<
+              string,
+              unknown
+            >),
         ]}
       >
         <iframe
