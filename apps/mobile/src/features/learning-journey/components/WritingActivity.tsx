@@ -114,7 +114,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           flex: 1,
           ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
         }}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
@@ -143,11 +143,26 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           {text.trim().split(/\s+/).filter(Boolean).length} words
         </Text>
 
+        {error ? (
+          <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
+        ) : null}
+      </ScrollView>
+
+      {/* Docked Submit Button Container */}
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingBottom: Platform.OS === "ios" ? 20 : 24,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: "#f1f5f9",
+          backgroundColor: "#ffffff",
+        }}
+      >
         <Pressable
           onPress={handleSubmit}
           disabled={submitting || text.trim().length === 0}
           style={({ pressed }) => ({
-            marginTop: 24,
             backgroundColor:
               submitting || text.trim().length === 0 ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
             paddingVertical: 14,
@@ -166,11 +181,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
           )}
         </Pressable>
-
-        {error ? (
-          <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
-        ) : null}
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }

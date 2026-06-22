@@ -29,17 +29,29 @@ function asOption(opt: unknown): { id: string; text: string } {
   return { id: o.id ?? o.text ?? "", text: o.text ?? o.id ?? "" };
 }
 
+function normalize(str: string): string {
+  return str.toLowerCase().replace(/→/g, "->").replace(/\s+/g, " ").trim();
+}
+
 // Helper to check if an option matches the correct answer
 function isMatch(opt: { id: string; text: string }, index: number, correctAnswer: string): boolean {
-  const optId = opt.id.trim();
-  const ans = correctAnswer.trim();
-  if (optId === ans) return true;
+  const optId = normalize(opt.id);
+  const optText = normalize(opt.text);
+  const ans = normalize(correctAnswer);
 
-  const letter = String.fromCharCode(65 + index);
-  if (ans.toUpperCase() === letter) return true;
-  if (ans.startsWith(`${letter}: `) && ans.substring(3).trim() === optId) return true;
-  if (ans.startsWith(`${letter}. `) && ans.substring(3).trim() === optId) return true;
-  if (ans.startsWith(`${letter}) `) && ans.substring(3).trim() === optId) return true;
+  if (optId === ans || optText === ans) return true;
+
+  const letter = String.fromCharCode(65 + index).toLowerCase();
+  if (ans === letter) return true;
+
+  // Check if answer starts with letter prefix (e.g. "c: ...", "c. ...", "c) ...")
+  const prefixes = [`${letter}:`, `${letter}.`, `${letter})`];
+  for (const prefix of prefixes) {
+    if (ans.startsWith(prefix)) {
+      const remaining = ans.substring(prefix.length).trim();
+      if (remaining === optId || remaining === optText) return true;
+    }
+  }
 
   return false;
 }
@@ -147,7 +159,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     if (correct) setCorrectCount(nextCorrectCount);
 
     const correctLetter =
-      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : correctAnswerStr;
+      correctIndex !== -1
+        ? `${String.fromCharCode(65 + correctIndex)}: ${options[correctIndex]?.text}`
+        : correctAnswerStr;
 
     setLastCorrect(correct);
     setLastCorrectAnswer(correctLetter);

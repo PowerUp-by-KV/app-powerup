@@ -73,7 +73,16 @@ export function AvatarCreatorWebView({
 
   if (Platform.OS === "web") {
     return (
-      <View style={{ flex: 1, height: "100%", width: "100%", backgroundColor: "white" }}>
+      <View
+        style={[
+          { width: "100%", backgroundColor: "#fff" },
+          Platform.OS === "web" &&
+            ({ height: "calc(100vh - 65px)", minHeight: "calc(100vh - 65px)" } as Record<
+              string,
+              unknown
+            >),
+        ]}
+      >
         <iframe
           src={url}
           style={{ width: "100%", height: "100%", border: "none", minHeight: "100vh" }}

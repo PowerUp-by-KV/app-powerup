@@ -496,11 +496,11 @@ const styles = StyleSheet.create({
   badgeGridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     width: "100%",
   },
   badgeCardPressable: {
-    width: "30%",
+    width: "33.33%",
     alignItems: "center",
     marginBottom: 24,
   },

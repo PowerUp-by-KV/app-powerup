@@ -27,11 +27,8 @@ export function ActivityRenderer({ activity, questions, onComplete }: ActivityRe
       "",
   ).toLowerCase();
   const hasAudio = questions.some((q) => !!q.audio_url);
-
   if (skill === "speaking") {
-    return (
-      <SpeakingActivity activityId={activity.id} questions={questions} onComplete={onComplete} />
-    );
+    return <SpeakingActivity activity={activity} questions={questions} onComplete={onComplete} />;
   }
   if (skill === "listening" || hasAudio) {
     return <ListeningActivity questions={questions} onComplete={onComplete} />;

@@ -196,70 +196,82 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
         style={{ flex: 1 }}
       >
         <ScrollView
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <AssessmentHeader
-            sectionName="Section C"
-            skillName="Grammar & Language Usage"
-            currentQuestion={currentQuestionIndex}
-            totalQuestions={questions.length}
-            onFinishTest={handleFinish}
-            sessionId={sessionId}
-            stopTimer={isSubmitting || isFinished}
-          />
+          <View className="px-4 pt-4">
+            <AssessmentHeader
+              sectionName="Section C"
+              skillName="Grammar & Language Usage"
+              currentQuestion={currentQuestionIndex}
+              totalQuestions={questions.length}
+              onFinishTest={handleFinish}
+              sessionId={sessionId}
+              stopTimer={isSubmitting || isFinished}
+            />
 
-          <GrammarQuestionComponent
-            question={currentQuestion as any}
-            questionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-          />
+            <GrammarQuestionComponent
+              question={currentQuestion as any}
+              questionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
+            />
 
-          {isMCQ && currentQuestion.options ? (
-            <View className="mt-4">
-              {currentQuestion.options.map((option: any, idx: number) => {
-                return (
-                  <MCQOption
-                    key={idx}
-                    label={option.label || String.fromCharCode(65 + idx)}
-                    text={option.value}
-                    isSelected={currentAnswer === option.value}
-                    onSelect={() => selectAnswer(option.value)}
-                  />
-                );
-              })}
-            </View>
-          ) : (
-            <View className="mt-4">
-              <FillBlankInput
-                value={currentAnswer}
-                placeholder="Fill in the blank..."
-                onChange={(text: string) => selectAnswer(text)}
-              />
-            </View>
-          )}
-
-          <View className="flex-row justify-between mt-8 gap-4 mb-4">
-            <TouchableOpacity
-              className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
-                isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
-              }`}
-              onPress={handleNext}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-bold text-base">
-                  {isLastQuestion ? "Check Answers" : "Next Question"}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {isMCQ && currentQuestion.options ? (
+              <View className="mt-4">
+                {currentQuestion.options.map((option: any, idx: number) => {
+                  return (
+                    <MCQOption
+                      key={idx}
+                      label={option.label || String.fromCharCode(65 + idx)}
+                      text={option.value}
+                      isSelected={currentAnswer === option.value}
+                      onSelect={() => selectAnswer(option.value)}
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="mt-4">
+                <FillBlankInput
+                  value={currentAnswer}
+                  placeholder="Fill in the blank..."
+                  onChange={(text: string) => selectAnswer(text)}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
+
+        {/* Docked Action Button Container */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingBottom: Platform.OS === "ios" ? 10 : 20,
+            paddingTop: 12,
+            borderTopWidth: 1,
+            borderTopColor: "#f1f5f9",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <TouchableOpacity
+            className={`w-full py-4 rounded-2xl items-center shadow-md ${
+              isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
+            }`}
+            onPress={handleNext}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-base">
+                {isLastQuestion ? "Check Answers" : "Next Question"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}

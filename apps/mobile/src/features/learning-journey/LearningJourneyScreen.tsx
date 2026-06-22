@@ -12,7 +12,7 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
@@ -526,11 +526,28 @@ export function LearningJourneyScreen() {
     [personalizedPath, triggerGetModuleDays],
   );
 
+  const navigation = useNavigation();
+
   useEffect(() => {
     if (gate.canEnter) {
-      fetchAllDays(false);
+      refetchPath();
+      refetchProgression();
     }
-  }, [fetchAllDays, gate.canEnter]);
+
+    const unsubscribe = navigation.addListener("focus", () => {
+      if (gate.canEnter) {
+        refetchPath();
+        refetchProgression();
+      }
+    });
+    return unsubscribe;
+  }, [navigation, gate.canEnter, refetchPath, refetchProgression]);
+
+  useEffect(() => {
+    if (gate.canEnter && personalizedPath?.modules?.length) {
+      fetchAllDays(true);
+    }
+  }, [gate.canEnter, personalizedPath, fetchAllDays]);
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
@@ -1276,7 +1293,7 @@ const timelineStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "100%",
+    alignSelf: "stretch",
   },
   statusBadge: {
     paddingVertical: 4,
@@ -1309,7 +1326,7 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 6,
-    width: "100%",
+    alignSelf: "stretch",
   },
   progressBarFill: {
     height: "100%",
@@ -1320,7 +1337,7 @@ const timelineStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
-    width: "100%",
+    alignSelf: "stretch",
   },
   progressLabelText: {
     fontSize: 11,
