@@ -97,3 +97,38 @@ jobs:
           echo "Android preview build queued on EAS." >> $GITHUB_STEP_SUMMARY
           echo "Track at https://expo.dev/accounts/deepakdev6055/projects/powerup/builds" >> $GITHUB_STEP_SUMMARY
           echo "You will get an email when the APK is ready." >> $GITHUB_STEP_SUMMARY
+
+  eas-build-ios:
+    name: EAS Build (iOS internal IPA)
+    runs-on: ubuntu-latest
+    needs: quality
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/qa') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'qa') ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build iOS internal IPA
+        run: cd apps/mobile && eas build --platform ios --profile preview --non-interactive --no-wait
+
+      - name: Summary
+        run: |
+          echo "iOS internal distribution build queued on EAS." >> $GITHUB_STEP_SUMMARY
+          echo "Track at https://expo.dev/accounts/deepakdev6055/projects/powerup/builds" >> $GITHUB_STEP_SUMMARY
+          echo "Testers install via the link EAS emails you — no TestFlight or Apple account needed." >> $GITHUB_STEP_SUMMARY

@@ -26,6 +26,9 @@
       "android": {
         "buildType": "apk"
       },
+      "ios": {
+        "simulator": false
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "717357215116-b9glt56fnrhhhvetk7mqspo86krldvnk.apps.googleusercontent.com",
