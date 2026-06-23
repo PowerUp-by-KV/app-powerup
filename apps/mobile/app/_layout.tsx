@@ -5,6 +5,9 @@ import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import { useColorScheme } from "nativewind";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -190,6 +193,37 @@ export default function AuthLayout() {
   });
 
   const [authChecked, setAuthChecked] = useState(false);
+  const { setColorScheme } = useColorScheme();
+
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        let storedDarkMode: string | null = null;
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          storedDarkMode = window.localStorage.getItem("settings_dark_mode");
+        } else if (Platform.OS !== "web") {
+          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+        }
+
+        const isDark = storedDarkMode === "true";
+        setColorScheme(isDark ? "dark" : "light");
+
+        if (Platform.OS === "web" && typeof document !== "undefined") {
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        }
+      } catch {
+        setColorScheme("light");
+        if (Platform.OS === "web" && typeof document !== "undefined") {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+    };
+    loadTheme();
+  }, [setColorScheme]);
 
   useEffect(() => {
     getAuthSession()

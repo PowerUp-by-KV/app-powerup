@@ -159,11 +159,11 @@ export function AssessmentHeader({
       <View className="flex-row items-center w-full px-1 mb-5">
         <TouchableOpacity
           onPress={handleFinishPress}
-          className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-85"
+          className="w-8 h-8 items-center justify-center active:opacity-85"
         >
-          <Feather name="x" size={20} color="#0f172a" />
+          <Feather name="x" size={20} color="#94A3B8" />
         </TouchableOpacity>
-        <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+        <View className="flex-1 h-1.5 bg-slate-200 dark:bg-[#2A2A3A] rounded-full ml-4 overflow-hidden">
           <LinearGradient
             colors={["#3b82f6", "#22c55e"]}
             start={{ x: 0, y: 0 }}
@@ -177,11 +177,11 @@ export function AssessmentHeader({
       {/* Section details with Category title, Timer and Dropdown trigger */}
       <View className="flex-row items-center justify-between px-1 mb-2">
         <View className="flex-row items-center">
-          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase mr-2.5">
+          <Text className="text-xs font-extrabold text-slate-400 dark:text-slate-500 tracking-widest uppercase mr-2.5">
             {sectionName}
           </Text>
-          <View className="bg-slate-100/60 px-2 py-0.5 rounded-md border border-slate-200/20">
-            <Text className="text-[10px] font-extrabold text-slate-500">
+          <View className="bg-slate-100/60 dark:bg-[#2A2A3A] px-2 py-0.5 rounded-md border border-slate-200/20 dark:border-slate-700">
+            <Text className="text-[10px] font-extrabold text-slate-500 dark:text-slate-400">
               🕒 {formatTime(secondsElapsed)}
             </Text>
           </View>
@@ -189,11 +189,13 @@ export function AssessmentHeader({
 
         <TouchableOpacity
           onPress={() => setModalVisible(true)}
-          className="flex-row items-center bg-slate-100/80 active:bg-slate-200/60 px-3.5 py-1.5 rounded-full border border-slate-200/40 shadow-xs"
+          className="flex-row items-center bg-slate-100/80 dark:bg-[#2A2A3A] active:bg-slate-200/60 dark:active:bg-[#3f3f5a] px-3.5 py-1.5 rounded-full border border-slate-200/40 dark:border-slate-700 shadow-xs"
           activeOpacity={0.7}
         >
-          <Text className="text-[11px] font-extrabold text-slate-700 mr-1.5">{skillName}</Text>
-          <Feather name="chevron-down" size={11} color="#334155" />
+          <Text className="text-[11px] font-extrabold text-slate-700 dark:text-slate-300 mr-1.5">
+            {skillName}
+          </Text>
+          <Feather name="chevron-down" size={11} color="#94A3B8" />
         </TouchableOpacity>
       </View>
 
@@ -203,15 +205,17 @@ export function AssessmentHeader({
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <View className="flex-1 bg-black/50 justify-center items-center px-6">
-          <View className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-100">
+        <View className="flex-1 bg-black/60 justify-center items-center px-6">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] rounded-3xl p-6 shadow-2xl border border-slate-100 dark:border-slate-800">
             <View className="flex-row justify-between items-center mb-6">
-              <Text className="text-lg font-bold text-slate-900">Assessment Sections</Text>
+              <Text className="text-lg font-bold text-slate-900 dark:text-white">
+                Assessment Sections
+              </Text>
               <TouchableOpacity
                 onPress={() => setModalVisible(false)}
-                className="p-2 bg-slate-100 rounded-full"
+                className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full"
               >
-                <Feather name="x" size={18} color="#0F172A" />
+                <Feather name="x" size={18} color="#94A3B8" />
               </TouchableOpacity>
             </View>
 
@@ -229,10 +233,10 @@ export function AssessmentHeader({
                     activeOpacity={isDone || isLocked ? 1 : 0.7}
                     className={`py-4 px-5 rounded-2xl flex-row justify-between items-center border ${
                       isDone
-                        ? "bg-green-50 border-green-200"
+                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                         : isActive
-                          ? "bg-indigo-50 border-indigo-200"
-                          : "bg-slate-50 border-slate-100 opacity-50"
+                          ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800"
+                          : "bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 opacity-50"
                     }`}
                   >
                     <View className="flex-row items-center flex-1">
@@ -255,10 +259,10 @@ export function AssessmentHeader({
                         <Text
                           className={`text-sm font-bold ${
                             isDone
-                              ? "text-green-700"
+                              ? "text-green-700 dark:text-green-400"
                               : isActive
-                                ? "text-indigo-600"
-                                : "text-slate-400"
+                                ? "text-indigo-600 dark:text-indigo-400"
+                                : "text-slate-400 dark:text-slate-500"
                           }`}
                         >
                           {skill.label}
@@ -266,10 +270,10 @@ export function AssessmentHeader({
                         <Text
                           className={`text-[11px] mt-0.5 ${
                             isDone
-                              ? "text-green-500"
+                              ? "text-green-500 dark:text-green-600"
                               : isActive
-                                ? "text-indigo-400"
-                                : "text-slate-300"
+                                ? "text-indigo-400 dark:text-indigo-500"
+                                : "text-slate-300 dark:text-slate-600"
                           }`}
                         >
                           {isDone ? "Completed" : isActive ? "In Progress" : "Locked"}

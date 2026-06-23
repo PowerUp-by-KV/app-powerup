@@ -79,7 +79,7 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
         className="flex-1 bg-slate-50"
       >
         <View className="flex-1 w-full items-center justify-center p-6">
-          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
               style={{
                 width: 140,
@@ -98,10 +98,10 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
               />
             </View>
 
-            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
               Connection Timeout
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-4 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4 px-4 text-center">
               Could not load grammar section due to network delay. Please try again.
             </Text>
 
@@ -128,8 +128,8 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
 
   if (!currentQuestion) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text>No questions found for this section.</Text>
+      <View className="flex-1 items-center justify-center bg-white dark:bg-[#151620]">
+        <Text className="dark:text-white">No questions found for this section.</Text>
       </View>
     );
   }
@@ -189,91 +189,103 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-white"
+      className="bg-white dark:bg-[#151620]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         <ScrollView
-          className="flex-1 px-4 py-4"
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <AssessmentHeader
-            sectionName="Section C"
-            skillName="Grammar & Language Usage"
-            currentQuestion={currentQuestionIndex}
-            totalQuestions={questions.length}
-            onFinishTest={handleFinish}
-            sessionId={sessionId}
-            stopTimer={isSubmitting || isFinished}
-          />
+          <View className="px-4 pt-4">
+            <AssessmentHeader
+              sectionName="Section C"
+              skillName="Grammar & Language Usage"
+              currentQuestion={currentQuestionIndex}
+              totalQuestions={questions.length}
+              onFinishTest={handleFinish}
+              sessionId={sessionId}
+              stopTimer={isSubmitting || isFinished}
+            />
 
-          <GrammarQuestionComponent
-            question={currentQuestion as any}
-            questionIndex={currentQuestionIndex}
-            totalQuestions={questions.length}
-          />
+            <GrammarQuestionComponent
+              question={currentQuestion as any}
+              questionIndex={currentQuestionIndex}
+              totalQuestions={questions.length}
+            />
 
-          {isMCQ && currentQuestion.options ? (
-            <View className="mt-4">
-              {currentQuestion.options.map((option: any, idx: number) => {
-                return (
-                  <MCQOption
-                    key={idx}
-                    label={option.label || String.fromCharCode(65 + idx)}
-                    text={option.value}
-                    isSelected={currentAnswer === option.value}
-                    onSelect={() => selectAnswer(option.value)}
-                  />
-                );
-              })}
-            </View>
-          ) : (
-            <View className="mt-4">
-              <FillBlankInput
-                value={currentAnswer}
-                placeholder="Fill in the blank..."
-                onChange={(text: string) => selectAnswer(text)}
-              />
-            </View>
-          )}
-
-          <View className="flex-row justify-between mt-8 gap-4 mb-4">
-            <TouchableOpacity
-              className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
-                isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
-              }`}
-              onPress={handleNext}
-              disabled={isSubmitting}
-              activeOpacity={0.8}
-            >
-              {isSubmitting ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-bold text-base">
-                  {isLastQuestion ? "Check Answers" : "Next Question"}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {isMCQ && currentQuestion.options ? (
+              <View className="mt-4">
+                {currentQuestion.options.map((option: any, idx: number) => {
+                  return (
+                    <MCQOption
+                      key={idx}
+                      label={option.label || String.fromCharCode(65 + idx)}
+                      text={option.value}
+                      isSelected={currentAnswer === option.value}
+                      onSelect={() => selectAnswer(option.value)}
+                    />
+                  );
+                })}
+              </View>
+            ) : (
+              <View className="mt-4">
+                <FillBlankInput
+                  value={currentAnswer}
+                  placeholder="Fill in the blank..."
+                  onChange={(text: string) => selectAnswer(text)}
+                />
+              </View>
+            )}
           </View>
         </ScrollView>
+
+        {/* Docked Action Button Container */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingBottom: Platform.OS === "ios" ? 10 : 20,
+            paddingTop: 12,
+          }}
+          className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#151620]"
+        >
+          <TouchableOpacity
+            className={`w-full py-4 rounded-2xl items-center shadow-md ${
+              isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
+            }`}
+            onPress={handleNext}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-base">
+                {isLastQuestion ? "Check Answers" : "Next Question"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
-          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
+        <View className="absolute inset-0 bg-black/60 items-center justify-center z-[9999]">
+          <View className="bg-white dark:bg-[#1E1F2A] rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px] border border-slate-100 dark:border-slate-800">
             <LottieView
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
               style={{ width: 40, height: 40 }}
             />
-            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
-            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+              Submitting Answers…
+            </Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
               Please wait, do not close the app
             </Text>
           </View>

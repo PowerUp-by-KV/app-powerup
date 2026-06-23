@@ -1,15 +1,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef } from "react";
-import { View, Text, Animated } from "react-native";
+import { Text, Animated } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, {
-  Circle,
-  Path,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Stop,
-} from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 
 export function SplashScreen() {
   const router = useRouter();
@@ -121,30 +115,22 @@ export function SplashScreen() {
           </Text>
 
           {/* Stylized vector circular "o" frame */}
-          <View
+          <LinearGradient
+            colors={["#86efac", "#22d3ee", "#3b82f6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={{
-              width: 52,
-              height: 52,
+              width: 44,
+              height: 44,
+              borderRadius: 22,
               justifyContent: "center",
               alignItems: "center",
               marginTop: 4,
             }}
           >
-            <Svg width={46} height={46} viewBox="0 0 48 48" fill="none">
-              <Defs>
-                <SvgLinearGradient id="gradientO" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor="#86efac" />
-                  <Stop offset="50%" stopColor="#22d3ee" />
-                  <Stop offset="100%" stopColor="#3b82f6" />
-                </SvgLinearGradient>
-              </Defs>
-              <Circle cx="24" cy="24" r="22" fill="url(#gradientO)" />
-            </Svg>
-
             {/* Pinch Diamond Spark overlay */}
             <Animated.View
               style={{
-                position: "absolute",
                 transform: [{ scale: sparkScale }, { rotate: spin }],
               }}
             >
@@ -155,7 +141,7 @@ export function SplashScreen() {
                 />
               </Svg>
             </Animated.View>
-          </View>
+          </LinearGradient>
         </Animated.View>
       </LinearGradient>
     </Animated.View>

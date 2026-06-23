@@ -126,11 +126,13 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
   }, [isPlaying, currentTime, actualDuration, resolvedAudioUrl]);
 
   return (
-    <View className="flex-row items-center p-5 my-2.5 bg-slate-50 border border-slate-100/60 rounded-3xl shadow-sm w-full">
+    <View className="flex-row items-center p-5 my-2.5 bg-slate-50 dark:bg-[#1E1F2A] border border-slate-100/60 dark:border-slate-800 rounded-3xl shadow-sm w-full">
       <TouchableOpacity
         className={`${
-          hasPlayed ? "bg-slate-200 border-slate-300" : "bg-blue-500 active:bg-blue-600"
-        } w-14 h-14 rounded-full items-center justify-center shadow-md border border-blue-400/20`}
+          hasPlayed
+            ? "bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
+            : "bg-blue-500 active:bg-blue-600"
+        } w-14 h-14 rounded-full items-center justify-center shadow-md border border-blue-400/20 dark:border-blue-900/50`}
         onPress={isPlaying ? handlePause : handlePlay}
         disabled={isLoading || hasPlayed}
         activeOpacity={0.8}
@@ -145,7 +147,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
       </TouchableOpacity>
 
       <View className="ml-5">
-        <Text className="text-slate-900 font-extrabold text-sm mb-0.5">
+        <Text className="text-slate-900 dark:text-white font-extrabold text-sm mb-0.5">
           {isLoading
             ? "Loading Audio..."
             : isPlaying

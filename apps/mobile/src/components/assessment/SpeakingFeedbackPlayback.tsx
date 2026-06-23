@@ -101,7 +101,7 @@ export function SpeakingFeedbackPlayback({
   };
 
   return (
-    <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm w-full">
+    <View className="items-center py-6 my-2 bg-slate-50 dark:bg-[#1E1F2A] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm w-full">
       {/* Waveform Visualization of user's recorded audio */}
       <WaveformProgressBar currentTime={currentTime} duration={duration} />
 
@@ -121,7 +121,9 @@ export function SpeakingFeedbackPlayback({
               style={{ marginLeft: isPlaying ? 0 : 3 }}
             />
           </TouchableOpacity>
-          <Text className="text-slate-600 font-bold text-xs mt-2">Playback</Text>
+          <Text className="text-slate-600 dark:text-slate-400 font-bold text-xs mt-2">
+            Playback
+          </Text>
         </View>
 
         {/* Retake Button */}
@@ -133,7 +135,7 @@ export function SpeakingFeedbackPlayback({
           >
             <Feather name="rotate-ccw" size={24} color="white" />
           </TouchableOpacity>
-          <Text className="text-slate-600 font-bold text-xs mt-2">Retake</Text>
+          <Text className="text-slate-600 dark:text-slate-400 font-bold text-xs mt-2">Retake</Text>
         </View>
       </View>
 

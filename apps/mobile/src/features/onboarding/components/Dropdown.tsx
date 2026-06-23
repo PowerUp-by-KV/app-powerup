@@ -36,12 +36,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <TouchableOpacity
         onPress={() => setIsOpen(!isOpen)}
         activeOpacity={0.8}
-        className={`bg-slate-50 rounded-xl p-3.5 border flex-row justify-between items-center transition-all ${
-          isOpen ? "border-blue-500 bg-white" : "border-slate-200"
+        className={`rounded-xl p-3.5 border flex-row justify-between items-center transition-all ${
+          isOpen
+            ? "border-blue-500 bg-white dark:bg-slate-800"
+            : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/80"
         }`}
       >
         <Text
-          className={`text-sm ${selectedOption ? "text-slate-900 font-semibold" : "text-slate-400"}`}
+          className={`text-sm ${selectedOption ? "text-slate-900 dark:text-white font-semibold" : "text-slate-400 dark:text-slate-500"}`}
         >
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
@@ -54,16 +56,16 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
       {/* Expanded Inline Container */}
       {isOpen && (
-        <View className="mt-1.5 bg-white border border-slate-200 rounded-xl shadow-lg shadow-slate-100/50 overflow-hidden">
+        <View className="mt-1.5 bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg shadow-slate-100/50 dark:shadow-none overflow-hidden">
           {/* Compact Inline Search Bar — shown only when list is long */}
           {options.length > 5 && (
-            <View className="flex-row items-center bg-slate-50 border-b border-slate-100 px-3 py-1.5">
+            <View className="flex-row items-center bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700 px-3 py-1.5">
               <Feather name="search" size={14} color="#64748B" className="mr-1.5" />
               <TextInput
                 placeholder="Search..."
                 value={searchQuery}
                 onChangeText={setSearchQuery}
-                className="flex-1 h-7 text-xs text-slate-900"
+                className="flex-1 h-7 text-xs text-slate-900 dark:text-white"
                 placeholderTextColor="#94A3B8"
               />
               {searchQuery.length > 0 && (
@@ -96,13 +98,17 @@ export const Dropdown: React.FC<DropdownProps> = ({
                       setSearchQuery("");
                     }}
                     activeOpacity={0.7}
-                    className={`py-3 px-4 border-b border-slate-50 flex-row justify-between items-center last:border-b-0 ${
-                      isSelected ? "bg-blue-50/50" : "active:bg-slate-50"
+                    className={`py-3 px-4 border-b border-slate-50 dark:border-slate-700/50 flex-row justify-between items-center last:border-b-0 ${
+                      isSelected
+                        ? "bg-blue-50/50 dark:bg-blue-900/30"
+                        : "active:bg-slate-50 dark:active:bg-slate-800/50"
                     }`}
                   >
                     <Text
                       className={`text-sm ${
-                        isSelected ? "text-blue-600 font-bold" : "text-slate-700"
+                        isSelected
+                          ? "text-blue-600 dark:text-blue-400 font-bold"
+                          : "text-slate-700 dark:text-slate-300"
                       }`}
                     >
                       {item.label}

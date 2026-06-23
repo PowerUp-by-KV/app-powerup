@@ -13,6 +13,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useColorScheme } from "nativewind";
 
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
@@ -58,11 +59,21 @@ export function ProfileScreen() {
     loadSettings();
   }, []);
 
+  const { setColorScheme } = useColorScheme();
+
   const handleToggleDarkMode = async (value: boolean) => {
     setIsDarkMode(value);
+    setColorScheme(value ? "dark" : "light");
     try {
       if (Platform.OS === "web") {
         window.localStorage?.setItem("settings_dark_mode", String(value));
+        if (typeof document !== "undefined") {
+          if (value) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        }
       } else {
         await SecureStore.setItemAsync("settings_dark_mode", String(value));
       }
