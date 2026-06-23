@@ -121,7 +121,7 @@ export function RecordingControls({
   onStopRecording,
 }: BaseRecorderProps) {
   return (
-    <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+    <View className="items-center py-6 my-2 bg-slate-50 dark:bg-[#1E1F2A] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
       <View className="relative items-center justify-center mb-4">
         <PulsingHalo isRecording={isRecording} size={96} />
         <TouchableOpacity
@@ -143,20 +143,24 @@ export function RecordingControls({
 
       {isRecording ? (
         <View className="items-center">
-          <Text className="text-rose-600 font-extrabold text-3xl mb-1">{recordingDuration}s</Text>
+          <Text className="text-rose-600 dark:text-rose-400 font-extrabold text-3xl mb-1">
+            {recordingDuration}s
+          </Text>
           <View className="flex-row items-center mb-1">
             <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2" />
-            <Text className="text-rose-700 font-bold text-sm">Recording in progress...</Text>
+            <Text className="text-rose-700 dark:text-rose-300 font-bold text-sm">
+              Recording in progress...
+            </Text>
           </View>
           <Text className="text-xs font-medium text-slate-400">Max limit: {maxDuration}s</Text>
         </View>
       ) : (
         <View className="items-center">
-          <Text className="text-base font-bold text-slate-800 mb-1">
+          <Text className="text-base font-bold text-slate-800 dark:text-white mb-1">
             {recordingDuration > 0 ? "Re-record Response" : "Tap to Record Response"}
           </Text>
           {recordingDuration > 0 ? (
-            <Text className="text-xs font-semibold text-emerald-600">
+            <Text className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               ✓ Recorded ({recordingDuration}s)
             </Text>
           ) : (
@@ -178,7 +182,7 @@ export function Recorder({
   onStopRecording,
 }: BaseRecorderProps) {
   return (
-    <View className="items-center py-6 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm">
+    <View className="items-center py-6 my-2 bg-slate-50 dark:bg-[#1E1F2A] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
       <View className="relative items-center justify-center mb-3">
         <PulsingHalo isRecording={isRecording} size={80} />
         <TouchableOpacity
@@ -200,21 +204,21 @@ export function Recorder({
 
       {isRecording ? (
         <View className="items-center">
-          <Text className="text-rose-600 font-extrabold text-2xl mb-1">
+          <Text className="text-rose-600 dark:text-rose-400 font-extrabold text-2xl mb-1">
             {recordingDuration}s / {maxDuration}s
           </Text>
           <View className="flex-row items-center">
             <View className="w-2.5 h-2.5 rounded-full bg-rose-500 mr-2" />
-            <Text className="text-rose-700 font-bold text-xs">Recording...</Text>
+            <Text className="text-rose-700 dark:text-rose-300 font-bold text-xs">Recording...</Text>
           </View>
         </View>
       ) : (
         <View className="items-center">
-          <Text className="text-sm font-bold text-slate-800 mb-1">
+          <Text className="text-sm font-bold text-slate-800 dark:text-white mb-1">
             {recordingDuration > 0 ? "Re-record audio" : "Start Recording"}
           </Text>
           {recordingDuration > 0 && (
-            <Text className="text-xs font-semibold text-emerald-600">
+            <Text className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               ✓ Audio saved ({recordingDuration}s)
             </Text>
           )}
@@ -234,7 +238,7 @@ export function RecordingButton({
 }: BaseRecorderProps) {
   return (
     <View
-      className="items-center py-5 my-2 bg-slate-50 rounded-3xl border border-slate-100 shadow-sm"
+      className="items-center py-5 my-2 bg-slate-50 dark:bg-[#1E1F2A] rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm"
       style={disabled ? { opacity: 0.5 } : null}
     >
       <View className="relative items-center justify-center mb-3">
@@ -259,14 +263,16 @@ export function RecordingButton({
 
       {isRecording ? (
         <View className="items-center">
-          <Text className="text-rose-600 font-bold text-xl mb-0.5">
+          <Text className="text-rose-600 dark:text-rose-400 font-bold text-xl mb-0.5">
             {recordingDuration}s / {maxDuration}s
           </Text>
-          <Text className="text-xs font-semibold text-rose-700">Recording live...</Text>
+          <Text className="text-xs font-semibold text-rose-700 dark:text-rose-300">
+            Recording live...
+          </Text>
         </View>
       ) : (
         <View className="items-center">
-          <Text className="text-sm font-bold text-slate-800 mb-0.5">
+          <Text className="text-sm font-bold text-slate-800 dark:text-white mb-0.5">
             {disabled
               ? "Listen to audio first"
               : recordingDuration > 0
@@ -274,7 +280,7 @@ export function RecordingButton({
                 : "Tap to Speak"}
           </Text>
           {recordingDuration > 0 ? (
-            <Text className="text-xs font-semibold text-emerald-600">
+            <Text className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               ✓ Captured ({recordingDuration}s)
             </Text>
           ) : (

@@ -267,7 +267,7 @@ export function HomeScreen() {
                   source={{
                     uri: getAvatarUri(profile?.avatar_id, profile?.id),
                   }}
-                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+                  className="w-full h-full"
                 />
               </View>
             </Pressable>

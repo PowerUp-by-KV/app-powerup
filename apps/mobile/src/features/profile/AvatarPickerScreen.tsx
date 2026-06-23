@@ -85,22 +85,6 @@ export function AvatarPickerScreen() {
         </View>
         <Text className="text-slate-900 font-bold mb-4">{profile?.name ?? "—"}</Text>
 
-        {/* Premium Bitmoji-style Banner Prompt */}
-        <Pressable
-          onPress={() => router.push("/profile/avatar-creator" as never)}
-          className="w-full max-w-xs bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex-row items-center justify-between mb-6 active:opacity-90"
-        >
-          <View className="flex-1 mr-3">
-            <Text className="text-indigo-900 font-bold text-sm">✨ Avaturn Realistic 3D</Text>
-            <Text className="text-indigo-600 text-xs mt-1">
-              Create your highly realistic personal 3D avatar!
-            </Text>
-          </View>
-          <View className="w-8 h-8 rounded-full bg-indigo-600 items-center justify-center">
-            <Feather name="arrow-right" size={16} color="#fff" />
-          </View>
-        </Pressable>
-
         {/* Custom 2D Avatar Banner Prompt */}
         <Pressable
           onPress={() => router.push("/profile/custom-avatar" as never)}

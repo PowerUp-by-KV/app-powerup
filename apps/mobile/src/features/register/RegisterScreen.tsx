@@ -12,7 +12,8 @@ import {
   View,
 } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
@@ -177,7 +178,7 @@ export function RegisterScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-white"
+      className="bg-white dark:bg-[#18181b]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "padding"}
@@ -219,27 +220,20 @@ export function RegisterScreen() {
                   lumin
                 </Text>
 
-                <View
+                <LinearGradient
+                  colors={["#86efac", "#22d3ee", "#3b82f6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
                     justifyContent: "center",
                     alignItems: "center",
                     marginTop: 3,
                   }}
                 >
-                  <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
-                    <Defs>
-                      <LinearGradient id="gradientORegForm" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor="#86efac" />
-                        <Stop offset="50%" stopColor="#22d3ee" />
-                        <Stop offset="100%" stopColor="#3b82f6" />
-                      </LinearGradient>
-                    </Defs>
-                    <Circle cx="24" cy="24" r="22" fill="url(#gradientORegForm)" />
-                  </Svg>
-
-                  <View style={{ position: "absolute", transform: [{ rotate: "45deg" }] }}>
+                  <View style={{ transform: [{ rotate: "45deg" }] }}>
                     <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
                       <Path
                         d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
@@ -247,13 +241,13 @@ export function RegisterScreen() {
                       />
                     </Svg>
                   </View>
-                </View>
+                </LinearGradient>
               </View>
 
-              <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
+              <Text className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-1">
                 Welcome to Lumino
               </Text>
-              <Text className="text-xs text-slate-400 text-center mb-6 px-4">
+              <Text className="text-xs text-slate-400 dark:text-slate-300 text-center mb-6 px-4">
                 Join Hexaware Lumino to start your learning journey
               </Text>
 
@@ -272,13 +266,13 @@ export function RegisterScreen() {
                       );
                     }}
                     disabled={isLoading || !googleRequest}
-                    className={`flex-1 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm ${
+                    className={`flex-1 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex-row items-center justify-center shadow-sm ${
                       isLoading || !googleRequest ? "opacity-50" : ""
                     }`}
                     activeOpacity={0.7}
                   >
                     <AntDesign name="google" size={18} color="#DB4437" style={{ marginRight: 8 }} />
-                    <Text className="text-slate-800 font-bold text-sm">Google</Text>
+                    <Text className="text-slate-800 dark:text-white font-bold text-sm">Google</Text>
                   </TouchableOpacity>
                 </View>
               ) : null}
@@ -287,33 +281,39 @@ export function RegisterScreen() {
             {/* OTP Option */}
             <TouchableOpacity
               onPress={() => router.push("/verify-phone")}
-              className="w-full py-3.5 bg-white border border-slate-200 rounded-2xl flex-row items-center justify-center shadow-sm mb-2"
+              className="w-full py-3.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex-row items-center justify-center shadow-sm mb-2"
               activeOpacity={0.7}
             >
-              <Feather name="shield" size={16} color="#475569" style={{ marginRight: 8 }} />
-              <Text className="text-slate-800 font-bold text-sm">Sign up with OTP</Text>
+              <Feather name="shield" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
+              <Text className="text-slate-800 dark:text-white font-bold text-sm">
+                Sign up with OTP
+              </Text>
             </TouchableOpacity>
 
             {/* OR Separator */}
             <View className="flex-row items-center mb-6 mt-4">
-              <View className="flex-1 h-px bg-slate-200" />
-              <Text className="mx-4 text-xs font-medium text-slate-400">or</Text>
-              <View className="flex-1 h-px bg-slate-200" />
+              <View className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+              <Text className="mx-4 text-xs font-medium text-slate-400 dark:text-slate-500">
+                or
+              </Text>
+              <View className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
             </View>
 
             {/* Form Fields */}
             {/* First Name & Last Name */}
             <View className="flex-row gap-3 mb-4">
               <View className="flex-1">
-                <Text className="text-xs font-bold text-slate-700 mb-1.5">First Name</Text>
+                <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  First Name
+                </Text>
                 <View
-                  className={`bg-slate-50 border rounded-2xl px-4 py-3.5 ${
-                    errors.firstName ? "border-red-400" : "border-slate-200"
+                  className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 ${
+                    errors.firstName ? "border-red-400" : "border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   <TextInput
                     placeholder=""
-                    className="text-sm text-slate-900"
+                    className="text-sm text-slate-900 dark:text-white"
                     value={firstName}
                     onChangeText={(t) => {
                       setFirstName(t);
@@ -329,15 +329,17 @@ export function RegisterScreen() {
               </View>
 
               <View className="flex-1">
-                <Text className="text-xs font-bold text-slate-700 mb-1.5">Last Name</Text>
+                <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  Last Name
+                </Text>
                 <View
-                  className={`bg-slate-50 border rounded-2xl px-4 py-3.5 ${
-                    errors.lastName ? "border-red-400" : "border-slate-200"
+                  className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 ${
+                    errors.lastName ? "border-red-400" : "border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   <TextInput
                     placeholder=""
-                    className="text-sm text-slate-900"
+                    className="text-sm text-slate-900 dark:text-white"
                     value={lastName}
                     onChangeText={(t) => {
                       setLastName(t);
@@ -355,16 +357,18 @@ export function RegisterScreen() {
 
             {/* Mobile Number */}
             <View className="mb-4">
-              <Text className="text-xs font-bold text-slate-700 mb-1.5">Mobile Number</Text>
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Mobile Number
+              </Text>
               <View
-                className={`bg-slate-50 border rounded-2xl px-4 py-3.5 flex-row items-center ${
-                  errors.phone ? "border-red-400" : "border-slate-200"
+                className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 flex-row items-center ${
+                  errors.phone ? "border-red-400" : "border-slate-200 dark:border-slate-700"
                 }`}
               >
                 <Feather name="phone" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
                 <TextInput
                   placeholder="Enter your mobile number"
-                  className="flex-1 text-sm text-slate-900"
+                  className="flex-1 text-sm text-slate-900 dark:text-white"
                   value={phone}
                   onChangeText={(t) => {
                     setPhone(t);
@@ -378,18 +382,19 @@ export function RegisterScreen() {
               {!!errors.phone && <Text className="text-red-500 text-xs mt-1">{errors.phone}</Text>}
             </View>
 
-            {/* Email */}
             <View className="mb-4">
-              <Text className="text-xs font-bold text-slate-700 mb-1.5">Email</Text>
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Email
+              </Text>
               <View
-                className={`bg-slate-50 border rounded-2xl px-4 py-3.5 flex-row items-center ${
-                  errors.email ? "border-red-400" : "border-slate-200"
+                className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 flex-row items-center ${
+                  errors.email ? "border-red-400" : "border-slate-200 dark:border-slate-700"
                 }`}
               >
                 <Feather name="mail" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
                 <TextInput
                   placeholder="your@email.com"
-                  className="flex-1 text-sm text-slate-900"
+                  className="flex-1 text-sm text-slate-900 dark:text-white"
                   value={email}
                   onChangeText={(t) => {
                     setEmail(t);
@@ -406,16 +411,18 @@ export function RegisterScreen() {
 
             {/* Password */}
             <View className="mb-4">
-              <Text className="text-xs font-bold text-slate-700 mb-1.5">Password</Text>
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Password
+              </Text>
               <View
-                className={`bg-slate-50 border rounded-2xl px-4 py-3.5 flex-row items-center ${
-                  errors.password ? "border-red-400" : "border-slate-200"
+                className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 flex-row items-center ${
+                  errors.password ? "border-red-400" : "border-slate-200 dark:border-slate-700"
                 }`}
               >
                 <Feather name="lock" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
                 <TextInput
                   placeholder="Create a strong password"
-                  className="flex-1 text-sm text-slate-900"
+                  className="flex-1 text-sm text-slate-900 dark:text-white"
                   value={password}
                   onChangeText={(t) => {
                     setPassword(t);
@@ -451,16 +458,20 @@ export function RegisterScreen() {
 
             {/* Confirm Password */}
             <View className="mb-6">
-              <Text className="text-xs font-bold text-slate-700 mb-1.5">Confirm Password</Text>
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Confirm Password
+              </Text>
               <View
-                className={`bg-slate-50 border rounded-2xl px-4 py-3.5 flex-row items-center ${
-                  errors.confirmPassword ? "border-red-400" : "border-slate-200"
+                className={`bg-slate-50 dark:bg-slate-800 border rounded-2xl px-4 py-3.5 flex-row items-center ${
+                  errors.confirmPassword
+                    ? "border-red-400"
+                    : "border-slate-200 dark:border-slate-700"
                 }`}
               >
                 <Feather name="lock" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
                 <TextInput
                   placeholder="Enter password"
-                  className="flex-1 text-sm text-slate-900"
+                  className="flex-1 text-sm text-slate-900 dark:text-white"
                   value={confirmPassword}
                   onChangeText={(t) => {
                     setConfirmPassword(t);
@@ -503,12 +514,12 @@ export function RegisterScreen() {
                       ? "bg-[#3b82f6] border-[#3b82f6]"
                       : errors.terms
                         ? "border-red-400"
-                        : "border-slate-300"
+                        : "border-slate-300 dark:border-slate-600"
                   }`}
                 >
                   {agreedToTerms && <Feather name="check" size={14} color="white" />}
                 </View>
-                <Text className="text-slate-600 text-xs font-medium flex-1">
+                <Text className="text-slate-600 dark:text-slate-300 text-xs font-medium flex-1">
                   I agree to the Terms of Service and Privacy Policy
                 </Text>
               </TouchableOpacity>
@@ -535,7 +546,7 @@ export function RegisterScreen() {
 
             {/* Footer Link */}
             <View className="items-center mb-8">
-              <Text className="text-xs text-slate-500">
+              <Text className="text-xs text-slate-500 dark:text-slate-400">
                 Already have an account?{" "}
                 <Text className="text-blue-600 font-bold" onPress={() => router.push("/login")}>
                   Log In

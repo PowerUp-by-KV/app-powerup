@@ -18,7 +18,9 @@ export function MCQOption({ label: _label, text, isSelected, onSelect, disabled 
     >
       <View
         className={`flex-row items-center p-4 rounded-xl border-2 ${
-          isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"
+          isSelected
+            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400"
+            : "border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1E1F2A]"
         }`}
       >
         <View
@@ -29,7 +31,11 @@ export function MCQOption({ label: _label, text, isSelected, onSelect, disabled 
           {isSelected && <View className="w-2 h-2 bg-white rounded-full" />}
         </View>
         <View className="flex-1">
-          <Text className="text-gray-800 text-sm font-semibold leading-relaxed">{text}</Text>
+          <Text
+            className={`text-sm font-semibold leading-relaxed ${isSelected ? "text-gray-800 dark:text-white" : "text-gray-800 dark:text-gray-300"}`}
+          >
+            {text}
+          </Text>
         </View>
       </View>
     </Pressable>

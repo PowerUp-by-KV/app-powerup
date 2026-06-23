@@ -13,17 +13,26 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import Svg, { Circle, Path, Defs, LinearGradient, Stop } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
+import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 
 import { OtpInput } from "./components/OtpInput";
 import { OtpResendTimer } from "./components/OtpResendTimer";
 import { useSendEmailOtpMutation, useVerifyEmailOtpMutation } from "../../services/auth-api";
 import { onboardingApi } from "../../services/onboarding-api";
-import { getAuthSession } from "../../services/auth-storage";
+import {
+  saveAuthSession,
+  clearStaleLocalFlagsIfUserChanged,
+  saveLastLoggedInEmail,
+} from "../../services/auth-storage";
+import { useDispatch } from "react-redux";
+import { api } from "../../services/api";
+import { resetOnboarding } from "../../store/slices/onboardingSlice";
 
 export function VerifyEmailScreen() {
   const router = useRouter();
+  const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ email?: string; next?: string }>();
   const [email, setEmail] = useState(params.email ?? "");
@@ -32,7 +41,7 @@ export function VerifyEmailScreen() {
 
   const [sendOtp, { isLoading: isSending }] = useSendEmailOtpMutation();
   const [verifyOtp, { isLoading: isVerifying }] = useVerifyEmailOtpMutation();
-  const [getOnboardingStatus] = onboardingApi.useLazyGetOnboardingStatusQuery();
+  const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
   // Auto-send the OTP when arriving with an email pre-filled (post-signup flow).
   useEffect(() => {
@@ -59,25 +68,37 @@ export function VerifyEmailScreen() {
   const handleContinue = async () => {
     if (code.length !== 6) return;
     try {
-      await verifyOtp({ email: email.trim(), code }).unwrap();
-      const session = await getAuthSession();
-      const userId = session?.user?.id;
-      if (userId) {
-        try {
-          const status = await getOnboardingStatus(userId).unwrap();
-          if (status?.answers_present) {
-            const next = params.next ?? "/(tabs)";
-            router.replace(next as never);
-          } else {
-            router.replace("/onboarding" as never);
-          }
-        } catch (err) {
-          console.warn("Failed to check onboarding status, defaulting to /onboarding:", err);
-          router.replace("/onboarding" as never);
-        }
-      } else {
+      const resp = await verifyOtp({ email: email.trim(), code }).unwrap();
+
+      const loginEmail = email.trim();
+      await saveAuthSession(resp);
+
+      // Wait for secure storage to fully write before reading profile
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
+      // If a different email has logged in on this device, wipe stale local flags
+      // so they don't mistakenly mark the new user's onboarding/assessment as done.
+      await clearStaleLocalFlagsIfUserChanged(loginEmail);
+      // Persist the current email for future login comparisons
+      await saveLastLoggedInEmail(loginEmail);
+
+      // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
+      dispatch(api.util.resetApiState());
+      dispatch(resetOnboarding());
+
+      // Prefetch questions immediately upon successful handshake
+      prefetchOnboarding();
+
+      const userId = resp?.user?.id;
+      if (!userId) {
         router.replace("/onboarding" as never);
+        return;
       }
+
+      // Instantly route to onboarding. The RouteGuard will redirect to home if already onboarded.
+      const next = params.next ?? "/onboarding";
+      router.replace(next as never);
     } catch (err) {
       const data = (err as { data?: { detail?: string } })?.data;
       Alert.alert("Invalid code", data?.detail ?? "That code didn't match. Try again.");
@@ -92,7 +113,7 @@ export function VerifyEmailScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-[#18181b]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -133,27 +154,20 @@ export function VerifyEmailScreen() {
                   lumin
                 </Text>
 
-                <View
+                <LinearGradient
+                  colors={["#86efac", "#22d3ee", "#3b82f6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
                   style={{
-                    width: 38,
-                    height: 38,
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
                     justifyContent: "center",
                     alignItems: "center",
                     marginTop: 3,
                   }}
                 >
-                  <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
-                    <Defs>
-                      <LinearGradient id="gradientOEmailForm" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <Stop offset="0%" stopColor="#86efac" />
-                        <Stop offset="50%" stopColor="#22d3ee" />
-                        <Stop offset="100%" stopColor="#3b82f6" />
-                      </LinearGradient>
-                    </Defs>
-                    <Circle cx="24" cy="24" r="22" fill="url(#gradientOEmailForm)" />
-                  </Svg>
-
-                  <View style={{ position: "absolute", transform: [{ rotate: "45deg" }] }}>
+                  <View style={{ transform: [{ rotate: "45deg" }] }}>
                     <Svg width={34} height={34} viewBox="0 0 48 48" fill="none">
                       <Path
                         d="M24 10 C24 17, 17 24, 10 24 C17 24, 24 31, 24 38 C24 31, 31 24, 38 24 C31 24, 24 17, 24 10 Z"
@@ -161,13 +175,13 @@ export function VerifyEmailScreen() {
                       />
                     </Svg>
                   </View>
-                </View>
+                </LinearGradient>
               </View>
 
-              <Text className="text-2xl font-bold text-slate-900 text-center mb-1">
+              <Text className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-1">
                 Verify Your Email
               </Text>
-              <Text className="text-xs text-slate-400 text-center mb-6 px-4">
+              <Text className="text-xs text-slate-400 dark:text-slate-300 text-center mb-6 px-4">
                 {otpSent
                   ? `We sent a 6-digit code to ${email}`
                   : "Enter your email id to receive a one time password"}
@@ -176,8 +190,10 @@ export function VerifyEmailScreen() {
 
             {/* Email Field */}
             <View className="mb-4">
-              <Text className="text-xs font-bold text-slate-700 mb-1.5">Email ID</Text>
-              <View className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 flex-row items-center">
+              <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                Email ID
+              </Text>
+              <View className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 flex-row items-center">
                 <Feather name="mail" size={16} color="#94A3B8" style={{ marginRight: 8 }} />
                 <TextInput
                   value={email}
@@ -187,7 +203,7 @@ export function VerifyEmailScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   editable={!otpSent}
-                  className="flex-1 text-sm text-slate-900"
+                  className="flex-1 text-sm text-slate-900 dark:text-white"
                 />
               </View>
             </View>
@@ -212,14 +228,16 @@ export function VerifyEmailScreen() {
               <>
                 {/* OR / ENTER OTP Separator */}
                 <View className="flex-row items-center mb-6 mt-6">
-                  <View className="h-px flex-1 bg-slate-200" />
-                  <Text className="mx-4 text-xs font-medium text-slate-400 tracking-widest">
+                  <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+                  <Text className="mx-4 text-xs font-medium text-slate-400 dark:text-slate-500 tracking-widest">
                     ENTER OTP
                   </Text>
-                  <View className="h-px flex-1 bg-slate-200" />
+                  <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
                 </View>
 
-                <Text className="text-xs font-bold text-slate-700 mb-3">Enter 6-digit code</Text>
+                <Text className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">
+                  Enter 6-digit code
+                </Text>
                 <OtpInput length={6} value={code} onChange={setCode} />
 
                 <View className="mt-6 mb-2">
@@ -231,7 +249,7 @@ export function VerifyEmailScreen() {
                   onPress={() => router.push("/verify-phone")}
                   className="mt-4 items-center"
                 >
-                  <Text className="text-xs font-bold text-slate-800 underline">
+                  <Text className="text-xs font-bold text-slate-800 dark:text-white underline">
                     Use Mobile number Instead
                   </Text>
                 </Pressable>

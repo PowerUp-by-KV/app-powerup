@@ -99,7 +99,14 @@ export function LeaderboardScreen() {
             }}
           >
             <Image
-              source={{ uri: getAvatarUri(e.avatar, e.user_id) }}
+              source={{
+                uri: getAvatarUri(
+                  (e.is_you || e.user_id === profile?.id) && profile?.avatar_id
+                    ? profile.avatar_id
+                    : e.avatar,
+                  e.user_id,
+                ),
+              }}
               style={{ width: "100%", height: "100%", resizeMode: "cover" }}
             />
           </LinearGradient>
@@ -302,7 +309,12 @@ export function LeaderboardScreen() {
                 <View className="w-10 h-10 rounded-full bg-slate-100 mr-3 overflow-hidden justify-center items-center border border-slate-200/50">
                   <Image
                     source={{
-                      uri: getAvatarUri(item.avatar, item.user_id),
+                      uri: getAvatarUri(
+                        (item.is_you || item.user_id === profile?.id) && profile?.avatar_id
+                          ? profile.avatar_id
+                          : item.avatar,
+                        item.user_id,
+                      ),
                     }}
                     className="w-full h-full"
                     style={{ resizeMode: "cover" }}

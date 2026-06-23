@@ -12,7 +12,9 @@ export function MCQOption({ label: _label, text, isSelected, onSelect }: MCQOpti
   return (
     <TouchableOpacity
       className={`flex-row items-center p-4 mb-2 rounded-xl border-2 ${
-        isSelected ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"
+        isSelected
+          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400"
+          : "border-gray-300 dark:border-gray-700 bg-white dark:bg-[#1E1F2A]"
       }`}
       onPress={onSelect}
     >
@@ -23,7 +25,11 @@ export function MCQOption({ label: _label, text, isSelected, onSelect }: MCQOpti
       >
         {isSelected && <Text className="text-white font-bold">✓</Text>}
       </View>
-      <Text className="flex-1 text-gray-800 text-sm font-semibold leading-relaxed">{text}</Text>
+      <Text
+        className={`flex-1 text-sm font-semibold leading-relaxed ${isSelected ? "text-gray-800 dark:text-white" : "text-gray-800 dark:text-gray-300"}`}
+      >
+        {text}
+      </Text>
     </TouchableOpacity>
   );
 }
