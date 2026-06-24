@@ -11,7 +11,6 @@ interface MyLearningCardProps {
   daysCompleted: number;
   totalDays: number | null;
   onTrack: () => void;
-  onContinuePress: () => void;
 }
 
 function StatTileLight({
@@ -80,7 +79,6 @@ export function MyLearningCard({
   daysCompleted,
   totalDays,
   onTrack,
-  onContinuePress,
 }: MyLearningCardProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -88,75 +86,46 @@ export function MyLearningCard({
   const pct =
     totalDays != null && totalDays > 0 ? Math.round((daysCompleted / totalDays) * 100) : 0;
 
-  if (!isDark) {
-    const tileColors: readonly [string, string, ...string[]] = ["#4f46e5", "#3b82f6"];
-    return (
-      <View style={styles.card}>
-        <Text className="text-slate-900 text-base font-bold mb-4 text-center">Daily Progress</Text>
-        <View className="flex-row -mx-1 mb-5">
-          <StatTileLight value={streakCount} label="Streaks" colors={tileColors} />
-          <StatTileLight value={xpPoints} label="Xp points" colors={tileColors} />
-          <StatTileLight value={badgesCount} label="Badges" colors={tileColors} />
-        </View>
-        <View className="mb-5">
-          <View className="flex-row justify-between mb-2">
-            <Text className="text-slate-400 text-xs font-semibold">
-              {daysCompleted}
-              {totalDays != null ? ` / ${totalDays}` : ""} days
-            </Text>
-            <Text className="text-slate-300 text-xs font-semibold">{pct}%</Text>
-          </View>
-          <View style={styles.progressBarContainer}>
-            <LinearGradient
-              colors={["#3b82f6", "#22c55e", "#84cc16"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={[styles.progressBarFill, { width: `${pct}%` }]}
-            />
-          </View>
-        </View>
-        <Pressable onPress={onTrack} style={styles.buttonPressable} className="active:scale-98">
-          <LinearGradient
-            colors={["#4f46e5", "#3b82f6"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.buttonGradient}
-          >
-            <Text className="text-white font-bold text-base tracking-wide">Track my Learning</Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
-    );
-  }
+  const tileColors: readonly [string, string, ...string[]] = ["#4f46e5", "#3b82f6"];
 
   return (
     <View className="bg-white dark:bg-[#16161c] border border-slate-100 dark:border-slate-800/80 rounded-[24px] p-5 mb-5 shadow-sm shadow-slate-100 dark:shadow-none">
       <Text className="text-slate-900 dark:text-white text-base font-bold mb-4 text-center">
-        My Learning
+        Daily Progress
       </Text>
 
       <View className="flex-row -mx-1 mb-5">
-        <StatTileDark
-          value={streakCount}
-          label="Streaks"
-          iconType="ionicons"
-          iconName="flame"
-          iconColor="#3b82f6"
-        />
-        <StatTileDark
-          value={badgesCount}
-          label="Badges"
-          iconType="feather"
-          iconName="award"
-          iconColor="#a78bfa"
-        />
-        <StatTileDark
-          value={xpPoints}
-          label="XP Points"
-          iconType="feather"
-          iconName="zap"
-          iconColor="#fbbf24"
-        />
+        {isDark ? (
+          <>
+            <StatTileDark
+              value={streakCount}
+              label="Streaks"
+              iconType="ionicons"
+              iconName="flame"
+              iconColor="#3b82f6"
+            />
+            <StatTileDark
+              value={badgesCount}
+              label="Badges"
+              iconType="feather"
+              iconName="award"
+              iconColor="#a78bfa"
+            />
+            <StatTileDark
+              value={xpPoints}
+              label="XP Points"
+              iconType="feather"
+              iconName="zap"
+              iconColor="#fbbf24"
+            />
+          </>
+        ) : (
+          <>
+            <StatTileLight value={streakCount} label="Streaks" colors={tileColors} />
+            <StatTileLight value={xpPoints} label="Xp points" colors={tileColors} />
+            <StatTileLight value={badgesCount} label="Badges" colors={tileColors} />
+          </>
+        )}
       </View>
 
       <View className="mb-5">
@@ -172,21 +141,31 @@ export function MyLearningCard({
             colors={["#3b82f6", "#22c55e", "#84cc16"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            className="h-full rounded-full"
-            style={{ width: `${pct}%` }}
+            style={{ width: `${pct}%`, height: "100%", borderRadius: 9999 }}
           />
         </View>
       </View>
 
       <Pressable
-        onPress={onContinuePress}
+        onPress={onTrack}
         className="rounded-[9999px] overflow-hidden active:scale-[0.98] shadow-sm dark:shadow-none"
       >
-        <View className="bg-white py-3.5 items-center justify-center rounded-[9999px]">
-          <Text className="text-slate-900 font-extrabold text-sm tracking-wide">
-            Continue Learning
-          </Text>
-        </View>
+        {isDark ? (
+          <View className="bg-white py-3.5 items-center justify-center rounded-[9999px]">
+            <Text className="text-slate-900 font-extrabold text-sm tracking-wide">
+              Track my Learning
+            </Text>
+          </View>
+        ) : (
+          <LinearGradient
+            colors={["#4f46e5", "#3b82f6"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            <Text className="text-white font-bold text-base tracking-wide">Track my Learning</Text>
+          </LinearGradient>
+        )}
       </Pressable>
     </View>
   );

@@ -67,7 +67,10 @@ function AchievementCard({ a, locked }: { a: Achievement; locked: boolean }) {
               {a.title}
             </Text>
             <Text
-              className={`text-xs font-bold ${locked ? (isDark ? "text-[#8B93A8]" : "#A0A7B8") : "text-[#7174F6]"}`}
+              className={
+                "text-xs font-bold " +
+                (locked ? "text-[#A0A7B8] dark:text-[#8B93A8]" : "text-[#7174F6]")
+              }
             >
               +{a.xp_reward} XP
             </Text>

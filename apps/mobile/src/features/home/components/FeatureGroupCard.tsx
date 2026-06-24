@@ -64,8 +64,8 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
                 {item.subtitle}
               </Text>
             </View>
-            <View className="bg-[#bef264] dark:bg-white w-8 h-8 rounded-full items-center justify-center shadow-sm">
-              <Feather name="chevron-right" size={18} color={isDark ? "#121217" : "#1a202c"} />
+            <View className="bg-[#bef264] w-8 h-8 rounded-full items-center justify-center shadow-sm shadow-[#bef264]/20">
+              <Feather name="chevron-right" size={18} color="#1a202c" />
             </View>
           </Pressable>
         ))}

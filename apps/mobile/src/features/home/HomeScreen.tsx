@@ -250,18 +250,12 @@ export function HomeScreen() {
             <View>
               <Text className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
                 <Text className="text-[#4f46e5] dark:text-[#3b82f6]">Hi, </Text>
-                {isDark ? (
-                  <Text className="text-[#bef264]">{(firstName || "").toUpperCase()}!</Text>
-                ) : (
-                  <>
-                    <Text style={{ color: "#94a3b8" }}>
-                      {(firstName?.toUpperCase() || "").slice(0, 2)}
-                    </Text>
-                    <Text style={{ color: "#84cc16" }}>
-                      {(firstName?.toUpperCase() || "").slice(2)}!
-                    </Text>
-                  </>
-                )}
+                <Text className="text-[#94a3b8] dark:text-[#bef264]">
+                  {(firstName?.toUpperCase() || "").slice(0, 2)}
+                </Text>
+                <Text className="text-[#84cc16] dark:text-[#bef264]">
+                  {(firstName?.toUpperCase() || "").slice(2)}!
+                </Text>
               </Text>
               <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1 font-semibold">
                 Ready to learn something new?
@@ -294,7 +288,6 @@ export function HomeScreen() {
             daysCompleted={daysCompleted}
             totalDays={totalDays}
             onTrack={() => router.push("/(tabs)/achievements" as never)}
-            onContinuePress={handleContinuePress}
           />
 
           <View className="flex-row justify-between items-center mb-3 mt-1">
