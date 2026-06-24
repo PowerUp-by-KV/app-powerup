@@ -1,7 +1,8 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useColorScheme } from "nativewind";
 
 interface ContinueLearningCardProps {
   title: string;
@@ -10,70 +11,29 @@ interface ContinueLearningCardProps {
 }
 
 export function ContinueLearningCard({ title, subtitle, onPress }: ContinueLearningCardProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <Pressable onPress={onPress} style={styles.card} className="active:scale-[0.98]">
+    <Pressable
+      onPress={onPress}
+      className="flex-row items-center bg-white dark:bg-[#16161c] border border-slate-100 dark:border-slate-800/80 rounded-[24px] p-5 mb-4 shadow-sm shadow-slate-100 dark:shadow-none active:scale-[0.98]"
+    >
       <LinearGradient
-        colors={["#4f46e5", "#3b82f6"]}
+        colors={isDark ? ["#3b82f6", "#2563eb"] : ["#4f46e5", "#3b82f6"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.iconContainer}
+        className="w-12 h-12 rounded-[16px] items-center justify-center mr-3.5 shadow-sm shadow-indigo-100 dark:shadow-none"
       >
         <Feather name="book-open" size={22} color="#ffffff" />
       </LinearGradient>
-      <View style={styles.textContainer}>
-        <Text className="text-slate-900 font-bold text-base">{title}</Text>
-        <Text className="text-slate-500 text-xs mt-1">{subtitle}</Text>
+      <View className="flex-1">
+        <Text className="text-slate-900 dark:text-white font-bold text-base">{title}</Text>
+        <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1">{subtitle}</Text>
       </View>
-      <View style={styles.arrowContainer}>
+      <View className="bg-[#bef264] w-10 h-10 rounded-full items-center justify-center shadow-sm shadow-[#bef264]/20">
         <Feather name="chevron-right" size={22} color="#1a202c" />
       </View>
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(241, 245, 249, 0.6)",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 16,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-    shadowColor: "#4f46e5",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  arrowContainer: {
-    backgroundColor: "#bef264",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#bef264",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-});
