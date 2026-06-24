@@ -204,7 +204,7 @@ export default function OnboardingScreen() {
             onPress={() => {
               router.replace("/(tabs)" as any);
             }}
-            className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600 shadow-lg shadow-indigo-200"
+            className="w-full max-w-xs py-4 rounded-2xl flex-row items-center justify-center bg-indigo-600"
           >
             <Text className="text-white font-bold text-lg">Go to My Learning</Text>
           </TouchableOpacity>

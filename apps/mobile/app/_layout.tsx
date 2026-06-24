@@ -88,6 +88,10 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   }, [onboardingStatus, isOnboardingError]);
 
   useEffect(() => {
+    setIsPolling(true);
+  }, [userId]);
+
+  useEffect(() => {
     if (userId) {
       if (isOnboardingFetching) {
         setHasStartedFetching(true);

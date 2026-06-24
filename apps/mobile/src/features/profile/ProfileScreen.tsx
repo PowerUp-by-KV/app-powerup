@@ -84,7 +84,9 @@ export function ProfileScreen() {
     setNotificationsEnabled(value);
     try {
       if (Platform.OS === "web") {
-        window.localStorage?.setItem("settings_notifications", String(value));
+        if (typeof window !== "undefined") {
+          window.localStorage?.setItem("settings_notifications", String(value));
+        }
       } else {
         await SecureStore.setItemAsync("settings_notifications", String(value));
       }
