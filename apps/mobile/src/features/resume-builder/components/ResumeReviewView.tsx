@@ -1,9 +1,10 @@
-import React from "react";
-import { View, ScrollView, StyleSheet, Pressable, Image } from "react-native";
+import React, { useState } from "react";
+import { View, ScrollView, StyleSheet, Pressable, Image, Platform, Switch } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectBuilderDraft,
+  selectBuilderLocalPhotoUri,
   setCurrentStep,
   updateSummary,
   updateExperience,
@@ -11,232 +12,452 @@ import {
 } from "@/store/slices/resume-builder.slice";
 import { EnhanceButton } from "./EnhanceButton";
 import { Feather } from "@expo/vector-icons";
+import { resolveApiAssetUrl } from "@/services/api";
 
 interface ResumeReviewViewProps {
-  onContinue: () => void;
+  onContinue: (useAutoEnhance: boolean) => void;
   onBack: () => void;
 }
 
 export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
+  const localPhotoUri = useAppSelector(selectBuilderLocalPhotoUri);
+  const [useAutoEnhance, setUseAutoEnhance] = useState(false);
+
+  const photoToDisplay = localPhotoUri || draftResume.photoUrl;
+
+  console.log("[PHOTO_DEBUG] photoUrl is:", draftResume.photoUrl);
+
+  const isModernAts = draftResume.templateName === "modern_ats";
+
+  // Font family helper to simulate a clean serif document look for non-modern ATS
+  const docFont =
+    Platform.OS === "ios"
+      ? isModernAts
+        ? "Helvetica"
+        : "Georgia"
+      : isModernAts
+        ? "sans-serif"
+        : "serif";
+
+  // Colors based on template
+  const theme = {
+    primaryText: isModernAts ? "#2A4356" : "#000",
+    secondaryText: isModernAts ? "#5AA0C2" : "#333",
+    headerBg: isModernAts ? "#2A4356" : "transparent",
+    headerText: isModernAts ? "#fff" : "#000",
+    sidebarBg: isModernAts ? "#EDF1F4" : "transparent",
+    bodyText: "#333",
+  };
+
+  // Section Header Component
+  const SectionHeader = ({
+    title,
+    showEnhance = false,
+    textToEnhance = "",
+    onEnhanced = (t: string) => {},
+  }: any) => (
+    <View style={styles.sectionHeaderContainer}>
+      <View style={[styles.sectionTitleWrapper, { backgroundColor: theme.headerBg }]}>
+        <Text style={[styles.sectionTitle, { color: theme.headerText, fontFamily: docFont }]}>
+          {title}
+        </Text>
+        {showEnhance && (
+          <View style={styles.enhanceWrapper}>
+            <EnhanceButton
+              sectionName={title}
+              textToEnhance={textToEnhance}
+              onEnhanced={onEnhanced}
+            />
+          </View>
+        )}
+      </View>
+      {!isModernAts && <View style={styles.sectionDivider} />}
+    </View>
+  );
+
+  const renderContact = () => (
+    <View style={styles.leftSection}>
+      <SectionHeader title="CONTACT" />
+      <View style={styles.contactContainer}>
+        {draftResume.contact.phone ? (
+          <Text style={[styles.contactText, { fontFamily: docFont }]}>
+            <Text style={styles.boldText}>Tel:</Text> {draftResume.contact.phone}
+          </Text>
+        ) : null}
+        {draftResume.contact.email ? (
+          <Text style={[styles.contactText, { fontFamily: docFont }]}>
+            <Text style={styles.boldText}>Email:</Text> {draftResume.contact.email}
+          </Text>
+        ) : null}
+        {draftResume.contact.location ? (
+          <Text style={[styles.contactText, { fontFamily: docFont }]}>
+            <Text style={styles.boldText}>Loc:</Text> {draftResume.contact.location}
+          </Text>
+        ) : null}
+        {draftResume.contact.linkedin ? (
+          <Text style={[styles.contactText, { fontFamily: docFont }]}>
+            <Text style={styles.boldText}>LinkedIn:</Text> {draftResume.contact.linkedin}
+          </Text>
+        ) : null}
+        {draftResume.contact.github ? (
+          <Text style={[styles.contactText, { fontFamily: docFont }]}>
+            <Text style={styles.boldText}>GitHub:</Text> {draftResume.contact.github}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
+
+  const renderSkills = () => {
+    if (!draftResume.skills || draftResume.skills.length === 0) return null;
+    const isSingleColumn =
+      draftResume.layout !== "double_column" && draftResume.layout !== "two_column";
+
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="SKILLS" />
+        {isSingleColumn ? (
+          <Text style={[styles.bodyText, { fontFamily: docFont, lineHeight: 16 }]}>
+            {draftResume.skills.join(", ")}
+          </Text>
+        ) : (
+          <View style={styles.listContainer}>
+            {draftResume.skills.map((skill) => (
+              <Text key={skill} style={[styles.listItem, { fontFamily: docFont }]}>
+                {isModernAts ? skill : `• ${skill}`}
+              </Text>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const renderSummary = () => (
+    <View style={styles.rightSection}>
+      <SectionHeader
+        title="SUMMARY"
+        showEnhance={true}
+        textToEnhance={draftResume.summary}
+        onEnhanced={(t: string) => dispatch(updateSummary(t))}
+      />
+      <Text style={[styles.bodyText, { fontFamily: docFont }]}>
+        {draftResume.summary || "No professional summary added yet."}
+      </Text>
+    </View>
+  );
+
+  const renderEducation = () => {
+    if (!draftResume.education || draftResume.education.length === 0) return null;
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="EDUCATION" />
+        {draftResume.education.map((edu, idx) => (
+          <View key={edu.id || idx} style={styles.itemContainer}>
+            <Text style={[styles.itemTitle, { fontFamily: docFont }]}>{edu.degree}</Text>
+            <Text style={[styles.itemSubtitle, { fontFamily: docFont }]}>{edu.institution}</Text>
+            <Text style={[styles.itemDate, { fontFamily: docFont }]}>
+              {edu.startDate} - {edu.endDate || edu.endYear}
+            </Text>
+            {edu.gpa ? (
+              <Text style={[styles.bodyText, { fontFamily: docFont }]}>GPA: {edu.gpa}</Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderExperience = () => {
+    if (!draftResume.experience || draftResume.experience.length === 0) return null;
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="EXPERIENCE" />
+        {draftResume.experience.map((exp, idx) => (
+          <View key={exp.id || idx} style={styles.itemContainer}>
+            <View style={styles.itemHeaderRow}>
+              <View style={styles.itemTitleContainer}>
+                <Text style={[styles.itemTitle, { fontFamily: docFont, color: theme.primaryText }]}>
+                  {isModernAts ? (
+                    <Text style={{ color: theme.primaryText }}>
+                      {exp.role} |{" "}
+                      <Text style={{ color: theme.secondaryText, fontWeight: "normal" }}>
+                        {exp.company}
+                      </Text>
+                    </Text>
+                  ) : (
+                    <Text style={{ color: theme.primaryText }}>
+                      {exp.company}{" "}
+                      <Text style={{ color: theme.primaryText, fontWeight: "normal" }}>
+                        – {exp.role}
+                      </Text>
+                    </Text>
+                  )}
+                </Text>
+              </View>
+              <View style={styles.enhanceWrapperRow}>
+                <EnhanceButton
+                  sectionName={`Experience - ${exp.company}`}
+                  textToEnhance={exp.description}
+                  onEnhanced={(enhancedText) => {
+                    const updated = draftResume.experience.map((item) =>
+                      item.id === exp.id ? { ...item, description: enhancedText } : item,
+                    );
+                    dispatch(updateExperience(updated));
+                  }}
+                />
+              </View>
+            </View>
+            <Text
+              style={[
+                isModernAts ? styles.itemDate : styles.itemDateItalic,
+                { fontFamily: docFont },
+              ]}
+            >
+              {exp.startDate} - {exp.endDate || "Present"}
+            </Text>
+            {exp.description ? (
+              <Text style={[styles.bodyText, { fontFamily: docFont }]}>{exp.description}</Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderProjects = () => {
+    if (!draftResume.projects || draftResume.projects.length === 0) return null;
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="PROJECTS" />
+        {draftResume.projects.map((proj, idx) => (
+          <View key={proj.id || idx} style={styles.itemContainer}>
+            <View style={styles.itemHeaderRow}>
+              <View style={styles.itemTitleContainer}>
+                <Text style={[styles.itemTitle, { fontFamily: docFont }]}>{proj.name}</Text>
+              </View>
+              <View style={styles.enhanceWrapperRow}>
+                <EnhanceButton
+                  sectionName={`Project - ${proj.name}`}
+                  textToEnhance={proj.description}
+                  onEnhanced={(enhancedText) => {
+                    const updated = draftResume.projects.map((item) =>
+                      item.id === proj.id ? { ...item, description: enhancedText } : item,
+                    );
+                    dispatch(updateProjects(updated));
+                  }}
+                />
+              </View>
+            </View>
+            {proj.date ? (
+              <Text
+                style={[
+                  isModernAts ? styles.itemDate : styles.itemDateItalic,
+                  { fontFamily: docFont },
+                ]}
+              >
+                {proj.date}
+              </Text>
+            ) : null}
+            {proj.description ? (
+              <Text style={[styles.bodyText, { fontFamily: docFont }]}>{proj.description}</Text>
+            ) : null}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderCertifications = () => {
+    if (!draftResume.certifications || draftResume.certifications.length === 0) return null;
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="CERTIFICATIONS" />
+        <View style={styles.listContainer}>
+          {draftResume.certifications.map((cert) => (
+            <Text key={cert} style={[styles.listItem, { fontFamily: docFont }]}>
+              • {cert}
+            </Text>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
+  const renderLanguages = () => {
+    if (!draftResume.languages || draftResume.languages.length === 0) return null;
+    return (
+      <View style={styles.rightSection}>
+        <SectionHeader title="LANGUAGES" />
+        <Text style={[styles.bodyText, { fontFamily: docFont }]}>
+          {draftResume.languages.join(" • ")}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
       <View style={styles.container}>
-        {/* Header */}
+        {/* Header Navigation */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Preview</Text>
-          <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.editButtonRow}>
-            <Feather name="edit-2" size={14} color="#4b5563" style={{ marginRight: 6 }} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </Pressable>
+          <View style={styles.headerRight}>
+            <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.editButtonRow}>
+              <Feather name="edit-2" size={14} color="#3b82f6" style={{ marginRight: 6 }} />
+              <Text style={styles.editButtonText}>Edit</Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.formContainer}>
-          {/* Structured Resume Review Draft Container */}
-          <View style={styles.previewBox}>
-            <Text style={styles.previewHeader}>RESUME DRAFT PREVIEW</Text>
-
-            {/* Profile Info Row */}
-            <View style={styles.previewRow}>
-              {draftResume.photoUrl ? (
-                <Image source={{ uri: draftResume.photoUrl }} style={styles.previewPhoto} />
-              ) : (
-                <View style={styles.previewPhotoPlaceholder}>
-                  <Text style={styles.previewPhotoInitial}>
-                    {draftResume.contact.fullName?.charAt(0) || "U"}
-                  </Text>
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.previewName}>
-                  {draftResume.contact.fullName || "Your Full Name"}
-                </Text>
-                <Text style={styles.previewTitle}>
-                  {draftResume.occupation || "Target Occupation"}
-                </Text>
-                <Text style={styles.previewContactDetail}>
-                  ✉ {draftResume.contact.email || "email@example.com"} • 📞{" "}
-                  {draftResume.contact.phone || "Phone Number"}
-                </Text>
-                {draftResume.contact.location ? (
-                  <Text style={styles.previewContactDetail}>📍 {draftResume.contact.location}</Text>
-                ) : null}
-              </View>
+          {/* Auto Enhance Premium Toggle */}
+          <View style={[styles.toggleContainer, useAutoEnhance && styles.toggleContainerActive]}>
+            <View style={styles.toggleIconContainer}>
+              <Feather name="zap" size={20} color={useAutoEnhance ? "#3b82f6" : "#9ca3af"} />
             </View>
-
-            {/* Config metadata details */}
-            <View style={styles.metadataBadgeRow}>
-              <View style={styles.metadataBadge}>
-                <Text style={styles.metadataBadgeText}>
-                  Template: {draftResume.templateName.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.metadataBadge}>
-                <Text style={styles.metadataBadgeText}>
-                  Layout: {draftResume.layout.replace("_", " ").toUpperCase()}
-                </Text>
-              </View>
-              {draftResume.experienceLevel ? (
-                <View style={styles.metadataBadge}>
-                  <Text style={styles.metadataBadgeText}>Level: {draftResume.experienceLevel}</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {/* Professional Summary and AI Enhancer */}
-            <View style={styles.previewSection}>
-              <View style={styles.previewSectionHeader}>
-                <Text style={styles.previewSectionTitle}>Professional Summary</Text>
-                <EnhanceButton
-                  sectionName="Summary"
-                  textToEnhance={draftResume.summary}
-                  onEnhanced={(enhancedText) => {
-                    dispatch(updateSummary(enhancedText));
-                  }}
-                />
-              </View>
-              <Text style={styles.previewSummaryText}>
-                {draftResume.summary || "No professional summary added yet."}
+            <View style={{ flex: 1, paddingRight: 16 }}>
+              <Text style={[styles.toggleTitle, useAutoEnhance && { color: "#1d4ed8" }]}>
+                Auto Enhance with AI
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                Automatically polish and grammar-check your text before exporting.
               </Text>
             </View>
+            <Switch
+              value={useAutoEnhance}
+              onValueChange={setUseAutoEnhance}
+              trackColor={{ false: "#d1d5db", true: "#bfdbfe" }}
+              thumbColor={useAutoEnhance ? "#3b82f6" : "#f3f4f6"}
+            />
+          </View>
 
-            {/* Work Experiences */}
-            {draftResume.experience && draftResume.experience.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Work Experience</Text>
-                {draftResume.experience.map((exp, idx) => (
-                  <View key={exp.id || idx} style={styles.previewItem}>
-                    <View style={styles.previewItemHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.previewItemTitle}>{exp.role}</Text>
-                        <Text style={styles.previewItemCompany}>
-                          {exp.company} • {exp.location || "Remote"}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.previewItemDate}>
-                          {exp.startDate} - {exp.endDate || "Present"}
-                        </Text>
-                        <EnhanceButton
-                          sectionName={`Experience - ${exp.company}`}
-                          textToEnhance={exp.description}
-                          onEnhanced={(enhancedText) => {
-                            const updated = draftResume.experience.map((item) =>
-                              item.id === exp.id ? { ...item, description: enhancedText } : item,
-                            );
-                            dispatch(updateExperience(updated));
-                          }}
+          {/* Document Preview Box */}
+          <View style={styles.documentBox}>
+            {draftResume.layout === "double_column" || draftResume.layout === "two_column" ? (
+              <View style={styles.doubleColumnLayout}>
+                {/* LEFT COLUMN (Sidebar) */}
+                <View style={[styles.leftColumn, { backgroundColor: theme.sidebarBg }]}>
+                  <View style={styles.leftColumnContent}>
+                    {photoToDisplay ? (
+                      <View style={styles.docPhotoWrapper}>
+                        <Image
+                          source={{ uri: photoToDisplay }}
+                          style={styles.docPhoto}
+                          resizeMode="cover"
                         />
                       </View>
-                    </View>
-                    {exp.description ? (
-                      <Text style={styles.previewItemDesc}>{exp.description}</Text>
-                    ) : null}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Education Items */}
-            {draftResume.education && draftResume.education.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Education</Text>
-                {draftResume.education.map((edu, idx) => (
-                  <View key={edu.id || idx} style={styles.previewItem}>
-                    <View style={styles.previewItemHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.previewItemTitle}>{edu.degree}</Text>
-                        <Text style={styles.previewItemCompany}>
-                          {edu.institution} {edu.field ? `• ${edu.field}` : ""}
+                    ) : (
+                      <View style={styles.docPhotoPlaceholder}>
+                        <Text style={styles.docPhotoInitial}>
+                          {draftResume.contact.fullName?.charAt(0) || "U"}
                         </Text>
                       </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <Text style={styles.previewItemDate}>
-                          {edu.startDate} - {edu.endDate || edu.endYear}
-                        </Text>
-                      </View>
-                    </View>
-                    {edu.gpa ? <Text style={styles.previewItemDesc}>GPA: {edu.gpa}</Text> : null}
+                    )}
+                    {renderContact()}
+                    {renderSkills()}
                   </View>
-                ))}
-              </View>
-            )}
-
-            {/* Skills chip display */}
-            {draftResume.skills && draftResume.skills.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Skills</Text>
-                <View style={styles.chipRow}>
-                  {draftResume.skills.map((skill) => (
-                    <View key={skill} style={styles.previewChip}>
-                      <Text style={styles.previewChipText}>{skill}</Text>
-                    </View>
-                  ))}
                 </View>
-              </View>
-            )}
 
-            {/* Spoken Languages */}
-            {draftResume.languages && draftResume.languages.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Languages</Text>
-                <View style={styles.chipRow}>
-                  {draftResume.languages.map((lang) => (
-                    <View key={lang} style={styles.previewChip}>
-                      <Text style={styles.previewChipText}>{lang}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Certifications list */}
-            {draftResume.certifications && draftResume.certifications.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Certifications</Text>
-                <View style={styles.chipRow}>
-                  {draftResume.certifications.map((cert) => (
-                    <View key={cert} style={styles.previewChip}>
-                      <Text style={styles.previewChipText}>{cert}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Projects list and AI Enhancer */}
-            {draftResume.projects && draftResume.projects.length > 0 && (
-              <View style={styles.previewSection}>
-                <Text style={styles.previewSectionTitle}>Projects</Text>
-                {draftResume.projects.map((proj, idx) => (
-                  <View key={proj.id || idx} style={styles.previewItem}>
-                    <View style={styles.previewItemHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.previewItemTitle}>{proj.name}</Text>
-                        {proj.date ? (
-                          <Text style={styles.previewItemCompany}>{proj.date}</Text>
-                        ) : null}
-                      </View>
-                      <View style={{ alignItems: "flex-end" }}>
-                        <EnhanceButton
-                          sectionName={`Project - ${proj.name}`}
-                          textToEnhance={proj.description}
-                          onEnhanced={(enhancedText) => {
-                            const updated = draftResume.projects.map((item) =>
-                              item.id === proj.id ? { ...item, description: enhancedText } : item,
-                            );
-                            dispatch(updateProjects(updated));
-                          }}
-                        />
-                      </View>
-                    </View>
-                    {proj.description ? (
-                      <Text style={styles.previewItemDesc}>{proj.description}</Text>
-                    ) : null}
+                {/* RIGHT COLUMN (Main Content) */}
+                <View style={styles.rightColumn}>
+                  <View style={styles.docHeaderContainer}>
+                    <Text
+                      style={[styles.docName, { fontFamily: docFont, color: theme.primaryText }]}
+                    >
+                      {draftResume.contact.fullName?.toUpperCase() || "YOUR NAME"}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.docOccupation,
+                        { fontFamily: docFont, color: theme.secondaryText },
+                      ]}
+                    >
+                      {isModernAts
+                        ? draftResume.occupation?.toUpperCase()
+                        : draftResume.occupation || "Target Occupation"}
+                    </Text>
                   </View>
-                ))}
+
+                  {renderSummary()}
+                  {renderEducation()}
+                  {renderExperience()}
+                  {renderProjects()}
+                  {renderCertifications()}
+                  {renderLanguages()}
+                </View>
+              </View>
+            ) : (
+              // SINGLE COLUMN LAYOUT
+              <View style={styles.singleColumnLayout}>
+                <View
+                  style={[styles.docHeaderContainer, { alignItems: "center", marginBottom: 16 }]}
+                >
+                  {photoToDisplay ? (
+                    <View
+                      style={[styles.docPhotoWrapper, { alignSelf: "center", marginBottom: 12 }]}
+                    >
+                      <Image
+                        source={{ uri: photoToDisplay }}
+                        style={styles.docPhoto}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  ) : draftResume.photoUrl ? (
+                    <View
+                      style={[
+                        styles.docPhotoPlaceholder,
+                        { alignSelf: "center", marginBottom: 12 },
+                      ]}
+                    >
+                      <Text style={styles.docPhotoInitial}>
+                        {draftResume.contact.fullName?.charAt(0) || "U"}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.docName,
+                      { fontFamily: docFont, color: theme.primaryText, textAlign: "center" },
+                    ]}
+                  >
+                    {draftResume.contact.fullName?.toUpperCase() || "YOUR NAME"}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      justifyContent: "center",
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text style={[styles.contactTextCentered, { fontFamily: docFont }]}>
+                      {draftResume.contact.phone}
+                    </Text>
+                    <Text style={[styles.contactTextCentered, { fontFamily: docFont }]}>
+                      {" "}
+                      | {draftResume.contact.email}
+                    </Text>
+                    <Text style={[styles.contactTextCentered, { fontFamily: docFont }]}>
+                      {" "}
+                      | {draftResume.contact.location}
+                    </Text>
+                    <Text style={[styles.contactTextCentered, { fontFamily: docFont }]}>
+                      {" "}
+                      | {draftResume.contact.linkedin}
+                    </Text>
+                  </View>
+                </View>
+
+                {renderSummary()}
+                {renderExperience()}
+                {renderEducation()}
+                {renderSkills()}
+                {renderProjects()}
+                {renderCertifications()}
+                {renderLanguages()}
               </View>
             )}
           </View>
@@ -247,7 +468,7 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
               <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
               <Text style={styles.backButtonText}>Back</Text>
             </Pressable>
-            <Pressable onPress={onContinue} style={styles.continueButton}>
+            <Pressable onPress={() => onContinue(useAutoEnhance)} style={styles.continueButton}>
               <Text style={styles.continueButtonText}>Export</Text>
               <Feather name="arrow-right" size={16} color="white" style={{ marginLeft: 6 }} />
             </Pressable>
@@ -259,243 +480,302 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flex: 1,
-    backgroundColor: "#f9fafb",
-  },
-  contentContainer: {
-    paddingBottom: 48,
-  },
-  container: {
-    flex: 1,
-  },
+  scrollContainer: { flex: 1, backgroundColor: "#f3f4f6" },
+  contentContainer: { paddingBottom: 48 },
+  container: { flex: 1 },
   header: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "#f3f4f6",
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
+    position: "relative",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1f2937",
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
+  headerRight: {
+    position: "absolute",
+    right: 16,
   },
   editButtonRow: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#4b5563",
-  },
-  formContainer: {
-    padding: 16,
-  },
-  previewBox: {
+  editButtonText: { fontSize: 13, fontWeight: "700", color: "#3b82f6" },
+  formContainer: { padding: 16 },
+
+  // Toggle Styles
+  toggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: "white",
-    borderRadius: 24,
-    padding: 24,
+    padding: 16,
+    borderRadius: 16,
+    width: "100%",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  toggleContainerActive: {
+    borderColor: "#bfdbfe",
+    backgroundColor: "#f8fafc",
+  },
+  toggleIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#eff6ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  toggleTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1f2937",
+    marginBottom: 4,
+  },
+  toggleSubtitle: {
+    fontSize: 12,
+    color: "#6b7280",
+    lineHeight: 16,
+  },
+
+  // Document Styles
+  documentBox: {
+    backgroundColor: "white",
     marginBottom: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    borderRadius: 0, // Sharp corners like paper
+    overflow: "hidden",
   },
-  previewHeader: {
-    fontSize: 10,
-    fontWeight: "bold",
-    color: "#9ca3af",
-    letterSpacing: 1.5,
-    marginBottom: 12,
-    textAlign: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    paddingBottom: 6,
-  },
-  previewRow: {
+  doubleColumnLayout: {
     flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
+    minHeight: 600, // Ensure sidebar stretches
   },
-  previewPhoto: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: "#e5e7eb",
+  singleColumnLayout: {
+    flexDirection: "column",
+    padding: 24,
   },
-  previewPhotoPlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#e5e7eb",
+  leftColumn: {
+    flex: 3.5, // Approx 35%
+  },
+  leftColumnContent: {
+    padding: 16,
+  },
+  rightColumn: {
+    flex: 6.5, // Approx 65%
+    padding: 16,
+  },
+
+  // Left Column Content
+  docPhotoWrapper: {
+    width: 80,
+    height: 80,
+    marginBottom: 16,
+    borderRadius: 40,
+  },
+  docPhoto: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#ccc",
+  },
+  docPhotoPlaceholder: {
+    width: 80,
+    height: 80,
+    backgroundColor: "#d1d5db",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 12,
-  },
-  previewPhotoInitial: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#6b7280",
-  },
-  previewName: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#111827",
-  },
-  previewTitle: {
-    fontSize: 12,
-    color: "#4b5563",
-    marginTop: 2,
-  },
-  previewContactDetail: {
-    fontSize: 10,
-    color: "#6b7280",
-    marginTop: 2,
-  },
-  metadataBadgeRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    paddingBottom: 10,
   },
-  metadataBadge: {
-    backgroundColor: "#f3f4f6",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    marginRight: 6,
+  docPhotoInitial: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#4b5563",
+  },
+
+  // Right Column Content
+  docHeaderContainer: {
+    marginBottom: 16,
+  },
+  docName: {
+    fontSize: 24, // Enhanced size
+    fontWeight: "900", // Extra bold for prominence
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
     marginBottom: 4,
   },
-  metadataBadgeText: {
-    fontSize: 9,
-    fontWeight: "bold",
-    color: "#4b5563",
+  docOccupation: {
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: "600",
   },
-  previewSection: {
-    marginBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f9fafb",
-    paddingBottom: 12,
+
+  // Section Headers
+  sectionHeaderContainer: {
+    marginBottom: 8,
   },
-  previewSectionHeader: {
+  sectionTitleWrapper: {
+    alignSelf: "stretch",
+    paddingLeft: 8,
+    paddingRight: 4,
+    paddingVertical: 2,
+    marginBottom: 2,
+    borderRadius: 2,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    minHeight: 24, // keep tall enough for the button
   },
-  previewSectionTitle: {
-    fontSize: 13,
+  sectionTitle: {
+    fontSize: 11,
     fontWeight: "bold",
-    color: "#2563eb",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
-  previewSummaryText: {
-    fontSize: 12,
-    color: "#374151",
-    lineHeight: 16,
+  sectionDivider: {
+    height: 1,
+    backgroundColor: "#000",
+    marginTop: 0,
+    marginBottom: 4,
   },
-  previewItem: {
+  enhanceWrapper: {
+    transform: [{ scale: 0.75 }],
+    marginVertical: -8, // Offset the padding/scale
+    marginRight: -6,
+  },
+  enhanceWrapperRow: {
+    transform: [{ scale: 0.75 }],
+    marginTop: -6,
+    marginRight: -6,
+  },
+
+  // Shared Components
+  leftSection: {
+    marginBottom: 16,
+  },
+  rightSection: {
     marginBottom: 12,
   },
-  previewItemHeader: {
+  contactContainer: {
+    gap: 4,
+  },
+  contactText: {
+    fontSize: 9,
+    color: "#333",
+    lineHeight: 12,
+    flexWrap: "wrap", // Prevent awkward wrapping out of bounds
+  },
+  contactTextCentered: {
+    fontSize: 10,
+    color: "#333",
+  },
+  boldText: {
+    fontWeight: "bold",
+    color: "#333",
+  },
+  bodyText: {
+    fontSize: 9,
+    color: "#333",
+    lineHeight: 13,
+    textAlign: "left", // Modern ATS uses left align usually
+  },
+  listContainer: {
+    gap: 2,
+  },
+  listItem: {
+    fontSize: 9,
+    color: "#333",
+    lineHeight: 13,
+  },
+
+  // Item Styles
+  itemContainer: {
+    marginBottom: 8,
+  },
+  itemHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 4,
   },
-  previewItemTitle: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#1f2937",
+  itemTitleContainer: {
+    flex: 1,
+    paddingRight: 8,
   },
-  previewItemCompany: {
-    fontSize: 11,
-    color: "#4b5563",
-    marginTop: 2,
-  },
-  previewItemDate: {
+  itemTitle: {
     fontSize: 10,
-    color: "#6b7280",
+    fontWeight: "bold",
+    color: "#000",
   },
-  previewItemDesc: {
-    fontSize: 11,
-    color: "#4b5563",
-    lineHeight: 15,
-    marginTop: 2,
+  itemSubtitle: {
+    fontSize: 9,
+    color: "#000",
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    marginTop: 4,
+  itemDate: {
+    fontSize: 9,
+    color: "#555",
+    marginBottom: 2,
   },
-  previewChip: {
-    backgroundColor: "#eff6ff",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginRight: 6,
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: "#bfdbfe",
+  itemDateItalic: {
+    fontSize: 9,
+    color: "#555",
+    fontStyle: "italic",
+    marginBottom: 2,
   },
-  previewChipText: {
-    fontSize: 11,
-    fontWeight: "500",
-    color: "#1d4ed8",
-  },
+
+  // Navigation Footer
   footerRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
     marginTop: 8,
-    gap: 16,
+    gap: 12,
   },
   backButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
-    paddingHorizontal: 20,
+    backgroundColor: "white",
     paddingVertical: 16,
     borderRadius: 30,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
+    borderWidth: 1.5,
+    borderColor: "#e5e7eb",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#6b7280",
-  },
+  backButtonText: { fontSize: 15, fontWeight: "700", color: "#4b5563" },
   continueButton: {
-    flex: 1,
+    flex: 2, // Give continue button more weight
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#3b82f6",
-    paddingHorizontal: 20,
     paddingVertical: 16,
     borderRadius: 30,
     shadowColor: "#3b82f6",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "white",
-  },
+  continueButtonText: { fontSize: 15, fontWeight: "700", color: "white" },
 });

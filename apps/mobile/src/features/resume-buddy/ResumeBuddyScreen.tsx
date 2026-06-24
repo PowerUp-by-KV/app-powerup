@@ -23,11 +23,11 @@ export function ResumeBuddyScreen() {
   // Guard against duplicate submissions
   const submittingRef = useRef(false);
 
-  const handleAnalyze = async (domain: string) => {
+  const handleAnalyze = async (domain: string, file?: any) => {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setStep("loading");
-    await analyze(domain);
+    await analyze(domain, file);
     submittingRef.current = false;
   };
 

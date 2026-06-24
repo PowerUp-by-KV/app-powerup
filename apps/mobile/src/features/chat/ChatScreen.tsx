@@ -12,6 +12,8 @@ import {
   Text,
   TextInput,
   View,
+  Keyboard,
+  KeyboardEvent,
 } from "react-native";
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -278,6 +280,22 @@ export function ChatScreen() {
   const [savedInput, setSavedInput] = useState("");
   const [localBookmarks, setLocalBookmarks] = useState<Record<string, boolean>>({});
   const sendLockRef = useRef(false);
+
+  const [androidKeyboardHeight, setAndroidKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    const showSub = Keyboard.addListener("keyboardDidShow", (e: KeyboardEvent) => {
+      setAndroidKeyboardHeight(e.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // ── Existing API hooks (NOT modified) ──
   const { data: messages = [], isLoading: messagesLoading } = useGetChatMessagesQuery(
@@ -665,7 +683,7 @@ export function ChatScreen() {
         {/* ═══ BODY ═════════════════════════════════════════════════ */}
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}
+          style={{ flex: 1, paddingBottom: Platform.OS === "android" ? androidKeyboardHeight : 0 }}
         >
           {empty ? (
             /* ═══ SCREEN 1: EMPTY STATE ═══════════════════════════ */
@@ -773,9 +791,16 @@ export function ChatScreen() {
                         opacity: busy ? 0.5 : 1,
                       }}
                     >
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
                         <Feather name="mic" size={16} color="#3B5BF6" />
-                        <Text style={{ color: "#3B5BF6", fontWeight: "600", fontSize: 14 }}>
+                        <Text
+                          style={{
+                            flexShrink: 1,
+                            color: "#3B5BF6",
+                            fontWeight: "600",
+                            fontSize: 14,
+                          }}
+                        >
                           {qa1.label}
                         </Text>
                       </View>
@@ -855,31 +880,28 @@ export function ChatScreen() {
 
               {/* ── Quick action pills — FIXED at bottom, never shrinks ─ */}
               {quickActions.length > 0 && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={s.chatPillsRow}
-                  style={s.chatPillsContainer}
-                >
-                  {[...quickActions]
-                    .sort((a, b) => a.order_index - b.order_index)
-                    .map((qa) => (
-                      <Pressable
-                        key={qa.id}
-                        onPress={() => handleQuickAction(qa.id, qa.label, qa.prompt_template)}
-                        disabled={busy}
-                        style={[s.chatPill, { opacity: busy ? 0.5 : 1 }]}
-                      >
-                        <Text style={s.chatPillText}>{qa.label}</Text>
-                        <Feather
-                          name="arrow-right"
-                          size={13}
-                          color="#fff"
-                          style={{ marginLeft: 4 }}
-                        />
-                      </Pressable>
-                    ))}
-                </ScrollView>
+                <View style={s.chatPillsContainer}>
+                  <View style={s.chatPillsRow}>
+                    {[...quickActions]
+                      .sort((a, b) => a.order_index - b.order_index)
+                      .map((qa) => (
+                        <Pressable
+                          key={qa.id}
+                          onPress={() => handleQuickAction(qa.id, qa.label, qa.prompt_template)}
+                          disabled={busy}
+                          style={[s.chatPill, { opacity: busy ? 0.5 : 1 }]}
+                        >
+                          <Text style={s.chatPillText}>{qa.label}</Text>
+                          <Feather
+                            name="arrow-right"
+                            size={13}
+                            color="#fff"
+                            style={{ marginLeft: 4 }}
+                          />
+                        </Pressable>
+                      ))}
+                  </View>
+                </View>
               )}
             </>
           )}
@@ -1025,13 +1047,17 @@ const s = StyleSheet.create({
   inCardSuggestionChipText: { fontSize: 12, color: "#666666" },
 
   // ── Chat pills (above input in chat mode) ──
-  chatPillsContainer: { maxHeight: 44, borderTopWidth: 1, borderTopColor: C.border },
-  chatPillsRow: {
+  chatPillsContainer: {
+    borderTopWidth: 1,
+    borderTopColor: C.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
+  },
+  chatPillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     alignItems: "center",
-    flexShrink: 0,
   },
   chatPill: {
     flexDirection: "row",

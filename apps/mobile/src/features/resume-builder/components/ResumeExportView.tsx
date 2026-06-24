@@ -18,7 +18,7 @@ import {
   resetBuilderState,
 } from "@/store/slices/resume-builder.slice";
 import {
-  useLazyExportBuiltResumePdfQuery,
+  useLazyExportBuiltResumeQuery,
   useUpdateBuiltResumeMutation,
 } from "@/services/resume-builder-api";
 import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
@@ -26,40 +26,44 @@ import { useRouter } from "expo-router";
 
 interface ResumeExportViewProps {
   onBack: () => void;
+  useAutoEnhance: boolean;
 }
 
-export function ResumeExportView({ onBack }: ResumeExportViewProps) {
+export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewProps) {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const isDirty = useAppSelector(selectBuilderIsDirty);
 
-  const [triggerExport] = useLazyExportBuiltResumePdfQuery();
+  const [triggerExport] = useLazyExportBuiltResumeQuery();
   const [updateBuiltResume] = useUpdateBuiltResumeMutation();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [cachedPdfUrl, setCachedPdfUrl] = useState<string | null>(null);
 
-  // Helper to ensure we have a saved & generated PDF URL
-  const getPdfUrl = async (): Promise<string | null> => {
+  // Helper to ensure we have a saved & generated export URL
+  const getExportUrl = async (fileType: "pdf" | "docx" = "pdf"): Promise<string | null> => {
     try {
-      // If we already generated it and no changes were made, use the cached URL instantly!
-      if (cachedPdfUrl && !isDirty) {
-        return cachedPdfUrl;
-      }
-
       setIsProcessing(true);
-      if (isDirty) {
-        await updateBuiltResume(draftResume).unwrap();
-      }
-      const result = await triggerExport({ auto_enhance: false }).unwrap();
+      // ALWAYS force-save the current state (including layout choice) before exporting.
+      console.log(
+        "[EXPORT] draftResume.layout at export time:",
+        draftResume.layout,
+        "templateName:",
+        draftResume.templateName,
+      );
+      await updateBuiltResume(draftResume).unwrap();
+      const result = await triggerExport({
+        auto_enhance: useAutoEnhance,
+        file_type: fileType,
+      }).unwrap();
       if (result?.url) {
-        setCachedPdfUrl(result.url);
+        if (fileType === "pdf") setCachedPdfUrl(result.url);
         return result.url;
       }
-      throw new Error("Export response did not contain PDF URL");
+      throw new Error(`Export response did not contain ${fileType.toUpperCase()} URL`);
     } catch (error) {
-      console.warn("PDF Export failure:", error);
+      console.warn(`${fileType.toUpperCase()} Export failure:`, error);
       Alert.alert("Export Failed", "Failed to generate your resume. Please try again.");
       return null;
     } finally {
@@ -67,37 +71,49 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
     }
   };
 
+  const getBypassedUrl = (url: string) => {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}t=${Date.now()}`;
+  };
+
   const handleDownloadPdf = async () => {
-    const url = await getPdfUrl();
+    const url = await getExportUrl("pdf");
     if (url) {
-      await Linking.openURL(url);
+      await Linking.openURL(getBypassedUrl(url));
+    }
+  };
+
+  const handleDownloadDocx = async () => {
+    const url = await getExportUrl("docx");
+    if (url) {
+      await Linking.openURL(getBypassedUrl(url));
     }
   };
 
   const handleEmailToMyself = async () => {
-    const url = await getPdfUrl();
+    const url = await getExportUrl("pdf");
     if (url) {
       await Linking.openURL(
-        `mailto:?subject=My Professional Resume&body=Here is my resume: ${url}`,
+        `mailto:?subject=My Professional Resume&body=Here is my resume: ${getBypassedUrl(url)}`,
       );
     }
   };
 
   const handleShareLinkedIn = async () => {
-    const url = await getPdfUrl();
+    const url = await getExportUrl("pdf");
     if (url) {
       await Linking.openURL(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getBypassedUrl(url))}`,
       );
     }
   };
 
   const handleShareNative = async () => {
-    const url = await getPdfUrl();
+    const url = await getExportUrl("pdf");
     if (url) {
       try {
         await Share.share({
-          message: `Check out my professional resume: ${url}`,
+          message: `Check out my professional resume: ${getBypassedUrl(url)}`,
         });
       } catch (error) {
         console.error("Error sharing:", error);
@@ -145,6 +161,16 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
           <TouchableOpacity
             activeOpacity={0.7}
             style={[styles.actionButton]}
+            onPress={handleDownloadDocx}
+            disabled={isProcessing}
+          >
+            <Feather name="file-text" size={20} color="#374151" style={styles.actionIcon} />
+            <Text style={styles.actionText}>Download as DOCX</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            style={[styles.actionButton]}
             onPress={handleEmailToMyself}
             disabled={isProcessing}
           >
@@ -162,7 +188,7 @@ export function ResumeExportView({ onBack }: ResumeExportViewProps) {
               onPress={handleShareLinkedIn}
               disabled={isProcessing}
             >
-              <FontAwesome name="linkedin" size={24} color="#4d7c0f" />
+              <Feather name="linkedin" size={24} color="#4d7c0f" />
             </Pressable>
             <Pressable
               style={styles.shareIconCircle}
@@ -211,21 +237,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
   },
   contentContainer: {
-    paddingBottom: 48,
+    paddingBottom: 24,
     paddingHorizontal: 24,
-    paddingTop: 48,
+    paddingTop: 24,
   },
   container: {
     flex: 1,
     alignItems: "center",
   },
   iconContainer: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: "#3b82f6", // Vibrant Blue
     justifyContent: "center",
     alignItems: "center",
@@ -237,13 +263,13 @@ const styles = StyleSheet.create({
   },
   headerTextContainer: {
     alignItems: "center",
-    marginBottom: 36,
+    marginBottom: 24,
   },
   title: {
     fontSize: 22,
     fontWeight: "700",
     color: "#111827",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
@@ -251,8 +277,8 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     width: "100%",
-    gap: 16,
-    marginBottom: 32,
+    gap: 12,
+    marginBottom: 24,
   },
   actionButton: {
     flexDirection: "row",
@@ -262,7 +288,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#e5e7eb",
     borderRadius: 24,
-    paddingVertical: 18,
+    paddingVertical: 14,
     paddingHorizontal: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -286,10 +312,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     borderWidth: 0,
     borderRadius: 24,
-    paddingVertical: 24,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
@@ -300,16 +326,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#6b7280",
-    marginBottom: 20,
+    marginBottom: 16,
   },
   shareIconsContainer: {
     flexDirection: "row",
-    gap: 24,
+    gap: 16,
   },
   shareIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#a3e635", // Neon Lime Green
     justifyContent: "center",
     alignItems: "center",
@@ -321,12 +347,12 @@ const styles = StyleSheet.create({
   },
   primaryActionContainer: {
     width: "100%",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   primaryButton: {
     backgroundColor: "#3b82f6", // Vibrant blue
     borderRadius: 30, // Pill shape
-    paddingVertical: 18,
+    paddingVertical: 14,
     alignItems: "center",
     shadowColor: "#3b82f6",
     shadowOffset: { width: 0, height: 6 },

@@ -41,7 +41,10 @@ export const resumeBuilderApi = api.injectEndpoints({
         body: toResumeBuilderPayload(resume),
       }),
       transformResponse: (response: unknown) => fromResumeBuilderResponse(response),
-      invalidatesTags: ["Resume"],
+      // Do NOT invalidate the Resume tag here.
+      // Invalidating causes useGetBuiltResumeQuery to refetch and dispatch hydrateResume,
+      // which silently overwrites the user's layout/template selection with the old DB value.
+      // We manage resume state locally in Redux after the initial load.
     }),
 
     uploadBuiltResumePhoto: builder.mutation<ResumePhotoUploadResponse, FormData>({
@@ -61,11 +64,14 @@ export const resumeBuilderApi = api.injectEndpoints({
       }),
     }),
 
-    exportBuiltResumePdf: builder.query<ResumeExportResponse, { auto_enhance: boolean }>({
-      query: ({ auto_enhance }) => ({
+    exportBuiltResume: builder.query<
+      ResumeExportResponse,
+      { auto_enhance: boolean; file_type?: "pdf" | "docx" }
+    >({
+      query: ({ auto_enhance, file_type = "pdf" }) => ({
         url: "/v1/resume-builder/export",
         method: "GET",
-        params: { auto_enhance },
+        params: { auto_enhance, file_type },
       }),
     }),
   }),
@@ -77,6 +83,6 @@ export const {
   useUpdateBuiltResumeMutation,
   useUploadBuiltResumePhotoMutation,
   useEnhanceBuiltResumeDetailMutation,
-  useExportBuiltResumePdfQuery,
-  useLazyExportBuiltResumePdfQuery,
+  useExportBuiltResumeQuery,
+  useLazyExportBuiltResumeQuery,
 } = resumeBuilderApi;

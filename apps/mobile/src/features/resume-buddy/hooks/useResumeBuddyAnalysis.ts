@@ -18,7 +18,10 @@ interface UseResumeBuddyAnalysis {
   activeStage: number;
   result: ResumeBuddyResponse | null;
   error: string | null;
-  analyze: (domain: string) => Promise<void>;
+  analyze: (
+    domain: string,
+    file?: { uri: string; name: string; type?: string; mimeType?: string },
+  ) => Promise<void>;
   reset: () => void;
 }
 
@@ -90,7 +93,10 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
   );
 
   const analyze = useCallback(
-    async (domain: string) => {
+    async (
+      domain: string,
+      file?: { uri: string; name: string; type?: string; mimeType?: string },
+    ) => {
       cleanupRef.current?.();
       setPhase("running");
       setActiveStage(0);
@@ -99,7 +105,16 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
 
       let jobId: string | undefined;
       try {
-        const res = await analyzeResume({ domain }).unwrap();
+        const formData = new FormData();
+        formData.append("domain", domain);
+        if (file) {
+          formData.append("file", {
+            uri: file.uri,
+            type: file.type || file.mimeType || "application/pdf",
+            name: file.name,
+          } as unknown as Blob);
+        }
+        const res = await analyzeResume(formData).unwrap();
         jobId = res.job_id;
       } catch {
         if (!isMountedRef.current) return;
