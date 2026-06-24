@@ -5,6 +5,9 @@ import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
+import { Platform } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import { useColorScheme } from "nativewind";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -64,6 +67,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
+  const [isPolling, setIsPolling] = useState(true);
+
   const {
     data: onboardingStatus,
     isLoading: isOnboardingLoading,
@@ -73,8 +78,14 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: !userId,
     refetchOnMountOrArgChange: true,
-    pollingInterval: 5000, // keep polling every 5s until successful
+    pollingInterval: isPolling ? 5000 : 0, // stop polling once successful
   });
+
+  useEffect(() => {
+    if (onboardingStatus && !isOnboardingError) {
+      setIsPolling(false);
+    }
+  }, [onboardingStatus, isOnboardingError]);
 
   useEffect(() => {
     if (userId) {
@@ -182,6 +193,37 @@ export default function AuthLayout() {
   });
 
   const [authChecked, setAuthChecked] = useState(false);
+  const { setColorScheme } = useColorScheme();
+
+  useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        let storedDarkMode: string | null = null;
+        if (Platform.OS === "web" && typeof window !== "undefined") {
+          storedDarkMode = window.localStorage.getItem("settings_dark_mode");
+        } else if (Platform.OS !== "web") {
+          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+        }
+
+        const isDark = storedDarkMode === "true";
+        setColorScheme(isDark ? "dark" : "light");
+
+        if (Platform.OS === "web" && typeof document !== "undefined") {
+          if (isDark) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        }
+      } catch {
+        setColorScheme("light");
+        if (Platform.OS === "web" && typeof document !== "undefined") {
+          document.documentElement.classList.remove("dark");
+        }
+      }
+    };
+    loadTheme();
+  }, [setColorScheme]);
 
   useEffect(() => {
     getAuthSession()

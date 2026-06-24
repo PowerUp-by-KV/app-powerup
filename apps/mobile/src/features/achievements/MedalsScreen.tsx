@@ -13,6 +13,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useColorScheme } from "nativewind";
 
 import { useListAchievementsQuery, useGetMedalsQuery } from "@/services/gamification-api";
 
@@ -98,6 +99,8 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (visible) {
@@ -153,11 +156,35 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={handleClose}>
-      <Animated.View style={[styles.modalOverlay, { opacity: opacityAnim }]}>
-        <Animated.View style={[styles.modalCard, { transform: [{ scale: scaleAnim }] }]}>
+      <Animated.View
+        style={[
+          styles.modalOverlay,
+          { backgroundColor: isDark ? "rgba(10, 11, 20, 0.85)" : "rgba(15, 23, 42, 0.78)" },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.modalCard,
+            {
+              backgroundColor: isDark ? "#1A1B31" : "#ffffff",
+              borderColor: isDark ? "rgba(113,116,246,0.15)" : "#ECEEF8",
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           {/* Close trigger */}
-          <Pressable onPress={handleClose} style={styles.closeButton} hitSlop={8}>
-            <Feather name="x" size={20} color="#64748b" />
+          <Pressable
+            onPress={handleClose}
+            style={[
+              styles.closeButton,
+              {
+                backgroundColor: isDark ? "#232540" : "#F8F8FF",
+                borderColor: isDark ? "rgba(113,116,246,0.15)" : "#ECEEF8",
+              },
+            ]}
+            hitSlop={8}
+          >
+            <Feather name="x" size={20} color={isDark ? "#B7BED1" : "#6B7280"} />
           </Pressable>
 
           {/* Glowing circle representing the badge */}
@@ -165,9 +192,10 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
             style={[
               styles.modalBadgeCircle,
               {
-                backgroundColor: badge.unlocked ? badge.color : "#cbd5e1",
+                backgroundColor: badge.unlocked ? badge.color : isDark ? "#232540" : "#ECEEF8",
+                borderColor: isDark ? "#1A1B31" : "#ffffff",
                 transform: [{ scale: pulseAnim }],
-                shadowColor: badge.unlocked ? badge.color : "#64748b",
+                shadowColor: badge.unlocked ? badge.color : "transparent",
               },
             ]}
           >
@@ -175,36 +203,81 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
           </Animated.View>
 
           {/* Badge Title */}
-          <Text style={styles.modalBadgeTitle}>{badge.title} Badge</Text>
+          <Text style={[styles.modalBadgeTitle, { color: isDark ? "#ffffff" : "#1B1F35" }]}>
+            {badge.title} Badge
+          </Text>
 
           {/* Status Label Pill */}
           <View
-            style={[styles.statusPill, { backgroundColor: badge.unlocked ? "#dcfce7" : "#f1f5f9" }]}
+            style={[
+              styles.statusPill,
+              {
+                backgroundColor: badge.unlocked
+                  ? isDark
+                    ? "rgba(180,228,38,0.15)"
+                    : "#F1FCF1"
+                  : isDark
+                    ? "#232540"
+                    : "#F4F5FA",
+              },
+            ]}
           >
             <Feather
               name={badge.unlocked ? "award" : "lock"}
               size={12}
-              color={badge.unlocked ? "#15803d" : "#64748b"}
+              color={
+                badge.unlocked ? (isDark ? "#B4E426" : "#15803d") : isDark ? "#8B93A8" : "#A0A7B8"
+              }
               style={{ marginRight: 4 }}
             />
             <Text
-              style={[styles.statusPillText, { color: badge.unlocked ? "#15803d" : "#64748b" }]}
+              style={[
+                styles.statusPillText,
+                {
+                  color: badge.unlocked
+                    ? isDark
+                      ? "#B4E426"
+                      : "#15803d"
+                    : isDark
+                      ? "#8B93A8"
+                      : "#A0A7B8",
+                },
+              ]}
             >
               {badge.unlocked ? "Active & Unlocked" : "Locked"}
             </Text>
           </View>
 
           {/* Requirements Box */}
-          <View style={styles.requirementBox}>
-            <Text style={styles.requirementLabel}>How to unlock:</Text>
-            <Text style={styles.requirementText}>{badge.requirement}</Text>
+          <View
+            style={[
+              styles.requirementBox,
+              {
+                backgroundColor: isDark ? "#232540" : "#F8F8FF",
+                borderColor: isDark ? "rgba(113,116,246,0.15)" : "#ECEEF8",
+              },
+            ]}
+          >
+            <Text style={[styles.requirementLabel, { color: isDark ? "#8B93A8" : "#A0A7B8" }]}>
+              How to unlock:
+            </Text>
+            <Text style={[styles.requirementText, { color: isDark ? "#ffffff" : "#1B1F35" }]}>
+              {badge.requirement}
+            </Text>
             {!badge.unlocked && badge.progressLabel ? (
               <View style={{ marginTop: 12 }}>
-                <Text style={[styles.requirementLabel, { marginTop: 0 }]}>Progress:</Text>
+                <Text
+                  style={[
+                    styles.requirementLabel,
+                    { marginTop: 0, color: isDark ? "#8B93A8" : "#A0A7B8" },
+                  ]}
+                >
+                  Progress:
+                </Text>
                 <Text
                   style={[
                     styles.requirementText,
-                    { color: "#64748b", fontSize: 12, marginBottom: 6 },
+                    { color: isDark ? "#B7BED1" : "#6B7280", fontSize: 12, marginBottom: 6 },
                   ]}
                 >
                   {badge.progressLabel}
@@ -212,7 +285,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
                 <View
                   style={{
                     height: 6,
-                    backgroundColor: "#e2e8f0",
+                    backgroundColor: isDark ? "#1A1B31" : "#ECEEF8",
                     borderRadius: 3,
                     overflow: "hidden",
                   }}
@@ -220,7 +293,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
                   <View
                     style={{
                       height: "100%",
-                      backgroundColor: badge.color,
+                      backgroundColor: "#7174F6",
                       width: `${Math.min(100, Math.max(0, Math.round((badge.progress ?? 0) * 100)))}%`,
                     }}
                   />
@@ -232,7 +305,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
           {/* Action CTA */}
           <Pressable
             onPress={handleClose}
-            style={[styles.doneButton, { backgroundColor: badge.unlocked ? "#0f172a" : "#64748b" }]}
+            style={[styles.doneButton, { backgroundColor: "#7174F6" }]}
           >
             <Text style={styles.doneButtonText}>{badge.unlocked ? "Awesome!" : "Got it"}</Text>
           </Pressable>
@@ -248,6 +321,8 @@ export function MedalsScreen() {
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
   const isLoading = isAchievementsLoading || isMedalsLoading;
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const [selectedBadge, setSelectedBadge] = useState<BadgeType | null>(null);
 
@@ -328,7 +403,7 @@ export function MedalsScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="flex-1 bg-slate-50"
+      className={`flex-1 ${isDark ? "bg-[#0F1020]" : "bg-[#F4F5FA]"}`}
     >
       {/* Dynamic Detailed Modal */}
       <BadgeDetailModal
@@ -338,11 +413,17 @@ export function MedalsScreen() {
       />
 
       {/* Header bar */}
-      <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
+      <View
+        className={`flex-row items-center px-4 py-3 border-b ${isDark ? "bg-[#1A1B31] border-b-transparent" : "bg-white border-b-[#ECEEF8]"}`}
+      >
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
-          <Feather name="chevron-left" size={22} color="#0f172a" />
+          <Feather name="chevron-left" size={22} color={isDark ? "#ffffff" : "#1B1F35"} />
         </Pressable>
-        <Text className="flex-1 text-center font-extrabold text-slate-900 text-lg">Badges</Text>
+        <Text
+          className={`flex-1 text-center font-extrabold text-lg ${isDark ? "text-white" : "text-[#1B1F35]"}`}
+        >
+          Badges
+        </Text>
         <View className="w-9" />
       </View>
 
@@ -353,18 +434,32 @@ export function MedalsScreen() {
       >
         {isLoading ? (
           <View style={{ paddingVertical: 40, alignItems: "center" }}>
-            <ActivityIndicator color="#6366f1" size="large" />
+            <ActivityIndicator color="#7174F6" size="large" />
           </View>
         ) : (
           <>
             {/* Header Banner - Congratulations */}
-            <View style={styles.bannerCard}>
+            <View
+              style={[
+                styles.bannerCard,
+                {
+                  backgroundColor: isDark ? "#1A1B31" : "#F8F8FF",
+                  borderColor: isDark ? "rgba(113,116,246,0.15)" : "#ECEEF8",
+                  shadowColor: "#7174F6",
+                  shadowOpacity: isDark ? 0 : 0.04,
+                },
+              ]}
+            >
               <Text style={styles.bannerTrophyEmoji}>🏆</Text>
-              <Text style={styles.bannerText}>Congratulations on your learning journey!</Text>
+              <Text style={[styles.bannerText, { color: isDark ? "#ffffff" : "#1B1F35" }]}>
+                Congratulations on your learning journey!
+              </Text>
             </View>
 
             {/* Premium Interactive Badges List */}
-            <Text style={styles.sectionTitle}>Your Badge Collection</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? "#ffffff" : "#1B1F35" }]}>
+              Your Badge Collection
+            </Text>
             <View style={styles.badgeGridContainer}>
               {badges.map((b) => (
                 <Pressable
@@ -380,9 +475,14 @@ export function MedalsScreen() {
                     style={[
                       styles.badgeCircleShell,
                       {
-                        backgroundColor: b.unlocked ? b.color : "#f8fafc",
-                        borderColor: b.unlocked ? "#ffffff" : "#cbd5e1",
-                        shadowColor: b.unlocked ? b.color : "#94a3b8",
+                        backgroundColor: b.unlocked ? b.color : isDark ? "#232540" : "#F4F5FA",
+                        borderColor: b.unlocked
+                          ? "#ffffff"
+                          : isDark
+                            ? "rgba(113,116,246,0.15)"
+                            : "#ECEEF8",
+                        shadowColor: b.unlocked ? b.color : isDark ? "transparent" : "#7174F6",
+                        shadowOpacity: b.unlocked ? 0.25 : 0.05,
                       },
                     ]}
                   >
@@ -393,7 +493,15 @@ export function MedalsScreen() {
 
                     {/* Lock Badge Overlay */}
                     {!b.unlocked && (
-                      <View style={styles.lockOverlayCircle}>
+                      <View
+                        style={[
+                          styles.lockOverlayCircle,
+                          {
+                            backgroundColor: isDark ? "#8B93A8" : "#A0A7B8",
+                            borderColor: isDark ? "#1A1B31" : "#ffffff",
+                          },
+                        ]}
+                      >
                         <Feather name="lock" size={10} color="#ffffff" />
                       </View>
                     )}
@@ -402,7 +510,18 @@ export function MedalsScreen() {
                   {/* Badge Label */}
                   <Text
                     numberOfLines={1}
-                    style={[styles.badgeCardTitle, { color: b.unlocked ? "#1e293b" : "#94a3b8" }]}
+                    style={[
+                      styles.badgeCardTitle,
+                      {
+                        color: b.unlocked
+                          ? isDark
+                            ? "#ffffff"
+                            : "#1B1F35"
+                          : isDark
+                            ? "#8B93A8"
+                            : "#A0A7B8",
+                      },
+                    ]}
                   >
                     {b.title}
                   </Text>
@@ -415,27 +534,54 @@ export function MedalsScreen() {
               medalsData.level_up_progress &&
               medalsData.level_up_progress.length > 0 && (
                 <View className="mt-9 w-full">
-                  <Text className="text-lg font-black text-black mb-4">Level up your Medal</Text>
+                  <Text
+                    className={`text-lg font-black mb-4 ${isDark ? "text-white" : "text-[#1B1F35]"}`}
+                  >
+                    Level up your Medal
+                  </Text>
 
                   {medalsData.level_up_progress.map((p) => {
                     const percent = Math.min(100, Math.round(p.progress * 100));
                     return (
-                      <View key={p.medal_id} style={styles.levelUpCard}>
+                      <View
+                        key={p.medal_id}
+                        style={[
+                          styles.levelUpCard,
+                          {
+                            backgroundColor: isDark ? "#1A1B31" : "#FFFFFF",
+                            borderWidth: 1,
+                            borderColor: isDark ? "rgba(113,116,246,0.15)" : "#ECEEF8",
+                          },
+                        ]}
+                      >
                         {/* Left contents */}
                         <View style={{ flex: 1, paddingRight: 12 }}>
-                          <Text style={styles.levelUpText} numberOfLines={1}>
+                          <Text
+                            style={[styles.levelUpText, { color: isDark ? "#ffffff" : "#1B1F35" }]}
+                            numberOfLines={1}
+                          >
                             {p.title}
                           </Text>
 
                           {/* Progress Bar Track */}
-                          <View style={styles.levelUpProgressTrack}>
-                            <View style={[styles.levelUpProgressBar, { width: `${percent}%` }]} />
+                          <View
+                            style={[
+                              styles.levelUpProgressTrack,
+                              { backgroundColor: isDark ? "#232540" : "#ECEEF8" },
+                            ]}
+                          >
+                            <View
+                              style={[
+                                styles.levelUpProgressBar,
+                                { width: `${percent}%`, backgroundColor: "#7174F6" },
+                              ]}
+                            />
                           </View>
                         </View>
 
                         {/* Right Lock Icon */}
                         <View style={styles.levelUpLockContainer}>
-                          <Feather name="lock" size={24} color="#000000" />
+                          <Feather name="lock" size={24} color={isDark ? "#8B93A8" : "#A0A7B8"} />
                         </View>
                       </View>
                     );
@@ -443,7 +589,13 @@ export function MedalsScreen() {
 
                   {/* Share Button */}
                   <Pressable
-                    style={({ pressed }) => [styles.shareButton, { opacity: pressed ? 0.8 : 1 }]}
+                    style={({ pressed }) => [
+                      styles.shareButton,
+                      {
+                        backgroundColor: "#7174F6",
+                        opacity: pressed ? 0.85 : 1.0,
+                      },
+                    ]}
                     onPress={() => {
                       console.log("Medals shared!");
                     }}
@@ -496,11 +648,11 @@ const styles = StyleSheet.create({
   badgeGridContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     width: "100%",
   },
   badgeCardPressable: {
-    width: "30%",
+    width: "33.33%",
     alignItems: "center",
     marginBottom: 24,
   },

@@ -128,6 +128,14 @@ export const authApi = api.injectEndpoints({
           body,
         };
       },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { saveAuthSession } = await import("./auth-storage");
+          await saveAuthSession(data);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } catch {}
+      },
       invalidatesTags: ["Auth"],
     }),
 
@@ -141,6 +149,24 @@ export const authApi = api.injectEndpoints({
           method: "POST",
           body,
         };
+      },
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { saveAuthSession } = await import("./auth-storage");
+          const auth: AuthResponse = {
+            access_token: data.access_token,
+            refresh_token: data.refresh_token,
+            user: {
+              id: data.user?.id || data.user_id || "",
+              name: data.user?.name || "",
+              email: arg.email,
+              phone_number: arg.phone_number || "",
+            },
+          };
+          await saveAuthSession(auth);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } catch {}
       },
       invalidatesTags: ["Auth"],
     }),
@@ -175,12 +201,20 @@ export const authApi = api.injectEndpoints({
       }),
     }),
 
-    verifyEmailOtp: builder.mutation<EmailOtpStatusResponse, VerifyEmailOtpRequest>({
+    verifyEmailOtp: builder.mutation<AuthResponse, VerifyEmailOtpRequest>({
       query: (body) => ({
         url: "/v1/auth/verify-email-otp",
         method: "POST",
         body,
       }),
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { saveAuthSession } = await import("./auth-storage");
+          await saveAuthSession(data);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } catch {}
+      },
       invalidatesTags: ["Auth"],
     }),
 
@@ -190,6 +224,14 @@ export const authApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
+      async onQueryStarted(arg, { queryFulfilled }) {
+        try {
+          const { data } = await queryFulfilled;
+          const { saveAuthSession } = await import("./auth-storage");
+          await saveAuthSession(data);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        } catch {}
+      },
       invalidatesTags: ["Auth"],
     }),
   }),

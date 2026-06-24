@@ -8,9 +8,11 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { RootState } from "@/store";
@@ -42,12 +44,22 @@ import LoaderScreen from "./components/LoaderScreen";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import LottieView from "lottie-react-native";
 import { Feather } from "@expo/vector-icons";
+import Svg, {
+  Defs,
+  RadialGradient,
+  Stop,
+  Circle,
+  LinearGradient as SvgLinearGradient,
+} from "react-native-svg";
 import companyEmployees from "../../../assets/mascot/company-employees.json";
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const safeBack = useSafeBack();
   const formData = useSelector((state: RootState) => state.onboarding);
   const stepNumber = formData.currentStep;
@@ -471,8 +483,45 @@ export default function OnboardingScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-slate-50"
+      className="bg-slate-50 dark:bg-[#151620] relative"
     >
+      {/* Background Vector Shapes - Neat intersecting circles as per mockup */}
+      <Svg height="100%" width="100%" style={{ position: "absolute", top: 0, left: 0 }}>
+        <Defs>
+          <SvgLinearGradient id="bottomRightGrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={isDark ? "#283438" : "#dcfce7"} stopOpacity="1" />
+            <Stop offset="1" stopColor={isDark ? "#171e22" : "#f0fdf4"} stopOpacity="1" />
+          </SvgLinearGradient>
+          <SvgLinearGradient id="bottomLeftGrad" x1="1" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={isDark ? "#2d334a" : "#dbeafe"} stopOpacity="1" />
+            <Stop offset="1" stopColor={isDark ? "#1a1f30" : "#eff6ff"} stopOpacity="1" />
+          </SvgLinearGradient>
+          <RadialGradient id="topLeftGrad" cx="0%" cy="0%" rx="80%" ry="80%">
+            <Stop offset="0" stopColor={isDark ? "#38295c" : "#f3e8ff"} stopOpacity="0.5" />
+            <Stop offset="1" stopColor={isDark ? "#151620" : "#ffffff"} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+
+        {/* Top Left Soft Glow */}
+        <Circle cx={0} cy={0} r={Math.min(width * 0.6, 300)} fill="url(#topLeftGrad)" />
+
+        {/* Bottom Left Circle (Blueish) */}
+        <Circle
+          cx={-20}
+          cy={height - 150}
+          r={Math.min(width * 0.45, 220)}
+          fill="url(#bottomLeftGrad)"
+        />
+
+        {/* Bottom Right Circle (Greenish) - Rendered after to overlap left circle */}
+        <Circle
+          cx={width + 20}
+          cy={height - 50}
+          r={Math.min(width * 0.5, 280)}
+          fill="url(#bottomRightGrad)"
+        />
+      </Svg>
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -490,11 +539,11 @@ export default function OnboardingScreen() {
           <View className="flex-row items-center w-full max-w-md px-1 mb-6">
             <TouchableOpacity
               onPress={handleBack}
-              className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-80"
+              className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 items-center justify-center shadow-sm active:opacity-80 z-10"
             >
               <Feather name="arrow-left" size={18} color="#64748b" />
             </TouchableOpacity>
-            <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+            <View className="flex-1 h-2 bg-slate-200/80 dark:bg-slate-700/80 rounded-full ml-4 overflow-hidden">
               <LinearGradient
                 colors={["#3b82f6", "#22c55e"]}
                 start={{ x: 0, y: 0 }}
@@ -506,20 +555,20 @@ export default function OnboardingScreen() {
           </View>
 
           {/* Section Title */}
-          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5">
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase text-center mb-1.5 z-10">
             {isFileQuestion ? "Upload your Resume" : question?.section || "Self Assessment"}
           </Text>
 
           {/* Question Text */}
           {!isFileQuestion && (
-            <Text className="text-[20px] font-extrabold text-slate-900 text-center px-4 mb-4 leading-snug max-w-md">
+            <Text className="text-[20px] font-extrabold text-slate-900 dark:text-white text-center px-4 mb-4 leading-snug max-w-md z-10">
               {question?.question_text}
             </Text>
           )}
 
           {/* Loopable Mascot Animation */}
           {!isFileQuestion && (
-            <View className="items-center justify-center my-2">
+            <View className="items-center justify-center my-2 z-10">
               <LottieView
                 source={companyEmployees}
                 autoPlay
@@ -530,7 +579,7 @@ export default function OnboardingScreen() {
           )}
 
           {/* Main Options / Input Fields */}
-          <View className={`w-full mb-6 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
+          <View className={`w-full mb-6 z-10 ${isFileQuestion ? "max-w-xl" : "max-w-md"}`}>
             {question && (
               <DynamicOnboardingForm
                 questions={[question]}
@@ -543,7 +592,7 @@ export default function OnboardingScreen() {
 
           {/* Description paragraph specific to file upload step */}
           {isFileQuestion && (
-            <Text className="text-sm font-semibold text-slate-400 text-center px-6 mb-8 leading-relaxed max-w-xl">
+            <Text className="text-sm font-semibold text-slate-400 dark:text-slate-500 text-center px-6 mb-8 leading-relaxed max-w-xl z-10">
               Upload your resume to analyze and enhance your professional profile
             </Text>
           )}
@@ -553,9 +602,9 @@ export default function OnboardingScreen() {
         <TouchableOpacity
           onPress={handleNext}
           disabled={isSubmitting || isStarting || isUploading}
-          className={`py-4 w-full rounded-2xl items-center justify-center shadow-md active:opacity-90 transition-all ${
+          className={`py-4 w-full rounded-2xl items-center justify-center shadow-md active:opacity-90 transition-all z-10 ${
             isFileQuestion ? "max-w-xl" : "max-w-md"
-          } ${isSubmitting || isStarting || isUploading ? "bg-slate-300" : "bg-blue-500"}`}
+          } ${isSubmitting || isStarting || isUploading ? "bg-slate-300 dark:bg-slate-700" : "bg-blue-500"}`}
         >
           {isSubmitting || isStarting || isUploading ? (
             <View className="flex-row items-center">

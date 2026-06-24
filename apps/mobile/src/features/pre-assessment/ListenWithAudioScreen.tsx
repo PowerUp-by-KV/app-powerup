@@ -289,7 +289,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         className="flex-1 bg-slate-50"
       >
         <View className="flex-1 w-full items-center justify-center p-6">
-          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
               style={{
                 width: 140,
@@ -308,10 +308,10 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
               />
             </View>
 
-            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
               Connection Timeout
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-4 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4 px-4 text-center">
               Could not load listening section due to network delay. Please try again.
             </Text>
 
@@ -338,8 +338,8 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   if (!currentQuestion) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text>No questions found for this section.</Text>
+      <View className="flex-1 items-center justify-center bg-white dark:bg-[#151620]">
+        <Text className="dark:text-white">No questions found for this section.</Text>
       </View>
     );
   }
@@ -455,7 +455,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-white"
+      className="bg-white dark:bg-[#151620]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -526,16 +526,18 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
-          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
+        <View className="absolute inset-0 bg-black/60 items-center justify-center z-[9999]">
+          <View className="bg-white dark:bg-[#1E1F2A] rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px] border border-slate-100 dark:border-slate-800">
             <LottieView
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
               style={{ width: 40, height: 40 }}
             />
-            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
-            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+              Submitting Answers…
+            </Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
               Please wait, do not close the app
             </Text>
           </View>
