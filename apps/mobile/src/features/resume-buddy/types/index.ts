@@ -1,8 +1,6 @@
 // ─── Analyze Request ──────────────────────────────────────────────────────────
 
-export interface ResumeBuddyAnalyzeRequest {
-  domain: string;
-}
+export type ResumeBuddyAnalyzeRequest = FormData;
 
 // ─── Analysis Response ────────────────────────────────────────────────────────
 
