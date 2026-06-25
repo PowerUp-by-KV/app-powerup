@@ -100,7 +100,7 @@ export function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { colorScheme } = useColorScheme();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
   return (
@@ -116,21 +116,37 @@ export function AchievementsScreen() {
                 Your Achievements!
               </Text>
             </View>
-            <Pressable
-              onPress={() => router.push("/profile" as never)}
-              className={`w-12 h-12 rounded-full items-center justify-center overflow-hidden active:opacity-80 border ${
-                isDark
-                  ? "bg-[#232540] border-[rgba(113,116,246,0.15)]"
-                  : "bg-[#F8F8FF] border-[#ECEEF8]"
-              }`}
-            >
-              <Image
-                source={{
-                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                }}
-                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-              />
-            </Pressable>
+            <View className="flex-row items-center space-x-3">
+              <Pressable
+                onPress={toggleColorScheme}
+                className={`w-10 h-10 rounded-full items-center justify-center ${
+                  isDark
+                    ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
+                    : "bg-[#F8F8FF] border border-[#ECEEF8]"
+                }`}
+              >
+                <Feather
+                  name={isDark ? "sun" : "moon"}
+                  size={18}
+                  color={isDark ? "#f8fafc" : "#1e293b"}
+                />
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/profile" as never)}
+                className={`w-12 h-12 rounded-full items-center justify-center overflow-hidden active:opacity-80 border ${
+                  isDark
+                    ? "bg-[#232540] border-[rgba(113,116,246,0.15)]"
+                    : "bg-[#F8F8FF] border-[#ECEEF8]"
+                }`}
+              >
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+                />
+              </Pressable>
+            </View>
           </View>
 
           {/* Trophy Header Display */}

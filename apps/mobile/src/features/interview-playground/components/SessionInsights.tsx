@@ -1,7 +1,7 @@
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-
 import type { EvaluationResult } from "../types";
+import { useColorScheme } from "nativewind";
 
 interface SessionInsightsProps {
   evaluation: EvaluationResult;
@@ -17,31 +17,35 @@ export function SessionInsights({ evaluation }: SessionInsightsProps) {
   const strengths = evaluation.strengths ?? [];
   const improvements = evaluation.improvements ?? [];
   const starTip = evaluation.star_analysis?.feedback?.trim();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-      <View style={styles.headerCard}>
+      <View style={[styles.headerCard, isDark && { backgroundColor: "#1E293B" }]}>
         <Text style={styles.headerEmoji}>💬</Text>
-        <Text style={styles.headerTitle}>Practice Recap</Text>
-        <Text style={styles.headerSub}>
+        <Text style={[styles.headerTitle, isDark && { color: "#F8FAFC" }]}>Practice Recap</Text>
+        <Text style={[styles.headerSub, isDark && { color: "#94A3B8" }]}>
           No scores here — just a quick look at how this session went and what to try next time.
         </Text>
       </View>
 
       {!!summary && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>How it went</Text>
-          <Text style={styles.bodyText}>{summary}</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>How it went</Text>
+          <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{summary}</Text>
         </View>
       )}
 
       {strengths.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What you did well</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>
+            What you did well
+          </Text>
           {strengths.map((s, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletGreen}>+</Text>
-              <Text style={styles.bodyText}>{s}</Text>
+              <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>
             </View>
           ))}
         </View>
@@ -49,11 +53,13 @@ export function SessionInsights({ evaluation }: SessionInsightsProps) {
 
       {improvements.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Things to try next time</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>
+            Things to try next time
+          </Text>
           {improvements.map((s, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletAmber}>→</Text>
-              <Text style={styles.bodyText}>{s}</Text>
+              <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>
             </View>
           ))}
         </View>
@@ -61,14 +67,16 @@ export function SessionInsights({ evaluation }: SessionInsightsProps) {
 
       {!!starTip && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tip</Text>
-          <Text style={[styles.bodyText, styles.tipText]}>{starTip}</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>Tip</Text>
+          <Text style={[styles.bodyText, styles.tipText, isDark && { color: "#CBD5E1" }]}>
+            {starTip}
+          </Text>
         </View>
       )}
 
       {!summary && strengths.length === 0 && improvements.length === 0 && (
         <View style={styles.section}>
-          <Text style={styles.bodyText}>
+          <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>
             Nice work finishing the session! Keep practicing — every run builds your confidence.
           </Text>
         </View>

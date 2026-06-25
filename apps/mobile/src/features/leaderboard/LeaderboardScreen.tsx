@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { FlatList, Pressable, Text, View, Image } from "react-native";
+import { FlatList, Pressable, Text, View, Image, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "nativewind";
 
 import {
   useGetLeaderboardQuery,
@@ -28,11 +29,24 @@ const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
 
 export function LeaderboardScreen() {
   const router = useRouter();
+  const { colorScheme, setColorScheme } = useColorScheme();
   const { data: profile } = useGetProfileQuery();
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
   const insets = useSafeAreaInsets();
+
+  const isDark = colorScheme === "dark";
+
+  const handleToggleDarkMode = () => {
+    const nextScheme = isDark ? "light" : "dark";
+    setColorScheme(nextScheme);
+
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      document.documentElement.classList.toggle("dark", nextScheme === "dark");
+      window.localStorage?.setItem("settings_dark_mode", nextScheme === "dark" ? "true" : "false");
+    }
+  };
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
@@ -160,29 +174,57 @@ export function LeaderboardScreen() {
   };
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top }} className="bg-white">
+    <View
+      style={{ flex: 1, paddingTop: insets.top }}
+      className={isDark ? "bg-[#06070f]" : "bg-white"}
+    >
       <View style={{ flex: 1, width: "100%", position: "relative" }}>
         <View className="px-5 pt-10 pb-3 flex-row justify-between items-center">
           <View>
-            <Text className="text-slate-900 text-2xl font-extrabold">Leaderboards</Text>
+            <Text
+              className={`text-2xl font-extrabold ${isDark ? "text-slate-100" : "text-slate-900"}`}
+            >
+              Leaderboards
+            </Text>
           </View>
-          <Pressable
-            onPress={() => router.push("/profile" as never)}
-            className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
-          >
-            <Image
-              source={{
-                uri: getAvatarUri(profile?.avatar_id, profile?.id),
-              }}
-              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-            />
-          </Pressable>
+          <View className="flex-row items-center space-x-3">
+            <Pressable
+              onPress={handleToggleDarkMode}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDark ? "bg-slate-700" : "bg-slate-200"
+              }`}
+            >
+              <Feather
+                name={isDark ? "sun" : "moon"}
+                size={18}
+                color={isDark ? "#f8fafc" : "#1e293b"}
+              />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className={`w-12 h-12 rounded-full items-center justify-center overflow-hidden active:opacity-80 ${
+                isDark ? "bg-slate-800 border-slate-700" : "bg-slate-200 border-slate-100"
+              }`}
+            >
+              <Image
+                source={{
+                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                }}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              />
+            </Pressable>
+          </View>
         </View>
 
         {/* Tab Selector */}
         <View
           className="flex-row rounded-full p-1 mx-5 mb-5"
-          style={{ gap: 4, backgroundColor: "#ebd5ff40", borderWidth: 1, borderColor: "#ebd5ff60" }}
+          style={{
+            gap: 4,
+            backgroundColor: isDark ? "rgba(148, 163, 184, 0.15)" : "#ebd5ff40",
+            borderWidth: 1,
+            borderColor: isDark ? "rgba(100, 116, 139, 0.35)" : "#ebd5ff60",
+          }}
         >
           {PERIODS.map((p) => {
             const isActive = period === p;
@@ -191,7 +233,11 @@ export function LeaderboardScreen() {
                 key={p}
                 onPress={() => setPeriod(p)}
                 className={`flex-1 py-2 rounded-full items-center justify-center ${
-                  isActive ? "bg-white shadow-xs" : "bg-transparent"
+                  isActive
+                    ? isDark
+                      ? "bg-slate-700 shadow-xs"
+                      : "bg-white shadow-xs"
+                    : "bg-transparent"
                 }`}
               >
                 <Text
@@ -199,7 +245,7 @@ export function LeaderboardScreen() {
                     fontSize: 12,
                     fontWeight: "700",
                     textTransform: "capitalize",
-                    color: isActive ? "#1e293b" : "#8b5cf6",
+                    color: isActive ? (isDark ? "#f8fafc" : "#1e293b") : "#8b5cf6",
                   }}
                 >
                   {p}
@@ -289,7 +335,9 @@ export function LeaderboardScreen() {
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}
           renderItem={({ item }: { item: LeaderboardEntry }) => (
             <View
-              className="bg-white border border-slate-100 rounded-3xl p-4 mb-3 shadow-xs"
+              className={`border rounded-3xl p-4 mb-3 shadow-xs ${
+                isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"
+              }`}
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -306,7 +354,11 @@ export function LeaderboardScreen() {
                   flexBasis: "auto",
                 }}
               >
-                <View className="w-10 h-10 rounded-full bg-slate-100 mr-3 overflow-hidden justify-center items-center border border-slate-200/50">
+                <View
+                  className={`w-10 h-10 rounded-full mr-3 overflow-hidden justify-center items-center border ${
+                    isDark ? "bg-slate-800 border-slate-700/50" : "bg-slate-100 border-slate-200/50"
+                  }`}
+                >
                   <Image
                     source={{
                       uri: getAvatarUri(
@@ -321,7 +373,10 @@ export function LeaderboardScreen() {
                   />
                 </View>
                 <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
-                  <Text className="text-slate-800 font-extrabold text-sm" numberOfLines={1}>
+                  <Text
+                    className={`font-extrabold text-sm ${isDark ? "text-slate-100" : "text-slate-800"}`}
+                    numberOfLines={1}
+                  >
                     {item.is_you ? `${item.name} (You)` : item.name}
                   </Text>
                   <Text className="text-slate-400 text-xs font-bold mt-0.5">

@@ -316,7 +316,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 }
 
 export function MedalsScreen() {
-  const safeBack = useSafeBack();
+  const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();

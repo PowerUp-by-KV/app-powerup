@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
 import { SessionInsights } from "../components/SessionInsights";
 import { TranscriptPanel } from "../components/TranscriptPanel";
+import { useColorScheme } from "nativewind";
 
 interface InterviewResultsScreenProps {
   sessionId: string | undefined;
@@ -20,6 +23,9 @@ export function InterviewResultsScreen({
   const homeRoute = mode === "buddy" ? "/ai-interview" : "/interview-playground";
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack(homeRoute);
 
   const {
     data: session,
@@ -31,7 +37,13 @@ export function InterviewResultsScreen({
 
   if (!sessionId) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+          isDark && { backgroundColor: "#0F172A" },
+        ]}
+      >
         <View style={styles.center}>
           <Text style={styles.errorText}>No session ID provided.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
@@ -44,10 +56,16 @@ export function InterviewResultsScreen({
 
   if (isLoading) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+          isDark && { backgroundColor: "#0F172A" },
+        ]}
+      >
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#4F46E5" />
-          <Text style={styles.loadingText}>Loading results…</Text>
+          <Text style={[styles.loadingText, isDark && { color: "#94A3B8" }]}>Loading results…</Text>
         </View>
       </View>
     );
@@ -55,7 +73,13 @@ export function InterviewResultsScreen({
 
   if (isError || !session) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+          isDark && { backgroundColor: "#0F172A" },
+        ]}
+      >
         <View style={styles.center}>
           <Text style={styles.errorText}>Failed to load session results.</Text>
           <Pressable style={styles.backButton} onPress={() => router.push(homeRoute as never)}>
@@ -69,9 +93,34 @@ export function InterviewResultsScreen({
   const hasEvaluation = !!session.evaluation;
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.topBar}>
-        <Text style={styles.title} numberOfLines={1}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        isDark && { backgroundColor: "#0F172A" },
+      ]}
+    >
+      <View
+        style={[
+          styles.topBar,
+          isDark && { backgroundColor: "#1E293B", borderBottomColor: "#334155" },
+        ]}
+      >
+        <Pressable
+          onPress={goBack}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
+        </Pressable>
+        <Text style={[styles.title, isDark && { color: "#F8FAFC" }]} numberOfLines={1}>
           {mode === "buddy" ? (session.derived_role ?? "Interview Results") : "Practice Session"}
         </Text>
         <Text style={styles.date}>{new Date(session.started_at).toLocaleDateString()}</Text>
@@ -87,25 +136,30 @@ export function InterviewResultsScreen({
           )
         ) : (
           <View style={styles.noEvalContainer}>
-            <Text style={styles.noEvalText}>
+            <Text style={[styles.noEvalText, isDark && { color: "#94A3B8" }]}>
               Evaluation is still being processed or was not available.
             </Text>
           </View>
         )}
 
         {session.transcript.length > 0 && (
-          <View style={styles.transcriptSection}>
+          <View style={[styles.transcriptSection, isDark && { borderTopColor: "#334155" }]}>
             <Pressable
-              style={styles.transcriptToggle}
+              style={[styles.transcriptToggle, isDark && { backgroundColor: "#312E81" }]}
               onPress={() => setIsTranscriptExpanded((prev) => !prev)}
             >
-              <Text style={styles.transcriptToggleText}>
+              <Text style={[styles.transcriptToggleText, isDark && { color: "#A5B4FC" }]}>
                 {isTranscriptExpanded ? "Hide Transcript" : "Show Transcript"}
               </Text>
             </Pressable>
 
             {isTranscriptExpanded && (
-              <View style={styles.transcriptBox}>
+              <View
+                style={[
+                  styles.transcriptBox,
+                  isDark && { backgroundColor: "#0F172A", borderColor: "#334155" },
+                ]}
+              >
                 <TranscriptPanel turns={session.transcript} />
               </View>
             )}
@@ -113,12 +167,18 @@ export function InterviewResultsScreen({
         )}
       </View>
 
-      <View style={styles.footer}>
+      <View
+        style={[styles.footer, isDark && { backgroundColor: "#1E293B", borderTopColor: "#334155" }]}
+      >
         <Pressable
-          style={[styles.footerButton, styles.secondaryButton]}
+          style={[
+            styles.footerButton,
+            styles.secondaryButton,
+            isDark && { backgroundColor: "#312E81" },
+          ]}
           onPress={() => router.push(homeRoute as never)}
         >
-          <Text style={styles.secondaryButtonText}>
+          <Text style={[styles.secondaryButtonText, isDark && { color: "#A5B4FC" }]}>
             {mode === "buddy" ? "Back to Buddy" : "View History"}
           </Text>
         </Pressable>

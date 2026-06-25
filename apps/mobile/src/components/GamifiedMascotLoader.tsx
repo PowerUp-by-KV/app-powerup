@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Text, View, TouchableOpacity } from "react-native";
 import LottieView from "lottie-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 
 const TIPS = [
   "Consistency is key! Just 10 minutes a day builds strong neural paths.",
@@ -27,6 +28,8 @@ export function GamifiedMascotLoader({
 }: GamifiedMascotLoaderProps) {
   const [tipIdx, setTipIdx] = useState(0);
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -39,7 +42,7 @@ export function GamifiedMascotLoader({
     <View
       style={{
         flex: 1,
-        backgroundColor: "transparent",
+        backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
         width: "100%",
         height: "100%",
         alignItems: "center",
@@ -69,28 +72,36 @@ export function GamifiedMascotLoader({
 
         {/* Loading Indicator & Title */}
         <View className="flex-row items-center justify-center mt-8 mb-2">
-          <ActivityIndicator size="small" color="#4f46e5" style={{ marginRight: 10 }} />
-          <Text className="text-slate-900 font-extrabold text-xl text-center">{title}</Text>
+          <ActivityIndicator
+            size="small"
+            color={isDark ? "#3b82f6" : "#4f46e5"}
+            style={{ marginRight: 10 }}
+          />
+          <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center">
+            {title}
+          </Text>
         </View>
 
         {/* Floating pulse status text */}
-        <Text className="text-indigo-600 font-extrabold text-xs uppercase tracking-widest mb-8">
+        <Text className="text-indigo-600 dark:text-[#3b82f6] font-extrabold text-xs uppercase tracking-widest mb-8">
           {subtitle || "Connecting......."}
         </Text>
 
         {/* Beautiful Floating glassmorphic Pro Tip Box */}
-        <View className="w-full bg-white/70 border border-slate-200/50 rounded-2xl p-5 shadow-sm">
-          <Text className="text-indigo-600 font-extrabold text-[10px] uppercase tracking-widest mb-1.5">
+        <View className="w-full bg-white/70 dark:bg-[#252945]/90 border border-slate-200/50 dark:border-[#383c56] rounded-2xl p-5 shadow-sm">
+          <Text className="text-indigo-600 dark:text-[#bef264] font-extrabold text-[10px] uppercase tracking-widest mb-1.5">
             Pro Tip
           </Text>
-          <Text className="text-slate-700 text-xs font-semibold leading-5">{TIPS[tipIdx]}</Text>
+          <Text className="text-slate-700 dark:text-[#cbd5e1] text-xs font-semibold leading-5">
+            {TIPS[tipIdx]}
+          </Text>
         </View>
 
         {buttonText && onButtonPress && (
           <TouchableOpacity
             onPress={onButtonPress}
             style={{ marginTop: 24, width: "100%" }}
-            className="bg-indigo-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
+            className="bg-indigo-600 dark:bg-blue-600 active:bg-indigo-500 py-3.5 rounded-2xl items-center shadow-md active:scale-95"
           >
             <Text className="text-white font-extrabold text-sm">{buttonText}</Text>
           </TouchableOpacity>

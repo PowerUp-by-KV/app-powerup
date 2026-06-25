@@ -2,6 +2,9 @@
 import { useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useColorScheme } from "nativewind";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { useAppDispatch } from "@/store/hooks";
 import { setSession } from "@/store/slices/mock-interview.slice";
 import {
@@ -16,7 +19,7 @@ import {
 
 function CheckCircleIcon() {
   return (
-    <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center">
+    <View className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-900/30 items-center justify-center">
       <View className="w-6 h-6 rounded-full border-2 border-blue-500 items-center justify-center">
         <View
           style={{
@@ -40,7 +43,7 @@ function CheckCircleIcon() {
 
 function ClockIcon() {
   return (
-    <View className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center">
+    <View className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 items-center justify-center">
       <View className="w-6 h-6 rounded-full border-2 border-gray-400 items-center justify-center">
         {/* 12 o'clock hand */}
         <View
@@ -94,7 +97,7 @@ function AttemptCard({ attempt, onPress }: AttemptCardProps) {
   return (
     <Pressable
       onPress={() => onPress(attempt)}
-      className="flex-row items-center bg-white rounded-2xl px-4 py-4 mb-3"
+      className="flex-row items-center bg-white dark:bg-slate-800 rounded-2xl px-4 py-4 mb-3"
       style={({ pressed }) => ({
         opacity: pressed ? 0.72 : 1,
         shadowColor: "#000",
@@ -107,16 +110,16 @@ function AttemptCard({ attempt, onPress }: AttemptCardProps) {
       {isCompleted ? <CheckCircleIcon /> : <ClockIcon />}
 
       <View className="flex-1 ml-4">
-        <Text className="text-sm font-semibold text-gray-900">
+        <Text className="text-sm font-semibold text-gray-900 dark:text-white">
           {isCompleted && attempt.total_score !== null
             ? `Score: ${attempt.total_score}/10`
             : "In Progress"}
         </Text>
-        <Text className="text-xs text-gray-400 mt-0.5">{formattedDate}</Text>
+        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{formattedDate}</Text>
       </View>
 
       {/* Chevron */}
-      <Text className="text-gray-300 text-lg">›</Text>
+      <Text className="text-gray-300 dark:text-gray-600 text-lg">›</Text>
     </Pressable>
   );
 }
@@ -128,6 +131,9 @@ function AttemptCard({ attempt, onPress }: AttemptCardProps) {
 export function MockInterviewLobbyScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack("/");
 
   const {
     data: attemptsData,
@@ -188,22 +194,34 @@ export function MockInterviewLobbyScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-100 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 20, paddingTop: 52 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Text className="text-2xl font-bold text-gray-900 mb-1">Mock Interview</Text>
-        <Text className="text-sm text-gray-500 mb-8">Practice real interview questions</Text>
+        <View className="flex-row items-center mb-1">
+          <Pressable
+            onPress={goBack}
+            className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 items-center justify-center mr-3"
+          >
+            <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
+          </Pressable>
+          <Text className="text-2xl font-bold text-gray-900 dark:text-white">Mock Interview</Text>
+        </View>
+        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-8">
+          Practice real interview questions
+        </Text>
 
         {/* Past attempts section */}
         {isLoadingAttempts && <ActivityIndicator size="small" color="#3B82F6" className="mt-8" />}
 
         {!isLoadingAttempts && !showEmptyState && (
           <>
-            <Text className="text-base font-bold text-gray-900 mb-4">Past Attempts</Text>
+            <Text className="text-base font-bold text-gray-900 dark:text-white mb-4">
+              Past Attempts
+            </Text>
             {attempts.map((attempt) => (
               <AttemptCard key={attempt.id} attempt={attempt} onPress={handleAttemptPress} />
             ))}
@@ -212,7 +230,7 @@ export function MockInterviewLobbyScreen() {
 
         {showEmptyState && (
           <View className="items-center py-16">
-            <Text className="text-gray-400 text-sm text-center leading-6">
+            <Text className="text-gray-400 dark:text-gray-500 text-sm text-center leading-6">
               No past attempts yet.{"\n"}Start your first interview below!
             </Text>
           </View>
@@ -222,7 +240,7 @@ export function MockInterviewLobbyScreen() {
       </ScrollView>
 
       {/* Sticky footer */}
-      <View className="px-5 pb-10 pt-4 bg-gray-100">
+      <View className="px-5 pb-10 pt-4 bg-gray-100 dark:bg-slate-900">
         <Pressable
           onPress={handleStartNew}
           disabled={isStarting}

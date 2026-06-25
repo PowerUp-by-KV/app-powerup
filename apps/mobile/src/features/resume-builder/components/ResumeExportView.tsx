@@ -116,7 +116,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
 
   const handleDone = () => {
     dispatch(resetBuilderState());
-    router.replace("/home" as never);
+    router.replace("/(tabs)" as never);
   };
 
   return (

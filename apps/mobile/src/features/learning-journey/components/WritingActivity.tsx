@@ -9,6 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useColorScheme } from "nativewind";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
@@ -27,6 +28,8 @@ interface WritingActivityProps {
 }
 
 export function WritingActivity({ questions, onComplete }: WritingActivityProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const prompt = questions[0];
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -61,7 +64,9 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         }}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
-        <Text className="text-slate-900 text-xl font-bold mb-2">Your writing score</Text>
+        <Text className="text-slate-900 dark:text-white text-xl font-bold mb-2">
+          Your writing score
+        </Text>
         <Text
           style={{
             fontSize: 48,
@@ -71,17 +76,21 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         >
           {Math.round(scoreView.score)}
         </Text>
-        <Text className="text-slate-500 mb-2">
+        <Text className="text-slate-500 dark:text-zinc-400 mb-2">
           {scoreView.passed ? "Nicely written." : "Try once more — aim for clearer structure."}
         </Text>
-        <Text style={{ color: "#475569", marginBottom: 12 }}>{scoreView.feedback}</Text>
+        <Text style={{ color: isDark ? "#cbd5e1" : "#475569", marginBottom: 12 }}>
+          {scoreView.feedback}
+        </Text>
         {scoreView.grammar_errors.length > 0 && (
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ color: "#334155", fontWeight: "600", marginBottom: 6 }}>
+            <Text
+              style={{ color: isDark ? "#e2e8f0" : "#334155", fontWeight: "600", marginBottom: 6 }}
+            >
               Grammar notes
             </Text>
             {scoreView.grammar_errors.map((err, i) => (
-              <Text key={i} style={{ color: "#64748b", marginBottom: 4 }}>
+              <Text key={i} style={{ color: isDark ? "#cbd5e1" : "#64748b", marginBottom: 4 }}>
                 • {err}
               </Text>
             ))}
@@ -117,8 +126,10 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         contentContainerStyle={{ padding: 24, paddingBottom: 24 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Writing</Text>
-        <Text className="text-slate-900 text-base leading-6 mb-4">
+        <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+          Writing
+        </Text>
+        <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-4">
           {prompt?.question_text ?? ""}
         </Text>
 
@@ -126,6 +137,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           multiline
           textAlignVertical="top"
           placeholder="Write your answer here…"
+          placeholderTextColor={isDark ? "#52525b" : "#94a3b8"}
           value={text}
           onChangeText={setText}
           style={{
@@ -133,13 +145,13 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             padding: 14,
             borderRadius: 10,
             borderWidth: 1,
-            borderColor: "#e5e7eb",
-            backgroundColor: "#ffffff",
+            borderColor: isDark ? "#2d2d3a" : "#e5e7eb",
+            backgroundColor: isDark ? "#1E1F2A" : "#ffffff",
             fontSize: 15,
-            color: "#0f172a",
+            color: isDark ? "#f8fafc" : "#0f172a",
           }}
         />
-        <Text style={{ marginTop: 6, color: "#94a3b8", fontSize: 12 }}>
+        <Text style={{ marginTop: 6, color: isDark ? "#71717a" : "#94a3b8", fontSize: 12 }}>
           {text.trim().split(/\s+/).filter(Boolean).length} words
         </Text>
 
@@ -155,8 +167,8 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           paddingBottom: Platform.OS === "ios" ? 20 : 24,
           paddingTop: 12,
           borderTopWidth: 1,
-          borderTopColor: "#f1f5f9",
-          backgroundColor: "#ffffff",
+          borderTopColor: isDark ? "#2d2d3a" : "#f1f5f9",
+          backgroundColor: isDark ? "#151620" : "#ffffff",
         }}
       >
         <Pressable
@@ -164,7 +176,13 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           disabled={submitting || text.trim().length === 0}
           style={({ pressed }) => ({
             backgroundColor:
-              submitting || text.trim().length === 0 ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+              submitting || text.trim().length === 0
+                ? isDark
+                  ? "#27272a"
+                  : "#cbd5e1"
+                : pressed
+                  ? "#2563eb"
+                  : "#3b82f6",
             paddingVertical: 14,
             borderRadius: 10,
             alignItems: "center",
@@ -178,7 +196,15 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           {submitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
+            <Text
+              style={{
+                color:
+                  submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#fff") : "#fff",
+                fontWeight: "700",
+              }}
+            >
+              Submit
+            </Text>
           )}
         </Pressable>
       </View>

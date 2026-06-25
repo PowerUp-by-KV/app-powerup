@@ -2,14 +2,20 @@ import React, { useCallback } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
 import { useGetProfileResumeQuery } from "@/services/resume-api";
 import type { InterviewSessionSummary } from "../types";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
+import { useColorScheme } from "nativewind";
 
 function SessionItem({ item }: { item: InterviewSessionSummary }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const handlePress = () => {
     router.push({
       pathname: "/interview-results",
@@ -18,9 +24,12 @@ function SessionItem({ item }: { item: InterviewSessionSummary }) {
   };
 
   return (
-    <Pressable style={styles.sessionCard} onPress={handlePress}>
+    <Pressable
+      style={[styles.sessionCard, isDark && { backgroundColor: "#1E293B", shadowOpacity: 0.2 }]}
+      onPress={handlePress}
+    >
       <View style={styles.sessionHeader}>
-        <Text style={styles.sessionRole} numberOfLines={1}>
+        <Text style={[styles.sessionRole, isDark && { color: "#F8FAFC" }]} numberOfLines={1}>
           {item.derived_role || "Practice Session"}
         </Text>
       </View>
@@ -42,6 +51,9 @@ export function InterviewEntryScreen() {
 
   const isStarting = status === "starting" || status === "connecting";
   const hasResume = !!resume && resume.parse_status === "completed";
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack("/");
 
   const handleStart = useCallback(async () => {
     const sid = await startInterview();
@@ -52,8 +64,26 @@ export function InterviewEntryScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <Text style={styles.title}>Interview Playground</Text>
-      <Text style={styles.subtitle}>Practice your interview with an AI interviewer</Text>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <Pressable
+          onPress={goBack}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
+        </Pressable>
+        <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Playground</Text>
+      </View>
+      <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
+        Practice your interview with an AI interviewer
+      </Text>
 
       {status !== "idle" && status !== "done" && (
         <View style={styles.badgeRow}>
@@ -64,12 +94,14 @@ export function InterviewEntryScreen() {
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
       {!hasResume && !isLoadingResume && (
-        <View style={styles.warningBox}>
-          <Text style={styles.warningText}>
+        <View style={[styles.warningBox, isDark && { backgroundColor: "#431407" }]}>
+          <Text style={[styles.warningText, isDark && { color: "#FDBA74" }]}>
             Upload your resume first so we can tailor the interview to your profile.
           </Text>
           <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
-            <Text style={styles.resumeLinkText}>Go to Resume</Text>
+            <Text style={[styles.resumeLinkText, isDark && { color: "#818CF8" }]}>
+              Go to Resume
+            </Text>
           </Pressable>
         </View>
       )}
@@ -86,12 +118,20 @@ export function InterviewEntryScreen() {
         )}
       </Pressable>
 
-      {(sessions?.length ?? 0) > 0 && <Text style={styles.historyTitle}>Past Sessions</Text>}
+      {(sessions?.length ?? 0) > 0 && (
+        <Text style={[styles.historyTitle, isDark && { color: "#F8FAFC" }]}>Past Sessions</Text>
+      )}
     </View>
   );
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        isDark && { backgroundColor: "#0F172A" },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.listContent}>
         {renderHeader()}
         {isLoadingSessions && <ActivityIndicator style={styles.loader} />}
