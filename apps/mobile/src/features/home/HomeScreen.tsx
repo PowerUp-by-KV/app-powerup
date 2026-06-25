@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useColorScheme } from "nativewind";
+import { Feather } from "@expo/vector-icons";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -43,7 +44,7 @@ const PROGRESSION_WAVES = [
 
 export function HomeScreen() {
   const router = useRouter();
-  const { colorScheme } = useColorScheme();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
@@ -261,19 +262,33 @@ export function HomeScreen() {
                 Ready to learn something new?
               </Text>
             </View>
-            <Pressable
-              onPress={() => router.push("/profile" as never)}
-              className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"
-            >
-              <View className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-900 items-center justify-center overflow-hidden">
-                <Image
-                  source={{
-                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                  }}
-                  className="w-full h-full"
+            <View className="flex-row items-center space-x-3">
+              <Pressable
+                onPress={toggleColorScheme}
+                className={`w-10 h-10 rounded-full items-center justify-center ${
+                  isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
+                }`}
+              >
+                <Feather
+                  name={isDark ? "sun" : "moon"}
+                  size={18}
+                  color={isDark ? "#f8fafc" : "#1e293b"}
                 />
-              </View>
-            </Pressable>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/profile" as never)}
+                className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"
+              >
+                <View className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-900 items-center justify-center overflow-hidden">
+                  <Image
+                    source={{
+                      uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                    }}
+                    className="w-full h-full"
+                  />
+                </View>
+              </Pressable>
+            </View>
           </View>
           {profile && profile.email_verified === false && (
             <VerifyEmailBanner email={profile.email} />
@@ -313,14 +328,14 @@ export function HomeScreen() {
             icon="✨"
             items={[
               {
-                title: "Mock Interview",
-                subtitle: "Common interview questions",
-                onPress: () => router.push("/mock-interview" as never),
+                title: "Interview Playground",
+                subtitle: "Try, learn and improve — No pressure",
+                onPress: () => router.push("/interview-playground" as never),
               },
               {
-                title: "Real world Scenario",
-                subtitle: "Workplace situations",
-                onPress: () => router.push("/interview-playground" as never),
+                title: "Interview Buddy",
+                subtitle: "Practice with a buddy before it counts",
+                onPress: () => router.push("/ai-interview" as never),
               },
             ]}
           />

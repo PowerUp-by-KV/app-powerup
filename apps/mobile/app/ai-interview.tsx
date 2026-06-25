@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import type { Href } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useColorScheme } from "nativewind";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 const ROUTE_RESUME = "/resume" as Href;
 
@@ -16,10 +18,10 @@ import type { InterviewSessionSummary } from "@/features/interview-playground/ty
 // ---------------------------------------------------------------------------
 // Past session card
 // ---------------------------------------------------------------------------
-function SessionCard({ item }: { item: InterviewSessionSummary }) {
+function SessionCard({ item, isDark }: { item: InterviewSessionSummary; isDark: boolean }) {
   return (
     <Pressable
-      style={styles.sessionCard}
+      style={[styles.sessionCard, isDark && { backgroundColor: "#1E293B", borderColor: "#334155" }]}
       onPress={() =>
         router.push({
           pathname: "/interview-results",
@@ -28,12 +30,12 @@ function SessionCard({ item }: { item: InterviewSessionSummary }) {
       }
     >
       <View style={styles.sessionHeader}>
-        <Text style={styles.sessionRole} numberOfLines={1}>
+        <Text style={[styles.sessionRole, isDark && { color: "#F8FAFC" }]} numberOfLines={1}>
           {item.derived_role || "Interview"}
         </Text>
         {item.grade && (
-          <View style={styles.gradeBadge}>
-            <Text style={styles.gradeText}>{item.grade}</Text>
+          <View style={[styles.gradeBadge, isDark && { backgroundColor: "#312E81" }]}>
+            <Text style={[styles.gradeText, isDark && { color: "#A5B4FC" }]}>{item.grade}</Text>
           </View>
         )}
       </View>
@@ -50,11 +52,16 @@ function SessionCard({ item }: { item: InterviewSessionSummary }) {
 // ---------------------------------------------------------------------------
 // Checklist row
 // ---------------------------------------------------------------------------
-function CheckRow({ label }: { label: string }) {
+function CheckRow({ label, isDark }: { label: string; isDark: boolean }) {
   return (
     <View style={styles.checkRow}>
-      <Feather name="check-circle" size={16} color="#4F46E5" style={styles.checkIcon} />
-      <Text style={styles.checkLabel}>{label}</Text>
+      <Feather
+        name="check-circle"
+        size={16}
+        color={isDark ? "#818CF8" : "#4F46E5"}
+        style={styles.checkIcon}
+      />
+      <Text style={[styles.checkLabel, isDark && { color: "#CBD5E1" }]}>{label}</Text>
     </View>
   );
 }
@@ -64,6 +71,10 @@ function CheckRow({ label }: { label: string }) {
 // ---------------------------------------------------------------------------
 export default function InterviewBuddyScreen() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack("/");
+
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "buddy",
@@ -87,7 +98,13 @@ export default function InterviewBuddyScreen() {
 
   if (isLoadingResume) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+          isDark && { backgroundColor: "#0F172A" },
+        ]}
+      >
         <ActivityIndicator style={styles.loader} size="large" color="#4F46E5" />
       </View>
     );
@@ -96,16 +113,26 @@ export default function InterviewBuddyScreen() {
   // Resume gate
   if (!hasResume) {
     return (
-      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <View
+        style={[
+          styles.safe,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+          isDark && { backgroundColor: "#0F172A" },
+        ]}
+      >
         <ScrollView contentContainerStyle={styles.content}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color="#475569" />
+          <Pressable onPress={goBack} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color={isDark ? "#CBD5E1" : "#475569"} />
           </Pressable>
-          <Text style={styles.title}>Interview Buddy</Text>
-          <View style={styles.gateCard}>
-            <Feather name="file-text" size={48} color="#4F46E5" />
-            <Text style={styles.gateTitle}>Upload your resume first</Text>
-            <Text style={styles.gateSub}>
+          <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Buddy</Text>
+          <View
+            style={[styles.gateCard, isDark && { backgroundColor: "#1E293B", shadowOpacity: 0.2 }]}
+          >
+            <Feather name="file-text" size={48} color={isDark ? "#818CF8" : "#4F46E5"} />
+            <Text style={[styles.gateTitle, isDark && { color: "#F8FAFC" }]}>
+              Upload your resume first
+            </Text>
+            <Text style={[styles.gateSub, isDark && { color: "#94A3B8" }]}>
               Interview Buddy tailors every question to your real skills and experience. Upload your
               resume to unlock your mock interview.
             </Text>
@@ -119,38 +146,58 @@ export default function InterviewBuddyScreen() {
   }
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        isDark && { backgroundColor: "#0F172A" },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color="#475569" />
+        <Pressable onPress={goBack} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color={isDark ? "#CBD5E1" : "#475569"} />
         </Pressable>
 
         <View style={styles.titleRow}>
-          <View style={styles.iconCircle}>
-            <Feather name="user" size={22} color="#4F46E5" />
+          <View style={[styles.iconCircle, isDark && { backgroundColor: "#312E81" }]}>
+            <Feather name="user" size={22} color={isDark ? "#A5B4FC" : "#4F46E5"} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>Interview Buddy</Text>
-            <Text style={styles.subtitle}>Full mock interview simulation</Text>
+            <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Buddy</Text>
+            <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
+              Full mock interview simulation
+            </Text>
           </View>
         </View>
 
         {/* Candidate card */}
         {candidateName && (
-          <View style={styles.candidateCard}>
-            <Text style={styles.candidateLabel}>Candidate</Text>
-            <Text style={styles.candidateName}>{candidateName}</Text>
+          <View
+            style={[
+              styles.candidateCard,
+              isDark && { backgroundColor: "#1E293B", borderColor: "#334155" },
+            ]}
+          >
+            <Text style={[styles.candidateLabel, isDark && { color: "#64748B" }]}>Candidate</Text>
+            <Text style={[styles.candidateName, isDark && { color: "#F8FAFC" }]}>
+              {candidateName}
+            </Text>
             {skills.length > 0 && (
               <View style={styles.skillsRow}>
                 {skills.map((s) => (
-                  <View key={s} style={styles.skillChip}>
-                    <Text style={styles.skillText}>{s}</Text>
+                  <View
+                    key={s}
+                    style={[styles.skillChip, isDark && { backgroundColor: "#312E81" }]}
+                  >
+                    <Text style={[styles.skillText, isDark && { color: "#A5B4FC" }]}>{s}</Text>
                   </View>
                 ))}
                 {(resume?.skills?.length ?? 0) > 5 && (
-                  <View style={styles.skillChip}>
-                    <Text style={styles.skillText}>+{(resume?.skills?.length ?? 0) - 5} more</Text>
+                  <View style={[styles.skillChip, isDark && { backgroundColor: "#312E81" }]}>
+                    <Text style={[styles.skillText, isDark && { color: "#A5B4FC" }]}>
+                      +{(resume?.skills?.length ?? 0) - 5} more
+                    </Text>
                   </View>
                 )}
               </View>
@@ -159,12 +206,26 @@ export default function InterviewBuddyScreen() {
         )}
 
         {/* What to expect */}
-        <View style={styles.expectCard}>
-          <Text style={styles.expectTitle}>What to expect</Text>
-          <CheckRow label="6–8 questions across Communication & Behavioral skills" />
-          <CheckRow label="Formal AI interviewer — no hints or coaching during session" />
-          <CheckRow label="Full score breakdown with grade (A–F) at the end" />
-          <CheckRow label="Strengths and improvement areas tailored to your answers" />
+        <View
+          style={[
+            styles.expectCard,
+            isDark && { backgroundColor: "#1E293B", borderColor: "#334155" },
+          ]}
+        >
+          <Text style={[styles.expectTitle, isDark && { color: "#F8FAFC" }]}>What to expect</Text>
+          <CheckRow
+            label="6–8 questions across Communication & Behavioral skills"
+            isDark={isDark}
+          />
+          <CheckRow
+            label="Formal AI interviewer — no hints or coaching during session"
+            isDark={isDark}
+          />
+          <CheckRow label="Full score breakdown with grade (A–F) at the end" isDark={isDark} />
+          <CheckRow
+            label="Strengths and improvement areas tailored to your answers"
+            isDark={isDark}
+          />
         </View>
 
         {/* Connection status */}
@@ -199,10 +260,10 @@ export default function InterviewBuddyScreen() {
         {/* Past sessions */}
         {(sessions?.length ?? 0) > 0 && (
           <View style={styles.historySection}>
-            <Text style={styles.historyTitle}>Past Sessions</Text>
+            <Text style={[styles.historyTitle, isDark && { color: "#F8FAFC" }]}>Past Sessions</Text>
             {isLoadingSessions && <ActivityIndicator style={{ marginTop: 12 }} />}
             {(sessions ?? []).map((item) => (
-              <SessionCard key={item.session_id} item={item} />
+              <SessionCard key={item.session_id} item={item} isDark={isDark} />
             ))}
           </View>
         )}

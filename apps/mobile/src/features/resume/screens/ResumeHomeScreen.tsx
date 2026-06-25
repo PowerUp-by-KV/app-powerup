@@ -405,7 +405,7 @@ export function ResumeHomeScreen() {
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Pressable onPress={() => router.replace("/home" as never)} style={styles.backButton}>
+          <Pressable onPress={() => router.replace("/(tabs)" as never)} style={styles.backButton}>
             <MaterialIcons name="arrow-back" size={26} color="#4F46E5" />
           </Pressable>
           <View style={{ flex: 1 }}>

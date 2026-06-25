@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { api } from "./api";
+import { api, API_BASE_URL, refreshAccessToken } from "./api";
+import { getAuthSession } from "./auth-storage";
 import { addFeedback, markComplete, setCurrentQuestion } from "@/store/slices/mock-interview.slice";
 import type { PerQuestionFeedback } from "@/store/slices/mock-interview.slice";
 
@@ -151,22 +152,50 @@ const mockInterviewApi = api.injectEndpoints({
     // a FormData instance as the body — it removes the Content-Type header so
     // the browser can set the correct multipart boundary itself.
     submitAnswer: builder.mutation<SubmitAnswerResponse, SubmitAnswerRequest>({
-      query: ({ sessionId, questionId, audioFile, transcript }) => {
-        const form = new FormData();
-        form.append("question_id", questionId);
-        if (audioFile) {
-          form.append("audio_file", audioFile);
+      queryFn: async ({ sessionId, questionId, audioFile, transcript }) => {
+        try {
+          const form = new FormData();
+          form.append("question_id", questionId);
+          if (audioFile) {
+            form.append("audio_file", audioFile);
+          }
+          if (transcript) {
+            form.append("transcript", transcript);
+          }
+
+          const session = await getAuthSession();
+          const headers: Record<string, string> = {};
+          if (session?.access_token) {
+            headers["Authorization"] = `Bearer ${session.access_token}`;
+          }
+
+          let response = await fetch(`${API_BASE_URL}/v1/mock-interview/${sessionId}/answers`, {
+            method: "POST",
+            headers,
+            body: form,
+          });
+
+          if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+              headers["Authorization"] = `Bearer ${newToken}`;
+              response = await fetch(`${API_BASE_URL}/v1/mock-interview/${sessionId}/answers`, {
+                method: "POST",
+                headers,
+                body: form,
+              });
+            }
+          }
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({ detail: "Submit failed" }));
+            return { error: { status: response.status, data: err } };
+          }
+          const data = (await response.json()) as SubmitAnswerResponse;
+          return { data };
+        } catch (err) {
+          return { error: { status: "FETCH_ERROR", error: String(err) } };
         }
-        if (transcript) {
-          form.append("transcript", transcript);
-        }
-        return {
-          url: `/v1/mock-interview/${sessionId}/answers`,
-          method: "POST",
-          body: form,
-          // Do NOT set Content-Type — browser sets it with the correct boundary
-          formData: true,
-        };
       },
       // After a successful submission, store the feedback in Redux so the
       // Feedback screen can read it without an extra network call.

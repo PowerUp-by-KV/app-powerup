@@ -3,16 +3,19 @@ import React, { useEffect, useState } from "react";
 import { Feather } from "@expo/vector-icons";
 import { Tabs, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 
 import { getAuthSession } from "@/services/auth-storage";
-
-const ACTIVE_COLOR = "#4f46e5";
-const INACTIVE_COLOR = "#94a3b8";
 
 export default function TabLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
+  const activeColor = "#3b82f6";
+  const inactiveColor = isDark ? "#7f85a3" : "#94a3b8";
 
   useEffect(() => {
     getAuthSession().then((session) => {
@@ -29,16 +32,30 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      backBehavior="history"
       screenOptions={{
-        tabBarActiveTintColor: ACTIVE_COLOR,
-        tabBarInactiveTintColor: INACTIVE_COLOR,
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         tabBarStyle: {
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
           borderTopWidth: 0,
-          elevation: 8,
+          elevation: 10,
+          shadowColor: "#000000",
+          shadowOffset: {
+            width: 0,
+            height: -4,
+          },
+          shadowOpacity: isDark ? 0.3 : 0.08,
+          shadowRadius: 12,
           height: 64 + Math.max(0, insets.bottom),
           paddingBottom: 8 + Math.max(0, insets.bottom),
-          width: "100%",
+          backgroundColor: isDark ? "#252945" : "#ffffff",
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
         },
         headerShown: false,
       }}
@@ -80,6 +97,16 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen name="two" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="profile/avatar" options={{ href: null }} />
+      <Tabs.Screen name="profile/custom-avatar" options={{ href: null }} />
+      <Tabs.Screen name="profile/edit" options={{ href: null }} />
+      <Tabs.Screen name="profile/language" options={{ href: null }} />
+      <Tabs.Screen name="profile/resume" options={{ href: null }} />
+      <Tabs.Screen name="achievements/accuracy" options={{ href: null }} />
+      <Tabs.Screen name="achievements/level" options={{ href: null }} />
+      <Tabs.Screen name="achievements/medals" options={{ href: null }} />
+      <Tabs.Screen name="achievements/xp" options={{ href: null }} />
     </Tabs>
   );
 }

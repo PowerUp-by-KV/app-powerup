@@ -8,6 +8,7 @@ import type {
   Grade,
   StarAnalysis,
 } from "../types";
+import { useColorScheme } from "nativewind";
 
 interface ScoreBreakdownProps {
   evaluation: EvaluationResult;
@@ -33,18 +34,21 @@ function ScoreBar({ label, value, weight }: { label: string; value: number; weig
   // Guard against undefined/null/NaN from older evaluation payloads, which
   // would otherwise produce an invalid "NaN%" width.
   const clamped = Math.min(100, Math.max(0, value || 0));
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <View style={styles.barRow}>
       <View style={styles.barLabelWrap}>
-        <Text style={styles.barLabel}>{label}</Text>
+        <Text style={[styles.barLabel, isDark && { color: "#CBD5E1" }]}>{label}</Text>
         {weight && <Text style={styles.barWeight}>{weight}</Text>}
       </View>
-      <View style={styles.barTrack}>
+      <View style={[styles.barTrack, isDark && { backgroundColor: "#334155" }]}>
         <View
           style={[styles.barFill, { width: `${clamped}%`, backgroundColor: barColor(clamped) }]}
         />
       </View>
-      <Text style={styles.barValue}>{Math.round(clamped)}</Text>
+      <Text style={[styles.barValue, isDark && { color: "#F8FAFC" }]}>{Math.round(clamped)}</Text>
     </View>
   );
 }
@@ -68,9 +72,12 @@ function SectionHeader({
   overall: number;
   weight: string;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <View style={styles.sectionHeaderRow}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>{title}</Text>
       <View style={styles.sectionMeta}>
         <Text style={styles.sectionWeight}>{weight} of total</Text>
         <Text style={styles.sectionOverall}>{Math.round(overall)}/100</Text>
@@ -116,6 +123,8 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
   const communication = evaluation.communication ?? EMPTY_COMMUNICATION;
   const behavioral = evaluation.behavioral ?? EMPTY_BEHAVIORAL;
   const star_analysis = evaluation.star_analysis ?? EMPTY_STAR;
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const communicationItems: { label: string; value: number; weight: string }[] = [
     { label: "Clarity & Articulation", value: communication.clarity_articulation, weight: "15%" },
@@ -148,15 +157,19 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
           <Text style={[styles.gradeText, { color: gradeColors.text }]}>{evaluation.grade}</Text>
         </View>
         <View style={styles.scoreBlock}>
-          <Text style={styles.scoreNumber}>{evaluation.final_score}</Text>
+          <Text style={[styles.scoreNumber, isDark && { color: "#F8FAFC" }]}>
+            {evaluation.final_score}
+          </Text>
           <Text style={styles.scoreLabel}>/ 100</Text>
         </View>
       </View>
 
       {!!evaluation.summary && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Summary</Text>
-          <Text style={styles.bodyText}>{evaluation.summary}</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>Summary</Text>
+          <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>
+            {evaluation.summary}
+          </Text>
         </View>
       )}
 
@@ -179,7 +192,7 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
       {/* STAR Method */}
       <View style={styles.section}>
         <View style={styles.starHeaderRow}>
-          <Text style={styles.sectionTitle}>STAR Method</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>STAR Method</Text>
           <Text style={styles.starScore}>{star_analysis.star_score}/4</Text>
         </View>
         <View style={styles.starRow}>
@@ -189,18 +202,20 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
           <StarBadge label="Result" achieved={star_analysis.result} />
         </View>
         {!!star_analysis.feedback && (
-          <Text style={[styles.bodyText, styles.starFeedback]}>{star_analysis.feedback}</Text>
+          <Text style={[styles.bodyText, styles.starFeedback, isDark && { color: "#CBD5E1" }]}>
+            {star_analysis.feedback}
+          </Text>
         )}
       </View>
 
       {/* Strengths */}
       {evaluation.strengths.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Strengths</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>Strengths</Text>
           {evaluation.strengths.map((s, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletGreen}>+</Text>
-              <Text style={styles.bodyText}>{s}</Text>
+              <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>
             </View>
           ))}
         </View>
@@ -209,11 +224,13 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
       {/* Areas to improve */}
       {evaluation.improvements.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Areas to Improve</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>
+            Areas to Improve
+          </Text>
           {evaluation.improvements.map((s, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletAmber}>→</Text>
-              <Text style={styles.bodyText}>{s}</Text>
+              <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>
             </View>
           ))}
         </View>

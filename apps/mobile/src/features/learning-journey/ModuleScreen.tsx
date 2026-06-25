@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
@@ -24,6 +25,8 @@ export function ModuleScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const params = useLocalSearchParams<{
     day_id?: string;
     module_id?: string;
@@ -202,7 +205,7 @@ export function ModuleScreen() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "#f8fafc",
+          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
           justifyContent: "center",
           alignItems: "center",
           paddingTop: insets.top,
@@ -210,7 +213,7 @@ export function ModuleScreen() {
         }}
         className="p-6"
       >
-        <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+        <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
           <View
             style={{
               width: 140,
@@ -229,10 +232,10 @@ export function ModuleScreen() {
             />
           </View>
 
-          <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+          <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
             Server Connection Lost
           </Text>
-          <Text className="text-slate-500 text-sm text-center leading-5 mb-4">
+          <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4">
             We couldn't connect to the learning server. Please ensure the backend service is running
             and try again.
           </Text>
@@ -243,16 +246,18 @@ export function ModuleScreen() {
           <View className="w-full gap-3">
             <Pressable
               onPress={handleRetry}
-              className="w-full bg-slate-900 active:bg-slate-800 py-4 rounded-xl items-center justify-center shadow-sm"
+              className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
             >
               <Text className="text-white font-extrabold text-sm">Try Again</Text>
             </Pressable>
 
             <Pressable
               onPress={() => safeBack()}
-              className="w-full bg-slate-100 active:bg-slate-200 py-4 rounded-xl items-center justify-center"
+              className="w-full bg-slate-100 active:bg-slate-200 dark:bg-slate-800 py-4 rounded-xl items-center justify-center"
             >
-              <Text className="text-slate-700 font-extrabold text-sm">Go Back</Text>
+              <Text className="text-slate-700 dark:text-slate-300 font-extrabold text-sm">
+                Go Back
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -274,18 +279,18 @@ export function ModuleScreen() {
   return (
     <View
       style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
-      className="bg-white"
+      className="bg-white dark:bg-[#151620]"
     >
-      <View className="px-4 pt-4 pb-2 border-b border-slate-100 bg-white">
+      <View className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#151620]">
         {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
         <View className="flex-row items-center w-full mb-3">
           <Pressable
             onPress={() => safeBack()}
-            className="w-10 h-10 rounded-full bg-white border border-slate-100 items-center justify-center shadow-sm active:opacity-85"
+            className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-750 items-center justify-center shadow-sm active:opacity-85"
           >
-            <Feather name="x" size={20} color="#0f172a" />
+            <Feather name="x" size={20} color={isDark ? "#ffffff" : "#0f172a"} />
           </Pressable>
-          <View className="flex-1 h-2 bg-slate-200/80 rounded-full ml-4 overflow-hidden">
+          <View className="flex-1 h-2 bg-slate-200/80 dark:bg-zinc-800 rounded-full ml-4 overflow-hidden">
             <LinearGradient
               colors={["#3b82f6", "#22c55e"]}
               start={{ x: 0, y: 0 }}
@@ -298,11 +303,11 @@ export function ModuleScreen() {
 
         {/* Section details with Category title and progress count */}
         <View className="flex-row items-center justify-between px-1 mb-1">
-          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+          <Text className="text-xs font-extrabold text-slate-400 dark:text-zinc-500 tracking-widest uppercase">
             {currentActivity?.skill_type || "Activity"}
           </Text>
-          <View className="bg-slate-100/80 px-3 py-1 rounded-full border border-slate-200/40">
-            <Text className="text-[10px] font-extrabold text-slate-500">
+          <View className="bg-slate-100/80 dark:bg-zinc-800/80 px-3 py-1 rounded-full border border-slate-200/40 dark:border-zinc-700/40">
+            <Text className="text-[10px] font-extrabold text-slate-500 dark:text-zinc-400">
               Activity {currentStep} of {totalSteps}
             </Text>
           </View>
