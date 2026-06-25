@@ -12,7 +12,6 @@ import {
 } from "@/store/slices/resume-builder.slice";
 import { EnhanceButton } from "./EnhanceButton";
 import { Feather } from "@expo/vector-icons";
-import { resolveApiAssetUrl } from "@/services/api";
 
 interface ResumeReviewViewProps {
   onContinue: (useAutoEnhance: boolean) => void;
@@ -51,13 +50,17 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
     bodyText: "#333",
   };
 
-  // Section Header Component
   const SectionHeader = ({
     title,
     showEnhance = false,
     textToEnhance = "",
-    onEnhanced = (t: string) => {},
-  }: any) => (
+    onEnhanced = (_t: string) => {},
+  }: {
+    title: string;
+    showEnhance?: boolean;
+    textToEnhance?: string;
+    onEnhanced?: (t: string) => void;
+  }) => (
     <View style={styles.sectionHeaderContainer}>
       <View style={[styles.sectionTitleWrapper, { backgroundColor: theme.headerBg }]}>
         <Text style={[styles.sectionTitle, { color: theme.headerText, fontFamily: docFont }]}>
@@ -112,8 +115,7 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
 
   const renderSkills = () => {
     if (!draftResume.skills || draftResume.skills.length === 0) return null;
-    const isSingleColumn =
-      draftResume.layout !== "double_column" && draftResume.layout !== "two_column";
+    const isSingleColumn = draftResume.layout !== "double_column";
 
     return (
       <View style={styles.rightSection}>
@@ -336,7 +338,7 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
 
           {/* Document Preview Box */}
           <View style={styles.documentBox}>
-            {draftResume.layout === "double_column" || draftResume.layout === "two_column" ? (
+            {draftResume.layout === "double_column" ? (
               <View style={styles.doubleColumnLayout}>
                 {/* LEFT COLUMN (Sidebar) */}
                 <View style={[styles.leftColumn, { backgroundColor: theme.sidebarBg }]}>

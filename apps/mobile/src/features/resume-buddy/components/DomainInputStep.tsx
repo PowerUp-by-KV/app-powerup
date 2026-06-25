@@ -24,14 +24,14 @@ const SUGGESTED_DOMAINS = [
 ];
 
 interface DomainInputStepProps {
-  onAnalyze: (domain: string, file?: any) => void;
+  onAnalyze: (domain: string, file?: DocumentPicker.DocumentPickerAsset) => void;
   onHistory: () => void;
   isLoading: boolean;
 }
 
 export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInputStepProps) {
   const [domain, setDomain] = useState("Full Stack Developer");
-  const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
   const handleBrowseFiles = async () => {
     try {
@@ -43,7 +43,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
 
       if (result.canceled) return;
       if (result.assets && result.assets.length > 0) {
-        setSelectedFile(result.assets[0]);
+        setSelectedFile(result.assets[0] || null);
       }
     } catch {
       Alert.alert("Error", "Failed to pick document. Please try again.");
@@ -60,7 +60,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
       Alert.alert("Domain Required", "Please enter a target role or domain to proceed.");
       return;
     }
-    onAnalyze(trimmed, selectedFile);
+    onAnalyze(trimmed, selectedFile || undefined);
   };
 
   return (
@@ -262,7 +262,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                     {selectedFile.name}
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 12 }}>
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    {selectedFile.size
+                      ? (selectedFile.size / 1024 / 1024).toFixed(2) + " MB"
+                      : "Unknown size"}
                   </Text>
                   <TouchableOpacity
                     onPress={handleClearFile}

@@ -68,11 +68,14 @@ export const resumeBuilderApi = api.injectEndpoints({
       ResumeExportResponse,
       { auto_enhance: boolean; file_type?: "pdf" | "docx" }
     >({
-      query: ({ auto_enhance, file_type = "pdf" }) => ({
-        url: "/v1/resume-builder/export",
-        method: "GET",
-        params: { auto_enhance, file_type },
-      }),
+      query: ({ auto_enhance, file_type = "pdf" }) => {
+        const params: Record<string, string | boolean> = { auto_enhance, format: file_type };
+        return {
+          url: "/v1/resume-builder/export",
+          method: "GET",
+          params,
+        };
+      },
     }),
   }),
 });

@@ -12,16 +12,12 @@ import {
 } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  selectBuilderDraft,
-  selectBuilderIsDirty,
-  resetBuilderState,
-} from "@/store/slices/resume-builder.slice";
+import { selectBuilderDraft, resetBuilderState } from "@/store/slices/resume-builder.slice";
 import {
   useLazyExportBuiltResumeQuery,
   useUpdateBuiltResumeMutation,
 } from "@/services/resume-builder-api";
-import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 interface ResumeExportViewProps {
@@ -33,13 +29,11 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
   const router = useRouter();
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
-  const isDirty = useAppSelector(selectBuilderIsDirty);
 
   const [triggerExport] = useLazyExportBuiltResumeQuery();
   const [updateBuiltResume] = useUpdateBuiltResumeMutation();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [cachedPdfUrl, setCachedPdfUrl] = useState<string | null>(null);
 
   // Helper to ensure we have a saved & generated export URL
   const getExportUrl = async (fileType: "pdf" | "docx" = "pdf"): Promise<string | null> => {
@@ -58,35 +52,34 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
         file_type: fileType,
       }).unwrap();
       if (result?.url) {
-        if (fileType === "pdf") setCachedPdfUrl(result.url);
         return result.url;
       }
       throw new Error(`Export response did not contain ${fileType.toUpperCase()} URL`);
     } catch (error) {
       console.warn(`${fileType.toUpperCase()} Export failure:`, error);
-      Alert.alert("Export Failed", "Failed to generate your resume. Please try again.");
+      const err = error as Record<string, unknown>;
+      const errorData = err?.data as Record<string, unknown> | undefined;
+      const errorDetail = errorData?.detail || errorData?.message || JSON.stringify(err);
+      Alert.alert("Export Failed", `Failed to generate your resume. Details: ${errorDetail}`);
       return null;
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const getBypassedUrl = (url: string) => {
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}t=${Date.now()}`;
-  };
-
   const handleDownloadPdf = async () => {
     const url = await getExportUrl("pdf");
     if (url) {
-      await Linking.openURL(getBypassedUrl(url));
+      await Linking.openURL(url);
     }
   };
 
   const handleDownloadDocx = async () => {
     const url = await getExportUrl("docx");
     if (url) {
-      await Linking.openURL(getBypassedUrl(url));
+      // Use Microsoft Office viewer to display the DOCX in the browser instead of just downloading it
+      const viewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
+      await Linking.openURL(viewerUrl);
     }
   };
 
@@ -94,7 +87,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
     const url = await getExportUrl("pdf");
     if (url) {
       await Linking.openURL(
-        `mailto:?subject=My Professional Resume&body=Here is my resume: ${getBypassedUrl(url)}`,
+        `mailto:?subject=My Professional Resume&body=Here is my resume: ${url}`,
       );
     }
   };
@@ -103,7 +96,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
     const url = await getExportUrl("pdf");
     if (url) {
       await Linking.openURL(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getBypassedUrl(url))}`,
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
       );
     }
   };
@@ -113,7 +106,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
     if (url) {
       try {
         await Share.share({
-          message: `Check out my professional resume: ${getBypassedUrl(url)}`,
+          message: `Check out my professional resume: ${url}`,
         });
       } catch (error) {
         console.error("Error sharing:", error);
