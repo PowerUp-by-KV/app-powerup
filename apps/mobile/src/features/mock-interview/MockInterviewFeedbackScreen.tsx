@@ -77,7 +77,6 @@ function CriteriaBar({ label, score }: CriteriaBarProps) {
 
 export function MockInterviewFeedbackScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack("/");

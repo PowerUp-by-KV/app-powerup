@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FlatList, Pressable, Text, View, Image, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
@@ -36,17 +36,10 @@ export function LeaderboardScreen() {
   const [friendsOpen, setFriendsOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const [theme, setTheme] = useState<"light" | "dark">(colorScheme);
-
-  useEffect(() => {
-    setTheme(colorScheme);
-  }, [colorScheme]);
-
-  const isDark = theme === "dark";
+  const isDark = colorScheme === "dark";
 
   const handleToggleDarkMode = () => {
     const nextScheme = isDark ? "light" : "dark";
-    setTheme(nextScheme);
     setColorScheme(nextScheme);
 
     if (Platform.OS === "web" && typeof document !== "undefined") {

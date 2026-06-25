@@ -2,7 +2,6 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 
 export interface TapToBuildResult {
   correct: boolean;
@@ -27,8 +26,6 @@ export function TapToBuild({
   onCheck,
   onPlayAudio,
 }: TapToBuildProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const targetLength = correctSequence.length;
   const [slots, setSlots] = useState<(string | null)[]>(() => Array(targetLength).fill(null));
   const [usedTokenIndices, setUsedTokenIndices] = useState<Set<number>>(new Set());

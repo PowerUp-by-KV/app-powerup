@@ -8,10 +8,9 @@ import type { Href } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
-const SCREEN_TITLE = "Convo Coach";
 const ROUTE_FEEDBACK = "/mock-interview/feedback" as Href;
 const ROUTE_RESULT = "/mock-interview/result" as Href;
-const ROUTE_HOME = "/(tabs)" as Href;
+const ROUTE_HOME = "/(tabs)";
 import { useAppSelector } from "@/store/hooks";
 import { useGetNextQuestionQuery, useSubmitAnswerMutation } from "@/services/mock-interview-api";
 import type { SubmitAnswerResponse } from "@/services/mock-interview-api";
@@ -212,7 +211,7 @@ export function MockInterviewQuestionScreen() {
       const result = await submitAnswer({
         sessionId,
         questionId: currentQuestionId,
-        audioFile: undefined, // Omit audioFile to force instant transcript grading on backend
+        audioFile: transcript ? undefined : (audioFile ?? undefined),
         transcript: transcript || undefined,
       }).unwrap();
       setLastScore(result);

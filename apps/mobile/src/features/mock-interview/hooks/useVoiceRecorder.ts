@@ -24,7 +24,6 @@ export function useVoiceRecorder(): VoiceRecorderState {
 
   // Ref keeps the Recording instance across renders without causing re-renders
   const recordingRef = useRef<Audio.Recording | null>(null);
-  const recognitionRef = useRef<any>(null);
 
   const startRecording = useCallback(async () => {
     try {
@@ -50,25 +49,6 @@ export function useVoiceRecorder(): VoiceRecorderState {
       // Clear any previous recording when a new one starts
       setAudioFile(null);
       setTranscript("");
-
-      if (typeof window !== "undefined") {
-        const SpeechRecognition =
-          (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.onresult = (event: any) => {
-            let currentTranscript = "";
-            for (let i = 0; i < event.results.length; i++) {
-              currentTranscript += event.results[i][0].transcript;
-            }
-            setTranscript(currentTranscript);
-          };
-          recognition.start();
-          recognitionRef.current = recognition;
-        }
-      }
     } catch (error) {
       console.warn("Failed to start recording:", error);
     }
@@ -80,13 +60,6 @@ export function useVoiceRecorder(): VoiceRecorderState {
 
     try {
       await recording.stopAndUnloadAsync();
-
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-        recognitionRef.current = null;
-      }
 
       // Restore audio mode for playback
       await Audio.setAudioModeAsync({
