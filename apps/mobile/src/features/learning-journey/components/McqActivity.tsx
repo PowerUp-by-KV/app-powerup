@@ -4,6 +4,8 @@ import { Feather } from "@expo/vector-icons";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
+import { useColorScheme } from "nativewind";
+
 import { AnswerResultSheet } from "./AnswerResultSheet";
 import { SpeedMatchingGame } from "./SpeedMatchingGame";
 
@@ -29,17 +31,29 @@ function asOption(opt: unknown): { id: string; text: string } {
   return { id: o.id ?? o.text ?? "", text: o.text ?? o.id ?? "" };
 }
 
+function normalize(str: string): string {
+  return str.toLowerCase().replace(/→/g, "->").replace(/\s+/g, " ").trim();
+}
+
 // Helper to check if an option matches the correct answer
 function isMatch(opt: { id: string; text: string }, index: number, correctAnswer: string): boolean {
-  const optId = opt.id.trim();
-  const ans = correctAnswer.trim();
-  if (optId === ans) return true;
+  const optId = normalize(opt.id);
+  const optText = normalize(opt.text);
+  const ans = normalize(correctAnswer);
 
-  const letter = String.fromCharCode(65 + index);
-  if (ans.toUpperCase() === letter) return true;
-  if (ans.startsWith(`${letter}: `) && ans.substring(3).trim() === optId) return true;
-  if (ans.startsWith(`${letter}. `) && ans.substring(3).trim() === optId) return true;
-  if (ans.startsWith(`${letter}) `) && ans.substring(3).trim() === optId) return true;
+  if (optId === ans || optText === ans) return true;
+
+  const letter = String.fromCharCode(65 + index).toLowerCase();
+  if (ans === letter) return true;
+
+  // Check if answer starts with letter prefix (e.g. "c: ...", "c. ...", "c) ...")
+  const prefixes = [`${letter}:`, `${letter}.`, `${letter})`];
+  for (const prefix of prefixes) {
+    if (ans.startsWith(prefix)) {
+      const remaining = ans.substring(prefix.length).trim();
+      if (remaining === optId || remaining === optText) return true;
+    }
+  }
 
   return false;
 }
@@ -49,6 +63,9 @@ function isMatch(opt: { id: string; text: string }, index: number, correctAnswer
  * Builds an aggregate pass/fail across the question set when the user finishes.
  */
 export function McqActivity({ questions, onComplete, isNested = false }: McqActivityProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const isSpeedMatching = useMemo(
     () => questions.some((q) => q.question_type === "speed_matching"),
     [questions],
@@ -147,7 +164,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     if (correct) setCorrectCount(nextCorrectCount);
 
     const correctLetter =
-      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : correctAnswerStr;
+      correctIndex !== -1
+        ? `${String.fromCharCode(65 + correctIndex)}: ${options[correctIndex]?.text}`
+        : correctAnswerStr;
 
     setLastCorrect(correct);
     setLastCorrectAnswer(correctLetter);
@@ -198,7 +217,13 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               width: 80,
               height: 80,
               borderRadius: 40,
-              backgroundColor: scoreView.passed ? "#dcfce7" : "#fee2e2",
+              backgroundColor: scoreView.passed
+                ? isDark
+                  ? "rgba(34, 197, 94, 0.2)"
+                  : "#dcfce7"
+                : isDark
+                  ? "rgba(239, 68, 68, 0.2)"
+                  : "#fee2e2",
               alignItems: "center",
               justifyContent: "center",
               marginBottom: 20,
@@ -207,26 +232,34 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             <Feather
               name={scoreView.passed ? "check-circle" : "alert-circle"}
               size={40}
-              color={scoreView.passed ? "#15803d" : "#b91c1c"}
+              color={
+                scoreView.passed ? (isDark ? "#22c55e" : "#15803d") : isDark ? "#f87171" : "#b91c1c"
+              }
             />
           </View>
-          <Text className="text-slate-500 text-xs uppercase tracking-wider font-bold mb-1">
+          <Text className="text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wider font-bold mb-1">
             Activity Score
           </Text>
           <Text
             style={{
               fontSize: 64,
               fontWeight: "900",
-              color: scoreView.passed ? "#15803d" : "#b91c1c",
+              color: scoreView.passed
+                ? isDark
+                  ? "#22c55e"
+                  : "#15803d"
+                : isDark
+                  ? "#f87171"
+                  : "#b91c1c",
               lineHeight: 72,
             }}
           >
             {scoreView.score}%
           </Text>
-          <Text className="text-slate-900 text-xl font-bold mt-4 text-center">
+          <Text className="text-slate-900 dark:text-white text-xl font-bold mt-4 text-center">
             {scoreView.passed ? "Nicely done!" : "Keep practicing!"}
           </Text>
-          <Text className="text-slate-500 text-sm mt-2 text-center">
+          <Text className="text-slate-500 dark:text-zinc-400 text-sm mt-2 text-center">
             {scoreView.passed
               ? `You answered ${scoreView.totalCorrect} of ${mcqs.length} questions correctly.`
               : `You got ${scoreView.totalCorrect} of ${mcqs.length} questions correct. You need 70% to pass.`}
@@ -278,21 +311,21 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
         {passage?.question_text ? (
           <View
             style={{
-              backgroundColor: "#f8fafc",
+              backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
               borderWidth: 1,
-              borderColor: "#e2e8f0",
+              borderColor: isDark ? "#2d2d3a" : "#e2e8f0",
               borderRadius: 16,
               padding: 20,
               marginBottom: 24,
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-              <Feather name="book-open" size={16} color="#6366f1" />
+              <Feather name="book-open" size={16} color={isDark ? "#3b82f6" : "#6366f1"} />
               <Text
                 style={{
                   fontSize: 12,
                   fontWeight: "700",
-                  color: "#4f46e5",
+                  color: isDark ? "#60a5fa" : "#4f46e5",
                   textTransform: "uppercase",
                   letterSpacing: 0.8,
                   marginLeft: 8,
@@ -301,13 +334,13 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                 Reading Passage
               </Text>
             </View>
-            <Text style={{ color: "#334155", fontSize: 14, lineHeight: 22 }}>
+            <Text style={{ color: isDark ? "#e2e8f0" : "#334155", fontSize: 14, lineHeight: 22 }}>
               {passage.question_text}
             </Text>
           </View>
         ) : null}
 
-        <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">
+        <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
           Question {idx + 1} of {mcqs.length}
         </Text>
         {parsedQuestion.isParsed ? (
@@ -315,9 +348,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             {/* The Target Sentence Card */}
             <View
               style={{
-                backgroundColor: "#f5f3ff",
+                backgroundColor: isDark ? "rgba(91, 33, 182, 0.15)" : "#f5f3ff",
                 borderWidth: 1,
-                borderColor: "#ddd6fe",
+                borderColor: isDark ? "#5b21b6" : "#ddd6fe",
                 borderRadius: 12,
                 padding: 16,
                 marginBottom: 16,
@@ -346,7 +379,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               </View>
               <Text
                 style={{
-                  color: "#4c1d95",
+                  color: isDark ? "#d8b4fe" : "#4c1d95",
                   fontSize: 16,
                   fontWeight: "600",
                   fontStyle: "italic",
@@ -360,7 +393,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             {/* The Question Prompt */}
             <Text
               style={{
-                color: "#0f172a",
+                color: isDark ? "#ffffff" : "#0f172a",
                 fontSize: 18,
                 fontWeight: "700",
                 lineHeight: 26,
@@ -371,17 +404,19 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             </Text>
           </View>
         ) : (
-          <Text className="text-slate-900 text-base leading-6 mb-6">{current.question_text}</Text>
+          <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-6">
+            {current.question_text}
+          </Text>
         )}
 
         {options.map((opt, i) => {
           const isSelected = selected === opt.id;
           const hasSubmitted = lastResult !== null;
 
-          let borderColor = "#e5e7eb";
-          let backgroundColor = "#ffffff";
-          let dotBorderColor = "#cbd5e1";
-          let dotTextColor = "#64748b";
+          let borderColor = isDark ? "#2d2d3a" : "#e5e7eb";
+          let backgroundColor = isDark ? "#1E1F2A" : "#ffffff";
+          let dotBorderColor = isDark ? "#4b5563" : "#cbd5e1";
+          let dotTextColor = isDark ? "#9ca3af" : "#64748b";
           let feedbackIcon = null;
 
           if (hasSubmitted) {
@@ -389,20 +424,20 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             const isCorrectAnswer = isMatch(opt, i, correctAnswerStr);
             if (isCorrectAnswer) {
               borderColor = "#22c55e"; // Green border
-              backgroundColor = "#f0fdf4"; // Light green bg
+              backgroundColor = isDark ? "rgba(34, 197, 94, 0.15)" : "#f0fdf4"; // Light green bg
               dotBorderColor = "#22c55e";
               dotTextColor = "#22c55e";
               feedbackIcon = <Feather name="check-circle" size={20} color="#22c55e" />;
             } else if (isSelected) {
               borderColor = "#ef4444"; // Red border
-              backgroundColor = "#fef2f2"; // Light red bg
+              backgroundColor = isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2"; // Light red bg
               dotBorderColor = "#ef4444";
               dotTextColor = "#ef4444";
               feedbackIcon = <Feather name="x-circle" size={20} color="#ef4444" />;
             }
           } else if (isSelected) {
             borderColor = "#3b82f6"; // Blue border
-            backgroundColor = "#eff6ff"; // Light blue bg
+            backgroundColor = isDark ? "rgba(37, 99, 235, 0.15)" : "#eff6ff"; // Light blue bg
             dotBorderColor = "#3b82f6";
             dotTextColor = "#3b82f6";
             feedbackIcon = <Feather name="check-circle" size={20} color="#3b82f6" />;
@@ -443,7 +478,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                   {String.fromCharCode(65 + i)}
                 </Text>
               </View>
-              <Text style={{ flex: 1, color: "#0f172a", fontSize: 15 }}>{opt.text}</Text>
+              <Text style={{ flex: 1, color: isDark ? "#e2e8f0" : "#0f172a", fontSize: 15 }}>
+                {opt.text}
+              </Text>
               {feedbackIcon}
             </Pressable>
           );

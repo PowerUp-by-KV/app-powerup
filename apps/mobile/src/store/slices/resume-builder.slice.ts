@@ -14,6 +14,7 @@ export interface ResumeBuilderState {
   isSaving: boolean;
   lastSavedAt: string | null;
   photoUrl: string | null;
+  localPhotoUri: string | null;
   currentSubStep: number;
 }
 
@@ -44,6 +45,7 @@ const initialState: ResumeBuilderState = {
   isSaving: false,
   lastSavedAt: null,
   photoUrl: null,
+  localPhotoUri: null,
   currentSubStep: 0,
 };
 
@@ -140,6 +142,10 @@ export const resumeBuilderSlice = createSlice({
       state.isDirty = true;
     },
 
+    setLocalPhotoUri: (state, action: PayloadAction<string | null>) => {
+      state.localPhotoUri = action.payload;
+    },
+
     resetBuilderState: () => initialState,
   },
 });
@@ -160,6 +166,7 @@ export const {
   markSaved,
   setSaving,
   setPhotoUrl,
+  setLocalPhotoUri,
   resetBuilderState,
 } = resumeBuilderSlice.actions;
 
@@ -180,3 +187,5 @@ export const selectBuilderLastSavedAt = (state: { resumeBuilder: ResumeBuilderSt
   state.resumeBuilder.lastSavedAt;
 export const selectBuilderPhotoUrl = (state: { resumeBuilder: ResumeBuilderState }) =>
   state.resumeBuilder.photoUrl;
+export const selectBuilderLocalPhotoUri = (state: { resumeBuilder: ResumeBuilderState }) =>
+  state.resumeBuilder.localPhotoUri;

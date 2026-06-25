@@ -4,6 +4,7 @@ import { Audio } from "expo-av";
 export interface VoiceRecorderState {
   isRecording: boolean;
   audioFile: File | null;
+  transcript: string;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
 }
@@ -19,6 +20,7 @@ export interface VoiceRecorderState {
 export function useVoiceRecorder(): VoiceRecorderState {
   const [isRecording, setIsRecording] = useState(false);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [transcript, setTranscript] = useState("");
 
   // Ref keeps the Recording instance across renders without causing re-renders
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -46,6 +48,7 @@ export function useVoiceRecorder(): VoiceRecorderState {
       setIsRecording(true);
       // Clear any previous recording when a new one starts
       setAudioFile(null);
+      setTranscript("");
     } catch (error) {
       console.warn("Failed to start recording:", error);
     }
@@ -84,6 +87,7 @@ export function useVoiceRecorder(): VoiceRecorderState {
   return {
     isRecording,
     audioFile,
+    transcript,
     startRecording,
     stopRecording,
   };

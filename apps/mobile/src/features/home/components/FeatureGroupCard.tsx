@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -16,7 +16,12 @@ interface FeatureGroupCardProps {
   items: SubItem[];
 }
 
+import { useColorScheme } from "nativewind";
+
 export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupCardProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const renderIcon = () => {
     if (icon === "✨") {
       return <Ionicons name="sparkles" size={22} color="#ffffff" />;
@@ -28,19 +33,19 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
   };
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
+    <View className="bg-white dark:bg-[#16161c] border border-slate-100 dark:border-slate-800/80 rounded-[24px] p-5 mb-4 shadow-sm shadow-slate-100 dark:shadow-none">
+      <View className="flex-row items-center mb-5">
         <LinearGradient
-          colors={["#4f46e5", "#3b82f6"]}
+          colors={isDark ? ["#3b82f6", "#2563eb"] : ["#4f46e5", "#3b82f6"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.headerIconContainer}
+          className="w-12 h-12 rounded-full items-center justify-center mr-3.5 shadow-sm shadow-indigo-100 dark:shadow-none"
         >
           {renderIcon()}
         </LinearGradient>
-        <View style={styles.headerText}>
-          <Text className="text-slate-900 font-bold text-base">{title}</Text>
-          <Text className="text-slate-500 text-xs mt-0.5">{subtitle}</Text>
+        <View className="flex-1">
+          <Text className="text-slate-900 dark:text-white font-bold text-base">{title}</Text>
+          <Text className="text-slate-500 dark:text-slate-400 text-xs mt-0.5">{subtitle}</Text>
         </View>
       </View>
       <View>
@@ -48,14 +53,18 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
           <Pressable
             key={i}
             onPress={item.onPress}
-            style={[styles.itemPressable, { marginBottom: i === items.length - 1 ? 0 : 12 }]}
-            className="active:scale-[0.98]"
+            style={{ marginBottom: i === items.length - 1 ? 0 : 12 }}
+            className="flex-row items-center p-4 bg-[#f8fafc] dark:bg-[#202029] border border-slate-100/50 dark:border-[#2d2d3a] rounded-[16px] active:scale-[0.98] shadow-sm shadow-slate-100/20 dark:shadow-none"
           >
-            <View style={styles.itemTextContainer}>
-              <Text className="text-slate-800 font-bold text-sm tracking-tight">{item.title}</Text>
-              <Text className="text-slate-400 text-xs font-semibold mt-1">{item.subtitle}</Text>
+            <View className="flex-1 pr-3">
+              <Text className="text-slate-800 dark:text-white font-bold text-sm tracking-tight">
+                {item.title}
+              </Text>
+              <Text className="text-slate-400 dark:text-slate-400 text-xs font-semibold mt-1">
+                {item.subtitle}
+              </Text>
             </View>
-            <View style={styles.chevronContainer}>
+            <View className="bg-[#bef264] w-8 h-8 rounded-full items-center justify-center shadow-sm shadow-[#bef264]/20">
               <Feather name="chevron-right" size={18} color="#1a202c" />
             </View>
           </Pressable>
@@ -64,71 +73,3 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#ffffff",
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "rgba(241, 245, 249, 0.6)",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-    marginBottom: 16,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-    shadowColor: "#4f46e5",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  headerText: {
-    flex: 1,
-  },
-  itemPressable: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "rgba(241, 245, 249, 0.8)",
-    borderRadius: 16,
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.02,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  itemTextContainer: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  chevronContainer: {
-    backgroundColor: "#bef264",
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#bef264",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 1.5,
-  },
-});

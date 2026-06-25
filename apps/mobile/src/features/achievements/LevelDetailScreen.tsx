@@ -4,14 +4,18 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useColorScheme } from "nativewind";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 
 export function LevelDetailScreen() {
   const router = useRouter();
-  const safeBack = useSafeBack();
+  const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
   const { data: profile } = useGetProfileQuery();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <View
       style={{
@@ -19,13 +23,17 @@ export function LevelDetailScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="flex-1 bg-white"
+      className={`flex-1 ${isDark ? "bg-[#0F1020]" : "bg-[#F4F5FA]"}`}
     >
       <View className="flex-row items-center px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
-          <Feather name="chevron-left" size={22} color="#0f172a" />
+          <Feather name="chevron-left" size={22} color={isDark ? "#ffffff" : "#1B1F35"} />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-slate-900">Level</Text>
+        <Text
+          className={`flex-1 text-center font-bold ${isDark ? "text-white" : "text-[#1B1F35]"}`}
+        >
+          Level
+        </Text>
         <View className="w-9" />
       </View>
       <ScrollView
@@ -38,16 +46,18 @@ export function LevelDetailScreen() {
           paddingBottom: 96,
         }}
       >
-        <Text className="text-slate-500 mb-2">Keep going, you&apos;re in level</Text>
-        <Text className="text-slate-900 text-7xl font-extrabold">
+        <Text className={`mb-2 ${isDark ? "text-[#B7BED1]" : "text-[#6B7280]"}`}>
+          Keep going, you&apos;re in level
+        </Text>
+        <Text className="text-[#7174F6] text-7xl font-extrabold">
           {profile?.current_level ?? 1}
         </Text>
-        <Text className="text-slate-500 text-center mt-4 mb-8">
+        <Text className={`text-center mt-4 mb-8 ${isDark ? "text-[#B7BED1]" : "text-[#6B7280]"}`}>
           Practice every day to level up your skills.
         </Text>
         <Pressable
           onPress={() => router.replace("/(tabs)/my-learning" as never)}
-          className="bg-slate-900 rounded-full px-8 py-3"
+          className="bg-[#7174F6] rounded-full px-8 py-3 active:opacity-85"
         >
           <Text className="text-white font-bold">Continue learning</Text>
         </Pressable>

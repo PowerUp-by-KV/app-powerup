@@ -117,7 +117,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         className="flex-1 bg-slate-50"
       >
         <View className="flex-1 w-full items-center justify-center p-6">
-          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
               style={{
                 width: 140,
@@ -136,10 +136,10 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               />
             </View>
 
-            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
               Connection Timeout
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 px-4 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4 px-4 text-center">
               Could not load reading section due to network delay. Please try again.
             </Text>
 
@@ -166,8 +166,8 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
 
   if (!currentQuestion) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <Text>No questions found for this section.</Text>
+      <View className="flex-1 items-center justify-center bg-white dark:bg-[#151620]">
+        <Text className="dark:text-white">No questions found for this section.</Text>
       </View>
     );
   }
@@ -279,7 +279,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-white"
+      className="bg-white dark:bg-[#151620]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -287,11 +287,11 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       >
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 50, flexGrow: 1 }}
+          contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-4 py-4">
+          <View className="px-4 pt-4">
             <AssessmentHeader
               sectionName="Section A"
               skillName="Reading Skills"
@@ -340,41 +340,51 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
                 />
               )}
             </View>
-
-            <View className="flex-row justify-between mt-8 gap-4 mb-8">
-              <TouchableOpacity
-                className={`flex-1 py-4 rounded-2xl items-center shadow-md ${
-                  isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
-                }`}
-                onPress={handleNext}
-                disabled={isSubmitting}
-                activeOpacity={0.8}
-              >
-                {isSubmitting ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-white font-bold text-base">
-                    {isLastQuestion ? "Check Answers" : "Next Question"}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
+
+        {/* Docked Action Button Container */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingBottom: Platform.OS === "ios" ? 10 : 20,
+            paddingTop: 12,
+          }}
+          className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#151620]"
+        >
+          <TouchableOpacity
+            className={`w-full py-4 rounded-2xl items-center shadow-md ${
+              isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
+            }`}
+            onPress={handleNext}
+            disabled={isSubmitting}
+            activeOpacity={0.8}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-white font-bold text-base">
+                {isLastQuestion ? "Check Answers" : "Next Question"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}
       {(isFinished || isSubmitting) && (
-        <View className="absolute inset-0 bg-black/55 items-center justify-center z-[9999]">
-          <View className="bg-white rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px]">
+        <View className="absolute inset-0 bg-black/60 items-center justify-center z-[9999]">
+          <View className="bg-white dark:bg-[#1E1F2A] rounded-2xl py-9 px-10 items-center shadow-lg min-w-[240px] border border-slate-100 dark:border-slate-800">
             <LottieView
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
               style={{ width: 40, height: 40 }}
             />
-            <Text className="text-slate-800 font-bold text-base mt-2">Submitting Answers…</Text>
-            <Text className="text-slate-500 text-xs mt-1.5 text-center">
+            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+              Submitting Answers…
+            </Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
               Please wait, do not close the app
             </Text>
           </View>

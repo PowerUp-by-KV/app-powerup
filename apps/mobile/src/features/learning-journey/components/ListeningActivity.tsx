@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Audio, AVPlaybackStatus } from "expo-av";
+import { useColorScheme } from "nativewind";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
@@ -35,6 +36,9 @@ const WAVEFORM_BARS = [
  * learner starts playback the first time so they have to listen before answering.
  */
 export function ListeningActivity({ questions, onComplete }: ListeningActivityProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const passage =
     questions.find((q) => q.question_type === "passage" && !!q.audio_url) ||
     questions.find((q) => !!q.audio_url);
@@ -179,8 +183,8 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   if (!audioUrl) {
     return (
-      <View className="flex-1 items-center justify-center p-6">
-        <Text className="text-slate-500 text-center">
+      <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-[#151620]">
+        <Text className="text-slate-500 dark:text-zinc-400 text-center">
           Audio not available for this activity yet.
         </Text>
       </View>
@@ -200,18 +204,18 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
           marginTop: 24,
           padding: 20,
           borderRadius: 24,
-          backgroundColor: "#f8fafc",
+          backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
           borderWidth: 1,
-          borderColor: "#e2e8f0",
+          borderColor: isDark ? "#2d2d3a" : "#e2e8f0",
           alignItems: "center",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.05,
+          shadowOpacity: isDark ? 0.2 : 0.05,
           shadowRadius: 2,
           elevation: 1,
         }}
       >
-        <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 12 }}>
+        <Text style={{ fontSize: 12, color: isDark ? "#94a3b8" : "#64748b", marginBottom: 12 }}>
           {isPlaying ? "Playing..." : hasPlayed ? "Playback completed" : "Tap to start"}
         </Text>
         <Pressable
@@ -233,7 +237,13 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
             <View
               style={{
                 flex: 1,
-                backgroundColor: hasPlayed ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+                backgroundColor: hasPlayed
+                  ? isDark
+                    ? "#3f3f46"
+                    : "#cbd5e1"
+                  : pressed
+                    ? "#2563eb"
+                    : "#3b82f6",
                 alignItems: "center",
                 justifyContent: "center",
               }}
@@ -241,7 +251,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : hasPlayed ? (
-                <Feather name="check" size={32} color="#475569" />
+                <Feather name="check" size={32} color={isDark ? "#a1a1aa" : "#475569"} />
               ) : (
                 <Feather name={isPlaying ? "pause" : "play"} size={32} color="#fff" />
               )}
@@ -283,7 +293,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
                   style={{
                     width: 5, // Thicker bars (5dp)
                     height: baseHeight,
-                    backgroundColor: isPast ? "#3b82f6" : "#cbd5e1", // Blue active progress, slate-300 base waveform
+                    backgroundColor: isPast ? "#3b82f6" : isDark ? "#4b5563" : "#cbd5e1", // Blue active progress, slate-300 base waveform
                     borderRadius: 2.5, // Fully rounded thick capsules
                     transform: [{ scaleY: anims[index % anims.length]! }], // Animate all bars for a full continuous wave
                   }}
@@ -294,11 +304,25 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
         </View>
 
         {position !== null || duration !== null ? (
-          <Text style={{ fontSize: 13, color: "#475569", fontWeight: "600", marginTop: 4 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              color: isDark ? "#e2e8f0" : "#475569",
+              fontWeight: "600",
+              marginTop: 4,
+            }}
+          >
             {formatTime(position)} / {formatTime(duration)}
           </Text>
         ) : (
-          <Text style={{ fontSize: 13, color: "#94a3b8", fontWeight: "600", marginTop: 4 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              color: isDark ? "#4b5563" : "#94a3b8",
+              fontWeight: "600",
+              marginTop: 4,
+            }}
+          >
             0:00 / 0:00
           </Text>
         )}
@@ -308,7 +332,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
         <McqActivity questions={mcqs} onComplete={onComplete} isNested={true} />
       ) : (
         <View className="items-center justify-center py-12 px-6">
-          <Text className="text-slate-500 text-center">
+          <Text className="text-slate-500 dark:text-zinc-400 text-center">
             Listen to the audio completely — questions will appear after the audio finishes playing
             once.
           </Text>

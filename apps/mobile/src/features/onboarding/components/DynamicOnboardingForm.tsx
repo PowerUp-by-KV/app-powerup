@@ -90,7 +90,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
             keyboardType={input_type === "number" ? "numeric" : "default"}
             multiline={input_type === "textarea"}
             numberOfLines={input_type === "textarea" ? 4 : 1}
-            className={`bg-white rounded-2xl p-4 mb-3 border border-slate-200 text-slate-900 text-sm shadow-sm transition-all focus:border-blue-500 ${
+            className={`bg-white dark:bg-slate-800/80 rounded-2xl p-4 mb-3 border border-slate-200 dark:border-slate-700/50 text-slate-900 dark:text-white text-sm shadow-sm transition-all focus:border-blue-500 ${
               input_type === "textarea" ? "h-28 text-top" : ""
             }`}
             style={[input_type === "textarea" && { textAlignVertical: "top" }]}
@@ -128,21 +128,25 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                   onPress={() => handleToggle(question_key, optKey, false)}
                   className={`flex-row items-center p-4 mb-3 rounded-2xl border transition-all ${
                     isSelected
-                      ? "border-blue-500 bg-blue-50/10 shadow-sm"
-                      : "border-slate-200 bg-white"
+                      ? "border-[#3b82f6] bg-[#3b82f6]/10 shadow-sm"
+                      : "border-slate-200 dark:border-slate-700/50 bg-white dark:bg-[#1E1F2A]/90"
                   }`}
                   activeOpacity={0.8}
                 >
                   <View
                     className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-                      isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-transparent"
+                      isSelected
+                        ? "border-[#3b82f6] bg-[#3b82f6]"
+                        : "border-slate-300 dark:border-slate-600 bg-transparent"
                     }`}
                   >
                     {isSelected && <View className="w-1.5 h-1.5 rounded-full bg-white" />}
                   </View>
                   <Text
                     className={`text-[14px] leading-5 flex-1 ${
-                      isSelected ? "font-bold text-blue-900" : "font-semibold text-slate-700"
+                      isSelected
+                        ? "font-bold text-[#3b82f6]"
+                        : "font-semibold text-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {optLabel}
@@ -165,21 +169,25 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                   onPress={() => handleToggle(question_key, optKey, true)}
                   className={`flex-row items-center p-4 mb-3 rounded-2xl border transition-all ${
                     isSelected
-                      ? "border-blue-500 bg-blue-50/10 shadow-sm"
-                      : "border-slate-200 bg-white"
+                      ? "border-[#3b82f6] bg-[#3b82f6]/10 shadow-sm"
+                      : "border-slate-200 dark:border-slate-700/50 bg-white dark:bg-[#1E1F2A]/90"
                   }`}
                   activeOpacity={0.8}
                 >
                   <View
                     className={`w-5 h-5 rounded-md border-2 mr-3 items-center justify-center ${
-                      isSelected ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-transparent"
+                      isSelected
+                        ? "border-[#3b82f6] bg-[#3b82f6]"
+                        : "border-slate-300 dark:border-slate-600 bg-transparent"
                     }`}
                   >
                     {isSelected && <Feather name="check" size={10} color="white" />}
                   </View>
                   <Text
                     className={`text-[14px] leading-5 flex-1 ${
-                      isSelected ? "font-bold text-blue-900" : "font-semibold text-slate-700"
+                      isSelected
+                        ? "font-bold text-[#3b82f6]"
+                        : "font-semibold text-slate-700 dark:text-slate-300"
                     }`}
                   >
                     {optLabel}
@@ -238,19 +246,22 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                   // silently ignore file picker errors
                 }
               }}
-              className="bg-white border-2 border-dashed border-slate-200 rounded-3xl py-14 px-8 items-center justify-center w-full shadow-sm"
+              className="w-full"
               activeOpacity={0.8}
             >
-              <View pointerEvents="none" className="items-center justify-center w-full">
+              <View
+                pointerEvents="none"
+                className="items-center justify-center w-full bg-white dark:bg-[#1E1F2A]/90 rounded-3xl py-14 px-8 border-2 border-dashed border-slate-200 dark:border-slate-700 shadow-sm"
+              >
                 {/* Circular Upload Icon */}
-                <View className="w-20 h-20 rounded-full bg-slate-50 items-center justify-center mb-6">
+                <View className="w-20 h-20 rounded-full bg-slate-50 dark:bg-white items-center justify-center mb-6">
                   <Feather name="upload" size={28} color="#3b82f6" />
                 </View>
 
                 {/* Upload Title */}
-                <Text className="text-slate-700 font-extrabold text-base mb-6 text-center px-4">
+                <Text className="text-slate-700 dark:text-slate-200 font-extrabold text-base mb-6 text-center px-4">
                   {formData[`${question_key}Name`] ? (
-                    <Text className="font-black text-blue-600">
+                    <Text className="font-black text-blue-600 dark:text-blue-400">
                       {formData[`${question_key}Name`]}
                     </Text>
                   ) : (
@@ -259,7 +270,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                 </Text>
 
                 {/* Browse Files Button */}
-                <View className="bg-blue-500 rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
+                <View className="bg-[#3b82f6] rounded-2xl px-10 py-4 flex-row items-center justify-center mb-8 shadow-sm">
                   <Feather name="file" size={16} color="white" style={{ marginRight: 8 }} />
                   <Text className="text-white font-extrabold text-sm">
                     {formData[`${question_key}Name`] ? "Change File" : "Browse Files"}
@@ -284,7 +295,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
             placeholder={question_text}
             value={value || ""}
             onChangeText={(text) => onInputChange(question_key, text)}
-            className="bg-slate-50 rounded-xl p-3.5 mb-4 border border-slate-200 text-slate-900 text-sm"
+            className="bg-slate-50 dark:bg-slate-800/80 rounded-xl p-3.5 mb-4 border border-slate-200 dark:border-slate-700/50 text-slate-900 dark:text-white text-sm"
             placeholderTextColor="#94A3B8"
           />
         );
@@ -296,7 +307,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
       {questions.map((q) => (
         <View key={q.id}>
           {!hideLabel && q.question_text !== "" && (
-            <Text className="text-slate-900 font-bold mb-3 text-sm">
+            <Text className="text-slate-900 dark:text-white font-bold mb-3 text-sm">
               {q.question_text}
               {q.is_required && <Text className="text-red-500"> *</Text>}
             </Text>

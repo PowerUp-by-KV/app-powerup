@@ -20,9 +20,8 @@ config.resolver.nodeModulesPaths = [
 config.resolver.unstable_enableSymlinks = true;
 config.resolver.unstable_enablePackageExports = true;
 
-// Add Rive and Lottie extension support
-config.resolver.assetExts.push("riv");
-config.resolver.assetExts.push("lottie");
+// Add Rive, Lottie, and GLTF extension support
+config.resolver.assetExts.push("riv", "lottie", "glb", "gltf");
 
 // Add support for .mjs files (Required for Three.js / @react-three/drei to bundle correctly)
 config.resolver.sourceExts.push("mjs");

@@ -20,6 +20,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as SecureStore from "expo-secure-store";
+import { LinearGradient } from "expo-linear-gradient";
 import {
   useUploadResumeMutation,
   useDeleteResumeMutation,
@@ -303,18 +304,7 @@ export function ResumeHomeScreen() {
       isSubmittingRef.current = true;
       setIsDeleting(true);
 
-      let storedUserId: string | null = null;
-      if (Platform.OS === "web") {
-        try {
-          storedUserId = window.localStorage.getItem("user_id");
-        } catch (e) {
-          console.warn("localStorage access failed:", e);
-        }
-      } else {
-        storedUserId = await SecureStore.getItemAsync("user_id");
-      }
-
-      if (!storedUserId) {
+      if (!userId) {
         Alert.alert(
           "Error",
           "Unable to delete: User ID not found. Please try uploading your resume again.",
@@ -322,7 +312,7 @@ export function ResumeHomeScreen() {
         return;
       }
 
-      await deleteResumeReq(storedUserId).unwrap();
+      await deleteResumeReq(userId).unwrap();
       dispatch(resetResume());
       dispatch(setHasExistingResume(false));
       setDeleteSuccess(true);
@@ -415,11 +405,14 @@ export function ResumeHomeScreen() {
       <View style={styles.container}>
         {/* Header Section */}
         <View style={styles.headerSection}>
-          <Pressable onPress={() => router.replace("/home" as never)} style={styles.backButton}>
-            <MaterialIcons name="arrow-back" size={26} color="#1f2937" />
+          <Pressable onPress={() => router.replace("/(tabs)" as never)} style={styles.backButton}>
+            <MaterialIcons name="arrow-back" size={26} color="#4F46E5" />
           </Pressable>
           <View style={{ flex: 1 }}>
-            <Text style={styles.mainTitle}>Upload Your Resume</Text>
+            <Text style={styles.mainTitle}>
+              <Text style={{ color: "#4F46E5" }}>Craft your </Text>
+              <Text style={{ color: "#00D261" }}>Resume!</Text>
+            </Text>
             <Text style={styles.subtitle}>Help us understand your professional background</Text>
           </View>
         </View>
@@ -469,18 +462,18 @@ export function ResumeHomeScreen() {
 
         {/* Override Caption */}
         {hasExistingResume && !selectedFile && !uploadSuccess && (
-          <Text
-            style={{
-              textAlign: "center",
-              color: "#f59e0b",
-              marginBottom: 12,
-              fontSize: 14,
-              fontWeight: "500",
-            }}
-          >
-            Note: This would override the existing resume and you will be using the resume which
-            will be uploaded here.
-          </Text>
+          <View style={styles.overrideAlert}>
+            <MaterialIcons
+              name="info-outline"
+              size={20}
+              color="#D97706"
+              style={{ marginRight: 8, marginTop: 2 }}
+            />
+            <Text style={styles.overrideAlertText}>
+              Note: This would override the existing resume and you will be using the resume which
+              will be uploaded here.
+            </Text>
+          </View>
         )}
 
         {/* Upload Box */}
@@ -498,7 +491,7 @@ export function ResumeHomeScreen() {
               onPress={handleBrowseFiles}
             >
               <View style={styles.uploadIconContainer}>
-                <MaterialIcons name="cloud-upload" size={52} color="#2563EB" />
+                <MaterialIcons name="cloud-upload" size={52} color="#4F46E5" />
               </View>
               <Text style={styles.uploadText}>
                 {selectedFile ? "Change File" : "Upload Resume"}
@@ -876,29 +869,6 @@ export function ResumeHomeScreen() {
           </View>
         )}
 
-        {/* Info Cards */}
-        {!selectedFile && !uploadSuccess && (
-          <View style={styles.infoCardsContainer}>
-            <View style={styles.infoCard}>
-              <MaterialIcons name="check" size={24} color="#10b981" style={styles.infoIcon} />
-              <Text style={styles.infoTitle}>Easy Upload</Text>
-              <Text style={styles.infoDescription}>Upload your resume in a single click</Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <MaterialIcons name="security" size={24} color="#3b82f6" style={styles.infoIcon} />
-              <Text style={styles.infoTitle}>Secure</Text>
-              <Text style={styles.infoDescription}>Your data is encrypted and secure</Text>
-            </View>
-
-            <View style={styles.infoCard}>
-              <MaterialIcons name="speed" size={24} color="#f59e0b" style={styles.infoIcon} />
-              <Text style={styles.infoTitle}>Fast Processing</Text>
-              <Text style={styles.infoDescription}>Instant resume analysis and parsing</Text>
-            </View>
-          </View>
-        )}
-
         {/* Action Buttons */}
         {!selectedFile && !uploadSuccess && (
           <View style={styles.altActionContainer}>
@@ -906,23 +876,33 @@ export function ResumeHomeScreen() {
               <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={handleEditResume}
-                style={[
-                  styles.altActionButton,
-                  { backgroundColor: "#10b981", marginBottom: 16, shadowColor: "#10b981" },
-                ]}
+                style={{ marginBottom: 16 }}
               >
-                <MaterialIcons name="restore" size={24} color="white" />
-                <Text style={styles.altActionText}>Continue with Existing Resume</Text>
+                <LinearGradient
+                  colors={["#00D261", "#059669"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={[
+                    styles.altActionButton,
+                    { backgroundColor: "transparent", marginBottom: 0, shadowColor: "#00D261" },
+                  ]}
+                >
+                  <MaterialIcons name="restore" size={24} color="white" />
+                  <Text style={styles.altActionText}>Continue with Existing Resume</Text>
+                </LinearGradient>
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={handleBuildFromScratch}
-              style={[styles.altActionButton]}
-            >
-              <MaterialIcons name="edit" size={24} color="white" />
-              <Text style={styles.altActionText}>Build from Scratch</Text>
+            <TouchableOpacity activeOpacity={0.8} onPress={handleBuildFromScratch}>
+              <LinearGradient
+                colors={["#60A5FA", "#4F46E5"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.altActionButton, { backgroundColor: "transparent" }]}
+              >
+                <MaterialIcons name="edit" size={24} color="white" />
+                <Text style={styles.altActionText}>Build from Scratch</Text>
+              </LinearGradient>
             </TouchableOpacity>
 
             {hasExistingResume && (
@@ -1000,11 +980,11 @@ export function ResumeHomeScreen() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#F7F7F9",
   },
   fullScreenLoader: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#F7F7F9",
   },
   contentContainer: {
     flexGrow: 1,
@@ -1078,9 +1058,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   mainTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111827",
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#1A1A1A",
     marginBottom: 8,
   },
   subtitle: {
@@ -1117,16 +1097,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   uploadBox: {
-    borderWidth: 0,
-    borderRadius: 24,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: "#C7D2FE",
+    borderRadius: 28,
     padding: 48,
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    backgroundColor: "#F5F8FF",
   },
   uploadBoxPressed: {
     backgroundColor: "#F8FAFC",
@@ -1159,10 +1136,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   formatBadge: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 14,
+    backgroundColor: "#E2E8F0",
+    paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 100,
   },
   formatText: {
     fontSize: 13,
@@ -1376,31 +1353,53 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   infoCard: {
+    flexDirection: "row",
     backgroundColor: "white",
-    borderRadius: 24,
-    padding: 24,
+    borderRadius: 20,
+    padding: 20,
     alignItems: "center",
     borderWidth: 0,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 2,
   },
-  infoIcon: {
-    marginBottom: 8,
+  infoIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  infoTextContainer: {
+    flex: 1,
   },
   infoTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E1E1E",
     marginBottom: 4,
   },
   infoDescription: {
-    fontSize: 12,
-    color: "#6b7280",
-    textAlign: "center",
+    fontSize: 13,
+    color: "#8E8E93",
     lineHeight: 18,
+  },
+  overrideAlert: {
+    flexDirection: "row",
+    backgroundColor: "#FEF3C7",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  overrideAlertText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#92400E",
+    lineHeight: 18,
+    fontWeight: "500",
   },
   altActionContainer: {
     marginTop: 8,
@@ -1409,12 +1408,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#3b82f6",
-    borderRadius: 30,
+    backgroundColor: "#4F46E5",
+    borderRadius: 100,
     paddingVertical: 18,
-    shadowColor: "#3b82f6",
+    shadowColor: "#4F46E5",
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
   },

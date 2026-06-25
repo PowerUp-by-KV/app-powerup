@@ -8,9 +8,11 @@ import {
   ScrollView,
   Platform,
   Alert,
+  TouchableOpacity,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import * as DocumentPicker from "expo-document-picker";
 
 const SUGGESTED_DOMAINS = [
   "Frontend Developer",
@@ -22,13 +24,35 @@ const SUGGESTED_DOMAINS = [
 ];
 
 interface DomainInputStepProps {
-  onAnalyze: (domain: string) => void;
+  onAnalyze: (domain: string, file?: DocumentPicker.DocumentPickerAsset) => void;
   onHistory: () => void;
   isLoading: boolean;
 }
 
 export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInputStepProps) {
   const [domain, setDomain] = useState("Full Stack Developer");
+  const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+
+  const handleBrowseFiles = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf",
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+
+      if (result.canceled) return;
+      if (result.assets && result.assets.length > 0) {
+        setSelectedFile(result.assets[0] || null);
+      }
+    } catch {
+      Alert.alert("Error", "Failed to pick document. Please try again.");
+    }
+  };
+
+  const handleClearFile = () => {
+    setSelectedFile(null);
+  };
 
   const handleSubmit = () => {
     const trimmed = domain.trim();
@@ -36,7 +60,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
       Alert.alert("Domain Required", "Please enter a target role or domain to proceed.");
       return;
     }
-    onAnalyze(trimmed);
+    onAnalyze(trimmed, selectedFile || undefined);
   };
 
   return (
@@ -203,6 +227,78 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                 </Pressable>
               );
             })}
+          </View>
+
+          {/* Optional Resume Upload Section */}
+          <Text className="text-slate-400 font-extrabold text-[11px] mb-2.5 uppercase tracking-widest pl-1">
+            Optional Resume Upload
+          </Text>
+          <View style={{ marginBottom: 24, width: "100%" }}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={handleBrowseFiles}
+              style={{
+                borderWidth: 2,
+                borderStyle: "dashed",
+                borderColor: selectedFile ? "#4F46E5" : "#C7D2FE",
+                borderRadius: 16,
+                padding: 20,
+                alignItems: "center",
+                backgroundColor: selectedFile ? "#EEF2FF" : "#F5F8FF",
+              }}
+            >
+              {selectedFile ? (
+                <View style={{ alignItems: "center", width: "100%" }}>
+                  <MaterialIcons
+                    name="picture-as-pdf"
+                    size={32}
+                    color="#ef4444"
+                    style={{ marginBottom: 8 }}
+                  />
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", color: "#1F2937", marginBottom: 4 }}
+                    numberOfLines={1}
+                  >
+                    {selectedFile.name}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 12 }}>
+                    {selectedFile.size
+                      ? (selectedFile.size / 1024 / 1024).toFixed(2) + " MB"
+                      : "Unknown size"}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleClearFile}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 8,
+                      backgroundColor: "#FEE2E2",
+                      borderRadius: 100,
+                    }}
+                  >
+                    <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "600" }}>
+                      Remove File
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ alignItems: "center" }}>
+                  <MaterialIcons
+                    name="cloud-upload"
+                    size={32}
+                    color="#4F46E5"
+                    style={{ marginBottom: 8 }}
+                  />
+                  <Text
+                    style={{ fontSize: 14, fontWeight: "600", color: "#4F46E5", marginBottom: 4 }}
+                  >
+                    Tap to upload a new resume
+                  </Text>
+                  <Text style={{ fontSize: 12, color: "#6B7280", textAlign: "center" }}>
+                    If no resume is provided, your saved resume will be analyzed.
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 

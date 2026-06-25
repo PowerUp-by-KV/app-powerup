@@ -1,6 +1,8 @@
 import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "nativewind";
+import { Feather } from "@expo/vector-icons";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -42,6 +44,8 @@ const PROGRESSION_WAVES = [
 
 export function HomeScreen() {
   const router = useRouter();
+  const { colorScheme, toggleColorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
@@ -233,7 +237,7 @@ export function HomeScreen() {
   return (
     <View className="flex-1">
       <LinearGradient
-        colors={["#faf5ff", "#f5f3ff", "#fafafd"]}
+        colors={isDark ? ["#0e0e11", "#121217", "#0e0e11"] : ["#faf5ff", "#f5f3ff", "#fafafd"]}
         style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
       />
       <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1">
@@ -245,32 +249,46 @@ export function HomeScreen() {
         >
           <View className="flex-row items-center justify-between mb-6">
             <View>
-              <Text className="text-2xl font-black tracking-tight">
-                <Text style={{ color: "#4f46e5" }}>Hi, </Text>
-                <Text style={{ color: "#94a3b8" }}>
+              <Text className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                <Text className="text-[#4f46e5] dark:text-[#3b82f6]">Hi, </Text>
+                <Text className="text-[#94a3b8] dark:text-[#bef264]">
                   {(firstName?.toUpperCase() || "").slice(0, 2)}
                 </Text>
-                <Text style={{ color: "#84cc16" }}>
+                <Text className="text-[#84cc16] dark:text-[#bef264]">
                   {(firstName?.toUpperCase() || "").slice(2)}!
                 </Text>
               </Text>
-              <Text className="text-slate-400 text-sm mt-1 font-semibold">
+              <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1 font-semibold">
                 Ready to learn something new?
               </Text>
             </View>
-            <Pressable
-              onPress={() => router.push("/profile" as never)}
-              className="w-12 h-12 rounded-full bg-white border border-indigo-100 items-center justify-center shadow-sm shadow-indigo-100 active:scale-95"
-            >
-              <View className="w-10 h-10 rounded-full bg-indigo-50 items-center justify-center overflow-hidden">
-                <Image
-                  source={{
-                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                  }}
-                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            <View className="flex-row items-center space-x-3">
+              <Pressable
+                onPress={toggleColorScheme}
+                className={`w-10 h-10 rounded-full items-center justify-center ${
+                  isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
+                }`}
+              >
+                <Feather
+                  name={isDark ? "sun" : "moon"}
+                  size={18}
+                  color={isDark ? "#f8fafc" : "#1e293b"}
                 />
-              </View>
-            </Pressable>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push("/profile" as never)}
+                className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"
+              >
+                <View className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-900 items-center justify-center overflow-hidden">
+                  <Image
+                    source={{
+                      uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                    }}
+                    className="w-full h-full"
+                  />
+                </View>
+              </Pressable>
+            </View>
           </View>
           {profile && profile.email_verified === false && (
             <VerifyEmailBanner email={profile.email} />
@@ -287,10 +305,14 @@ export function HomeScreen() {
             onTrack={() => router.push("/(tabs)/achievements" as never)}
           />
 
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-slate-900 font-bold text-base">Continue Learning</Text>
+          <View className="flex-row justify-between items-center mb-3 mt-1">
+            <Text className="text-slate-900 dark:text-white font-bold text-base">
+              {isDark ? "Track My Learning" : "Continue Learning"}
+            </Text>
             <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
-              <Text className="text-indigo-600 text-sm font-semibold">View All</Text>
+              <Text className="text-indigo-600 dark:text-slate-400 text-sm font-semibold">
+                View All
+              </Text>
             </Pressable>
           </View>
 
@@ -302,7 +324,7 @@ export function HomeScreen() {
 
           <FeatureGroupCard
             title="Convo Coach"
-            subtitle="Say it better, every time"
+            subtitle="Practice with realistic mock interviews & scenarios"
             icon="✨"
             items={[
               {
@@ -319,7 +341,7 @@ export function HomeScreen() {
           />
 
           <FeatureGroupCard
-            title="Resume Studio"
+            title="Resume Builder"
             subtitle="Build a resume you're proud to share"
             icon="📝"
             items={[

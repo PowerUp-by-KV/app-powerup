@@ -11,7 +11,9 @@ import {
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
+import { useSafeBack } from "@/hooks/useSafeBack";
 import type { InterviewStatus, TranscriptTurn } from "../types";
 import {
   activeSession,
@@ -36,6 +38,7 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState(activeSession.isSpeaking);
   const [isEnding, setIsEnding] = useState(false);
+  const goBack = useSafeBack("/");
 
   const { endInterview } = useWebRTCInterview();
 
@@ -111,6 +114,20 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
       <StatusBar style="light" />
 
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable
+          onPress={goBack}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 12,
+          }}
+        >
+          <Ionicons name="arrow-back" size={20} color="#fff" />
+        </Pressable>
         <Text style={styles.roleName} numberOfLines={1}>
           {activeSession.derivedRole ?? "AI Interview"}
         </Text>

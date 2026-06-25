@@ -12,6 +12,7 @@ import { AnalysisLoadingStep } from "./components/AnalysisLoadingStep";
 import { StrengthWeaknessStep } from "./components/StrengthWeaknessStep";
 import { SuggestionsStep } from "./components/SuggestionsStep";
 import { ScoreAnalysisStep } from "./components/ScoreAnalysisStep";
+import { DocumentPickerAsset } from "expo-document-picker";
 
 export function ResumeBuddyScreen() {
   const router = useRouter();
@@ -23,11 +24,11 @@ export function ResumeBuddyScreen() {
   // Guard against duplicate submissions
   const submittingRef = useRef(false);
 
-  const handleAnalyze = async (domain: string) => {
+  const handleAnalyze = async (domain: string, file?: DocumentPickerAsset) => {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setStep("loading");
-    await analyze(domain);
+    await analyze(domain, file);
     submittingRef.current = false;
   };
 

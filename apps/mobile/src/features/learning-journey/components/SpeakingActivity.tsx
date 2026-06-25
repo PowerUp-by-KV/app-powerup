@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,9 +11,10 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio, AVPlaybackStatus } from "expo-av";
+import { useColorScheme } from "nativewind";
 
-import type { ActivityQuestion } from "@powerup/shared";
+import type { Activity, ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitSpeakingAnswerMutation } from "@/services/module-api";
 
@@ -23,7 +24,7 @@ export interface SpeakingActivityResult {
 }
 
 interface SpeakingActivityProps {
-  activityId: string;
+  activity: Activity;
   questions: ActivityQuestion[];
   onComplete: (result: SpeakingActivityResult) => void;
 }
@@ -44,8 +45,48 @@ const WAVEFORM_BARS = [
 /**
  * Record → review with waveform (playback/retake) → submit → AI score.
  */
-export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProps) {
+export function SpeakingActivity({ activity, questions, onComplete }: SpeakingActivityProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const prompt = questions[0];
+
+  const questionText =
+    typeof prompt?.question_text === "object" && prompt?.question_text !== null
+      ? String(
+          (prompt.question_text as unknown as Record<string, unknown>).text ||
+            JSON.stringify(prompt.question_text),
+        )
+      : (prompt?.question_text ?? "");
+
+  const isReadAloud = questionText.toLowerCase().includes("read");
+
+  const textToRead = (() => {
+    if (!isReadAloud) return "";
+
+    const val = activity?.content;
+    if (val && typeof val === "object") {
+      if (val.text) return String(val.text).trim();
+      if (val.name) return String(val.name).trim();
+      return "";
+    } else if (val) {
+      const str = String(val).trim();
+      if (str !== "{}" && str !== "[]") return str;
+    }
+
+    if (prompt?.correct_answer) {
+      return String(prompt.correct_answer).trim();
+    }
+    return "";
+  })();
+
+  const cleanedTextToRead = (() => {
+    let t = textToRead;
+    if (t.startsWith('"') && t.endsWith('"') && t.length >= 2) {
+      t = t.slice(1, -1);
+    }
+    return t.trim();
+  })();
+
   const recordingRef = useRef<Audio.Recording | null>(null);
 
   // Recording states
@@ -229,10 +270,10 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
     }
   };
 
-  const onPlaybackStatus = (status: any) => {
+  const onPlaybackStatus = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) return;
-    setPlaybackPosition(status.positionMillis);
-    setPlaybackDuration(status.durationMillis);
+    setPlaybackPosition(status.positionMillis ?? null);
+    setPlaybackDuration(status.durationMillis ?? null);
     if (status.didJustFinish) {
       setIsPlaybackPlaying(false);
     }
@@ -297,7 +338,10 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
       const passed = res?.passed ?? score >= 60;
       const breakdown: Breakdown =
         (res as unknown as { score_breakdown?: Breakdown }).score_breakdown ?? {};
-      const feedback = (res as any)?.feedback ?? breakdown?.feedback ?? "";
+      const feedback =
+        ((res as unknown as Record<string, unknown>)?.feedback as string) ??
+        breakdown?.feedback ??
+        "";
       setScoreView({ score, passed, feedback, breakdown });
     } catch {
       setError("Scoring failed. Tap retry to send again.");
@@ -357,10 +401,15 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
     return (
       <ScrollView
-        style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+        style={[
+          { flex: 1 },
+          Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+        ]}
         contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
       >
-        <Text className="text-slate-900 text-xl font-bold mb-2">Your speaking score</Text>
+        <Text className="text-slate-900 dark:text-white text-xl font-bold mb-2">
+          Your speaking score
+        </Text>
         <Text
           style={{
             fontSize: 48,
@@ -370,13 +419,13 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
         >
           {scoreView.score}
         </Text>
-        <Text className="text-slate-500 mb-2">
+        <Text className="text-slate-500 dark:text-zinc-400 mb-2">
           {scoreView.passed ? "Great work — you passed." : "Below 60% — try again for the bonus."}
         </Text>
         {scoreView.feedback ? (
           <Text
             style={{
-              color: "#475569",
+              color: isDark ? "#cbd5e1" : "#475569",
               marginTop: 8,
               marginBottom: 16,
               fontSize: 15,
@@ -397,17 +446,29 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 <View
                   style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}
                 >
-                  <Text style={{ color: "#334155", fontWeight: "600", fontSize: 14 }}>
+                  <Text
+                    style={{
+                      color: isDark ? "#e2e8f0" : "#334155",
+                      fontWeight: "600",
+                      fontSize: 14,
+                    }}
+                  >
                     {details.label}
                   </Text>
-                  <Text style={{ color: "#0f172a", fontWeight: "600", fontSize: 14 }}>
+                  <Text
+                    style={{
+                      color: isDark ? "#ffffff" : "#0f172a",
+                      fontWeight: "600",
+                      fontSize: 14,
+                    }}
+                  >
                     {details.formatted}
                   </Text>
                 </View>
                 <View
                   style={{
                     height: 6,
-                    backgroundColor: "#e2e8f0",
+                    backgroundColor: isDark ? "#3f3f46" : "#e2e8f0",
                     borderRadius: 3,
                     width: "100%",
                     overflow: "hidden",
@@ -432,7 +493,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
           style={{
             marginTop: 24,
             borderRadius: 10,
-            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
           }}
         >
           {({ pressed }) => (
@@ -454,49 +515,85 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
     >
-      <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">Speaking</Text>
+      <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+        Speaking
+      </Text>
 
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: "#eff6ff",
+          backgroundColor: isDark ? "#1E1F2A" : "#eff6ff",
           borderWidth: 1,
-          borderColor: "#bfdbfe",
+          borderColor: isDark ? "#2d2d3a" : "#bfdbfe",
           borderRadius: 12,
           padding: 12,
           marginBottom: 20,
         }}
       >
         <Feather name="info" size={16} color="#2563eb" />
-        <Text style={{ flex: 1, fontSize: 13, color: "#1e3a8a", marginLeft: 8, lineHeight: 18 }}>
-          Practice speaking the conversation dialogue below. Tap the microphone and read it out
-          loud.
+        <Text
+          style={{
+            flex: 1,
+            fontSize: 13,
+            color: isDark ? "#93c5fd" : "#1e3a8a",
+            marginLeft: 8,
+            lineHeight: 18,
+          }}
+        >
+          {isReadAloud
+            ? "Practice speaking the conversation dialogue below. Tap the microphone and read it out loud."
+            : "Practice speaking your response. Tap the microphone and record your answer."}
         </Text>
       </View>
 
-      <Text className="text-slate-900 text-base leading-6 mb-4">{prompt?.question_text ?? ""}</Text>
+      <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-4">
+        {questionText}
+      </Text>
+
+      {isReadAloud && cleanedTextToRead ? (
+        <View className="bg-slate-50 dark:bg-[#1E1F2A] border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 mb-5 shadow-sm">
+          <Text className="text-xs uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-bold mb-2">
+            Text to read
+          </Text>
+          <Text className="text-slate-800 dark:text-zinc-100 text-base leading-7 font-semibold">
+            "{cleanedTextToRead}"
+          </Text>
+        </View>
+      ) : null}
 
       {(prompt?.criteria ?? []).length > 0 ? (
         <View
           style={{
-            backgroundColor: "#f8fafc",
+            backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
+            borderWidth: isDark ? 1 : 0,
+            borderColor: isDark ? "#2d2d3a" : "transparent",
             borderRadius: 10,
             padding: 14,
             marginBottom: 24,
           }}
         >
-          <Text className="text-xs uppercase tracking-wider text-slate-500 mb-2">
+          <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
             You'll be scored on
           </Text>
-          {(prompt?.criteria ?? []).map((c, i) => (
-            <Text key={i} style={{ color: "#475569", marginBottom: 4 }}>
-              • {c}
-            </Text>
-          ))}
+          {(prompt?.criteria ?? []).map((c, i) => {
+            const obj = c as unknown as Record<string, unknown>;
+            const textVal =
+              typeof c === "object" && c !== null
+                ? String(obj.text || obj.name || JSON.stringify(c))
+                : String(c);
+            return (
+              <Text key={i} style={{ color: isDark ? "#cbd5e1" : "#475569", marginBottom: 4 }}>
+                • {textVal}
+              </Text>
+            );
+          })}
         </View>
       ) : null}
 
@@ -504,7 +601,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
         {submitting ? (
           <View style={{ alignItems: "center" }}>
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={{ marginTop: 12, color: "#475569" }}>Analyzing your answer…</Text>
+            <Text style={{ marginTop: 12, color: isDark ? "#94a3b8" : "#475569" }}>
+              Analyzing your answer…
+            </Text>
           </View>
         ) : recordedUri ? (
           <View style={{ width: "100%", alignItems: "center" }}>
@@ -528,7 +627,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                   justifyContent: "space-between",
                   height: "100%",
                   width: "100%",
-                  ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                  ...(Platform.OS === "web"
+                    ? ({ cursor: "pointer" } as Record<string, unknown>)
+                    : {}),
                 }}
               >
                 {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -543,7 +644,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                       style={{
                         width: 5,
                         height: baseHeight,
-                        backgroundColor: isPast ? "#3b82f6" : "#cbd5e1",
+                        backgroundColor: isPast ? "#3b82f6" : isDark ? "#4b5563" : "#cbd5e1",
                         borderRadius: 2.5,
                         transform: [{ scaleY: anims[index % anims.length]! }],
                       }}
@@ -554,7 +655,14 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
             </View>
 
             {/* Time display for playback */}
-            <Text style={{ fontSize: 13, color: "#475569", fontWeight: "600", marginBottom: 16 }}>
+            <Text
+              style={{
+                fontSize: 13,
+                color: isDark ? "#e2e8f0" : "#475569",
+                fontWeight: "600",
+                marginBottom: 16,
+              }}
+            >
               {formatTime(playbackPosition)} / {formatTime(playbackDuration)}
             </Text>
 
@@ -577,7 +685,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     height: 56,
                     borderRadius: 28,
                     overflow: "hidden",
-                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   {({ pressed }) => (
@@ -597,7 +707,14 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     </View>
                   )}
                 </Pressable>
-                <Text style={{ fontSize: 12, color: "#475569", fontWeight: "600", marginTop: 8 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: isDark ? "#94a3b8" : "#475569",
+                    fontWeight: "600",
+                    marginTop: 8,
+                  }}
+                >
                   Playback
                 </Text>
               </View>
@@ -613,12 +730,21 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                     backgroundColor: "#dc2626",
                     alignItems: "center",
                     justifyContent: "center",
-                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   <Feather name="refresh-cw" size={22} color="#fff" />
                 </Pressable>
-                <Text style={{ fontSize: 12, color: "#475569", fontWeight: "600", marginTop: 8 }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: isDark ? "#94a3b8" : "#475569",
+                    fontWeight: "600",
+                    marginTop: 8,
+                  }}
+                >
                   Retake
                 </Text>
               </View>
@@ -636,7 +762,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
-                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (
@@ -664,7 +792,9 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 height: 96,
                 borderRadius: 48,
                 overflow: "hidden",
-                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (
@@ -680,7 +810,7 @@ export function SpeakingActivity({ questions, onComplete }: SpeakingActivityProp
                 </View>
               )}
             </Pressable>
-            <Text style={{ marginTop: 12, color: "#64748b" }}>
+            <Text style={{ marginTop: 12, color: isDark ? "#94a3b8" : "#64748b" }}>
               {isRecording ? `Recording… ${elapsed}s — tap to stop` : "Tap to record"}
             </Text>
           </>
