@@ -14,7 +14,7 @@ const SCOPES: { key: AccuracyScope; label: string }[] = [
 ];
 
 export function AccuracyScreen() {
-  const safeBack = useSafeBack();
+  const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
   const [scope, setScope] = useState<AccuracyScope>("learning");
   const { data, isLoading } = useGetAccuracyQuery(scope);

@@ -151,7 +151,12 @@ const mockInterviewApi = api.injectEndpoints({
     // a FormData instance as the body — it removes the Content-Type header so
     // the browser can set the correct multipart boundary itself.
     submitAnswer: builder.mutation<SubmitAnswerResponse, SubmitAnswerRequest>({
-      query: ({ sessionId, questionId, audioFile, transcript }) => {
+      queryFn: async (
+        { sessionId, questionId, audioFile, transcript },
+        _queryApi,
+        _extraOptions,
+        baseQuery,
+      ) => {
         const form = new FormData();
         form.append("question_id", questionId);
         if (audioFile) {
@@ -160,13 +165,17 @@ const mockInterviewApi = api.injectEndpoints({
         if (transcript) {
           form.append("transcript", transcript);
         }
-        return {
+
+        const result = await baseQuery({
           url: `/v1/mock-interview/${sessionId}/answers`,
           method: "POST",
           body: form,
-          // Do NOT set Content-Type — browser sets it with the correct boundary
-          formData: true,
-        };
+        });
+
+        if (result.error) {
+          return { error: result.error as any };
+        }
+        return { data: result.data as SubmitAnswerResponse };
       },
       // After a successful submission, store the feedback in Redux so the
       // Feedback screen can read it without an extra network call.

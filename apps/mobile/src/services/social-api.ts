@@ -39,6 +39,7 @@ export interface SearchResult {
   user_id: string;
   name: string;
   avatar: string | null;
+  points?: number;
 }
 
 export const socialApi = api.injectEndpoints({

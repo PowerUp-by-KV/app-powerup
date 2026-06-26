@@ -15,7 +15,7 @@ import { useUploadBuiltResumePhotoMutation } from "@/services/resume-builder-api
 
 interface PhotoUploaderProps {
   photoUrl?: string | null;
-  onPhotoUploaded: (url: string) => void;
+  onPhotoUploaded: (url: string, localUri: string | null) => void;
 }
 
 export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps) {
@@ -77,8 +77,8 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
 
       const uploadResult = await uploadPhoto(formData).unwrap();
       if (uploadResult?.url) {
-        onPhotoUploaded(uploadResult.url);
-        setLocalPreview(uploadResult.url);
+        onPhotoUploaded(uploadResult.url, asset.uri);
+        // keep localPreview as asset.uri so it stays visible without hitting 403
       } else {
         throw new Error("Upload response did not contain image url");
       }
@@ -91,7 +91,7 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
 
   const handleRemovePhoto = () => {
     setLocalPreview(null);
-    onPhotoUploaded("");
+    onPhotoUploaded("", null);
   };
 
   return (
@@ -132,47 +132,48 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
+    flexDirection: "column",
     alignItems: "center",
-    padding: 16,
+    justifyContent: "center",
+    padding: 24,
     backgroundColor: "#f9fafb",
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: "#e5e7eb",
-    marginVertical: 8,
+    marginVertical: 12,
   },
   pickerBox: {
-    marginRight: 16,
+    marginBottom: 16,
   },
   imageContainer: {
     position: "relative",
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: "visible",
   },
   profileImage: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 3,
     borderColor: "#2563eb",
   },
   loaderBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
-    borderRadius: 36,
+    borderRadius: 60,
     alignItems: "center",
     justifyContent: "center",
   },
   removeBadge: {
     position: "absolute",
-    right: -4,
-    bottom: -4,
+    right: 0,
+    bottom: 0,
     backgroundColor: "#ef4444",
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
@@ -184,33 +185,35 @@ const styles = StyleSheet.create({
     shadowRadius: 1.41,
   },
   pickButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     backgroundColor: "#e5e7eb",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#d1d5db",
     borderStyle: "dashed",
   },
   pickText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "600",
     color: "#4b5563",
-    marginTop: 4,
+    marginTop: 8,
   },
   infoBox: {
-    flex: 1,
+    alignItems: "center",
+    width: "100%",
   },
   infoTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#1f2937",
+    marginBottom: 4,
   },
   infoDesc: {
-    fontSize: 11,
+    fontSize: 12,
     color: "#6b7280",
-    marginTop: 2,
+    textAlign: "center",
   },
 });

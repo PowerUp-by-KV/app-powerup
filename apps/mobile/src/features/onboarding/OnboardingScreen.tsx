@@ -127,10 +127,10 @@ export default function OnboardingScreen() {
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
         }}
-        className="bg-slate-50"
+        className="bg-slate-50 dark:bg-[#0e0e11]"
       >
         <View className="flex-1 w-full items-center justify-center p-6">
-          <View className="w-full max-w-sm bg-white border border-slate-200 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
             <View
               style={{
                 width: 140,
@@ -149,10 +149,10 @@ export default function OnboardingScreen() {
               />
             </View>
 
-            <Text className="text-slate-900 font-extrabold text-xl text-center mb-2">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
               Server Connection Lost
             </Text>
-            <Text className="text-slate-500 text-sm text-center leading-5 mb-4 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4 text-center">
               We couldn't connect to the learning server. Please ensure the backend service is
               running and try again.
             </Text>
@@ -163,7 +163,7 @@ export default function OnboardingScreen() {
             <View className="w-full gap-3">
               <TouchableOpacity
                 onPress={() => refetchQuestions()}
-                className="w-full bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
+                className="w-full bg-blue-500 active:bg-blue-600 dark:bg-blue-600 py-4 rounded-2xl items-center justify-center shadow-sm"
               >
                 <Text className="text-white font-extrabold text-sm">Try Again</Text>
               </TouchableOpacity>

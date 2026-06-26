@@ -4,7 +4,12 @@ import { WizardHeader } from "../components/WizardHeader";
 import { WizardFooterCTA } from "../components/WizardFooterCTA";
 import { PhotoUploader } from "../components/PhotoUploader";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { selectBuilderPhotoUrl, setPhotoUrl } from "@/store/slices/resume-builder.slice";
+import {
+  selectBuilderPhotoUrl,
+  selectBuilderLocalPhotoUri,
+  setPhotoUrl,
+  setLocalPhotoUri,
+} from "@/store/slices/resume-builder.slice";
 
 interface Step4cPhotoProps {
   onNext: () => void;
@@ -14,9 +19,11 @@ interface Step4cPhotoProps {
 export function Step4cPhoto({ onNext, onBack }: Step4cPhotoProps) {
   const dispatch = useAppDispatch();
   const photoUrl = useAppSelector(selectBuilderPhotoUrl);
+  const localPhotoUri = useAppSelector(selectBuilderLocalPhotoUri);
 
-  const handlePhotoUploaded = (url: string | null) => {
+  const handlePhotoUploaded = (url: string | null, localUri: string | null = null) => {
     dispatch(setPhotoUrl(url));
+    dispatch(setLocalPhotoUri(localUri));
   };
 
   return (
@@ -29,7 +36,7 @@ export function Step4cPhoto({ onNext, onBack }: Step4cPhotoProps) {
       />
 
       <View style={styles.content}>
-        <PhotoUploader photoUrl={photoUrl} onPhotoUploaded={handlePhotoUploaded} />
+        <PhotoUploader photoUrl={localPhotoUri || photoUrl} onPhotoUploaded={handlePhotoUploaded} />
       </View>
 
       <WizardFooterCTA

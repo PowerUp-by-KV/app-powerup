@@ -2,6 +2,9 @@
 import { useState, useCallback } from "react";
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useColorScheme } from "nativewind";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { resetInterview, setFinalResult } from "@/store/slices/mock-interview.slice";
 import { useGetInterviewResultsQuery } from "@/services/mock-interview-api";
@@ -13,7 +16,7 @@ import type { InterviewResultAnswer } from "@/services/mock-interview-api";
 
 function TrophyIcon() {
   return (
-    <View className="w-20 h-20 rounded-full bg-yellow-50 items-center justify-center mb-4">
+    <View className="w-20 h-20 rounded-full bg-yellow-50 dark:bg-yellow-900/30 items-center justify-center mb-4">
       {/* Trophy cup body */}
       <View className="items-center">
         <View
@@ -73,8 +76,8 @@ function TrophyIcon() {
 
 function ScoreBadge({ score }: { score: number | null }) {
   return (
-    <View className="bg-blue-100 rounded-full px-3 py-0.5 mr-3">
-      <Text className="text-xs font-semibold text-blue-600">
+    <View className="bg-blue-100 dark:bg-blue-900/40 rounded-full px-3 py-0.5 mr-3">
+      <Text className="text-xs font-semibold text-blue-600 dark:text-blue-400">
         {score !== null ? score.toFixed(2) : "—"}/10
       </Text>
     </View>
@@ -100,7 +103,7 @@ function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
   return (
     <Pressable
       onPress={toggle}
-      className="bg-white rounded-2xl px-4 py-4 mb-3"
+      className="bg-white dark:bg-slate-800 rounded-2xl px-4 py-4 mb-3"
       style={{
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
@@ -111,34 +114,40 @@ function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
     >
       {/* Row header */}
       <View className="flex-row items-center">
-        <Text className="text-xs font-bold text-gray-400 w-7">Q{index + 1}</Text>
+        <Text className="text-xs font-bold text-gray-400 dark:text-gray-500 w-7">Q{index + 1}</Text>
         <ScoreBadge score={answer.score} />
         <Text
-          className="flex-1 text-sm text-gray-800 font-medium"
+          className="flex-1 text-sm text-gray-800 dark:text-gray-200 font-medium"
           numberOfLines={isOpen ? undefined : 2}
         >
           Question {answer.question_order}
         </Text>
-        <Text className="text-gray-300 text-base ml-2">{isOpen ? "∧" : "∨"}</Text>
+        <Text className="text-gray-300 dark:text-gray-600 text-base ml-2">
+          {isOpen ? "∧" : "∨"}
+        </Text>
       </View>
 
       {/* Expanded content */}
       {isOpen && (
-        <View className="mt-4 pt-4 border-t border-gray-100">
+        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-slate-700">
           {answer.transcript ? (
             <View className="mb-3">
-              <Text className="text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">
+              <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">
                 Your Answer
               </Text>
-              <Text className="text-sm text-gray-700 leading-5">{answer.transcript}</Text>
+              <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">
+                {answer.transcript}
+              </Text>
             </View>
           ) : null}
 
           <View>
-            <Text className="text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wide">
+            <Text className="text-xs font-semibold text-gray-400 dark:text-gray-500 mb-1 uppercase tracking-wide">
               Feedback
             </Text>
-            <Text className="text-sm text-gray-700 leading-5">{answer.feedback}</Text>
+            <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">
+              {answer.feedback}
+            </Text>
           </View>
 
           {/* Criteria mini-bars */}
@@ -146,10 +155,10 @@ function ResponseAccordion({ index, answer }: ResponseAccordionProps) {
             <View className="mt-3 flex-row gap-x-3">
               {(answer.score_breakdown?.criteria_scores ?? []).slice(0, 3).map((c) => (
                 <View key={c.name} className="flex-1">
-                  <Text className="text-xs text-gray-400 mb-1" numberOfLines={1}>
+                  <Text className="text-xs text-gray-400 dark:text-gray-500 mb-1" numberOfLines={1}>
                     {c.name}
                   </Text>
-                  <View className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                  <View className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <View
                       className="h-full bg-blue-400 rounded-full"
                       style={{ width: `${Math.min((c.score / 10) * 100, 100)}%` }}
@@ -185,6 +194,9 @@ function gradeColor(grade: string): string {
 export function MockInterviewResultScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack("/");
 
   const sessionId = useAppSelector((s) => s.mockInterview.sessionId);
   const finalScore = useAppSelector((s) => s.mockInterview.finalScore);
@@ -222,7 +234,7 @@ export function MockInterviewResultScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center">
+      <View className="flex-1 bg-gray-100 dark:bg-slate-900 items-center justify-center">
         <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
@@ -230,8 +242,8 @@ export function MockInterviewResultScreen() {
 
   if (isError) {
     return (
-      <View className="flex-1 bg-gray-100 items-center justify-center px-10">
-        <Text className="text-gray-500 text-sm text-center leading-6">
+      <View className="flex-1 bg-gray-100 dark:bg-slate-900 items-center justify-center px-10">
+        <Text className="text-gray-500 dark:text-gray-400 text-sm text-center leading-6">
           Failed to load results.{"\n"}Please check your connection.
         </Text>
       </View>
@@ -241,17 +253,41 @@ export function MockInterviewResultScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <View className="flex-1 bg-gray-100">
+    <View className="flex-1 bg-gray-100 dark:bg-slate-900">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 20, paddingTop: 52 }}
         showsVerticalScrollIndicator={false}
       >
+        <View
+          style={{
+            paddingTop: 52,
+            paddingHorizontal: 20,
+            paddingBottom: 16,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View className="flex-row items-center">
+            <Pressable
+              onPress={goBack}
+              className="w-10 h-10 rounded-full bg-black/5 dark:bg-white/5 items-center justify-center mr-3"
+            >
+              <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
+            </Pressable>
+          </View>
+        </View>
+
         {/* Trophy + final score */}
         <View className="items-center mb-8">
           <TrophyIcon />
-          <Text className="text-xl font-bold text-gray-900 mb-2">Interview Complete!</Text>
-          <Text className="text-5xl font-bold text-gray-900">{score.toFixed(1)}/10</Text>
+          <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+            Interview Complete!
+          </Text>
+          <Text className="text-5xl font-bold text-gray-900 dark:text-white">
+            {score.toFixed(1)}/10
+          </Text>
           <Text className="text-base font-semibold mt-2" style={{ color: gradeColor(grade) }}>
             {grade}
           </Text>
@@ -260,7 +296,9 @@ export function MockInterviewResultScreen() {
         {/* Per-question accordion list */}
         {answers.length > 0 && (
           <>
-            <Text className="text-base font-bold text-gray-900 mb-4">Your Responses</Text>
+            <Text className="text-base font-bold text-gray-900 dark:text-white mb-4">
+              Your Responses
+            </Text>
             {answers.map((answer, idx) => (
               <ResponseAccordion key={answer.question_id} index={idx} answer={answer} />
             ))}
@@ -271,7 +309,7 @@ export function MockInterviewResultScreen() {
       </ScrollView>
 
       {/* Sticky footer: two actions */}
-      <View className="px-5 pb-10 pt-4 bg-gray-100 gap-y-3">
+      <View className="px-5 pb-10 pt-4 bg-gray-100 dark:bg-slate-900 gap-y-3">
         <Pressable
           onPress={handleTryAgain}
           className="bg-blue-500 rounded-2xl py-4 flex-row items-center justify-center"
@@ -284,12 +322,14 @@ export function MockInterviewResultScreen() {
 
         <Pressable
           onPress={handleGoToDashboard}
-          className="bg-white rounded-2xl py-4 flex-row items-center justify-center border border-gray-200"
+          className="bg-white dark:bg-slate-800 rounded-2xl py-4 flex-row items-center justify-center border border-gray-200 dark:border-slate-700"
           style={({ pressed }) => ({ opacity: pressed ? 0.72 : 1 })}
         >
           {/* Home icon */}
-          <Text className="text-gray-700 text-base mr-2">⌂</Text>
-          <Text className="text-gray-700 font-semibold text-base">Go to Dashboard</Text>
+          <Text className="text-gray-700 dark:text-gray-300 text-base mr-2">⌂</Text>
+          <Text className="text-gray-700 dark:text-gray-300 font-semibold text-base">
+            Go to Dashboard
+          </Text>
         </Pressable>
       </View>
     </View>

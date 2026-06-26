@@ -7,11 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "powerup",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gowthamcoder.apppowerup",
@@ -44,6 +40,14 @@
       "expo-secure-store",
       "expo-sharing",
       "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       [
         "expo-av",
         {

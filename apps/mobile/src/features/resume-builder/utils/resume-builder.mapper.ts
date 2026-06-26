@@ -137,11 +137,20 @@ export function fromResumeBuilderResponse(response: unknown): BuilderResume {
     github: res.github_url || res.contact?.github || res.contact?.portfolio || "",
   };
 
+  console.log(
+    "[RESUME BUILDER] Received from backend - raw layout:",
+    res.layout,
+    "raw template_name:",
+    res.template_name,
+  );
   return {
     contact,
     summary: res.summary || "",
-    layout: res.layout === "double_column" ? "double_column" : "single_column",
-    templateName: res.template_name === "modern_ats" ? "modern_ats" : "harvard",
+    layout:
+      res.layout?.toLowerCase() === "two_column" || res.layout?.toLowerCase() === "double_column"
+        ? "double_column"
+        : "single_column",
+    templateName: res.template_name?.toLowerCase() === "modern_ats" ? "modern_ats" : "harvard",
     occupation: res.occupation || "",
     experienceLevel: res.experience_level || "",
     education,
@@ -158,7 +167,7 @@ export function fromResumeBuilderResponse(response: unknown): BuilderResume {
  * Converts the frontend clean camelCase BuilderResume model into the backend PUT body (BuiltResumeData).
  */
 export function toResumeBuilderPayload(resume: BuilderResume): Record<string, unknown> {
-  return {
+  const payload = {
     contact: {
       name: resume.contact.fullName,
       email: resume.contact.email,
@@ -168,8 +177,8 @@ export function toResumeBuilderPayload(resume: BuilderResume): Record<string, un
       location: resume.contact.location,
     },
     summary: resume.summary || "",
-    layout: resume.layout || "single_column",
-    template_name: resume.templateName || "harvard",
+    layout: resume.layout === "double_column" ? "two_column" : "single_column",
+    template_name: resume.templateName === "modern_ats" ? "modern_ats" : "harvard",
     occupation: resume.occupation || null,
     experience_level: resume.experienceLevel || null,
     education: resume.education.map((edu) => ({
@@ -202,5 +211,11 @@ export function toResumeBuilderPayload(resume: BuilderResume): Record<string, un
     })),
     certifications: resume.certifications,
     languages: resume.languages,
+    photo_url: resume.photoUrl || null,
   };
+  console.log(
+    "[RESUME BUILDER] Sending to backend:",
+    JSON.stringify({ layout: payload.layout, template_name: payload.template_name }),
+  );
+  return payload;
 }

@@ -10,7 +10,7 @@ import { useGetProfileQuery } from "@/services/auth-api";
 
 export function XpDetailScreen() {
   const router = useRouter();
-  const safeBack = useSafeBack();
+  const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
   const { data: profile } = useGetProfileQuery();
   const { colorScheme } = useColorScheme();
