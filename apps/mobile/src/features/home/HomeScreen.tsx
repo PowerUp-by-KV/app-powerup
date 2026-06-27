@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { Feather } from "@expo/vector-icons";
 
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,8 +44,7 @@ const PROGRESSION_WAVES = [
 
 export function HomeScreen() {
   const router = useRouter();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleDarkMode } = useThemeToggle();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
@@ -264,7 +263,7 @@ export function HomeScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleColorScheme}
+                onPress={() => toggleDarkMode()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
                 }`}

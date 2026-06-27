@@ -67,7 +67,28 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
-  const [isPolling, setIsPolling] = useState(true);
+  const [cachedOnboardingComplete, setCachedOnboardingComplete] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (userId) {
+      if (Platform.OS === "web") {
+        const val =
+          typeof window !== "undefined"
+            ? window.localStorage?.getItem(`onboarding_complete_${userId}`)
+            : null;
+        setCachedOnboardingComplete(val === "true");
+      } else {
+        SecureStore.getItemAsync(`onboarding_complete_${userId}`)
+          .then((val) => setCachedOnboardingComplete(val === "true"))
+          .catch(() => setCachedOnboardingComplete(false));
+      }
+    } else {
+      setCachedOnboardingComplete(null);
+    }
+  }, [userId]);
+
+  const skipQuery =
+    !userId || cachedOnboardingComplete === true || cachedOnboardingComplete === null;
 
   const {
     data: onboardingStatus,
@@ -76,20 +97,21 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     isError: isOnboardingError,
     error: onboardingError,
   } = useGetOnboardingStatusQuery(userId ?? "", {
-    skip: !userId,
+    skip: skipQuery,
     refetchOnMountOrArgChange: true,
-    pollingInterval: isPolling ? 5000 : 0, // stop polling once successful
   });
 
   useEffect(() => {
-    if (onboardingStatus && !isOnboardingError) {
-      setIsPolling(false);
+    if (onboardingStatus?.answers_present && userId) {
+      if (Platform.OS === "web") {
+        if (typeof window !== "undefined")
+          window.localStorage?.setItem(`onboarding_complete_${userId}`, "true");
+      } else {
+        SecureStore.setItemAsync(`onboarding_complete_${userId}`, "true").catch(() => {});
+      }
+      setCachedOnboardingComplete(true);
     }
-  }, [onboardingStatus, isOnboardingError]);
-
-  useEffect(() => {
-    setIsPolling(true);
-  }, [userId]);
+  }, [onboardingStatus, userId]);
 
   useEffect(() => {
     if (userId) {
@@ -104,7 +126,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLocalReady) return;
 
-    const isQueryActive = !!userId;
+    const isQueryActive = !!userId && cachedOnboardingComplete === false;
     if (
       session &&
       isQueryActive &&
@@ -141,7 +163,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     if (!session) {
       if (!isPublic) router.replace("/login");
     } else {
-      const onboardingComplete = onboardingStatus?.answers_present ?? false;
+      const onboardingComplete =
+        cachedOnboardingComplete === true || (onboardingStatus?.answers_present ?? false);
 
       if (!onboardingComplete) {
         // Logged in but onboarding not complete.

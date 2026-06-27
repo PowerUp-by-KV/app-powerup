@@ -36,6 +36,58 @@ export function getAvatarUri(
     }
   }
 
+  // New ultra-compressed format c2d!
+  if (avatarId.startsWith("c2d!")) {
+    const data = avatarId.replace("c2d!", "").split("-");
+    if (data.length === 6) {
+      const [s, hc, h, e, m, g] = data as [string, string, string, string, string, string];
+      const params = new URLSearchParams();
+
+      const SKIN_COLORS = [
+        "f8d9ce",
+        "f1c27d",
+        "e0ac69",
+        "c89b7b",
+        "8d5524",
+        "c68642",
+        "e8beac",
+        "ffdbac",
+      ];
+      const HAIR_COLORS = [
+        "090806",
+        "2c222b",
+        "71635a",
+        "b7a69e",
+        "d6c4c2",
+        "cab2a7",
+        "9f7a68",
+        "b55239",
+        "e6cea8",
+        "e5c8a8",
+        "debc99",
+        "a3a89e",
+      ];
+
+      params.append("skinColor", SKIN_COLORS[parseInt(s, 36)] || "f1c27d");
+      params.append("hairColor", HAIR_COLORS[parseInt(hc, 36)] || "090806");
+      params.append(
+        "hair",
+        h.startsWith("s")
+          ? `short${h.replace("s", "").padStart(2, "0")}`
+          : `long${h.replace("l", "").padStart(2, "0")}`,
+      );
+      params.append("eyes", `variant${e.padStart(2, "0")}`);
+      params.append("mouth", `variant${m.padStart(2, "0")}`);
+      if (g !== "x") {
+        params.append("glasses", `variant${g.padStart(2, "0")}`);
+        params.append("glassesProbability", "100");
+      }
+      params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
+      params.append("seed", "user_custom");
+      return `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
+    }
+  }
+
   // Legacy fallback for v1 uncompressed
   if (avatarId.startsWith("rpm_custom?")) {
     const query = avatarId.replace("rpm_custom?", "");

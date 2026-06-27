@@ -8,11 +8,11 @@ import {
   Image,
   useWindowDimensions,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
@@ -22,8 +22,7 @@ import { getAvatarUri } from "@/utils/avatar";
 import { StatTile } from "./components/StatTile";
 
 function ProgressBar({ pct }: { pct: number }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useThemeToggle();
   const w = Math.min(100, Math.max(0, Math.round(pct * 100)));
   return (
     <View
@@ -35,8 +34,7 @@ function ProgressBar({ pct }: { pct: number }) {
 }
 
 function AchievementCard({ a, locked }: { a: Achievement; locked: boolean }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useThemeToggle();
 
   return (
     <View
@@ -100,8 +98,7 @@ export function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleDarkMode } = useThemeToggle();
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-[#F4F5FA] dark:bg-[#0F1020]">
@@ -118,7 +115,7 @@ export function AchievementsScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleColorScheme}
+                onPress={() => toggleDarkMode()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
