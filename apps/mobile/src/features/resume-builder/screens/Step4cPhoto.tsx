@@ -10,6 +10,7 @@ import {
   setPhotoUrl,
   setLocalPhotoUri,
 } from "@/store/slices/resume-builder.slice";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface Step4cPhotoProps {
   onNext: () => void;
@@ -20,6 +21,7 @@ export function Step4cPhoto({ onNext, onBack }: Step4cPhotoProps) {
   const dispatch = useAppDispatch();
   const photoUrl = useAppSelector(selectBuilderPhotoUrl);
   const localPhotoUri = useAppSelector(selectBuilderLocalPhotoUri);
+  const { isDark } = useThemeToggle();
 
   const handlePhotoUploaded = (url: string | null, localUri: string | null = null) => {
     dispatch(setPhotoUrl(url));
@@ -27,7 +29,7 @@ export function Step4cPhoto({ onNext, onBack }: Step4cPhotoProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}>
       <WizardHeader
         title="Upload your Passport size photo"
         onBack={onBack}

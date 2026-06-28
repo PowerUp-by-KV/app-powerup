@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import {
   selectBuilderCurrentStep,
   hydrateResume,
@@ -17,11 +18,14 @@ import { Step2ExperienceScreen } from "./Step2ExperienceScreen";
 import { Step3SkillsScreen } from "./Step3SkillsScreen";
 import { Step4OnboardingFlow } from "./Step4OnboardingFlow";
 import { Step5PreviewScreen } from "./Step5PreviewScreen";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export function ResumeBuilderWizard() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const currentStep = useAppSelector(selectBuilderCurrentStep);
   const insets = useSafeAreaInsets();
+  const { isDark } = useThemeToggle();
   const { mode } = useLocalSearchParams<{ mode?: "scratch" | "draft" }>();
   const isScratchMode = mode === "scratch";
 
@@ -46,16 +50,35 @@ export function ResumeBuilderWizard() {
   // If loading, show standard premium spinner
   if (!isScratchMode && isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}>
         <ActivityIndicator size="large" color="#2563eb" />
-        <Text style={styles.loadingText}>Hydrating your resume draft...</Text>
+        <Text style={[styles.loadingText, { color: isDark ? "#d1d5db" : "#4b5563" }]}>
+          Hydrating your resume draft...
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.safeArea, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.safeArea,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+          backgroundColor: isDark ? "#0f172a" : "#f3f4f6",
+        },
+      ]}
+    >
       <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Pressable
+            onPress={() => router.back()}
+            style={[styles.backButton, { backgroundColor: isDark ? "#1e293b" : "white" }]}
+          >
+            <Feather name="arrow-left" size={20} color={isDark ? "#e2e8f0" : "#374151"} />
+          </Pressable>
+        </View>
         <View style={styles.wizardContainer}>
           <StepWizard
             currentStep={currentStep}
@@ -77,10 +100,27 @@ export function ResumeBuilderWizard() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f3f4f6", // Updated to main app background
   },
   container: {
     flex: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   wizardContainer: {
     paddingHorizontal: 16,
@@ -95,13 +135,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f3f4f6",
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
     fontWeight: "600",
-    color: "#4b5563",
   },
 });
 export default ResumeBuilderWizard;

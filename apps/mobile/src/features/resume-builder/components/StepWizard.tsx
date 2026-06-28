@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Pressable, StyleSheet } from "react-native";
 import { Text } from "@/components/Themed";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export const RESUME_STEPS = {
   1: "CONTACT",
@@ -25,6 +26,8 @@ interface StepWizardProps {
 }
 
 export function StepWizard({ currentStep, totalSteps = 5, onStepChange }: StepWizardProps) {
+  const { isDark } = useThemeToggle();
+
   return (
     <View style={styles.container}>
       <View style={styles.stepsRow}>
@@ -44,6 +47,10 @@ export function StepWizard({ currentStep, totalSteps = 5, onStepChange }: StepWi
                   disabled={stepNumber > currentStep}
                   style={[
                     styles.circle,
+                    {
+                      backgroundColor: isDark ? "#1f2937" : "white",
+                      borderColor: isDark ? "#374151" : "#e5e7eb",
+                    },
                     isActive && styles.activeCircle,
                     isCompleted && styles.completedCircle,
                   ]}
@@ -58,10 +65,23 @@ export function StepWizard({ currentStep, totalSteps = 5, onStepChange }: StepWi
                   </Text>
                 </Pressable>
                 {stepNumber < totalSteps && (
-                  <View style={[styles.line, isCompleted && styles.activeLine]} />
+                  <View
+                    style={[
+                      styles.line,
+                      { backgroundColor: isDark ? "#374151" : "#e5e7eb" },
+                      isCompleted && styles.activeLine,
+                    ]}
+                  />
                 )}
               </View>
-              <Text style={[styles.label, isActive && styles.activeLabel]}>{stepLabel}</Text>
+              <Text
+                style={[
+                  styles.label,
+                  isActive && [styles.activeLabel, { color: isDark ? "#f3f4f6" : "#1f2937" }],
+                ]}
+              >
+                {stepLabel}
+              </Text>
             </View>
           );
         })}

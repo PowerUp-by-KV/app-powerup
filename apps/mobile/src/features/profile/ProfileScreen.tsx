@@ -880,22 +880,56 @@ export function ProfileScreen() {
                               height: 38,
                             }}
                           >
-                            {segments.map((seg, segIdx) => (
-                              <View
-                                key={segIdx}
-                                style={{
-                                  position: "absolute",
-                                  left: `${seg.start * 14.2857}%`,
-                                  width: `${(seg.end - seg.start + 1) * 14.2857}%`,
-                                  top: 4,
-                                  height: 30,
-                                  borderRadius: 15,
-                                  backgroundColor: "#eef2ff",
-                                }}
-                              />
-                            ))}
+                            {/* Gradient Background Layer */}
+                            <View
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                bottom: 4,
+                                left: 0,
+                                right: 0,
+                                flexDirection: "row",
+                                zIndex: -1,
+                              }}
+                            >
+                              {(() => {
+                                let lastEnd = -1;
+                                const items = [];
+                                segments.forEach((seg, i) => {
+                                  const spaceBefore = seg.start - lastEnd - 1;
+                                  if (spaceBefore > 0)
+                                    items.push(
+                                      <View key={`s-${i}`} style={{ flex: spaceBefore }} />,
+                                    );
+
+                                  items.push(
+                                    <View
+                                      key={`g-${i}`}
+                                      style={{
+                                        flex: seg.end - seg.start + 1,
+                                        paddingHorizontal: 2,
+                                      }}
+                                    >
+                                      <LinearGradient
+                                        colors={["#e0e7ff", "#60a5fa"]} // light indigo to blue
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        style={{ flex: 1, borderRadius: 15 }}
+                                      />
+                                    </View>,
+                                  );
+                                  lastEnd = seg.end;
+                                });
+                                const spaceAfter = 6 - lastEnd;
+                                if (spaceAfter > 0)
+                                  items.push(<View key={`end`} style={{ flex: spaceAfter }} />);
+                                return items;
+                              })()}
+                            </View>
+
                             {rowDays.map((dayObj, dayIdx) => {
                               const isToday = dayObj.date === todayStr;
+
                               return (
                                 <View
                                   key={`${dayObj.date}-${dayIdx}`}

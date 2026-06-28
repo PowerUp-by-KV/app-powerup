@@ -18,7 +18,7 @@ import { useColorScheme } from "nativewind";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { getAvatarUri } from "@/utils/avatar";
 import type { ModuleDay } from "@powerup/shared";
 
@@ -529,8 +529,7 @@ export function LearningJourneyScreen() {
   const router = useRouter();
   const gate = useLearningJourneyGate();
   const insets = useSafeAreaInsets();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleTheme } = useThemeToggle();
 
   const {
     data: profile,
@@ -846,7 +845,7 @@ export function LearningJourneyScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleColorScheme}
+                onPress={toggleTheme}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#16161c] border border-slate-800"
@@ -993,7 +992,7 @@ export function LearningJourneyScreen() {
           </View>
           <View className="flex-row items-center space-x-3">
             <Pressable
-              onPress={toggleColorScheme}
+              onPress={toggleTheme}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDark
                   ? "bg-[#16161c] border border-slate-800"

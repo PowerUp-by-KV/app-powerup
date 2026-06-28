@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Pressable } from "react-native";
 import { Text } from "@/components/Themed";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface SelectionPillProps {
   label: string;
@@ -9,9 +10,28 @@ interface SelectionPillProps {
 }
 
 export function SelectionPill({ label, isSelected, onPress }: SelectionPillProps) {
+  const { isDark } = useThemeToggle();
   return (
-    <Pressable style={[styles.pill, isSelected && styles.pillSelected]} onPress={onPress}>
-      <Text style={[styles.text, isSelected && styles.textSelected]}>{label}</Text>
+    <Pressable
+      style={[
+        styles.pill,
+        {
+          backgroundColor: isDark ? "#1e293b" : "white",
+          borderColor: isDark ? "#334155" : "#e5e7eb",
+        },
+        isSelected && styles.pillSelected,
+      ]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.text,
+          { color: isDark ? "#94a3b8" : "#6b7280" },
+          isSelected && styles.textSelected,
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -22,8 +42,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    backgroundColor: "white",
     marginRight: 12,
     marginBottom: 16,
   },

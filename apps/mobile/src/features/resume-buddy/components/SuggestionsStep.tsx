@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { SkillChip } from "./SkillChip";
 
 interface SuggestionsStepProps {
@@ -25,19 +26,20 @@ export function SuggestionsStep({
   qualitySummary,
   targetRole,
 }: SuggestionsStepProps) {
+  const { isDark } = useThemeToggle();
   return (
-    <View style={{ flex: 1, backgroundColor: "#F8F9FC" }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 170 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Motivator Gradient Card */}
         <LinearGradient
-          colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+          colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
           locations={[0, 0.6, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.cardGradient}
+          style={[styles.cardGradient, isDark && { shadowColor: "#000", shadowOpacity: 0.4 }]}
         >
           {/* Background overlapping semi-transparent circles */}
           <View
@@ -85,13 +87,29 @@ export function SuggestionsStep({
         </LinearGradient>
 
         {/* Missing Skills Card */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Missing Skills</Text>
-            <Text style={styles.cardSubtitle}>Add these to match the role</Text>
+            <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+              Missing Skills
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              Add these to match the role
+            </Text>
           </View>
           {missingSkills.length === 0 ? (
-            <Text style={styles.emptyText}>All target skills are matched!</Text>
+            <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              All target skills are matched!
+            </Text>
           ) : (
             <View style={styles.chipRow}>
               {missingSkills.map((s, idx) => (
@@ -102,13 +120,29 @@ export function SuggestionsStep({
         </View>
 
         {/* Recommended Tech Stack Card */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Recommended Tech Stack</Text>
-            <Text style={styles.cardSubtitle}>Trending for {targetRole || "Full Stack Dev"}</Text>
+            <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+              Recommended Tech Stack
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              Trending for {targetRole || "Full Stack Dev"}
+            </Text>
           </View>
           {recommendedTech.length === 0 ? (
-            <Text style={styles.emptyText}>No extra tech stack recommended.</Text>
+            <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              No extra tech stack recommended.
+            </Text>
           ) : (
             <View style={styles.chipRow}>
               {recommendedTech.map((t, idx) => (
@@ -119,26 +153,60 @@ export function SuggestionsStep({
         </View>
 
         {/* ATS Layout Findings Card (Retained from Old Design, Styled to match New Design) */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <View style={styles.cardHeaderWithIcon}>
-            <View style={[styles.badgeCircle, { backgroundColor: "rgba(89, 122, 244, 0.1)" }]}>
-              <Feather name="shield" size={18} color="#597AF4" />
+            <View
+              style={[
+                styles.badgeCircle,
+                {
+                  backgroundColor: isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(89, 122, 244, 0.1)",
+                },
+              ]}
+            >
+              <Feather name="shield" size={18} color={isDark ? "#818cf8" : "#597AF4"} />
             </View>
             <View style={styles.titleContainer}>
-              <Text style={styles.cardTitle}>ATS Layout Findings</Text>
-              <Text style={styles.cardSubtitle}>ATS compatibility checklist</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                ATS Layout Findings
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                ATS compatibility checklist
+              </Text>
             </View>
           </View>
           {atsFindings.length === 0 ? (
-            <Text style={styles.emptyText}>No layout findings detected.</Text>
+            <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              No layout findings detected.
+            </Text>
           ) : (
             <View style={styles.listContainer}>
               {atsFindings.map((finding, idx) => (
                 <View key={`finding-${idx}`} style={styles.listItem}>
-                  <View style={styles.checkIconWrapper}>
+                  <View
+                    style={[
+                      styles.checkIconWrapper,
+                      {
+                        backgroundColor: isDark
+                          ? "rgba(76, 175, 80, 0.15)"
+                          : "rgba(76, 175, 80, 0.1)",
+                      },
+                    ]}
+                  >
                     <Feather name="check" size={13} color="#4CAF50" />
                   </View>
-                  <Text style={styles.itemText}>{finding}</Text>
+                  <Text style={[styles.itemText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                    {finding}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -146,26 +214,64 @@ export function SuggestionsStep({
         </View>
 
         {/* Personalized Suggestions Card */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <View style={styles.cardHeaderWithIcon}>
-            <View style={[styles.badgeCircle, { backgroundColor: "rgba(89, 122, 244, 0.1)" }]}>
-              <Feather name="zap" size={18} color="#597AF4" />
+            <View
+              style={[
+                styles.badgeCircle,
+                {
+                  backgroundColor: isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(89, 122, 244, 0.1)",
+                },
+              ]}
+            >
+              <Feather name="zap" size={18} color={isDark ? "#818cf8" : "#597AF4"} />
             </View>
             <View style={styles.titleContainer}>
-              <Text style={styles.cardTitle}>Personalized Suggestions</Text>
-              <Text style={styles.cardSubtitle}>From AI Coach</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                Personalized Suggestions
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                From AI Coach
+              </Text>
             </View>
           </View>
           {suggestions.length === 0 ? (
-            <Text style={styles.emptyText}>No recommendations available.</Text>
+            <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+              No recommendations available.
+            </Text>
           ) : (
             <View style={styles.listContainer}>
               {suggestions.map((sug, idx) => (
                 <View key={`suggestion-${idx}`} style={styles.listItem}>
-                  <View style={styles.numberBadge}>
-                    <Text style={styles.numberBadgeText}>{idx + 1}</Text>
+                  <View
+                    style={[
+                      styles.numberBadge,
+                      {
+                        backgroundColor: isDark
+                          ? "rgba(99, 102, 241, 0.15)"
+                          : "rgba(89, 122, 244, 0.08)",
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.numberBadgeText, { color: isDark ? "#818cf8" : "#597AF4" }]}
+                    >
+                      {idx + 1}
+                    </Text>
                   </View>
-                  <Text style={styles.itemText}>{sug}</Text>
+                  <Text style={[styles.itemText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                    {sug}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -174,7 +280,15 @@ export function SuggestionsStep({
       </ScrollView>
 
       {/* Double Sticky Footer Action Buttons */}
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: isDark ? "#0F1020" : "#ffffff",
+            borderTopColor: isDark ? "#1E293B" : "#f1f5f9",
+          },
+        ]}
+      >
         <Pressable
           onPress={onNext}
           style={{
@@ -184,13 +298,13 @@ export function SuggestionsStep({
             marginBottom: 12,
             shadowColor: "#3b82f6",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
+            shadowOpacity: isDark ? 0.4 : 0.15,
             shadowRadius: 8,
             elevation: 2,
           }}
         >
           <LinearGradient
-            colors={["#4f46e5", "#3b82f6"]}
+            colors={isDark ? ["#6366f1", "#3b82f6"] : ["#4f46e5", "#3b82f6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{
@@ -203,8 +317,19 @@ export function SuggestionsStep({
             <Text style={styles.primaryButtonText}>Save and Exit</Text>
           </LinearGradient>
         </Pressable>
-        <Pressable onPress={onHistory} style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>View History</Text>
+        <Pressable
+          onPress={onHistory}
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: isDark ? "transparent" : "#ffffff",
+              borderColor: isDark ? "#6366f1" : "#3b82f6",
+            },
+          ]}
+        >
+          <Text style={[styles.secondaryButtonText, { color: isDark ? "#818cf8" : "#3b82f6" }]}>
+            View History
+          </Text>
         </Pressable>
       </View>
     </View>

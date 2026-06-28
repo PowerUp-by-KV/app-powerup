@@ -44,8 +44,10 @@ export function TextInput({
     <View className="mb-4">
       {label && (
         <View className="mb-2 flex-row items-center">
-          <Text className="text-sm font-semibold text-gray-900">{label}</Text>
-          {required && <Text className="ml-1 text-sm font-semibold text-red-600">*</Text>}
+          <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</Text>
+          {required && (
+            <Text className="ml-1 text-sm font-semibold text-red-600 dark:text-red-400">*</Text>
+          )}
         </View>
       )}
       <RNTextInput
@@ -53,11 +55,11 @@ export function TextInput({
         multiline={multiline}
         numberOfLines={multiline ? resolvedLines : 1}
         className={`${heightClass} rounded-2xl border ${
-          error ? "border-red-500" : "border-gray-200"
-        } bg-[#f9fafb] px-4 py-3.5 text-[15px] text-gray-900 ${className || ""}`}
+          error ? "border-red-500" : "border-gray-200 dark:border-slate-700"
+        } bg-[#f9fafb] dark:bg-slate-800 px-4 py-3.5 text-[15px] text-gray-900 dark:text-gray-100 ${className || ""}`}
         placeholderTextColor="#9CA3AF"
       />
-      {!!error && <Text className="mt-1.5 text-xs text-red-600">{error}</Text>}
+      {!!error && <Text className="mt-1.5 text-xs text-red-600 dark:text-red-400">{error}</Text>}
     </View>
   );
 }

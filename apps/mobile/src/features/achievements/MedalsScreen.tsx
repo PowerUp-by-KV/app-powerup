@@ -509,7 +509,7 @@ export function MedalsScreen() {
 
                   {/* Badge Label */}
                   <Text
-                    numberOfLines={1}
+                    numberOfLines={2}
                     style={[
                       styles.badgeCardTitle,
                       {
@@ -652,9 +652,10 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   badgeCardPressable: {
-    width: "33.33%",
+    width: "33.3%",
     alignItems: "center",
     marginBottom: 24,
+    paddingHorizontal: 8,
   },
   badgeCircleShell: {
     width: 72,
@@ -695,6 +696,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 8,
     textAlign: "center",
+    width: "100%",
+    lineHeight: 14,
   },
   // Modal Styles
   modalOverlay: {

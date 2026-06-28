@@ -48,7 +48,9 @@ export function TagInput({
 
   return (
     <View className="mb-4">
-      {label && <Text className="mb-2 text-sm font-semibold text-gray-900">{label}</Text>}
+      {label && (
+        <Text className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</Text>
+      )}
 
       {/* Input Field */}
       <View className="mb-3 flex-row items-center gap-2">
@@ -58,12 +60,12 @@ export function TagInput({
           onSubmitEditing={handleAddTag}
           placeholder={placeholder}
           placeholderTextColor="#9CA3AF"
-          className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900"
+          className="flex-1 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-3 text-gray-900 dark:text-gray-100"
           returnKeyType="done"
         />
         <Pressable
           onPress={handleAddTag}
-          className="rounded-lg bg-blue-600 px-4 py-3"
+          className="rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-3"
           disabled={!inputValue.trim()}
         >
           <Text className="font-semibold text-white">Add</Text>
@@ -76,11 +78,13 @@ export function TagInput({
           {value.map((chip) => (
             <View
               key={chip.id}
-              className="flex-row items-center gap-2 rounded-full bg-blue-100 px-3 py-2"
+              className="flex-row items-center gap-2 rounded-full bg-blue-100 dark:bg-slate-700 px-3 py-2"
             >
-              <Text className="flex-shrink text-sm font-medium text-blue-900">{chip.name}</Text>
+              <Text className="flex-shrink text-sm font-medium text-blue-900 dark:text-blue-100">
+                {chip.name}
+              </Text>
               <Pressable onPress={() => onRemove(chip.id)} className="ml-1">
-                <Text className="text-base text-blue-600">✕</Text>
+                <Text className="text-base text-blue-600 dark:text-blue-400">✕</Text>
               </Pressable>
             </View>
           ))}
@@ -89,7 +93,7 @@ export function TagInput({
 
       {/* Empty State */}
       {value.length === 0 && (
-        <Text className="text-sm text-gray-500">
+        <Text className="text-sm text-gray-500 dark:text-gray-400">
           No skills added yet. Add your skills using the input above.
         </Text>
       )}

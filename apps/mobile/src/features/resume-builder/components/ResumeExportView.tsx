@@ -19,6 +19,7 @@ import {
 } from "@/services/resume-builder-api";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface ResumeExportViewProps {
   onBack: () => void;
@@ -34,6 +35,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
   const [updateBuiltResume] = useUpdateBuiltResumeMutation();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const { isDark } = useThemeToggle();
 
   // Helper to ensure we have a saved & generated export URL
   const getExportUrl = async (fileType: "pdf" | "docx" = "pdf"): Promise<string | null> => {
@@ -121,7 +123,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
 
   return (
     <ScrollView
-      style={styles.scrollContainer}
+      style={[styles.scrollContainer, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
@@ -135,46 +137,91 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
 
         {/* Header Text */}
         <View style={styles.headerTextContainer}>
-          <Text style={styles.title}>Resume Ready!</Text>
-          <Text style={styles.subtitle}>Your professional resume is ready</Text>
+          <Text style={[styles.title, { color: isDark ? "#f8fafc" : "#111827" }]}>
+            Resume Ready!
+          </Text>
+          <Text style={[styles.subtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+            Your professional resume is ready
+          </Text>
         </View>
 
         {/* Action Buttons */}
         <View style={styles.actionButtonsContainer}>
           <TouchableOpacity
             activeOpacity={0.7}
-            style={[styles.actionButton]}
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
             onPress={handleDownloadPdf}
             disabled={isProcessing}
           >
-            <Feather name="download" size={20} color="#374151" style={styles.actionIcon} />
-            <Text style={styles.actionText}>Download as PDF</Text>
+            <Feather
+              name="download"
+              size={20}
+              color={isDark ? "#cbd5e1" : "#374151"}
+              style={styles.actionIcon}
+            />
+            <Text style={[styles.actionText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+              Download as PDF
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.7}
-            style={[styles.actionButton]}
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
             onPress={handleDownloadDocx}
             disabled={isProcessing}
           >
-            <Feather name="file-text" size={20} color="#374151" style={styles.actionIcon} />
-            <Text style={styles.actionText}>Download as DOCX</Text>
+            <Feather
+              name="file-text"
+              size={20}
+              color={isDark ? "#cbd5e1" : "#374151"}
+              style={styles.actionIcon}
+            />
+            <Text style={[styles.actionText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+              Download as DOCX
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             activeOpacity={0.7}
-            style={[styles.actionButton]}
+            style={[
+              styles.actionButton,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
             onPress={handleEmailToMyself}
             disabled={isProcessing}
           >
-            <Feather name="mail" size={20} color="#374151" style={styles.actionIcon} />
-            <Text style={styles.actionText}>Email to Myself</Text>
+            <Feather
+              name="mail"
+              size={20}
+              color={isDark ? "#cbd5e1" : "#374151"}
+              style={styles.actionIcon}
+            />
+            <Text style={[styles.actionText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+              Email to Myself
+            </Text>
           </TouchableOpacity>
         </View>
 
         {/* Share Box */}
-        <View style={styles.shareBox}>
-          <Text style={styles.shareBoxTitle}>Share Your Resume</Text>
+        <View style={[styles.shareBox, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+          <Text style={[styles.shareBoxTitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+            Share Your Resume
+          </Text>
           <View style={styles.shareIconsContainer}>
             <Pressable
               style={styles.shareIconCircle}

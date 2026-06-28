@@ -9,11 +9,11 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
@@ -100,8 +100,7 @@ export function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleTheme } = useThemeToggle();
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-[#F4F5FA] dark:bg-[#0F1020]">
@@ -118,7 +117,7 @@ export function AchievementsScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleColorScheme}
+                onPress={toggleTheme}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
@@ -151,26 +150,22 @@ export function AchievementsScreen() {
 
           {/* Trophy Header Display */}
           <View className="items-center mb-6 py-2">
-            <LinearGradient
-              colors={isDark ? ["#232540", "#1A1B31"] : ["#7174F6", "#5D6EF2"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="w-24 h-24 items-center justify-center mb-3 rounded-full"
+            <View
               style={{
-                shadowColor: "#7174F6",
-                shadowOpacity: isDark ? 0.2 : 0.15,
-                shadowOffset: { width: 0, height: 4 },
-                shadowRadius: 12,
-                elevation: 2,
+                width: 120,
+                height: 120,
+                marginBottom: 8,
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
               <LottieView
                 source={require("../../../assets/lottie/trophy.json")}
                 autoPlay
                 loop
-                style={{ width: 80, height: 80 }}
+                style={{ width: "100%", height: "100%" }}
               />
-            </LinearGradient>
+            </View>
             <Text className="text-[#6B7280] dark:text-[#B7BED1] font-bold text-sm text-center">
               Congratulations for your 1st{"\n"}trophy!
             </Text>
@@ -179,29 +174,25 @@ export function AchievementsScreen() {
           {/* Stats Grid */}
           <View className="flex-row mb-3" style={{ gap: 8 }}>
             <StatTile
-              label="XP Points"
+              type="xp"
               value={profile?.total_xp ?? 0}
-              icon="zap"
               onPress={() => router.push("/achievements/xp" as never)}
             />
             <StatTile
-              label="Badges"
+              type="badges"
               value={profile?.badges_count ?? 0}
-              icon="award"
               onPress={() => router.push("/achievements/medals" as never)}
             />
           </View>
           <View className="flex-row mb-6" style={{ gap: 8 }}>
             <StatTile
-              label="Accuracy"
+              type="accuracy"
               value="—"
-              icon="target"
               onPress={() => router.push("/achievements/accuracy" as never)}
             />
             <StatTile
-              label="Level"
+              type="level"
               value={profile?.current_level ?? 1}
-              icon="trending-up"
               onPress={() => router.push("/achievements/level" as never)}
             />
           </View>

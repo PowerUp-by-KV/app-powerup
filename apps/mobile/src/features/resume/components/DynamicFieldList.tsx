@@ -33,8 +33,8 @@ export function DynamicFieldList<T extends DynamicListItem>({
   return (
     <View>
       {items.length === 0 ? (
-        <View className="items-center rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-8">
-          <Text className="mb-4 text-center text-gray-600">{emptyMessage}</Text>
+        <View className="items-center rounded-lg border border-dashed border-gray-300 dark:border-slate-600 bg-gray-50 dark:bg-slate-800 px-6 py-8">
+          <Text className="mb-4 text-center text-gray-600 dark:text-gray-300">{emptyMessage}</Text>
           <Button onPress={onAdd}>{addButtonLabel}</Button>
         </View>
       ) : (
@@ -43,16 +43,16 @@ export function DynamicFieldList<T extends DynamicListItem>({
             <View key={item.id} className="mb-4">
               <Pressable
                 onPress={() => onEdit(item)}
-                className="mb-2 flex-row items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
+                className="mb-2 flex-row items-center justify-between rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4"
               >
                 <View className="flex-1">{renderItem(item)}</View>
 
                 {/* Delete Button */}
                 <Pressable
                   onPress={() => onRemove(item.id)}
-                  className="ml-2 items-center justify-center rounded-lg bg-red-50 p-2"
+                  className="ml-2 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/30 p-2"
                 >
-                  <Text className="text-lg text-red-600">×</Text>
+                  <Text className="text-lg text-red-600 dark:text-red-400">×</Text>
                 </Pressable>
               </Pressable>
             </View>

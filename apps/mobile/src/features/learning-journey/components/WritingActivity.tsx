@@ -160,54 +160,53 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         ) : null}
       </ScrollView>
 
-      {/* Docked Submit Button Container */}
-      <View
-        style={{
-          paddingHorizontal: 24,
-          paddingBottom: Platform.OS === "ios" ? 20 : 24,
-          paddingTop: 12,
-          borderTopWidth: 1,
-          borderTopColor: isDark ? "#2d2d3a" : "#f1f5f9",
-          backgroundColor: isDark ? "#151620" : "#ffffff",
-        }}
+      {/* Docked Submit Button */}
+      <Pressable
+        onPress={handleSubmit}
+        disabled={submitting || text.trim().length === 0}
+        style={({ pressed }) => ({
+          backgroundColor:
+            submitting || text.trim().length === 0
+              ? isDark
+                ? "#27272a"
+                : "#e2e8f0"
+              : pressed
+                ? "#2563eb"
+                : "#3b82f6",
+          paddingVertical: 18,
+          paddingBottom: Platform.OS === "ios" ? 34 : 24,
+          alignItems: "center",
+          width: "100%",
+          ...Platform.select({
+            web: {
+              cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
+            } as Record<string, unknown>,
+          }),
+        })}
       >
-        <Pressable
-          onPress={handleSubmit}
-          disabled={submitting || text.trim().length === 0}
-          style={({ pressed }) => ({
-            backgroundColor:
-              submitting || text.trim().length === 0
-                ? isDark
-                  ? "#27272a"
-                  : "#cbd5e1"
-                : pressed
-                  ? "#2563eb"
-                  : "#3b82f6",
-            paddingVertical: 14,
-            borderRadius: 10,
-            alignItems: "center",
-            ...Platform.select({
-              web: {
-                cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
-              } as Record<string, unknown>,
-            }),
-          })}
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text
-              style={{
-                color:
-                  submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#fff") : "#fff",
-                fontWeight: "700",
-              }}
-            >
-              Submit
-            </Text>
-          )}
-        </Pressable>
-      </View>
+        {submitting ? (
+          <ActivityIndicator
+            color={
+              submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#64748b") : "#fff"
+            }
+          />
+        ) : (
+          <Text
+            style={{
+              color:
+                submitting || text.trim().length === 0
+                  ? isDark
+                    ? "#52525b"
+                    : "#64748b"
+                  : "#ffffff",
+              fontWeight: "700",
+              fontSize: 16,
+            }}
+          >
+            Submit
+          </Text>
+        )}
+      </Pressable>
     </KeyboardAvoidingView>
   );
 }
