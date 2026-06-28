@@ -752,7 +752,7 @@ export function EditProfileScreen() {
                           Experience
                         </Text>
                         <View style={{ gap: 0 }}>
-                          {resumeData.experience.map((exp: any, idx: number) => {
+                          {resumeData.experience.filter(Boolean).map((exp: any, idx: number) => {
                             const isLast = idx === resumeData.experience.length - 1;
                             return (
                               <View key={idx} style={{ flexDirection: "row", gap: 12 }}>

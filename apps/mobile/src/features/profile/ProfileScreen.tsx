@@ -463,15 +463,7 @@ export function ProfileScreen() {
           {/* ── BODY ── */}
           <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#f0f2ff" }}>
             {/* ── STAT CARDS — 2×2 grid matching reference design ── */}
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "nowrap",
-                paddingHorizontal: 16,
-                paddingTop: 20,
-                paddingBottom: 4,
-              }}
-            >
+            <View className="flex-1 flex-row items-center gap-2 py-2.5 px-1">
               <StatCard
                 icon={<Feather name="zap" size={22} color="#fff" />}
                 value={`${profile?.total_xp ?? 0}`}
