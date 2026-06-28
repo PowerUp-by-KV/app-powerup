@@ -65,12 +65,9 @@ export function ScoreAnalysisStep({
   const projectsExperienceScore = getCritVal("projects_experience", 95);
 
   const atsPct = Math.round((atsScore / 20) * 100);
-  const atsColor = getScoreColor(atsPct);
   const semPct = semanticScore > 100 ? Math.round(semanticScore / 10) : Math.round(semanticScore);
-  const semColor = getScoreColor(semPct);
   const rulePct =
     ruleBasedScore > 100 ? Math.round(ruleBasedScore / 10) : Math.round(ruleBasedScore);
-  const ruleColor = getScoreColor(rulePct);
 
   // Dynamic list mapped from criteriaScores if available, else static fallback
   const breakdownList =

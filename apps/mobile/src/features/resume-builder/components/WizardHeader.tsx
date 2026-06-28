@@ -17,7 +17,7 @@ export function WizardHeader({
   subtitle,
   onBack,
   currentSubStep,
-  _totalSubSteps,
+  totalSubSteps: _totalSubSteps,
 }: WizardHeaderProps) {
   const { isDark } = useThemeToggle();
 
