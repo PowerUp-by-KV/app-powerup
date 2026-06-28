@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Pressable, View } from "react-native";
 import { Text } from "@/components/Themed";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface LayoutPreviewCardProps {
   label: string;
@@ -10,11 +11,29 @@ interface LayoutPreviewCardProps {
 }
 
 export function LayoutPreviewCard({ label, type, isSelected, onPress }: LayoutPreviewCardProps) {
+  const { isDark } = useThemeToggle();
   return (
     <Pressable style={styles.container} onPress={onPress}>
-      <Text style={[styles.label, isSelected && styles.labelSelected]}>{label}</Text>
+      <Text
+        style={[
+          styles.label,
+          { color: isDark ? "#94a3b8" : "#4b5563" },
+          isSelected && styles.labelSelected,
+        ]}
+      >
+        {label}
+      </Text>
 
-      <View style={[styles.card, isSelected && styles.cardSelected]}>
+      <View
+        style={[
+          styles.card,
+          {
+            backgroundColor: isDark ? "#1e293b" : "#f9fafb",
+            borderColor: isDark ? "#334155" : "#e5e7eb",
+          },
+          isSelected && [styles.cardSelected, { backgroundColor: isDark ? "#0f172a" : "#eff6ff" }],
+        ]}
+      >
         {type === "double" ? (
           <View style={styles.doubleColumn}>
             <View style={styles.sidebar}>

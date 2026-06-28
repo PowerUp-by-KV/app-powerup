@@ -11,6 +11,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetResumeBuddyHistoryQuery } from "./services/resume-buddy-api";
@@ -20,6 +21,7 @@ import type { ResumeBuddyHistoryItem } from "./types";
 export function ResumeBuddyHistoryScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const { isDark } = useThemeToggle();
 
   const { data: history, isLoading, isFetching, error, refetch } = useGetResumeBuddyHistoryQuery();
 
@@ -30,9 +32,11 @@ export function ResumeBuddyHistoryScreen() {
   // Loading state
   if (isLoading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#597AF4" />
-        <Text style={styles.loadingText}>Loading analysis history...</Text>
+      <View style={[styles.centerContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}>
+        <ActivityIndicator size="large" color={isDark ? "#818cf8" : "#597AF4"} />
+        <Text style={[styles.loadingText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+          Loading analysis history...
+        </Text>
       </View>
     );
   }
@@ -40,15 +44,25 @@ export function ResumeBuddyHistoryScreen() {
   // Error state
   if (error) {
     return (
-      <View style={styles.centerContainer}>
-        <View style={styles.errorIconContainer}>
-          <Feather name="wifi-off" size={32} color="#EF5350" />
+      <View style={[styles.centerContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}>
+        <View
+          style={[
+            styles.errorIconContainer,
+            { backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "rgba(244, 67, 54, 0.05)" },
+          ]}
+        >
+          <Feather name="wifi-off" size={32} color={isDark ? "#f87171" : "#EF5350"} />
         </View>
-        <Text style={styles.errorTitle}>Failed to Load History</Text>
-        <Text style={styles.errorDescription}>
+        <Text style={[styles.errorTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+          Failed to Load History
+        </Text>
+        <Text style={[styles.errorDescription, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
           Something went wrong while fetching your history. Please check your connection.
         </Text>
-        <Pressable style={styles.retryButton} onPress={() => void refetch()}>
+        <Pressable
+          style={[styles.retryButton, { backgroundColor: isDark ? "#4f46e5" : "#3b82f6" }]}
+          onPress={() => void refetch()}
+        >
           <Feather name="refresh-cw" size={16} color="#ffffff" />
           <Text style={styles.retryText}>Try Again</Text>
         </Pressable>
@@ -60,18 +74,34 @@ export function ResumeBuddyHistoryScreen() {
   if (!history || history.length === 0) {
     return (
       <ScrollView
-        style={styles.scrollContainer}
+        style={[styles.scrollContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}
         contentContainerStyle={styles.emptyContainer}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching}
+            onRefresh={refetch}
+            tintColor={isDark ? "#818cf8" : undefined}
+          />
+        }
       >
-        <View style={styles.emptyIconContainer}>
-          <Feather name="inbox" size={40} color="#AFC0FF" />
+        <View
+          style={[
+            styles.emptyIconContainer,
+            { backgroundColor: isDark ? "rgba(99, 102, 241, 0.15)" : "rgba(89, 122, 244, 0.08)" },
+          ]}
+        >
+          <Feather name="inbox" size={40} color={isDark ? "#818cf8" : "#AFC0FF"} />
         </View>
-        <Text style={styles.emptyTitle}>No Analysis History</Text>
-        <Text style={styles.emptyDescription}>
+        <Text style={[styles.emptyTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+          No Analysis History
+        </Text>
+        <Text style={[styles.emptyDescription, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
           Run your first resume analysis to see results here.
         </Text>
-        <Pressable style={styles.analyzeButton} onPress={() => safeBack()}>
+        <Pressable
+          style={[styles.analyzeButton, { backgroundColor: isDark ? "#4f46e5" : "#3b82f6" }]}
+          onPress={() => safeBack()}
+        >
           <Feather name="zap" size={16} color="#ffffff" />
           <Text style={styles.analyzeButtonText}>Analyze Resume</Text>
         </Pressable>
@@ -82,18 +112,24 @@ export function ResumeBuddyHistoryScreen() {
   // List view
   return (
     <ScrollView
-      style={styles.scrollContainer}
+      style={[styles.scrollContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}
       contentContainerStyle={styles.contentContainer}
-      refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isFetching}
+          onRefresh={refetch}
+          tintColor={isDark ? "#818cf8" : undefined}
+        />
+      }
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
       <LinearGradient
-        colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+        colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
         locations={[0, 0.6, 1]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.headerGradient}
+        style={[styles.headerGradient, isDark && { shadowColor: "#000", shadowOpacity: 0.4 }]}
       >
         {/* Background overlapping semi-transparent circles */}
         <View

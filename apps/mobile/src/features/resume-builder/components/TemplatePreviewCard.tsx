@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Pressable, View } from "react-native";
 import { Text } from "@/components/Themed";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface TemplatePreviewCardProps {
   title: string;
@@ -18,17 +19,38 @@ export function TemplatePreviewCard({
   isSelected,
   onPress,
 }: TemplatePreviewCardProps) {
+  const { isDark } = useThemeToggle();
   return (
-    <Pressable style={[styles.card, isSelected && styles.cardSelected]} onPress={onPress}>
+    <Pressable
+      style={[
+        styles.card,
+        {
+          backgroundColor: isDark ? "#1e293b" : "white",
+          borderColor: isDark ? "#334155" : "#e5e7eb",
+        },
+        isSelected && [styles.cardSelected, { backgroundColor: isDark ? "#0f172a" : "white" }],
+      ]}
+      onPress={onPress}
+    >
       <View style={styles.headerRow}>
         <View style={styles.iconContainer}>
           <Text style={styles.emojiIcon}>{icon}</Text>
         </View>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+          <Text style={[styles.title, { color: isDark ? "#f8fafc" : "#1f2937" }]}>{title}</Text>
+          <Text style={[styles.subtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+            {subtitle}
+          </Text>
         </View>
-        <View style={styles.checkboxContainer}>
+        <View
+          style={[
+            styles.checkboxContainer,
+            {
+              borderColor: isDark ? "#334155" : "#e5e7eb",
+              backgroundColor: isDark ? "#1e293b" : "white",
+            },
+          ]}
+        >
           {isSelected && <MaterialIcons name="check-circle" size={24} color="#a3e635" />}
         </View>
       </View>

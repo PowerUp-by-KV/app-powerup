@@ -1,15 +1,14 @@
 import React, { useMemo } from "react";
 import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
 import { Feather } from "@expo/vector-icons";
-
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { ModuleDay } from "@powerup/shared";
 
-import { useGetProfileQuery } from "@/services/auth-api";
 import { getAvatarUri } from "@/utils/avatar";
+
+import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
   useLazyGetModuleDaysQuery,
@@ -17,6 +16,7 @@ import {
   useGetModulesQuery,
 } from "@/services/module-api";
 import { useGetResumeStatusQuery } from "@/services/resume-api";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export interface CombinedModuleDay extends ModuleDay {
   module_no: number;
@@ -44,8 +44,7 @@ const PROGRESSION_WAVES = [
 
 export function HomeScreen() {
   const router = useRouter();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleTheme } = useThemeToggle();
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
@@ -264,7 +263,7 @@ export function HomeScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleColorScheme}
+                onPress={toggleTheme}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
                 }`}
@@ -353,7 +352,7 @@ export function HomeScreen() {
               {
                 title: "Craft your Resume",
                 subtitle: "Design your story, your way",
-                onPress: () => handleResumeFeaturePress("/resume"),
+                onPress: () => router.push("/resume" as never),
               },
             ]}
           />

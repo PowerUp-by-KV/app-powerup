@@ -12,6 +12,7 @@ import {
 } from "@/store/slices/resume-builder.slice";
 import { EnhanceButton } from "./EnhanceButton";
 import { Feather } from "@expo/vector-icons";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface ResumeReviewViewProps {
   onContinue: (useAutoEnhance: boolean) => void;
@@ -23,6 +24,7 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
   const draftResume = useAppSelector(selectBuilderDraft);
   const localPhotoUri = useAppSelector(selectBuilderLocalPhotoUri);
   const [useAutoEnhance, setUseAutoEnhance] = useState(false);
+  const { isDark } = useThemeToggle();
 
   const photoToDisplay = localPhotoUri || draftResume.photoUrl;
 
@@ -301,30 +303,73 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={[styles.scrollContainer, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.container}>
         {/* Header Navigation */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Preview</Text>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: isDark ? "#1e293b" : "white",
+              borderBottomColor: isDark ? "#334155" : "#f3f4f6",
+            },
+          ]}
+        >
+          <Text style={[styles.headerTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+            Preview
+          </Text>
           <View style={styles.headerRight}>
-            <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.editButtonRow}>
+            <Pressable
+              onPress={() => dispatch(setCurrentStep(4))}
+              style={[styles.editButtonRow, { backgroundColor: isDark ? "#1e3a8a" : "#eff6ff" }]}
+            >
               <Feather name="edit-2" size={14} color="#3b82f6" style={{ marginRight: 6 }} />
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={[styles.editButtonText, { color: isDark ? "#60a5fa" : "#3b82f6" }]}>
+                Edit
+              </Text>
             </Pressable>
           </View>
         </View>
 
         <View style={styles.formContainer}>
           {/* Auto Enhance Premium Toggle */}
-          <View style={[styles.toggleContainer, useAutoEnhance && styles.toggleContainerActive]}>
-            <View style={styles.toggleIconContainer}>
-              <Feather name="zap" size={20} color={useAutoEnhance ? "#3b82f6" : "#9ca3af"} />
+          <View
+            style={[
+              styles.toggleContainer,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderColor: isDark ? "#334155" : "#e5e7eb",
+              },
+              useAutoEnhance &&
+                (isDark ? styles.toggleContainerActiveDark : styles.toggleContainerActive),
+            ]}
+          >
+            <View
+              style={[
+                styles.toggleIconContainer,
+                { backgroundColor: isDark ? "#1e3a8a" : "#eff6ff" },
+              ]}
+            >
+              <Feather
+                name="zap"
+                size={20}
+                color={useAutoEnhance ? "#3b82f6" : isDark ? "#475569" : "#9ca3af"}
+              />
             </View>
             <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text style={[styles.toggleTitle, useAutoEnhance && { color: "#1d4ed8" }]}>
+              <Text
+                style={[
+                  styles.toggleTitle,
+                  { color: isDark ? "#f8fafc" : "#1f2937" },
+                  useAutoEnhance && { color: isDark ? "#60a5fa" : "#1d4ed8" },
+                ]}
+              >
                 Auto Enhance with AI
               </Text>
-              <Text style={styles.toggleSubtitle}>
+              <Text style={[styles.toggleSubtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
                 Automatically polish and grammar-check your text before exporting.
               </Text>
             </View>
@@ -466,9 +511,25 @@ export function ResumeReviewView({ onContinue, onBack }: ResumeReviewViewProps) 
 
           {/* Navigation Buttons footer */}
           <View style={styles.footerRow}>
-            <Pressable onPress={onBack} style={styles.backButton}>
-              <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-              <Text style={styles.backButtonText}>Back</Text>
+            <Pressable
+              onPress={onBack}
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: isDark ? "#1e293b" : "white",
+                  borderColor: isDark ? "#334155" : "#e5e7eb",
+                },
+              ]}
+            >
+              <Feather
+                name="arrow-left"
+                size={16}
+                color={isDark ? "#cbd5e1" : "#4b5563"}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={[styles.backButtonText, { color: isDark ? "#f8fafc" : "#4b5563" }]}>
+                Back
+              </Text>
             </Pressable>
             <Pressable onPress={() => onContinue(useAutoEnhance)} style={styles.continueButton}>
               <Text style={styles.continueButtonText}>Export</Text>
@@ -533,6 +594,10 @@ const styles = StyleSheet.create({
   toggleContainerActive: {
     borderColor: "#bfdbfe",
     backgroundColor: "#f8fafc",
+  },
+  toggleContainerActiveDark: {
+    borderColor: "#1d4ed8",
+    backgroundColor: "#0f172a",
   },
   toggleIconContainer: {
     width: 40,

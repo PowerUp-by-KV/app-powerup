@@ -34,6 +34,7 @@ import {
 import { getLocationSuggestions, type LocationSuggestion } from "@/utils/locationAutocomplete";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { useRouter } from "expo-router";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export function Step1ContactScreen() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export function Step1ContactScreen() {
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
   const lastSavedAt = useAppSelector(selectBuilderLastSavedAt);
+  const { isDark } = useThemeToggle();
 
   const contact = draftResume.contact;
   const summary = draftResume.summary;
@@ -204,31 +206,60 @@ export function Step1ContactScreen() {
       style={styles.keyboardAvoidingView}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={[styles.scrollContainer, { backgroundColor: isDark ? "#0f172a" : "#f9fafb" }]}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.container}>
           {/* Step Indicator Header */}
-          <View style={styles.header}>
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderBottomColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
+          >
             <View style={styles.headerContent}>
               <View style={styles.titleRow}>
-                <Text style={styles.stepNumber}>Step 1 of 5</Text>
+                <Text style={[styles.stepNumber, { color: isDark ? "#9ca3af" : "#4b5563" }]}>
+                  Step 1 of 5
+                </Text>
                 {isSaving ? (
                   <Text style={styles.saveBadge}>Saving...</Text>
                 ) : lastSavedAt ? (
                   <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
                 ) : null}
               </View>
-              <Text style={styles.headerTitle}>Contact Details</Text>
-              <Text style={styles.headerSubtitle}>Let's start with your professional details</Text>
+              <Text style={[styles.headerTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                Contact Details
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+                Let's start with your professional details
+              </Text>
             </View>
           </View>
 
           {/* Form Containers */}
           <View style={styles.formContainer}>
             {/* Personal Details card */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="person" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Personal Details</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="person"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Personal Details
+                </Text>
               </View>
 
               <TextInput
@@ -259,19 +290,50 @@ export function Step1ContactScreen() {
               {/* Phone Input with dropdown list selection */}
               <View style={{ marginBottom: 16 }}>
                 <View style={styles.labelRow}>
-                  <Text style={styles.inputLabel}>Phone</Text>
+                  <Text style={[styles.inputLabel, { color: isDark ? "#f8fafc" : "#374151" }]}>
+                    Phone
+                  </Text>
                   <Text style={styles.requiredStar}>*</Text>
                 </View>
-                <View style={styles.phoneInputRow}>
+                <View
+                  style={[
+                    styles.phoneInputRow,
+                    {
+                      borderColor: isDark ? "#475569" : "#e5e7eb",
+                      backgroundColor: isDark ? "#0f172a" : "#f9fafb",
+                    },
+                  ]}
+                >
                   <Pressable
-                    style={styles.countryCodeButton}
+                    style={[
+                      styles.countryCodeButton,
+                      {
+                        backgroundColor: isDark ? "#0f172a" : "#f9fafb",
+                        borderRightColor: isDark ? "#475569" : "#e5e7eb",
+                      },
+                    ]}
                     onPress={() => setShowCountryCodeModal(true)}
                   >
-                    <Text style={styles.countryCodeText}>{selectedCountryCode}</Text>
-                    <MaterialIcons name="arrow-drop-down" size={18} color="#2563EB" />
+                    <Text
+                      style={[styles.countryCodeText, { color: isDark ? "#f8fafc" : "#374151" }]}
+                    >
+                      {selectedCountryCode}
+                    </Text>
+                    <MaterialIcons
+                      name="arrow-drop-down"
+                      size={18}
+                      color={isDark ? "#60a5fa" : "#2563EB"}
+                    />
                   </Pressable>
                   <RNTextInput
-                    style={[styles.phoneInput, errors.phone && styles.phoneInputError]}
+                    style={[
+                      styles.phoneInput,
+                      {
+                        backgroundColor: isDark ? "#1e293b" : "white",
+                        color: isDark ? "#f8fafc" : "#111827",
+                      },
+                      errors.phone && styles.phoneInputError,
+                    ]}
                     placeholder="e.g., 9876543210"
                     placeholderTextColor="#9CA3AF"
                     keyboardType="phone-pad"
@@ -326,11 +388,22 @@ export function Step1ContactScreen() {
                   }}
                 />
                 {showLocationSuggestions && locationSuggestions.length > 0 && (
-                  <View style={styles.suggestionsContainer}>
+                  <View
+                    style={[
+                      styles.suggestionsContainer,
+                      {
+                        backgroundColor: isDark ? "#1e293b" : "white",
+                        borderColor: isDark ? "#334155" : "#e5e7eb",
+                      },
+                    ]}
+                  >
                     {locationSuggestions.map((suggestion) => (
                       <Pressable
                         key={suggestion.id}
-                        style={styles.suggestionItem}
+                        style={[
+                          styles.suggestionItem,
+                          { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                        ]}
                         onPress={() => {
                           dispatch(updateContact({ location: suggestion.displayText }));
                           setLocationSuggestions([]);
@@ -341,12 +414,24 @@ export function Step1ContactScreen() {
                           <MaterialIcons
                             name={suggestion.type === "country" ? "public" : "place"}
                             size={14}
-                            color="#2563EB"
+                            color={isDark ? "#60a5fa" : "#2563EB"}
                             style={{ marginRight: 6 }}
                           />
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.suggestionText}>{suggestion.name}</Text>
-                            <Text style={styles.suggestionSubText}>
+                            <Text
+                              style={[
+                                styles.suggestionText,
+                                { color: isDark ? "#f8fafc" : "#1f2937" },
+                              ]}
+                            >
+                              {suggestion.name}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.suggestionSubText,
+                                { color: isDark ? "#94a3b8" : "#6b7280" },
+                              ]}
+                            >
                               {suggestion.type.toUpperCase()} • {suggestion.country || ""}
                             </Text>
                           </View>
@@ -359,10 +444,22 @@ export function Step1ContactScreen() {
             </View>
 
             {/* Social Details card */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="link" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Optional Links</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="link"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Optional Links
+                </Text>
               </View>
 
               <TextInput
@@ -381,15 +478,22 @@ export function Step1ContactScreen() {
             </View>
 
             {/* Professional Summary card */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
                 <MaterialIcons
                   name="description"
                   size={20}
-                  color="#2563EB"
+                  color={isDark ? "#60a5fa" : "#2563EB"}
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.sectionTitle}>Professional Summary</Text>
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Professional Summary
+                </Text>
               </View>
 
               <TextInput
@@ -404,9 +508,25 @@ export function Step1ContactScreen() {
 
             {/* Navigation Buttons footer */}
             <View style={styles.footerRow}>
-              <Pressable onPress={handleCancel} style={styles.backButton}>
-                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-                <Text style={styles.backButtonText}>Cancel</Text>
+              <Pressable
+                onPress={handleCancel}
+                style={[
+                  styles.backButton,
+                  {
+                    backgroundColor: isDark ? "#1e293b" : "white",
+                    borderColor: isDark ? "#334155" : "#d1d5db",
+                  },
+                ]}
+              >
+                <Feather
+                  name="arrow-left"
+                  size={16}
+                  color={isDark ? "#cbd5e1" : "#4b5563"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={[styles.backButtonText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+                  Cancel
+                </Text>
               </Pressable>
               <Pressable onPress={handleNext} style={styles.nextButton}>
                 <Text style={styles.nextButtonText}>Next Screen</Text>
@@ -424,18 +544,31 @@ export function Step1ContactScreen() {
           onRequestClose={() => setShowCountryCodeModal(false)}
         >
           <View style={styles.modalBackdrop}>
-            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  paddingBottom: Math.max(16, insets.bottom),
+                  backgroundColor: isDark ? "#1e293b" : "white",
+                },
+              ]}
+            >
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Country Code</Text>
+                <Text style={[styles.modalTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Select Country Code
+                </Text>
                 <Pressable onPress={() => setShowCountryCodeModal(false)}>
-                  <MaterialIcons name="close" size={20} color="#374151" />
+                  <MaterialIcons name="close" size={20} color={isDark ? "#cbd5e1" : "#374151"} />
                 </Pressable>
               </View>
-              <View style={styles.modalSearchBox}>
-                <MaterialIcons name="search" size={18} color="#9ca3af" />
+              <View
+                style={[styles.modalSearchBox, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}
+              >
+                <MaterialIcons name="search" size={18} color={isDark ? "#94a3b8" : "#9ca3af"} />
                 <RNTextInput
-                  style={styles.modalSearchInput}
+                  style={[styles.modalSearchInput, { color: isDark ? "#f8fafc" : "#111827" }]}
                   placeholder="Search country..."
+                  placeholderTextColor={isDark ? "#94a3b8" : "#9ca3af"}
                   value={countryCodeSearch}
                   onChangeText={setCountryCodeSearch}
                 />
@@ -445,7 +578,10 @@ export function Step1ContactScreen() {
                 keyExtractor={(item) => item.code}
                 renderItem={({ item }: { item: CountryCodeItem }) => (
                   <Pressable
-                    style={styles.countryItem}
+                    style={[
+                      styles.countryItem,
+                      { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                    ]}
                     onPress={() => {
                       setSelectedCountryCode(item.code);
                       setPhoneNumber("");
@@ -457,8 +593,12 @@ export function Step1ContactScreen() {
                       dispatch(updateContact({ phone: combined }));
                     }}
                   >
-                    <Text style={styles.countryCode}>{item.code}</Text>
-                    <Text style={styles.countryName}>{item.country}</Text>
+                    <Text style={[styles.countryCode, { color: isDark ? "#60a5fa" : "#2563eb" }]}>
+                      {item.code}
+                    </Text>
+                    <Text style={[styles.countryName, { color: isDark ? "#e2e8f0" : "#374151" }]}>
+                      {item.country}
+                    </Text>
                   </Pressable>
                 )}
               />

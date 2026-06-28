@@ -13,6 +13,7 @@ import {
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as DocumentPicker from "expo-document-picker";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 const SUGGESTED_DOMAINS = [
   "Frontend Developer",
@@ -32,6 +33,7 @@ interface DomainInputStepProps {
 export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInputStepProps) {
   const [domain, setDomain] = useState("Full Stack Developer");
   const [selectedFile, setSelectedFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const { isDark } = useThemeToggle();
 
   const handleBrowseFiles = async () => {
     try {
@@ -66,7 +68,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#F4F5FA" }}
     >
       <ScrollView
         contentContainerStyle={{
@@ -84,7 +86,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
         <View style={{ width: "100%", maxWidth: 560 }}>
           {/* Hero Card with Gradient and Glassmorphism Circles */}
           <LinearGradient
-            colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+            colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
             locations={[0, 0.6, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -96,9 +98,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
               marginBottom: 32,
               width: "100%",
               position: "relative",
-              shadowColor: "#597AF4",
+              shadowColor: isDark ? "#000" : "#597AF4",
               shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.15,
+              shadowOpacity: isDark ? 0.4 : 0.15,
               shadowRadius: 16,
               elevation: 4,
             }}
@@ -153,7 +155,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
           </LinearGradient>
 
           {/* Domain Input Section */}
-          <Text className="text-slate-400 font-extrabold text-[11px] mb-2.5 uppercase tracking-widest pl-1">
+          <Text
+            className={`font-extrabold text-[11px] mb-2.5 uppercase tracking-widest pl-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+          >
             Target Role
           </Text>
           <View
@@ -161,23 +165,29 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
               height: 48,
               borderRadius: 12,
               borderWidth: 1,
-              borderColor: "#E5E7EB",
-              backgroundColor: "#FFFFFF",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              backgroundColor: isDark ? "#1A1C29" : "#FFFFFF",
               flexDirection: "row",
               alignItems: "center",
               paddingHorizontal: 16,
               marginBottom: 24,
               width: "100%",
-              shadowColor: "#0f172a",
+              shadowColor: "#000",
               shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.03,
+              shadowOpacity: isDark ? 0.2 : 0.03,
               shadowRadius: 10,
               elevation: 2,
             }}
           >
             <Feather name="search" size={18} color="#6B7280" style={{ marginRight: 10 }} />
             <TextInput
-              style={{ flex: 1, color: "#1F2937", fontSize: 15, fontWeight: "600", padding: 0 }}
+              style={{
+                flex: 1,
+                color: isDark ? "#F8FAFC" : "#1F2937",
+                fontSize: 15,
+                fontWeight: "600",
+                padding: 0,
+              }}
               placeholder="e.g. Frontend Developer, Data Analyst"
               placeholderTextColor="#6B7280"
               value={domain}
@@ -194,7 +204,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
           </View>
 
           {/* Quick-select chips */}
-          <Text className="text-slate-400 font-extrabold text-[11px] mb-3 uppercase tracking-widest pl-1">
+          <Text
+            className={`font-extrabold text-[11px] mb-3 uppercase tracking-widest pl-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+          >
             Quick Select
           </Text>
           <View className="flex-row flex-wrap mb-8">
@@ -211,15 +223,21 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                     paddingVertical: 10,
                     borderRadius: 12,
                     borderWidth: 1,
-                    backgroundColor: isSelected ? "rgba(89, 122, 244, 0.08)" : "#FFFFFF",
-                    borderColor: isSelected ? "#597AF4" : "#E5E7EB",
+                    backgroundColor: isSelected
+                      ? isDark
+                        ? "rgba(89, 122, 244, 0.15)"
+                        : "rgba(89, 122, 244, 0.08)"
+                      : isDark
+                        ? "#1A1C29"
+                        : "#FFFFFF",
+                    borderColor: isSelected ? "#597AF4" : isDark ? "#2A2D40" : "#E5E7EB",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 12,
                       fontWeight: "600",
-                      color: isSelected ? "#597AF4" : "#6B7280",
+                      color: isSelected ? "#597AF4" : isDark ? "#94A3B8" : "#6B7280",
                     }}
                   >
                     {d}
@@ -230,7 +248,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
           </View>
 
           {/* Optional Resume Upload Section */}
-          <Text className="text-slate-400 font-extrabold text-[11px] mb-2.5 uppercase tracking-widest pl-1">
+          <Text
+            className={`font-extrabold text-[11px] mb-2.5 uppercase tracking-widest pl-1 ${isDark ? "text-slate-500" : "text-slate-400"}`}
+          >
             Optional Resume Upload
           </Text>
           <View style={{ marginBottom: 24, width: "100%" }}>
@@ -240,11 +260,23 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
               style={{
                 borderWidth: 2,
                 borderStyle: "dashed",
-                borderColor: selectedFile ? "#4F46E5" : "#C7D2FE",
+                borderColor: selectedFile
+                  ? isDark
+                    ? "#6366F1"
+                    : "#4F46E5"
+                  : isDark
+                    ? "#313244"
+                    : "#C7D2FE",
                 borderRadius: 16,
                 padding: 20,
                 alignItems: "center",
-                backgroundColor: selectedFile ? "#EEF2FF" : "#F5F8FF",
+                backgroundColor: selectedFile
+                  ? isDark
+                    ? "rgba(79, 70, 229, 0.1)"
+                    : "#EEF2FF"
+                  : isDark
+                    ? "rgba(255, 255, 255, 0.02)"
+                    : "#F5F8FF",
               }}
             >
               {selectedFile ? (
@@ -256,12 +288,23 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                     style={{ marginBottom: 8 }}
                   />
                   <Text
-                    style={{ fontSize: 14, fontWeight: "600", color: "#1F2937", marginBottom: 4 }}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "600",
+                      color: isDark ? "#F8FAFC" : "#1F2937",
+                      marginBottom: 4,
+                    }}
                     numberOfLines={1}
                   >
                     {selectedFile.name}
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 12 }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark ? "#94A3B8" : "#6B7280",
+                      marginBottom: 12,
+                    }}
+                  >
                     {selectedFile.size
                       ? (selectedFile.size / 1024 / 1024).toFixed(2) + " MB"
                       : "Unknown size"}
@@ -271,11 +314,19 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                     style={{
                       paddingHorizontal: 16,
                       paddingVertical: 8,
-                      backgroundColor: "#FEE2E2",
+                      backgroundColor: isDark ? "rgba(239, 68, 68, 0.1)" : "#FEE2E2",
+                      borderWidth: 1,
+                      borderColor: isDark ? "rgba(239, 68, 68, 0.2)" : "transparent",
                       borderRadius: 100,
                     }}
                   >
-                    <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "600" }}>
+                    <Text
+                      style={{
+                        color: isDark ? "#F87171" : "#EF4444",
+                        fontSize: 12,
+                        fontWeight: "600",
+                      }}
+                    >
                       Remove File
                     </Text>
                   </TouchableOpacity>
@@ -293,7 +344,13 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                   >
                     Tap to upload a new resume
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#6B7280", textAlign: "center" }}>
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark ? "#64748B" : "#6B7280",
+                      textAlign: "center",
+                    }}
+                  >
                     If no resume is provided, your saved resume will be analyzed.
                   </Text>
                 </View>
@@ -310,15 +367,19 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
               style={{
                 height: 48,
                 borderRadius: 12,
-                backgroundColor: "#E5E7EB",
+                backgroundColor: isDark ? "#334155" : "#E5E7EB",
                 alignItems: "center",
                 justifyContent: "center",
                 width: "100%",
               }}
             >
               <View className="flex-row items-center gap-2">
-                <Feather name="zap" size={16} color="white" />
-                <Text className="text-white font-bold text-[15px]">Analyze Resume</Text>
+                <Feather name="zap" size={16} color={isDark ? "#94A3B8" : "white"} />
+                <Text
+                  className={`font-bold text-[15px] ${isDark ? "text-[#94A3B8]" : "text-white"}`}
+                >
+                  Analyze Resume
+                </Text>
               </View>
             </View>
           ) : (
@@ -330,13 +391,13 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
                 width: "100%",
                 shadowColor: "#3b82f6",
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.15,
+                shadowOpacity: isDark ? 0.4 : 0.15,
                 shadowRadius: 8,
                 elevation: 2,
               }}
             >
               <LinearGradient
-                colors={["#4f46e5", "#3b82f6"]}
+                colors={isDark ? ["#6366f1", "#3b82f6"] : ["#4f46e5", "#3b82f6"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={{
@@ -358,9 +419,9 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
           <Pressable
             onPress={onHistory}
             style={{
-              backgroundColor: "#FFFFFF",
+              backgroundColor: isDark ? "rgba(59, 130, 246, 0.1)" : "#FFFFFF",
               borderWidth: 1,
-              borderColor: "#3b82f6",
+              borderColor: isDark ? "rgba(59, 130, 246, 0.5)" : "#3b82f6",
               height: 48,
               borderRadius: 12,
               alignItems: "center",
@@ -369,8 +430,10 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
             }}
           >
             <View className="flex-row items-center gap-2">
-              <Feather name="clock" size={16} color="#3b82f6" />
-              <Text style={{ color: "#3b82f6", fontWeight: "600", fontSize: 15 }}>
+              <Feather name="clock" size={16} color={isDark ? "#60A5FA" : "#3b82f6"} />
+              <Text
+                style={{ color: isDark ? "#60A5FA" : "#3b82f6", fontWeight: "600", fontSize: 15 }}
+              >
                 View History
               </Text>
             </View>

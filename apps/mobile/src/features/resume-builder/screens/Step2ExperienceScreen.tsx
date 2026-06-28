@@ -25,6 +25,7 @@ import { MaterialIcons, Feather } from "@expo/vector-icons";
 import type { BuilderExperience, BuilderEducation } from "../types/resume-builder.types";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { DatePicker } from "../components/DatePicker";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export function Step2ExperienceScreen() {
   const insets = useSafeAreaInsets();
@@ -32,6 +33,7 @@ export function Step2ExperienceScreen() {
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
   const lastSavedAt = useAppSelector(selectBuilderLastSavedAt);
+  const { isDark } = useThemeToggle();
 
   const experience = draftResume.experience || [];
   const education = draftResume.education || [];
@@ -181,30 +183,59 @@ export function Step2ExperienceScreen() {
       style={styles.keyboardAvoidingView}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={[styles.scrollContainer, { backgroundColor: isDark ? "#0f172a" : "#f9fafb" }]}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.container}>
           {/* Step Indicator Header */}
-          <View style={styles.header}>
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderBottomColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
+          >
             <View style={styles.headerContent}>
               <View style={styles.titleRow}>
-                <Text style={styles.stepNumber}>Step 2 of 5</Text>
+                <Text style={[styles.stepNumber, { color: isDark ? "#9ca3af" : "#4b5563" }]}>
+                  Step 2 of 5
+                </Text>
                 {isSaving ? (
                   <Text style={styles.saveBadge}>Saving...</Text>
                 ) : lastSavedAt ? (
                   <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
                 ) : null}
               </View>
-              <Text style={styles.headerTitle}>Experience & Education</Text>
-              <Text style={styles.headerSubtitle}>Tell recruiters about your history</Text>
+              <Text style={[styles.headerTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                Experience & Education
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+                Tell recruiters about your history
+              </Text>
             </View>
           </View>
 
           <View style={styles.formContainer}>
             {/* Work Experience Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="work" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Work Experience</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="work"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Work Experience
+                </Text>
               </View>
 
               <DynamicFieldList
@@ -228,12 +259,17 @@ export function Step2ExperienceScreen() {
                 emptyMessage="No work experience added yet."
                 renderItem={(item) => (
                   <View>
-                    <Text style={styles.itemTitle}>{item.role}</Text>
-                    <Text style={styles.itemSubtitle}>
+                    <Text style={[styles.itemTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                      {item.role}
+                    </Text>
+                    <Text style={[styles.itemSubtitle, { color: isDark ? "#94a3b8" : "#4b5563" }]}>
                       {item.company} • {item.startDate} - {item.endDate || "Present"}
                     </Text>
                     {item.description ? (
-                      <Text numberOfLines={2} style={styles.itemDesc}>
+                      <Text
+                        numberOfLines={2}
+                        style={[styles.itemDesc, { color: isDark ? "#cbd5e1" : "#6b7280" }]}
+                      >
                         {item.description}
                       </Text>
                     ) : null}
@@ -243,10 +279,22 @@ export function Step2ExperienceScreen() {
             </View>
 
             {/* Education Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="school" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Education</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="school"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Education
+                </Text>
               </View>
 
               <DynamicFieldList
@@ -267,12 +315,14 @@ export function Step2ExperienceScreen() {
                 emptyMessage="No education history added yet."
                 renderItem={(item) => (
                   <View>
-                    <Text style={styles.itemTitle}>{item.degree}</Text>
-                    <Text style={styles.itemSubtitle}>
+                    <Text style={[styles.itemTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                      {item.degree}
+                    </Text>
+                    <Text style={[styles.itemSubtitle, { color: isDark ? "#94a3b8" : "#4b5563" }]}>
                       {item.institution} {item.field ? `• ${item.field}` : ""}
                     </Text>
                     {item.endYear || item.endDate ? (
-                      <Text style={styles.itemDesc}>
+                      <Text style={[styles.itemDesc, { color: isDark ? "#cbd5e1" : "#6b7280" }]}>
                         Graduation Year: {item.endYear || item.endDate}
                       </Text>
                     ) : null}
@@ -283,9 +333,25 @@ export function Step2ExperienceScreen() {
 
             {/* Navigation Buttons footer */}
             <View style={styles.footerRow}>
-              <Pressable onPress={() => dispatch(setCurrentStep(1))} style={styles.backButton}>
-                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-                <Text style={styles.backButtonText}>Back</Text>
+              <Pressable
+                onPress={() => dispatch(setCurrentStep(1))}
+                style={[
+                  styles.backButton,
+                  {
+                    backgroundColor: isDark ? "#1e293b" : "white",
+                    borderColor: isDark ? "#334155" : "#d1d5db",
+                  },
+                ]}
+              >
+                <Feather
+                  name="arrow-left"
+                  size={16}
+                  color={isDark ? "#cbd5e1" : "#4b5563"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={[styles.backButtonText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+                  Back
+                </Text>
               </Pressable>
               <Pressable onPress={() => dispatch(setCurrentStep(3))} style={styles.nextButton}>
                 <Text style={styles.nextButtonText}>Next Screen</Text>
@@ -306,10 +372,23 @@ export function Step2ExperienceScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  paddingBottom: Math.max(16, insets.bottom),
+                  backgroundColor: isDark ? "#1e293b" : "white",
+                },
+              ]}
+            >
               <ScrollView style={{ flex: 1 }}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
+                <View
+                  style={[
+                    styles.modalHeader,
+                    { borderBottomColor: isDark ? "#334155" : "#e5e7eb" },
+                  ]}
+                >
+                  <Text style={[styles.modalTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
                     {editingExpId ? "Edit Work Experience" : "Add Work Experience"}
                   </Text>
                   <Pressable
@@ -318,7 +397,7 @@ export function Step2ExperienceScreen() {
                       resetExpForm();
                     }}
                   >
-                    <MaterialIcons name="close" size={20} color="#374151" />
+                    <MaterialIcons name="close" size={20} color={isDark ? "#cbd5e1" : "#374151"} />
                   </Pressable>
                 </View>
 
@@ -392,7 +471,9 @@ export function Step2ExperienceScreen() {
                       <MaterialIcons name="check" size={14} color="white" />
                     )}
                   </Pressable>
-                  <Text style={styles.checkboxLabel}>I currently work in this role</Text>
+                  <Text style={[styles.checkboxLabel, { color: isDark ? "#f8fafc" : "#374151" }]}>
+                    I currently work in this role
+                  </Text>
                 </View>
 
                 <TextInput
@@ -423,10 +504,23 @@ export function Step2ExperienceScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  paddingBottom: Math.max(16, insets.bottom),
+                  backgroundColor: isDark ? "#1e293b" : "white",
+                },
+              ]}
+            >
               <ScrollView style={{ flex: 1 }}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
+                <View
+                  style={[
+                    styles.modalHeader,
+                    { borderBottomColor: isDark ? "#334155" : "#e5e7eb" },
+                  ]}
+                >
+                  <Text style={[styles.modalTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
                     {editingEduId ? "Edit Education History" : "Add Education History"}
                   </Text>
                   <Pressable
@@ -435,7 +529,7 @@ export function Step2ExperienceScreen() {
                       resetEduForm();
                     }}
                   >
-                    <MaterialIcons name="close" size={20} color="#374151" />
+                    <MaterialIcons name="close" size={20} color={isDark ? "#cbd5e1" : "#374151"} />
                   </Pressable>
                 </View>
 

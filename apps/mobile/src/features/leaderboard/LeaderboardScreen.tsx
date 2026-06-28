@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import { FlatList, Pressable, Text, View, Image, Platform } from "react-native";
+import { FlatList, Pressable, Text, View, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useColorScheme } from "nativewind";
 
 import {
   useGetLeaderboardQuery,
@@ -18,6 +17,7 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { getAvatarUri } from "@/utils/avatar";
 
 import { FriendsModal } from "./components/FriendsModal";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 
 const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
@@ -29,24 +29,12 @@ const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
 
 export function LeaderboardScreen() {
   const router = useRouter();
-  const { colorScheme, setColorScheme } = useColorScheme();
   const { data: profile } = useGetProfileQuery();
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
   const insets = useSafeAreaInsets();
-
-  const isDark = colorScheme === "dark";
-
-  const handleToggleDarkMode = () => {
-    const nextScheme = isDark ? "light" : "dark";
-    setColorScheme(nextScheme);
-
-    if (Platform.OS === "web" && typeof document !== "undefined") {
-      document.documentElement.classList.toggle("dark", nextScheme === "dark");
-      window.localStorage?.setItem("settings_dark_mode", nextScheme === "dark" ? "true" : "false");
-    }
-  };
+  const { isDark, toggleTheme } = useThemeToggle();
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
@@ -189,7 +177,7 @@ export function LeaderboardScreen() {
           </View>
           <View className="flex-row items-center space-x-3">
             <Pressable
-              onPress={handleToggleDarkMode}
+              onPress={toggleTheme}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDark ? "bg-slate-700" : "bg-slate-200"
               }`}
@@ -332,7 +320,10 @@ export function LeaderboardScreen() {
           }
           data={data?.list ?? []}
           keyExtractor={(item: LeaderboardEntry) => item.user_id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 140 + Math.max(0, insets.bottom),
+          }}
           renderItem={({ item }: { item: LeaderboardEntry }) => (
             <View
               className={`border rounded-3xl p-4 mb-3 shadow-xs ${
@@ -398,8 +389,9 @@ export function LeaderboardScreen() {
         {/* FAB with lime-green gradient */}
         <Pressable
           onPress={() => setFriendsOpen(true)}
-          className="absolute right-5 bottom-20 w-14 h-14 rounded-full overflow-hidden shadow-lg active:opacity-90"
+          className="absolute right-5 w-14 h-14 rounded-full overflow-hidden shadow-lg active:opacity-90"
           style={{
+            bottom: 80 + Math.max(0, insets.bottom),
             shadowColor: "#84cc16",
             shadowOpacity: 0.2,
             shadowOffset: { width: 0, height: 4 },

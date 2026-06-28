@@ -1,8 +1,15 @@
 import React from "react";
 import { View, Text, ScrollView, Pressable, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import Svg, { Line } from "react-native-svg";
+import Svg, {
+  Line,
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+} from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { ResumeBuddyCriterionScore } from "../types";
 
 interface ScoreAnalysisStepProps {
@@ -36,6 +43,7 @@ export function ScoreAnalysisStep({
   qualitySummary,
   onDone,
 }: ScoreAnalysisStepProps) {
+  const { isDark } = useThemeToggle();
   // Helper to extract criteria percentage score
   const getCritScore = (key: string): number => {
     const crit = criteriaScores.find((c) => c.key === key);
@@ -57,12 +65,9 @@ export function ScoreAnalysisStep({
   const projectsExperienceScore = getCritVal("projects_experience", 95);
 
   const atsPct = Math.round((atsScore / 20) * 100);
-  const atsColor = getScoreColor(atsPct);
   const semPct = semanticScore > 100 ? Math.round(semanticScore / 10) : Math.round(semanticScore);
-  const semColor = getScoreColor(semPct);
   const rulePct =
     ruleBasedScore > 100 ? Math.round(ruleBasedScore / 10) : Math.round(ruleBasedScore);
-  const ruleColor = getScoreColor(rulePct);
 
   // Dynamic list mapped from criteriaScores if available, else static fallback
   const breakdownList =
@@ -85,51 +90,29 @@ export function ScoreAnalysisStep({
         ];
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F8F9FC" }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Main motiving gradient card */}
         <LinearGradient
-          colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+          colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
           locations={[0, 0.6, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.cardGradient}
+          style={[styles.cardGradient, isDark && { shadowColor: "#000", shadowOpacity: 0.4 }]}
         >
-          {/* Background overlapping semi-transparent circles */}
+          {/* Background large faint green glow (replacing circles) */}
           <View
             style={{
               position: "absolute",
-              right: -60,
-              top: -60,
-              width: 200,
-              height: 200,
-              borderRadius: 100,
-              backgroundColor: "rgba(255, 255, 255, 0.08)",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              right: 20,
-              bottom: -80,
-              width: 160,
-              height: 160,
-              borderRadius: 80,
-              backgroundColor: "rgba(255, 255, 255, 0.12)",
-            }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              left: -80,
-              bottom: -40,
-              width: 140,
-              height: 140,
-              borderRadius: 70,
-              backgroundColor: "rgba(255, 255, 255, 0.04)",
+              left: -100,
+              bottom: -150,
+              width: 350,
+              height: 350,
+              borderRadius: 175,
+              backgroundColor: isDark ? "rgba(163, 230, 53, 0.05)" : "rgba(163, 230, 53, 0.15)",
             }}
           />
 
@@ -141,96 +124,173 @@ export function ScoreAnalysisStep({
             {/* Dotted connector lines (SVG) */}
             <Svg height="100%" width="100%" style={StyleSheet.absoluteFill}>
               <Line
-                x1={160}
-                y1={130}
-                x2={160}
-                y2={32}
-                stroke="rgba(255, 255, 255, 0.3)"
+                x1={170}
+                y1={150}
+                x2={170}
+                y2={35}
+                stroke="rgba(255, 255, 255, 0.25)"
                 strokeWidth={1}
                 strokeDasharray="4,4"
               />
               <Line
-                x1={160}
-                y1={130}
-                x2={255}
-                y2={95}
-                stroke="rgba(255, 255, 255, 0.3)"
+                x1={170}
+                y1={150}
+                x2={280}
+                y2={110}
+                stroke="rgba(255, 255, 255, 0.25)"
                 strokeWidth={1}
                 strokeDasharray="4,4"
               />
               <Line
-                x1={160}
-                y1={130}
-                x2={230}
-                y2={195}
-                stroke="rgba(255, 255, 255, 0.3)"
+                x1={170}
+                y1={150}
+                x2={250}
+                y2={250}
+                stroke="rgba(255, 255, 255, 0.25)"
                 strokeWidth={1}
                 strokeDasharray="4,4"
               />
               <Line
-                x1={160}
-                y1={130}
+                x1={170}
+                y1={150}
                 x2={90}
-                y2={195}
-                stroke="rgba(255, 255, 255, 0.3)"
+                y2={250}
+                stroke="rgba(255, 255, 255, 0.25)"
                 strokeWidth={1}
                 strokeDasharray="4,4"
               />
               <Line
-                x1={160}
-                y1={130}
-                x2={65}
-                y2={95}
-                stroke="rgba(255, 255, 255, 0.3)"
+                x1={170}
+                y1={150}
+                x2={60}
+                y2={110}
+                stroke="rgba(255, 255, 255, 0.25)"
                 strokeWidth={1}
                 strokeDasharray="4,4"
               />
             </Svg>
 
             {/* Central Score Circle */}
-            <View style={styles.centerCircle}>
-              <Text style={styles.centerScoreText}>{Math.round(overallScore)}%</Text>
-              <Text style={styles.centerScoreLabel}>OVERALL SCORE</Text>
+            <View
+              style={[styles.centerCircle, { backgroundColor: isDark ? "#1A1C29" : "#ffffff" }]}
+            >
+              <Svg width={90} height={90} style={{ position: "absolute" }}>
+                <Defs>
+                  <SvgLinearGradient id="scoreGradOverall" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <Stop offset="0%" stopColor="#3b82f6" />
+                    <Stop offset="100%" stopColor="#a3e635" />
+                  </SvgLinearGradient>
+                </Defs>
+                <Circle
+                  cx={45}
+                  cy={45}
+                  r={40}
+                  stroke={isDark ? "#2A2D40" : "#E2E8F0"}
+                  strokeWidth={6}
+                  fill="none"
+                />
+                <Circle
+                  cx={45}
+                  cy={45}
+                  r={40}
+                  stroke="url(#scoreGradOverall)"
+                  strokeWidth={6}
+                  fill="none"
+                  strokeDasharray={`${(overallScore / 100) * (2 * Math.PI * 40)} 300`}
+                  strokeDashoffset={0}
+                  rotation="-90"
+                  originX="45"
+                  originY="45"
+                  strokeLinecap="round"
+                />
+              </Svg>
+              <Text style={[styles.centerScoreText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                {Math.round(overallScore)}%
+              </Text>
+              <Text
+                style={[
+                  styles.centerScoreLabel,
+                  { color: isDark ? "#94A3B8" : "#6B7280", marginTop: 0 },
+                ]}
+              >
+                Overall Score
+              </Text>
             </View>
 
-            {/* Radiating Node 1: Skills Relevance */}
-            <View style={[styles.radiatingNode, { top: 10, left: 110, width: 100 }]}>
-              <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{skillsRelevanceScore}%</Text>
+            {/* Radiating Node 1: Basic Information (Top) */}
+            <View style={[styles.radiatingNode, { top: 0, left: 135 }]}>
+              <View style={styles.glowingOrbOuter}>
+                <View style={styles.glowingOrbInner}>
+                  <Text style={styles.glowingOrbText}>{skillsRelevanceScore}%</Text>
+                </View>
               </View>
-              <Text style={styles.outerLabel}>Skills Relevance</Text>
+              <Text
+                style={[styles.orbLabel, { position: "absolute", left: 75, top: 25, width: 120 }]}
+              >
+                Basic Information
+              </Text>
             </View>
 
-            {/* Radiating Node 2: ATS Compatibility */}
-            <View style={[styles.radiatingNode, { top: 73, right: 15, width: 80 }]}>
-              <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{atsCompatibilityScore}%</Text>
+            {/* Radiating Node 2: ATS (Right) */}
+            <View style={[styles.radiatingNode, { top: 75, right: 25 }]}>
+              <View style={styles.glowingOrbOuter}>
+                <View style={styles.glowingOrbInner}>
+                  <Text style={styles.glowingOrbText}>{atsCompatibilityScore}%</Text>
+                </View>
               </View>
-              <Text style={styles.outerLabel}>ATS Compatibility</Text>
+              <Text
+                style={[styles.orbLabel, { position: "absolute", left: 75, top: 25, width: 50 }]}
+              >
+                ATS
+              </Text>
             </View>
 
-            {/* Radiating Node 3: Resume Structure */}
-            <View style={[styles.radiatingNode, { bottom: 20, right: 10, width: 120 }]}>
-              <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{resumeStructureScore}%</Text>
+            {/* Radiating Node 3: Section completeness (Bottom Right) */}
+            <View style={[styles.radiatingNode, { bottom: 15, right: 55 }]}>
+              <View style={styles.glowingOrbOuter}>
+                <View style={styles.glowingOrbInner}>
+                  <Text style={styles.glowingOrbText}>{resumeStructureScore}%</Text>
+                </View>
               </View>
-              <Text style={styles.outerLabel}>Resume Structure</Text>
+              <Text
+                style={[styles.orbLabel, { position: "absolute", left: 55, top: 55, width: 130 }]}
+              >
+                Section completeness
+              </Text>
             </View>
 
-            {/* Radiating Node 4: Grammar & Clarity */}
-            <View style={[styles.radiatingNode, { bottom: 20, left: 10, width: 120 }]}>
-              <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{grammarClarityScore}%</Text>
+            {/* Radiating Node 4: Resume Quality (Bottom Left) */}
+            <View style={[styles.radiatingNode, { bottom: 15, left: 55 }]}>
+              <View style={styles.glowingOrbOuter}>
+                <View style={styles.glowingOrbInner}>
+                  <Text style={styles.glowingOrbText}>{grammarClarityScore}%</Text>
+                </View>
               </View>
-              <Text style={styles.outerLabel}>Grammar & Clarity</Text>
+              <Text
+                style={[
+                  styles.orbLabel,
+                  { position: "absolute", right: 65, top: 55, width: 120, textAlign: "right" },
+                ]}
+              >
+                Resume Quality
+              </Text>
             </View>
 
-            {/* Radiating Node 5: Projects & Experience */}
-            <View style={[styles.radiatingNode, { top: 73, left: 15, width: 80 }]}>
-              <View style={styles.outerCircle}>
-                <Text style={styles.outerText}>{projectsExperienceScore}%</Text>
+            {/* Radiating Node 5: Professional Summary (Left) */}
+            <View style={[styles.radiatingNode, { top: 75, left: 25 }]}>
+              <View style={styles.glowingOrbOuter}>
+                <View style={styles.glowingOrbInner}>
+                  <Text style={styles.glowingOrbText}>{projectsExperienceScore}%</Text>
+                </View>
               </View>
-              <Text style={styles.outerLabel}>Projects & Experience</Text>
+              <Text
+                style={[
+                  styles.orbLabel,
+                  { position: "absolute", right: 75, top: 25, width: 140, textAlign: "right" },
+                ]}
+              >
+                Professional Summary
+              </Text>
             </View>
           </View>
 
@@ -240,28 +300,114 @@ export function ScoreAnalysisStep({
 
         {/* Dynamic Score Rings Card */}
         <LinearGradient
-          colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+          colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
           locations={[0, 0.6, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.threeScoresCardGradient}
+          style={[
+            styles.threeScoresCardGradient,
+            isDark && { shadowColor: "#000", shadowOpacity: 0.4 },
+          ]}
         >
           <View style={styles.threeScoresCard}>
+            {/* ATS Score */}
             <View style={styles.scoreCircleWrapper}>
-              <View style={[styles.scoreCircleRing, { borderColor: atsColor }]}>
-                <Text style={[styles.scoreCircleText, { color: atsColor }]}>{atsPct}%</Text>
+              <View
+                style={[
+                  styles.scoreCircleRing,
+                  {
+                    borderWidth: 0,
+                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
+                  },
+                ]}
+              >
+                <Svg width={70} height={70} style={{ position: "absolute" }}>
+                  <Defs>
+                    <SvgLinearGradient id="scoreGradAts" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <Stop offset="0%" stopColor="#3b82f6" />
+                      <Stop offset="100%" stopColor="#a3e635" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  <Circle
+                    cx={35}
+                    cy={35}
+                    r={33.25}
+                    stroke="url(#scoreGradAts)"
+                    strokeWidth={3.5}
+                    fill="none"
+                  />
+                </Svg>
+                <Text style={[styles.scoreCircleText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                  {atsPct}%
+                </Text>
               </View>
               <Text style={styles.scoreCircleLabel}>ATS Score</Text>
             </View>
+
+            {/* Semantic Score */}
             <View style={styles.scoreCircleWrapper}>
-              <View style={[styles.scoreCircleRing, { borderColor: semColor }]}>
-                <Text style={[styles.scoreCircleText, { color: semColor }]}>{semPct}%</Text>
+              <View
+                style={[
+                  styles.scoreCircleRing,
+                  {
+                    borderWidth: 0,
+                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
+                  },
+                ]}
+              >
+                <Svg width={70} height={70} style={{ position: "absolute" }}>
+                  <Defs>
+                    <SvgLinearGradient id="scoreGradSemantic" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <Stop offset="0%" stopColor="#3b82f6" />
+                      <Stop offset="100%" stopColor="#a3e635" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  <Circle
+                    cx={35}
+                    cy={35}
+                    r={33.25}
+                    stroke="url(#scoreGradSemantic)"
+                    strokeWidth={3.5}
+                    fill="none"
+                  />
+                </Svg>
+                <Text style={[styles.scoreCircleText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                  {semPct}%
+                </Text>
               </View>
               <Text style={styles.scoreCircleLabel}>Semantic Score</Text>
             </View>
+
+            {/* Rule-Based */}
             <View style={styles.scoreCircleWrapper}>
-              <View style={[styles.scoreCircleRing, { borderColor: ruleColor }]}>
-                <Text style={[styles.scoreCircleText, { color: ruleColor }]}>{rulePct}%</Text>
+              <View
+                style={[
+                  styles.scoreCircleRing,
+                  {
+                    borderWidth: 0,
+                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
+                  },
+                ]}
+              >
+                <Svg width={70} height={70} style={{ position: "absolute" }}>
+                  <Defs>
+                    <SvgLinearGradient id="scoreGradRule" x1="0%" y1="100%" x2="100%" y2="0%">
+                      <Stop offset="0%" stopColor="#3b82f6" />
+                      <Stop offset="100%" stopColor="#a3e635" />
+                    </SvgLinearGradient>
+                  </Defs>
+                  <Circle
+                    cx={35}
+                    cy={35}
+                    r={33.25}
+                    stroke="url(#scoreGradRule)"
+                    strokeWidth={3.5}
+                    fill="none"
+                  />
+                </Svg>
+                <Text style={[styles.scoreCircleText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                  {rulePct}%
+                </Text>
               </View>
               <Text style={styles.scoreCircleLabel}>Rule-Based</Text>
             </View>
@@ -270,10 +416,14 @@ export function ScoreAnalysisStep({
 
         {/* Score Breakdown Section Header */}
         <View style={styles.breakdownHeaderRow}>
-          <Text style={styles.breakdownTitle}>Score Breakdown</Text>
+          <Text style={[styles.breakdownTitle, { color: isDark ? "#F8FAFC" : "#0f172a" }]}>
+            Score Breakdown
+          </Text>
           <View style={styles.trendContainer}>
-            <Feather name="trending-up" size={14} color="#597AF4" />
-            <Text style={styles.trendText}>+4 vs last</Text>
+            <Feather name="trending-up" size={14} color={isDark ? "#818cf8" : "#597AF4"} />
+            <Text style={[styles.trendText, { color: isDark ? "#818cf8" : "#597AF4" }]}>
+              +4 vs last
+            </Text>
           </View>
         </View>
 
@@ -281,12 +431,33 @@ export function ScoreAnalysisStep({
         {breakdownList.map((item) => {
           const barColor = getScoreColor(item.score);
           return (
-            <View key={item.label} style={styles.breakdownCard}>
+            <View
+              key={item.label}
+              style={[
+                styles.breakdownCard,
+                {
+                  backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+                  borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+                  shadowColor: isDark ? "#000" : "#0f172a",
+                  shadowOpacity: isDark ? 0.2 : 0.02,
+                },
+              ]}
+            >
               <View style={styles.breakdownCardRow}>
-                <Text style={styles.breakdownCardLabel}>{item.label}</Text>
-                <Text style={styles.breakdownCardValue}>{item.score}%</Text>
+                <Text
+                  style={[styles.breakdownCardLabel, { color: isDark ? "#F8FAFC" : "#1F2937" }]}
+                >
+                  {item.label}
+                </Text>
+                <Text
+                  style={[styles.breakdownCardValue, { color: isDark ? "#F8FAFC" : "#1F2937" }]}
+                >
+                  {item.score}%
+                </Text>
               </View>
-              <View style={styles.progressBarBg}>
+              <View
+                style={[styles.progressBarBg, { backgroundColor: isDark ? "#334155" : "#E5E7EB" }]}
+              >
                 <View
                   style={[
                     styles.progressBarFill,
@@ -300,7 +471,15 @@ export function ScoreAnalysisStep({
       </ScrollView>
 
       {/* Sticky footer action button */}
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: isDark ? "#0F1020" : "#ffffff",
+            borderTopColor: isDark ? "#1E293B" : "#f1f5f9",
+          },
+        ]}
+      >
         <Pressable
           onPress={onDone}
           style={{
@@ -309,13 +488,13 @@ export function ScoreAnalysisStep({
             width: "100%",
             shadowColor: "#3b82f6",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
+            shadowOpacity: isDark ? 0.4 : 0.15,
             shadowRadius: 8,
             elevation: 2,
           }}
         >
           <LinearGradient
-            colors={["#4f46e5", "#3b82f6"]}
+            colors={isDark ? ["#6366f1", "#3b82f6"] : ["#4f46e5", "#3b82f6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{
@@ -356,10 +535,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   diagramWrapper: {
-    width: 320,
-    height: 260,
+    width: 340,
+    height: 300,
     alignSelf: "center",
     position: "relative",
+    marginTop: 10,
   },
   centerCircle: {
     position: "absolute",
@@ -369,53 +549,56 @@ const styles = StyleSheet.create({
     width: 90,
     height: 90,
     borderRadius: 45,
-    backgroundColor: "#ffffff",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
     elevation: 3,
   },
   centerScoreText: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "900",
-    color: "#1F2937",
-    letterSpacing: -1,
+    letterSpacing: -0.5,
   },
   centerScoreLabel: {
     fontSize: 8,
     fontWeight: "800",
-    color: "#6B7280",
-    marginTop: 2,
   },
   radiatingNode: {
     position: "absolute",
     alignItems: "center",
   },
-  outerCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  glowingOrbOuter: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "rgba(129, 140, 248, 0.25)",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.25)",
+    shadowColor: "#818cf8",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 16,
   },
-  outerText: {
-    fontSize: 12,
-    fontWeight: "800",
+  glowingOrbInner: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(99, 102, 241, 0.75)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  glowingOrbText: {
+    fontSize: 14,
+    fontWeight: "700",
     color: "#ffffff",
   },
-  outerLabel: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "rgba(255, 255, 255, 0.9)",
-    textAlign: "center",
-    marginTop: 4,
-    lineHeight: 11,
+  orbLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "rgba(255, 255, 255, 0.8)",
   },
   cardSummary: {
     fontSize: 14,
