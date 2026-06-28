@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Pressable, Platform } from "react-native";
 import { Text } from "@/components/Themed";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface WizardFooterCTAProps {
   onNext: () => void;
@@ -17,11 +18,17 @@ export function WizardFooterCTA({
   skipLabel = "Skip",
   isNextDisabled = false,
 }: WizardFooterCTAProps) {
+  const { isDark } = useThemeToggle();
   return (
-    <View style={styles.footer}>
+    <View style={[styles.footer, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}>
       {onSkip && (
-        <Pressable onPress={onSkip} style={styles.skipButton}>
-          <Text style={styles.skipButtonText}>{skipLabel}</Text>
+        <Pressable
+          onPress={onSkip}
+          style={[styles.skipButton, { borderColor: isDark ? "#475569" : "#d1d5db" }]}
+        >
+          <Text style={[styles.skipButtonText, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+            {skipLabel}
+          </Text>
         </Pressable>
       )}
 

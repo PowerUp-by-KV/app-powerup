@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Pressable, View } from "react-native";
 import { Text } from "@/components/Themed";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface SelectionListCardProps {
   label: string;
@@ -10,12 +11,31 @@ interface SelectionListCardProps {
 }
 
 export function SelectionListCard({ label, isSelected, onPress }: SelectionListCardProps) {
+  const { isDark } = useThemeToggle();
   return (
-    <Pressable style={[styles.card, isSelected && styles.cardSelected]} onPress={onPress}>
-      <Text style={[styles.text, isSelected && styles.textSelected]}>{label}</Text>
+    <Pressable
+      style={[
+        styles.card,
+        {
+          backgroundColor: isDark ? "#1e293b" : "white",
+          borderColor: isDark ? "#334155" : "#e5e7eb",
+        },
+        isSelected && [styles.cardSelected, { backgroundColor: isDark ? "#1e293b" : "white" }],
+      ]}
+      onPress={onPress}
+    >
+      <Text
+        style={[
+          styles.text,
+          { color: isDark ? "#94a3b8" : "#6b7280" },
+          isSelected && [styles.textSelected, { color: isDark ? "#f8fafc" : "#111827" }],
+        ]}
+      >
+        {label}
+      </Text>
       {isSelected && (
         <View style={styles.iconContainer}>
-          <MaterialIcons name="check" size={20} color="#111827" />
+          <MaterialIcons name="check" size={20} color={isDark ? "#f8fafc" : "#111827"} />
         </View>
       )}
     </Pressable>

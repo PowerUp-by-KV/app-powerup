@@ -13,6 +13,7 @@ import { WizardFooterCTA } from "../components/WizardFooterCTA";
 import { SelectionPill } from "../components/SelectionPill";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectBuilderDraft, updateLayoutAndTemplate } from "@/store/slices/resume-builder.slice";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 const EXPERIENCE_LEVELS = [
   "Student",
@@ -33,6 +34,7 @@ interface Step4aExperienceProps {
 export function Step4aExperience({ onNext, onBack }: Step4aExperienceProps) {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
+  const { isDark } = useThemeToggle();
 
   // Determine if the saved value is a known pill or a custom entry
   const isKnownLevel = EXPERIENCE_LEVELS.includes(draftResume.experienceLevel || "");
@@ -59,7 +61,7 @@ export function Step4aExperience({ onNext, onBack }: Step4aExperienceProps) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
@@ -79,9 +81,17 @@ export function Step4aExperience({ onNext, onBack }: Step4aExperienceProps) {
       >
         {/* Custom text input — at the top */}
         <TextInput
-          style={[styles.customInput, customLevel.trim().length > 0 && styles.customInputActive]}
+          style={[
+            styles.customInput,
+            {
+              backgroundColor: isDark ? "#1e293b" : "white",
+              borderColor: isDark ? "#334155" : "#e5e7eb",
+              color: isDark ? "#f8fafc" : "#111827",
+            },
+            customLevel.trim().length > 0 && styles.customInputActive,
+          ]}
           placeholder="e.g. Solution Architect, Freelancer..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={isDark ? "#94a3b8" : "#9ca3af"}
           value={customLevel}
           onChangeText={handleCustomChange}
           returnKeyType="done"
@@ -91,9 +101,9 @@ export function Step4aExperience({ onNext, onBack }: Step4aExperienceProps) {
 
         {/* Divider */}
         <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? "#334155" : "#e5e7eb" }]} />
           <Text style={styles.dividerLabel}>or choose below</Text>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? "#334155" : "#e5e7eb" }]} />
         </View>
 
         {/* Pill grid */}
@@ -170,7 +180,6 @@ const styles = StyleSheet.create({
   },
   customInputActive: {
     borderColor: "#3b82f6",
-    backgroundColor: "white",
     shadowColor: "#3b82f6",
     shadowOpacity: 0.15,
   },

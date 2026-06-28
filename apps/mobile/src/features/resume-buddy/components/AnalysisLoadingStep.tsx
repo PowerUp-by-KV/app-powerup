@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, ActivityIndicator, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 const STAGES = [
   { label: "Parsing Resume", icon: "file-text" as const },
@@ -19,6 +20,7 @@ interface AnalysisLoadingStepProps {
 }
 
 export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProps) {
+  const { isDark } = useThemeToggle();
   const clampedActive = Math.min(Math.max(activeStage, 0), STAGES.length);
 
   const stageStatuses: StageStatus[] = STAGES.map((_, i) => {
@@ -44,18 +46,18 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
 
   return (
     <ScrollView
-      style={styles.scrollContainer}
+      style={[styles.scrollContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
       {/* Hero Card with Gradient and Glassmorphism Circles */}
       <View style={{ width: "100%", maxWidth: 560 }}>
         <LinearGradient
-          colors={["#597AF4", "#AFC0FF", "#DEF684"]}
+          colors={isDark ? ["#4338CA", "#312E81", "#064E3B"] : ["#597AF4", "#AFC0FF", "#DEF684"]}
           locations={[0, 0.6, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={styles.cardGradient}
+          style={[styles.cardGradient, isDark && { shadowColor: "#000", shadowOpacity: 0.4 }]}
         >
           {/* Background overlapping semi-transparent circles */}
           <View
@@ -93,8 +95,14 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
           />
 
           {/* Robot / AI Icon in circular wrapper */}
-          <Animated.View style={[styles.iconWrapper, { transform: [{ scale: pulse }] }]}>
-            <Feather name="cpu" size={28} color="#597AF4" />
+          <Animated.View
+            style={[
+              styles.iconWrapper,
+              { backgroundColor: isDark ? "rgba(255, 255, 255, 0.15)" : "#ffffff" },
+              { transform: [{ scale: pulse }] },
+            ]}
+          >
+            <Feather name="cpu" size={28} color={isDark ? "#fff" : "#597AF4"} />
           </Animated.View>
 
           {/* Card Typography */}
@@ -117,7 +125,18 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
           const isActive = status === "active";
 
           return (
-            <View key={stage.label} style={styles.stageCard}>
+            <View
+              key={stage.label}
+              style={[
+                styles.stageCard,
+                {
+                  backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+                  borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+                  shadowColor: isDark ? "#000" : "#0f172a",
+                  shadowOpacity: isDark ? 0.2 : 0.02,
+                },
+              ]}
+            >
               {/* Status indicator */}
               <View style={styles.indicatorContainer}>
                 {isDone ? (
@@ -129,7 +148,15 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
                     <ActivityIndicator size="small" color="#597AF4" />
                   </View>
                 ) : (
-                  <View style={styles.pendingCircle}>
+                  <View
+                    style={[
+                      styles.pendingCircle,
+                      {
+                        backgroundColor: isDark ? "#0F1020" : "#F8F9FC",
+                        borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+                      },
+                    ]}
+                  >
                     <View style={styles.pendingDot} />
                   </View>
                 )}
@@ -139,7 +166,8 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
               <Text
                 style={[
                   styles.stageLabel,
-                  isDone && styles.stageLabelDone,
+                  { color: isDark ? "#94A3B8" : "#6B7280" },
+                  isDone && [styles.stageLabelDone, { color: isDark ? "#F8FAFC" : "#1F2937" }],
                   isActive && styles.stageLabelActive,
                 ]}
               >
@@ -150,7 +178,9 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
         })}
       </View>
 
-      <Text style={styles.hint}>This usually takes 10–20 seconds</Text>
+      <Text style={[styles.hint, { color: isDark ? "#64748B" : "#6B7280" }]}>
+        This usually takes 10–20 seconds
+      </Text>
     </ScrollView>
   );
 }
