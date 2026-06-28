@@ -790,7 +790,6 @@ export function ProfileScreen() {
                               height: 38,
                             }}
                           >
-<<<<<<< HEAD
                             {/* Gradient Background Layer */}
                             <View
                               style={{
@@ -822,7 +821,9 @@ export function ProfileScreen() {
                                       }}
                                     >
                                       <LinearGradient
-                                        colors={["#e0e7ff", "#60a5fa"]} // light indigo to blue
+                                        colors={
+                                          isDark ? ["#1e1b4b", "#3b82f6"] : ["#e0e7ff", "#60a5fa"]
+                                        } // dark or light indigo/blue
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         style={{ flex: 1, borderRadius: 15 }}
@@ -837,23 +838,6 @@ export function ProfileScreen() {
                                 return items;
                               })()}
                             </View>
-
-=======
-                            {segments.map((seg, segIdx) => (
-                              <View
-                                key={segIdx}
-                                style={{
-                                  position: "absolute",
-                                  left: `${seg.start * 14.2857}%`,
-                                  width: `${(seg.end - seg.start + 1) * 14.2857}%`,
-                                  top: 4,
-                                  height: 30,
-                                  borderRadius: 15,
-                                  backgroundColor: isDark ? "#2a2d4a" : "#eef2ff",
-                                }}
-                              />
-                            ))}
->>>>>>> 2fac983 (profile page completed)
                             {rowDays.map((dayObj, dayIdx) => {
                               const isToday = dayObj.date === todayStr;
 
