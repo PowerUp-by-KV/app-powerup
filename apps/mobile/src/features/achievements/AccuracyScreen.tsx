@@ -201,7 +201,7 @@ export function AccuracyScreen() {
   const { data, isLoading } = useGetAccuracyQuery(scope);
   const { isDark } = useThemeToggle();
 
-  const percentage = data?.overall.percentage ?? 0;
+  const percentage = data?.overall?.percentage ?? 0;
   const ringRadius = 45;
   const ringStroke = 12;
   const ringCircumference = 2 * Math.PI * ringRadius;
@@ -361,8 +361,8 @@ export function AccuracyScreen() {
             className={`rounded-3xl pt-5 pb-4 mb-8 shadow-md border overflow-hidden ${isDark ? "bg-[#1C1D2A] border-[rgba(255,255,255,0.02)]" : "bg-white border-slate-100"}`}
           >
             <CustomLineChart
-              communication={data?.interview_charts.communication || []}
-              behavior={data?.interview_charts.behavior || []}
+              communication={data?.interview_charts?.communication || []}
+              behavior={data?.interview_charts?.behavior || []}
               isDark={isDark}
             />
           </View>

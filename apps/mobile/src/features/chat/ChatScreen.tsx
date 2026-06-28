@@ -257,9 +257,12 @@ const MessageBubble = React.memo(function MessageBubble({
             style={[
               s.aiAvatarImg,
               Platform.OS === "web" && isDark
-                ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as any)
+                ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as Record<
+                    string,
+                    unknown
+                  >)
                 : Platform.OS === "web"
-                  ? ({ mixBlendMode: "multiply" } as any)
+                  ? ({ mixBlendMode: "multiply" } as Record<string, unknown>)
                   : {},
             ]}
           />
@@ -1000,9 +1003,9 @@ export function ChatScreen() {
                                 ? ({
                                     filter: "invert(1) hue-rotate(180deg)",
                                     mixBlendMode: "screen",
-                                  } as any)
+                                  } as Record<string, unknown>)
                                 : Platform.OS === "web"
-                                  ? ({ mixBlendMode: "multiply" } as any)
+                                  ? ({ mixBlendMode: "multiply" } as Record<string, unknown>)
                                   : {},
                             ]}
                           />

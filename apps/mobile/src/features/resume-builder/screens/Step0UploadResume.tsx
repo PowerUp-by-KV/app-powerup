@@ -113,8 +113,8 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       setUploading(true);
       const uploadData = new FormData();
       if (Platform.OS === "web") {
-        const response = await fetch(selectedFile.uri);
-        const blob = await response.blob();
+        const fileResponse = await fetch(selectedFile.uri);
+        const blob = await fileResponse.blob();
         uploadData.append("file", blob, selectedFile.name);
       } else {
         uploadData.append("file", {

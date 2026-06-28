@@ -32,8 +32,11 @@ export function RiveMascot({ width = 200, height = 200 }: RiveMascotProps) {
       style={[
         { width, height, alignItems: "center", justifyContent: "center" },
         isDark
-          ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as any)
-          : ({ mixBlendMode: "multiply" } as any),
+          ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as Record<
+              string,
+              unknown
+            >)
+          : ({ mixBlendMode: "multiply" } as Record<string, unknown>),
       ]}
     >
       <RiveContainer src={sourceUri} width={width} height={height} containerRef={containerRef} />

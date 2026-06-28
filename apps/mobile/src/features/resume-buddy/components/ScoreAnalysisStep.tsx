@@ -179,7 +179,7 @@ export function ScoreAnalysisStep({
             >
               <Svg width={90} height={90} style={{ position: "absolute" }}>
                 <Defs>
-                  <SvgLinearGradient id="scoreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <SvgLinearGradient id="scoreGradOverall" x1="0%" y1="100%" x2="100%" y2="0%">
                     <Stop offset="0%" stopColor="#3b82f6" />
                     <Stop offset="100%" stopColor="#a3e635" />
                   </SvgLinearGradient>
@@ -196,7 +196,7 @@ export function ScoreAnalysisStep({
                   cx={45}
                   cy={45}
                   r={40}
-                  stroke="url(#scoreGrad)"
+                  stroke="url(#scoreGradOverall)"
                   strokeWidth={6}
                   fill="none"
                   strokeDasharray={`${(overallScore / 100) * (2 * Math.PI * 40)} 300`}
@@ -326,7 +326,7 @@ export function ScoreAnalysisStep({
               >
                 <Svg width={70} height={70} style={{ position: "absolute" }}>
                   <Defs>
-                    <SvgLinearGradient id="scoreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <SvgLinearGradient id="scoreGradAts" x1="0%" y1="100%" x2="100%" y2="0%">
                       <Stop offset="0%" stopColor="#3b82f6" />
                       <Stop offset="100%" stopColor="#a3e635" />
                     </SvgLinearGradient>
@@ -335,7 +335,7 @@ export function ScoreAnalysisStep({
                     cx={35}
                     cy={35}
                     r={33.25}
-                    stroke="url(#scoreGrad)"
+                    stroke="url(#scoreGradAts)"
                     strokeWidth={3.5}
                     fill="none"
                   />
@@ -360,7 +360,7 @@ export function ScoreAnalysisStep({
               >
                 <Svg width={70} height={70} style={{ position: "absolute" }}>
                   <Defs>
-                    <SvgLinearGradient id="scoreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <SvgLinearGradient id="scoreGradSemantic" x1="0%" y1="100%" x2="100%" y2="0%">
                       <Stop offset="0%" stopColor="#3b82f6" />
                       <Stop offset="100%" stopColor="#a3e635" />
                     </SvgLinearGradient>
@@ -369,7 +369,7 @@ export function ScoreAnalysisStep({
                     cx={35}
                     cy={35}
                     r={33.25}
-                    stroke="url(#scoreGrad)"
+                    stroke="url(#scoreGradSemantic)"
                     strokeWidth={3.5}
                     fill="none"
                   />
@@ -394,7 +394,7 @@ export function ScoreAnalysisStep({
               >
                 <Svg width={70} height={70} style={{ position: "absolute" }}>
                   <Defs>
-                    <SvgLinearGradient id="scoreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <SvgLinearGradient id="scoreGradRule" x1="0%" y1="100%" x2="100%" y2="0%">
                       <Stop offset="0%" stopColor="#3b82f6" />
                       <Stop offset="100%" stopColor="#a3e635" />
                     </SvgLinearGradient>
@@ -403,7 +403,7 @@ export function ScoreAnalysisStep({
                     cx={35}
                     cy={35}
                     r={33.25}
-                    stroke="url(#scoreGrad)"
+                    stroke="url(#scoreGradRule)"
                     strokeWidth={3.5}
                     fill="none"
                   />
