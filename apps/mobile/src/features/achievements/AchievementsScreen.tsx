@@ -176,29 +176,25 @@ export function AchievementsScreen() {
           {/* Stats Grid */}
           <View className="flex-row mb-3" style={{ gap: 8 }}>
             <StatTile
-              label="XP Points"
+              type="xp"
               value={profile?.total_xp ?? 0}
-              icon="zap"
               onPress={() => router.push("/achievements/xp" as never)}
             />
             <StatTile
-              label="Badges"
+              type="badges"
               value={profile?.badges_count ?? 0}
-              icon="award"
               onPress={() => router.push("/achievements/medals" as never)}
             />
           </View>
           <View className="flex-row mb-6" style={{ gap: 8 }}>
             <StatTile
-              label="Accuracy"
+              type="accuracy"
               value="—"
-              icon="target"
               onPress={() => router.push("/achievements/accuracy" as never)}
             />
             <StatTile
-              label="Level"
+              type="level"
               value={profile?.current_level ?? 1}
-              icon="trending-up"
               onPress={() => router.push("/achievements/level" as never)}
             />
           </View>
