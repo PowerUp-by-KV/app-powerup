@@ -760,7 +760,7 @@ export function ChatScreen() {
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: isDark ? "rgba(151, 36, 36, 0.05)" : "transparent",
+                  backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "transparent",
                   borderWidth: isDark ? 1 : 0,
                   borderColor: "rgba(255,255,255,0.1)",
                   alignItems: "center",

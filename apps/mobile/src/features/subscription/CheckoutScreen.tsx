@@ -57,7 +57,7 @@ export function CheckoutScreen() {
           }).unwrap();
         } catch (webhookErr) {
           console.error(
-            `Webhook 404 Error: The backend could not find a subscription with provider_ref = ${result.subscription_id}`,
+            `Webhook 404 Error: The backend could not find a subscription with provider_ref = mock_${result.subscription_id}`,
           );
           throw webhookErr;
         }

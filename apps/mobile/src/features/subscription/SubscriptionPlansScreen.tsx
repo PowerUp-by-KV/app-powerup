@@ -128,8 +128,8 @@ export function SubscriptionPlansScreen() {
               if (isSel) {
                 cardBg = isDark ? "bg-white" : "bg-blue-50";
                 cardBorder = "border-blue-500";
-                textColor = isDark ? "text-slate-900" : "text-slate-900";
-                subtextColor = isDark ? "text-slate-500" : "text-slate-500";
+                textColor = "text-slate-900";
+                subtextColor = "text-slate-500";
               }
 
               return (

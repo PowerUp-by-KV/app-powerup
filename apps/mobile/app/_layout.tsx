@@ -126,6 +126,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLocalReady) return;
+    if (userId && cachedOnboardingComplete === null) return;
 
     const isQueryActive = !!userId && cachedOnboardingComplete === false;
     if (
@@ -205,6 +206,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     currentRoute,
     segments,
     router,
+    cachedOnboardingComplete,
   ]);
 
   return <>{children}</>;
