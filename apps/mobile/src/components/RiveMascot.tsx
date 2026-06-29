@@ -28,8 +28,20 @@ export function RiveMascot({ width = 200, height = 200 }: RiveMascotProps) {
   }
 
   return (
-    <View style={{ width, height, alignItems: "center", justifyContent: "center" }}>
-      <Rive url={asset.localUri || asset.uri} style={{ width, height }} autoplay={true} />
+    <View
+      style={{
+        width,
+        height,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "transparent",
+      }}
+    >
+      <Rive
+        url={asset.localUri || asset.uri}
+        style={{ width, height, backgroundColor: "transparent" }}
+        autoplay={true}
+      />
     </View>
   );
 }

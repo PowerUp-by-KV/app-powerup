@@ -5,6 +5,7 @@ import { WizardFooterCTA } from "../components/WizardFooterCTA";
 import { TemplatePreviewCard } from "../components/TemplatePreviewCard";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectBuilderDraft, updateLayoutAndTemplate } from "@/store/slices/resume-builder.slice";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface Step4eTemplateProps {
   onNext: () => void;
@@ -15,13 +16,14 @@ export function Step4eTemplate({ onNext, onBack }: Step4eTemplateProps) {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const selectedTemplate = draftResume.templateName || "harvard";
+  const { isDark } = useThemeToggle();
 
   const handleSelect = (templateName: "harvard" | "modern_ats") => {
     dispatch(updateLayoutAndTemplate({ templateName }));
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}>
       <WizardHeader
         title="Pick Your Style"
         subtitle="Multiple selections allowed"

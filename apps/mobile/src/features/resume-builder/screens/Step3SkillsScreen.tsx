@@ -27,6 +27,7 @@ import { DynamicFieldList } from "@/features/resume/components/DynamicFieldList"
 import { MaterialIcons, Feather } from "@expo/vector-icons";
 import type { BuilderProject } from "../types/resume-builder.types";
 import { useAutoSave } from "../hooks/useAutoSave";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 export function Step3SkillsScreen() {
   const insets = useSafeAreaInsets();
@@ -34,6 +35,7 @@ export function Step3SkillsScreen() {
   const draftResume = useAppSelector(selectBuilderDraft);
   const isSaving = useAppSelector(selectBuilderIsSaving);
   const lastSavedAt = useAppSelector(selectBuilderLastSavedAt);
+  const { isDark } = useThemeToggle();
 
   const skills = draftResume.skills || [];
   const projects = draftResume.projects || [];
@@ -108,30 +110,59 @@ export function Step3SkillsScreen() {
       style={styles.keyboardAvoidingView}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={[styles.scrollContainer, { backgroundColor: isDark ? "#0f172a" : "#f9fafb" }]}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.container}>
           {/* Step Indicator Header */}
-          <View style={styles.header}>
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: isDark ? "#1e293b" : "white",
+                borderBottomColor: isDark ? "#334155" : "#e5e7eb",
+              },
+            ]}
+          >
             <View style={styles.headerContent}>
               <View style={styles.titleRow}>
-                <Text style={styles.stepNumber}>Step 3 of 5</Text>
+                <Text style={[styles.stepNumber, { color: isDark ? "#9ca3af" : "#4b5563" }]}>
+                  Step 3 of 5
+                </Text>
                 {isSaving ? (
                   <Text style={styles.saveBadge}>Saving...</Text>
                 ) : lastSavedAt ? (
                   <Text style={styles.savedBadge}>Saved {lastSavedAt}</Text>
                 ) : null}
               </View>
-              <Text style={styles.headerTitle}>Skills & Projects</Text>
-              <Text style={styles.headerSubtitle}>Showcase your capabilities and credentials</Text>
+              <Text style={[styles.headerTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                Skills & Projects
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+                Showcase your capabilities and credentials
+              </Text>
             </View>
           </View>
 
           <View style={styles.formContainer}>
             {/* Skills TagInput Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="code" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Skills</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="code"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Skills
+                </Text>
               </View>
 
               <TagInput
@@ -150,15 +181,22 @@ export function Step3SkillsScreen() {
             </View>
 
             {/* Projects Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
                 <MaterialIcons
                   name="folder-open"
                   size={20}
-                  color="#2563EB"
+                  color={isDark ? "#60a5fa" : "#2563EB"}
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.sectionTitle}>Featured Projects</Text>
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Featured Projects
+                </Text>
               </View>
 
               <DynamicFieldList
@@ -179,18 +217,42 @@ export function Step3SkillsScreen() {
                 emptyMessage="No projects added yet."
                 renderItem={(item) => (
                   <View>
-                    <Text style={styles.itemTitle}>{item.name}</Text>
-                    {item.date ? <Text style={styles.itemSubtitle}>{item.date}</Text> : null}
+                    <Text style={[styles.itemTitle, { color: isDark ? "#f1f5f9" : "#1f2937" }]}>
+                      {item.name}
+                    </Text>
+                    {item.date ? (
+                      <Text
+                        style={[styles.itemSubtitle, { color: isDark ? "#94a3b8" : "#4b5563" }]}
+                      >
+                        {item.date}
+                      </Text>
+                    ) : null}
                     {item.description ? (
-                      <Text numberOfLines={2} style={styles.itemDesc}>
+                      <Text
+                        numberOfLines={2}
+                        style={[styles.itemDesc, { color: isDark ? "#cbd5e1" : "#6b7280" }]}
+                      >
                         {item.description}
                       </Text>
                     ) : null}
                     {item.technologies && item.technologies.length > 0 && (
                       <View style={styles.techStackRow}>
                         {item.technologies.map((t) => (
-                          <View key={t} style={styles.techBadge}>
-                            <Text style={styles.techBadgeText}>{t}</Text>
+                          <View
+                            key={t}
+                            style={[
+                              styles.techBadge,
+                              { backgroundColor: isDark ? "#334155" : "#f3f4f6" },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.techBadgeText,
+                                { color: isDark ? "#cbd5e1" : "#4b5563" },
+                              ]}
+                            >
+                              {t}
+                            </Text>
                           </View>
                         ))}
                       </View>
@@ -201,15 +263,22 @@ export function Step3SkillsScreen() {
             </View>
 
             {/* Certifications TagInput Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
                 <MaterialIcons
                   name="verified"
                   size={20}
-                  color="#2563EB"
+                  color={isDark ? "#60a5fa" : "#2563EB"}
                   style={{ marginRight: 8 }}
                 />
-                <Text style={styles.sectionTitle}>Certifications</Text>
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Certifications
+                </Text>
               </View>
 
               <TagInput
@@ -228,10 +297,22 @@ export function Step3SkillsScreen() {
             </View>
 
             {/* Languages TagInput Section */}
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <MaterialIcons name="public" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-                <Text style={styles.sectionTitle}>Languages</Text>
+            <View style={[styles.section, { backgroundColor: isDark ? "#1e293b" : "white" }]}>
+              <View
+                style={[
+                  styles.sectionHeader,
+                  { borderBottomColor: isDark ? "#334155" : "#f3f4f6" },
+                ]}
+              >
+                <MaterialIcons
+                  name="public"
+                  size={20}
+                  color={isDark ? "#60a5fa" : "#2563EB"}
+                  style={{ marginRight: 8 }}
+                />
+                <Text style={[styles.sectionTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
+                  Languages
+                </Text>
               </View>
 
               <TagInput
@@ -251,9 +332,25 @@ export function Step3SkillsScreen() {
 
             {/* Navigation Buttons footer */}
             <View style={styles.footerRow}>
-              <Pressable onPress={() => dispatch(setCurrentStep(2))} style={styles.backButton}>
-                <Feather name="arrow-left" size={16} color="#4b5563" style={{ marginRight: 6 }} />
-                <Text style={styles.backButtonText}>Back</Text>
+              <Pressable
+                onPress={() => dispatch(setCurrentStep(2))}
+                style={[
+                  styles.backButton,
+                  {
+                    backgroundColor: isDark ? "#1e293b" : "white",
+                    borderColor: isDark ? "#334155" : "#d1d5db",
+                  },
+                ]}
+              >
+                <Feather
+                  name="arrow-left"
+                  size={16}
+                  color={isDark ? "#cbd5e1" : "#4b5563"}
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={[styles.backButtonText, { color: isDark ? "#f8fafc" : "#374151" }]}>
+                  Back
+                </Text>
               </Pressable>
               <Pressable onPress={() => dispatch(setCurrentStep(4))} style={styles.nextButton}>
                 <Text style={styles.nextButtonText}>Next Screen</Text>
@@ -274,10 +371,23 @@ export function Step3SkillsScreen() {
           }}
         >
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, { paddingBottom: Math.max(16, insets.bottom) }]}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  paddingBottom: Math.max(16, insets.bottom),
+                  backgroundColor: isDark ? "#1e293b" : "white",
+                },
+              ]}
+            >
               <ScrollView style={{ flex: 1 }}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>
+                <View
+                  style={[
+                    styles.modalHeader,
+                    { borderBottomColor: isDark ? "#334155" : "#e5e7eb" },
+                  ]}
+                >
+                  <Text style={[styles.modalTitle, { color: isDark ? "#f8fafc" : "#111827" }]}>
                     {editingProjId ? "Edit Project Details" : "Add Project Details"}
                   </Text>
                   <Pressable
@@ -286,7 +396,7 @@ export function Step3SkillsScreen() {
                       resetProjForm();
                     }}
                   >
-                    <MaterialIcons name="close" size={20} color="#374151" />
+                    <MaterialIcons name="close" size={20} color={isDark ? "#cbd5e1" : "#374151"} />
                   </Pressable>
                 </View>
 
@@ -347,8 +457,21 @@ export function Step3SkillsScreen() {
                   {projForm.technologies && projForm.technologies.length > 0 && (
                     <View style={styles.techBadgesContainer}>
                       {projForm.technologies.map((t) => (
-                        <View key={t} style={styles.techModalBadge}>
-                          <Text style={styles.techModalBadgeText}>{t}</Text>
+                        <View
+                          key={t}
+                          style={[
+                            styles.techModalBadge,
+                            { backgroundColor: isDark ? "#0f172a" : "#e0f2fe" },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.techModalBadgeText,
+                              { color: isDark ? "#38bdf8" : "#0369a1" },
+                            ]}
+                          >
+                            {t}
+                          </Text>
                           <Pressable
                             onPress={() => {
                               setProjForm({
@@ -357,7 +480,14 @@ export function Step3SkillsScreen() {
                               });
                             }}
                           >
-                            <Text style={styles.techModalRemove}>✕</Text>
+                            <Text
+                              style={[
+                                styles.techModalRemove,
+                                { color: isDark ? "#0ea5e9" : "#0284c7" },
+                              ]}
+                            >
+                              ✕
+                            </Text>
                           </Pressable>
                         </View>
                       ))}

@@ -3,6 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { View } from "react-native";
 import { useAssets } from "expo-asset";
 import { useRive, useStateMachineInput } from "@rive-app/react-canvas";
+import { useColorScheme } from "react-native";
 
 interface RiveMascotProps {
   width?: number;
@@ -15,6 +16,7 @@ export function RiveMascot({ width = 200, height = 200 }: RiveMascotProps) {
   ]);
 
   const containerRef = useRef<any>(null);
+  const colorScheme = useColorScheme();
   const asset = assets ? assets[0] : null;
 
   if (!asset) {
@@ -22,11 +24,20 @@ export function RiveMascot({ width = 200, height = 200 }: RiveMascotProps) {
   }
 
   const sourceUri = asset.localUri || asset.uri;
+  const isDark = colorScheme === "dark";
 
   return (
     <View
       ref={containerRef}
-      style={{ width, height, alignItems: "center", justifyContent: "center" }}
+      style={[
+        { width, height, alignItems: "center", justifyContent: "center" },
+        isDark
+          ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as Record<
+              string,
+              unknown
+            >)
+          : ({ mixBlendMode: "multiply" } as Record<string, unknown>),
+      ]}
     >
       <RiveContainer src={sourceUri} width={width} height={height} containerRef={containerRef} />
     </View>

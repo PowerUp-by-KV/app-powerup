@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 // Enable LayoutAnimation for Android
 if (Platform.OS === "android") {
@@ -30,6 +31,7 @@ export function StrengthWeaknessStep({
   weaknesses = [],
   onNext,
 }: StrengthWeaknessStepProps) {
+  const { isDark } = useThemeToggle();
   const [strengthsExpanded, setStrengthsExpanded] = useState(true);
   const [weaknessesExpanded, setWeaknessesExpanded] = useState(true);
 
@@ -54,55 +56,94 @@ export function StrengthWeaknessStep({
   const visibleWeaknesses = showAllWeaknesses ? weaknesses : weaknesses.slice(0, limit);
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F8F9FC" }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Key Strengths Collapsible Card */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <Pressable onPress={toggleStrengths} style={styles.cardHeader}>
-            <View style={[styles.badge, { backgroundColor: "rgba(76, 175, 80, 0.1)" }]}>
+            <View
+              style={[
+                styles.badge,
+                { backgroundColor: isDark ? "rgba(76, 175, 80, 0.15)" : "rgba(76, 175, 80, 0.1)" },
+              ]}
+            >
               <Feather name="check-circle" size={20} color="#4CAF50" />
             </View>
             <View style={styles.titleContainer}>
-              <Text style={styles.cardTitle}>Key Strengths</Text>
-              <Text style={styles.cardSubtitle}>{strengths.length} items</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                Key Strengths
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                {strengths.length} items
+              </Text>
             </View>
             <Feather
               name={strengthsExpanded ? "chevron-up" : "chevron-down"}
               size={20}
-              color="#94a3b8"
+              color={isDark ? "#64748B" : "#94a3b8"}
             />
           </Pressable>
 
           {strengthsExpanded && (
             <View style={styles.listContainer}>
               {strengths.length === 0 ? (
-                <Text style={styles.emptyText}>No key strengths detected yet.</Text>
+                <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                  No key strengths detected yet.
+                </Text>
               ) : (
                 <>
                   {visibleStrengths.map((item, idx) => (
                     <View key={`strength-${idx}`} style={styles.listItem}>
                       <View style={[styles.bullet, { backgroundColor: "#4CAF50" }]} />
-                      <Text style={styles.itemText}>{item}</Text>
+                      <Text style={[styles.itemText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                        {item}
+                      </Text>
                     </View>
                   ))}
 
                   {hasMoreStrengths && !showAllStrengths && (
                     <Pressable
                       onPress={() => setShowAllStrengths(true)}
-                      style={styles.viewAllButton}
+                      style={[
+                        styles.viewAllButton,
+                        {
+                          backgroundColor: isDark ? "transparent" : "#ffffff",
+                          borderColor: isDark ? "#6366f1" : "#597AF4",
+                        },
+                      ]}
                     >
-                      <Text style={styles.viewAllText}>View All</Text>
+                      <Text style={[styles.viewAllText, { color: isDark ? "#818cf8" : "#597AF4" }]}>
+                        View All
+                      </Text>
                     </Pressable>
                   )}
                   {showAllStrengths && (
                     <Pressable
                       onPress={() => setShowAllStrengths(false)}
-                      style={styles.viewAllButton}
+                      style={[
+                        styles.viewAllButton,
+                        {
+                          backgroundColor: isDark ? "transparent" : "#ffffff",
+                          borderColor: isDark ? "#6366f1" : "#597AF4",
+                        },
+                      ]}
                     >
-                      <Text style={styles.viewAllText}>Show Less</Text>
+                      <Text style={[styles.viewAllText, { color: isDark ? "#818cf8" : "#597AF4" }]}>
+                        Show Less
+                      </Text>
                     </Pressable>
                   )}
                 </>
@@ -112,49 +153,94 @@ export function StrengthWeaknessStep({
         </View>
 
         {/* Areas to Improve Collapsible Card */}
-        <View style={styles.card}>
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: isDark ? "#1A1C29" : "#ffffff",
+              borderColor: isDark ? "#2A2D40" : "#E5E7EB",
+              shadowColor: isDark ? "#000" : "#0f172a",
+              shadowOpacity: isDark ? 0.2 : 0.02,
+            },
+          ]}
+        >
           <Pressable onPress={toggleWeaknesses} style={styles.cardHeader}>
-            <View style={[styles.badge, { backgroundColor: "rgba(107, 114, 128, 0.1)" }]}>
-              <Feather name="alert-triangle" size={20} color="#6B7280" />
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(148, 163, 184, 0.15)"
+                    : "rgba(107, 114, 128, 0.1)",
+                },
+              ]}
+            >
+              <Feather name="alert-triangle" size={20} color={isDark ? "#94A3B8" : "#6B7280"} />
             </View>
             <View style={styles.titleContainer}>
-              <Text style={styles.cardTitle}>Areas to Improve</Text>
-              <Text style={styles.cardSubtitle}>{weaknesses.length} items</Text>
+              <Text style={[styles.cardTitle, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                Areas to Improve
+              </Text>
+              <Text style={[styles.cardSubtitle, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                {weaknesses.length} items
+              </Text>
             </View>
             <Feather
               name={weaknessesExpanded ? "chevron-up" : "chevron-down"}
               size={20}
-              color="#94a3b8"
+              color={isDark ? "#64748B" : "#94a3b8"}
             />
           </Pressable>
 
           {weaknessesExpanded && (
             <View style={styles.listContainer}>
               {weaknesses.length === 0 ? (
-                <Text style={styles.emptyText}>All checks passed successfully!</Text>
+                <Text style={[styles.emptyText, { color: isDark ? "#94A3B8" : "#6B7280" }]}>
+                  All checks passed successfully!
+                </Text>
               ) : (
                 <>
                   {visibleWeaknesses.map((item, idx) => (
                     <View key={`weakness-${idx}`} style={styles.listItem}>
-                      <View style={[styles.bullet, { backgroundColor: "#6B7280" }]} />
-                      <Text style={styles.itemText}>{item}</Text>
+                      <View
+                        style={[styles.bullet, { backgroundColor: isDark ? "#94A3B8" : "#6B7280" }]}
+                      />
+                      <Text style={[styles.itemText, { color: isDark ? "#F8FAFC" : "#1F2937" }]}>
+                        {item}
+                      </Text>
                     </View>
                   ))}
 
                   {hasMoreWeaknesses && !showAllWeaknesses && (
                     <Pressable
                       onPress={() => setShowAllWeaknesses(true)}
-                      style={styles.viewAllButton}
+                      style={[
+                        styles.viewAllButton,
+                        {
+                          backgroundColor: isDark ? "transparent" : "#ffffff",
+                          borderColor: isDark ? "#6366f1" : "#597AF4",
+                        },
+                      ]}
                     >
-                      <Text style={styles.viewAllText}>View All</Text>
+                      <Text style={[styles.viewAllText, { color: isDark ? "#818cf8" : "#597AF4" }]}>
+                        View All
+                      </Text>
                     </Pressable>
                   )}
                   {showAllWeaknesses && (
                     <Pressable
                       onPress={() => setShowAllWeaknesses(false)}
-                      style={styles.viewAllButton}
+                      style={[
+                        styles.viewAllButton,
+                        {
+                          backgroundColor: isDark ? "transparent" : "#ffffff",
+                          borderColor: isDark ? "#6366f1" : "#597AF4",
+                        },
+                      ]}
                     >
-                      <Text style={styles.viewAllText}>Show Less</Text>
+                      <Text style={[styles.viewAllText, { color: isDark ? "#818cf8" : "#597AF4" }]}>
+                        Show Less
+                      </Text>
                     </Pressable>
                   )}
                 </>
@@ -165,7 +251,15 @@ export function StrengthWeaknessStep({
       </ScrollView>
 
       {/* Sticky footer action button */}
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: isDark ? "#0F1020" : "#ffffff",
+            borderTopColor: isDark ? "#1E293B" : "#f1f5f9",
+          },
+        ]}
+      >
         <Pressable
           onPress={onNext}
           style={{
@@ -174,13 +268,13 @@ export function StrengthWeaknessStep({
             width: "100%",
             shadowColor: "#3b82f6",
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.15,
+            shadowOpacity: isDark ? 0.4 : 0.15,
             shadowRadius: 8,
             elevation: 2,
           }}
         >
           <LinearGradient
-            colors={["#4f46e5", "#3b82f6"]}
+            colors={isDark ? ["#6366f1", "#3b82f6"] : ["#4f46e5", "#3b82f6"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{

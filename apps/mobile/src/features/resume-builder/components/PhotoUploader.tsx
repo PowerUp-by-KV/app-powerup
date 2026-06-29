@@ -12,6 +12,7 @@ import { Text } from "@/components/Themed";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useUploadBuiltResumePhotoMutation } from "@/services/resume-builder-api";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface PhotoUploaderProps {
   photoUrl?: string | null;
@@ -21,6 +22,7 @@ interface PhotoUploaderProps {
 export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps) {
   const [uploadPhoto, { isLoading }] = useUploadBuiltResumePhotoMutation();
   const [localPreview, setLocalPreview] = useState<string | null>(photoUrl || null);
+  const { isDark } = useThemeToggle();
 
   const handleSelectPhoto = async () => {
     try {
@@ -95,7 +97,15 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark ? "#1e293b" : "#f9fafb",
+          borderColor: isDark ? "#334155" : "#e5e7eb",
+        },
+      ]}
+    >
       <View style={styles.pickerBox}>
         {localPreview ? (
           <View style={styles.imageContainer}>
@@ -110,21 +120,37 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
             </Pressable>
           </View>
         ) : (
-          <Pressable onPress={handleSelectPhoto} disabled={isLoading} style={styles.pickButton}>
+          <Pressable
+            onPress={handleSelectPhoto}
+            disabled={isLoading}
+            style={[
+              styles.pickButton,
+              {
+                backgroundColor: isDark ? "#334155" : "#e5e7eb",
+                borderColor: isDark ? "#475569" : "#d1d5db",
+              },
+            ]}
+          >
             {isLoading ? (
               <ActivityIndicator size="small" color="#2563eb" />
             ) : (
               <>
-                <Feather name="camera" size={24} color="#6b7280" />
-                <Text style={styles.pickText}>Add Photo</Text>
+                <Feather name="camera" size={24} color={isDark ? "#94a3b8" : "#6b7280"} />
+                <Text style={[styles.pickText, { color: isDark ? "#cbd5e1" : "#4b5563" }]}>
+                  Add Photo
+                </Text>
               </>
             )}
           </Pressable>
         )}
       </View>
       <View style={styles.infoBox}>
-        <Text style={styles.infoTitle}>Profile Picture</Text>
-        <Text style={styles.infoDesc}>JPEG or PNG. Max file size 5MB.</Text>
+        <Text style={[styles.infoTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+          Profile Picture
+        </Text>
+        <Text style={[styles.infoDesc, { color: isDark ? "#94a3b8" : "#6b7280" }]}>
+          JPEG or PNG. Max file size 5MB.
+        </Text>
       </View>
     </View>
   );

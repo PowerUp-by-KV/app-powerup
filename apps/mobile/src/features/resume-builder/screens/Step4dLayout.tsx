@@ -1,10 +1,11 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, ScrollView } from "react-native";
 import { WizardHeader } from "../components/WizardHeader";
 import { WizardFooterCTA } from "../components/WizardFooterCTA";
 import { LayoutPreviewCard } from "../components/LayoutPreviewCard";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectBuilderDraft, updateLayoutAndTemplate } from "@/store/slices/resume-builder.slice";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface Step4dLayoutProps {
   onNext: () => void;
@@ -15,13 +16,14 @@ export function Step4dLayout({ onNext, onBack }: Step4dLayoutProps) {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
   const selectedLayout = draftResume.layout || "single_column";
+  const { isDark } = useThemeToggle();
 
   const handleSelect = (layout: "single_column" | "double_column") => {
     dispatch(updateLayoutAndTemplate({ layout }));
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}>
       <WizardHeader
         title="Choose Your Layout"
         subtitle="Pick a structure that fits your content"
@@ -30,7 +32,11 @@ export function Step4dLayout({ onNext, onBack }: Step4dLayoutProps) {
         totalSubSteps={5}
       />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.scrollContent}
+        contentContainerStyle={styles.scrollContentContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.cardsContainer}>
           <LayoutPreviewCard
             label="Two columns"
@@ -45,7 +51,7 @@ export function Step4dLayout({ onNext, onBack }: Step4dLayoutProps) {
             onPress={() => handleSelect("single_column")}
           />
         </View>
-      </View>
+      </ScrollView>
 
       <WizardFooterCTA onNext={onNext} onSkip={onBack} skipLabel="← Back" />
     </View>
@@ -57,10 +63,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f3f4f6",
   },
-  content: {
+  scrollContent: {
     flex: 1,
+  },
+  scrollContentContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
+    paddingBottom: 120,
   },
   cardsContainer: {
     flexDirection: "row",

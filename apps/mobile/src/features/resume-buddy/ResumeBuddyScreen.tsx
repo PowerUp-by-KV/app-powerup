@@ -4,6 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { useResumeBuddyAnalysis } from "./hooks/useResumeBuddyAnalysis";
 import type { ResumeBuddyStep } from "./types";
 
@@ -17,11 +18,11 @@ import { DocumentPickerAsset } from "expo-document-picker";
 export function ResumeBuddyScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
+  const { isDark } = useThemeToggle();
 
   const [step, setStep] = useState<ResumeBuddyStep>("input");
   const { phase, activeStage, result: analysis, error, analyze, reset } = useResumeBuddyAnalysis();
 
-  // Guard against duplicate submissions
   const submittingRef = useRef(false);
 
   const handleAnalyze = async (domain: string, file?: DocumentPickerAsset) => {
@@ -32,7 +33,6 @@ export function ResumeBuddyScreen() {
     submittingRef.current = false;
   };
 
-  // React to the async analysis lifecycle: surface the result, or report failure.
   useEffect(() => {
     if (phase === "done" && analysis) {
       setStep("scores");
@@ -52,7 +52,6 @@ export function ResumeBuddyScreen() {
 
   const handleBack = () => {
     if (step === "loading") {
-      // Prevent navigation during analysis
       return;
     }
     if (step === "suggestions") {
@@ -73,37 +72,45 @@ export function ResumeBuddyScreen() {
   const isOnResultsStep = step === "strengths" || step === "suggestions" || step === "scores";
 
   return (
-    <SafeAreaView style={{ flex: 1 }} className="bg-white">
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#F4F5FA" }}
+      className={isDark ? "bg-[#0F1020]" : "bg-[#F4F5FA]"}
+    >
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-white">
+      <View
+        className={`flex-row items-center px-4 py-3 ${isDark ? "bg-[#0F1020]" : "bg-[#F4F5FA]"}`}
+      >
         <Pressable
           onPress={handleBack}
           disabled={step === "loading"}
-          className={`w-9 h-9 items-center justify-center rounded-full bg-slate-100/80 active:opacity-60 ${
-            step === "loading" ? "opacity-30" : ""
-          }`}
+          className={`w-10 h-10 items-center justify-center rounded-full active:opacity-60 ${
+            isDark ? "bg-[#1A1C29]" : "bg-white shadow-sm"
+          } ${step === "loading" ? "opacity-30" : ""}`}
         >
-          <Feather name="chevron-left" size={18} color="#0f172a" />
+          <Feather name="chevron-left" size={20} color={isDark ? "#8B93A8" : "#0f172a"} />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-slate-900 text-base">
+        <Text
+          className={`flex-1 text-center font-bold text-lg ${isDark ? "text-white" : "text-slate-900"}`}
+        >
           {step === "scores"
             ? "Resume Score"
             : step === "strengths"
               ? "Strengths & Weaknesses"
               : "AI Resume Coach"}
         </Text>
-        {/* Step indicator on result steps */}
         {isOnResultsStep ? (
-          <Text className="text-xs text-slate-400 font-semibold w-9 text-right">
+          <Text
+            className={`text-xs font-semibold w-10 text-right ${isDark ? "text-slate-400" : "text-slate-500"}`}
+          >
             {step === "scores" ? "1/3" : step === "strengths" ? "2/3" : "3/3"}
           </Text>
         ) : (
-          <View className="w-9" />
+          <View className="w-10" />
         )}
       </View>
 
       {/* Main step machine */}
-      <View style={{ flex: 1 }}>
+      <View style={{ flex: 1 }} className={isDark ? "bg-[#0F1020]" : "bg-[#F4F5FA]"}>
         {step === "input" && (
           <DomainInputStep
             onAnalyze={handleAnalyze}

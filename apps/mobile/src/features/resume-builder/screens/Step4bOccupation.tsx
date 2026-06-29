@@ -14,6 +14,7 @@ import { SelectionListCard } from "../components/SelectionListCard";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectBuilderDraft, updateLayoutAndTemplate } from "@/store/slices/resume-builder.slice";
 import { OCCUPATION_OPTIONS } from "../constants";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface Step4bOccupationProps {
   onNext: () => void;
@@ -23,6 +24,7 @@ interface Step4bOccupationProps {
 export function Step4bOccupation({ onNext, onBack }: Step4bOccupationProps) {
   const dispatch = useAppDispatch();
   const draftResume = useAppSelector(selectBuilderDraft);
+  const { isDark } = useThemeToggle();
 
   // Detect if the saved value is a known option or a custom entry
   const isCustomOccupation =
@@ -49,7 +51,7 @@ export function Step4bOccupation({ onNext, onBack }: Step4bOccupationProps) {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#f3f4f6" }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
     >
@@ -71,10 +73,15 @@ export function Step4bOccupation({ onNext, onBack }: Step4bOccupationProps) {
         <TextInput
           style={[
             styles.customInput,
+            {
+              backgroundColor: isDark ? "#1e293b" : "white",
+              borderColor: isDark ? "#334155" : "#e5e7eb",
+              color: isDark ? "#f8fafc" : "#111827",
+            },
             customOccupation.trim().length > 0 && styles.customInputActive,
           ]}
           placeholder="e.g. Solution Architect, Consultant..."
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor={isDark ? "#94a3b8" : "#9ca3af"}
           value={customOccupation}
           onChangeText={handleCustomChange}
           returnKeyType="done"
@@ -84,9 +91,9 @@ export function Step4bOccupation({ onNext, onBack }: Step4bOccupationProps) {
 
         {/* Divider */}
         <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? "#334155" : "#e5e7eb" }]} />
           <Text style={styles.dividerLabel}>or choose below</Text>
-          <View style={styles.dividerLine} />
+          <View style={[styles.dividerLine, { backgroundColor: isDark ? "#334155" : "#e5e7eb" }]} />
         </View>
 
         {/* Existing card list */}
@@ -157,7 +164,6 @@ const styles = StyleSheet.create({
   },
   customInputActive: {
     borderColor: "#3b82f6",
-    backgroundColor: "white",
     shadowColor: "#3b82f6",
     shadowOpacity: 0.15,
   },

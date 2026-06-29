@@ -528,7 +528,7 @@ export function LearningJourneyScreen() {
   const router = useRouter();
   const gate = useLearningJourneyGate();
   const insets = useSafeAreaInsets();
-  const { isDark, toggleDarkMode } = useThemeToggle();
+  const { isDark, toggleTheme } = useThemeToggle();
 
   const {
     data: profile,
@@ -844,7 +844,7 @@ export function LearningJourneyScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={() => toggleDarkMode()}
+                onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#16161c] border border-slate-800"
@@ -991,7 +991,7 @@ export function LearningJourneyScreen() {
           </View>
           <View className="flex-row items-center space-x-3">
             <Pressable
-              onPress={() => toggleDarkMode()}
+              onPress={() => toggleTheme()}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDark
                   ? "bg-[#16161c] border border-slate-800"

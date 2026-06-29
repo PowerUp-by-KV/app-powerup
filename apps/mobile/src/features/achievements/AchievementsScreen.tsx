@@ -98,7 +98,7 @@ export function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { isDark, toggleDarkMode } = useThemeToggle();
+  const { isDark, toggleTheme } = useThemeToggle();
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-[#F4F5FA] dark:bg-[#0F1020]">
@@ -115,7 +115,7 @@ export function AchievementsScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={() => toggleDarkMode()}
+                onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
