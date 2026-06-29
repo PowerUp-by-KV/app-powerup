@@ -300,14 +300,13 @@ export function EditProfileScreen() {
 
   const handleSave = async () => {
     try {
-      const answersList: any[] = [];
+      const answersMap = new Map<string, { answer_text: string | null; is_skipped: boolean }>();
 
       const addAnswer = (key: string, value: string) => {
         const questionId = questionIds[key];
         if (questionId) {
-          answersList.push({
-            question_id: questionId,
-            answer_text: value,
+          answersMap.set(questionId, {
+            answer_text: value || null,
             is_skipped: !value,
           });
         }
@@ -316,9 +315,8 @@ export function EditProfileScreen() {
       const addMultiAnswer = (key: string, values: string[]) => {
         const questionId = questionIds[key];
         if (questionId) {
-          answersList.push({
-            question_id: questionId,
-            answer_text: values.join(", "),
+          answersMap.set(questionId, {
+            answer_text: values.length > 0 ? values.join(", ") : null,
             is_skipped: values.length === 0,
           });
         }
@@ -330,6 +328,9 @@ export function EditProfileScreen() {
       if (education === "Engineering Student") {
         addAnswer("year_of_study", yearOfStudy);
         addAnswer("branch", branch);
+      } else {
+        addAnswer("year_of_study", "");
+        addAnswer("branch", "");
       }
       addAnswer("dob", dob);
       addAnswer("country", country);
@@ -361,8 +362,23 @@ export function EditProfileScreen() {
       addAnswer("focus_track", focusTrack);
       addAnswer("daily_learning_goal", dailyLearningGoal);
 
+      const newSections = (onboardingAnswers?.onboarding_sections || []).map((section) => ({
+        section: section.section,
+        questions: section.questions.map((q) => {
+          const update = answersMap.get(q.question.id);
+          return {
+            question: q.question,
+            answer: update
+              ? { answer_text: update.answer_text, is_skipped: update.is_skipped }
+              : q.answer
+                ? { answer_text: q.answer.answer_text, is_skipped: q.answer.is_skipped }
+                : { answer_text: null, is_skipped: true },
+          };
+        }),
+      }));
+
       const payload = {
-        answers: answersList,
+        onboarding_sections: newSections,
       };
 
       // 1. Update the onboarding answers in the backend via PUT /api/v1/users/profile
@@ -426,7 +442,7 @@ export function EditProfileScreen() {
 
           const updatedParsedData = {
             contact: resumeData.contact || {},
-            summary: { text: resumeSummary },
+            summary: resumeSummary,
             skills: resumeSkills
               .split(",")
               .map((s) => s.trim())

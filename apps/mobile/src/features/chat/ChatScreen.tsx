@@ -18,6 +18,7 @@ import {
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { Asset } from "expo-asset";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -150,21 +151,33 @@ const AnimatedOrb = React.memo(function AnimatedOrb() {
 
   return (
     <View style={s.orbWrapper}>
-      <Animated.Image
-        source={AI_ORB_IMAGE}
-        style={[
-          s.orbImage,
-          {
-            transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
-          },
-          Platform.OS === "web" && isDark
-            ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as any)
-            : Platform.OS === "web"
-              ? ({ mixBlendMode: "multiply" } as any)
-              : {},
-        ]}
-        resizeMode="contain"
-      />
+      {Platform.OS === "web" ? (
+        <Animated.View
+          style={{ transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }}
+          {...{ className: isDark ? "mix-blend-screen" : "mix-blend-multiply" }}
+        >
+          <img
+            src={Asset.fromModule(AI_ORB_IMAGE).uri}
+            style={{
+              width: 190,
+              height: 190,
+              objectFit: "contain",
+              filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+            }}
+          />
+        </Animated.View>
+      ) : (
+        <Animated.Image
+          source={AI_ORB_IMAGE}
+          style={[
+            s.orbImage,
+            {
+              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+            },
+          ]}
+          resizeMode="contain"
+        />
+      )}
     </View>
   );
 });
@@ -252,20 +265,23 @@ const MessageBubble = React.memo(function MessageBubble({
         </View>
       ) : (
         <View style={s.aiRow}>
-          <Image
-            source={AI_ORB_IMAGE}
-            style={[
-              s.aiAvatarImg,
-              Platform.OS === "web" && isDark
-                ? ({ filter: "invert(1) hue-rotate(180deg)", mixBlendMode: "screen" } as Record<
-                    string,
-                    unknown
-                  >)
-                : Platform.OS === "web"
-                  ? ({ mixBlendMode: "multiply" } as Record<string, unknown>)
-                  : {},
-            ]}
-          />
+          {Platform.OS === "web" ? (
+            <img
+              src={Asset.fromModule(AI_ORB_IMAGE).uri}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                marginRight: 8,
+                marginTop: 4,
+                objectFit: "contain",
+                filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+                mixBlendMode: isDark ? "screen" : "multiply",
+              }}
+            />
+          ) : (
+            <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+          )}
           <View style={s.aiContentCol}>
             <View style={[s.aiBubble, { backgroundColor: isDark ? "#D4F57A" : C.aiBubble }]}>
               <Text style={[s.aiBubbleText, { color: C.aiBubbleText }]}>{item.content}</Text>
@@ -621,8 +637,8 @@ export function ChatScreen() {
           s.inputBar,
           {
             paddingBottom: Math.max(insets.bottom, 8),
-            backgroundColor: isDark ? "#161821" : C.bg,
-            borderTopColor: isDark ? "#334155" : C.border,
+            backgroundColor: isDark ? "#0B0F19" : C.bg,
+            borderTopColor: isDark ? "#1E293B" : C.border,
           },
         ]}
       >
@@ -656,7 +672,7 @@ export function ChatScreen() {
         >
           <View
             style={{
-              backgroundColor: isDark ? "#F8FAFC" : "#ffffff",
+              backgroundColor: "#ffffff",
               width: 36,
               height: 36,
               borderRadius: 18,
@@ -668,7 +684,7 @@ export function ChatScreen() {
               shadowOffset: { width: 0, height: 2 },
             }}
           >
-            <Feather name="plus" size={20} color={isDark ? "#1E293B" : C.textSecondary} />
+            <Feather name="plus" size={20} color="#94A3B8" />
           </View>
         </Pressable>
         <TextInput
@@ -679,7 +695,7 @@ export function ChatScreen() {
           style={[
             s.textInput,
             {
-              backgroundColor: isDark ? "rgba(255,255,255,0.15)" : C.inputBg,
+              backgroundColor: isDark ? "#191d20ff" : C.inputBg,
               color: isDark ? "#F8FAFC" : C.textPrimary,
             },
           ]}
@@ -719,8 +735,8 @@ export function ChatScreen() {
         style={[
           s.card,
           {
-            backgroundColor: isDark ? "#161821" : C.bg,
-            borderColor: isDark ? "#334155" : "#e2e8f0",
+            backgroundColor: isDark ? "#0B0F19" : C.bg,
+            borderColor: isDark ? "#0B0F19" : "#e2e8f0",
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
             height: Platform.OS === "web" ? "82%" : "100%",
@@ -736,23 +752,39 @@ export function ChatScreen() {
         ]}
       >
         {/* ═══ HEADER ═══════════════════════════════════════════════ */}
-        <View style={[s.header, { borderBottomColor: isDark ? "#334155" : C.border }]}>
-          <Pressable onPress={() => safeBack()} style={s.headerBtn}>
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "transparent",
-                borderWidth: isDark ? 1 : 0,
-                borderColor: "rgba(255,255,255,0.1)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Feather name="arrow-left" size={18} color={isDark ? "#F8FAFC" : C.textPrimary} />
+        <View style={[s.header, { borderBottomColor: isDark ? "#1E293B" : C.border }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Pressable onPress={() => safeBack()} style={s.headerBtn}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "transparent",
+                  borderWidth: isDark ? 1 : 0,
+                  borderColor: "rgba(255,255,255,0.1)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="arrow-left" size={18} color={isDark ? "#F8FAFC" : C.textPrimary} />
+              </View>
+            </Pressable>
+            <View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: isDark ? "#F8FAFC" : C.textPrimary,
+                }}
+              >
+                Hi {firstName}!
+              </Text>
+              <Text style={{ fontSize: 12, color: isDark ? "#94A3B8" : C.textSecondary }}>
+                How can I help you today?
+              </Text>
             </View>
-          </Pressable>
+          </View>
           <View style={s.headerRight}>
             {empty && (
               <Pressable style={s.headerBtn}>
@@ -803,16 +835,9 @@ export function ChatScreen() {
               contentContainerStyle={s.emptyContent}
               showsVerticalScrollIndicator={false}
             >
-              {/* Greeting */}
-              <Text style={[s.greeting, { color: isDark ? "#F8FAFC" : C.textPrimary }]}>
-                Hi {firstName}!
-              </Text>
-              <Text style={[s.subtitle, { color: isDark ? "#94A3B8" : C.textSecondary }]}>
-                How can I help you today?
-              </Text>
-
-              {/* Animated Orb Image */}
-              <AnimatedOrb />
+              <View style={{ flex: 1, justifyContent: "center" }}>
+                <AnimatedOrb />
+              </View>
 
               {/* Suggestion Chips Row - horizontal scrollable & CLICKABLE */}
               <ScrollView
@@ -823,8 +848,8 @@ export function ChatScreen() {
                   s.suggestionChipsContainer,
                   {
                     marginBottom: 16,
-                    backgroundColor: isDark ? "#161821" : C.bg,
-                    borderBottomColor: isDark ? "#334155" : C.border,
+                    backgroundColor: isDark ? "#0B0F19" : C.bg,
+                    borderBottomColor: isDark ? "#1E293B" : C.border,
                   },
                 ]}
               >
@@ -839,13 +864,13 @@ export function ChatScreen() {
                     onPress={() => setInput(txt)}
                     style={[
                       s.inCardSuggestionChip,
-                      { backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "#F0F0F0" },
+                      { backgroundColor: isDark ? "#1E293B" : "#F0F0F0" },
                     ]}
                   >
                     <Text
                       style={[
                         s.inCardSuggestionChipText,
-                        { color: isDark ? "#CBD5E1" : "#666666" },
+                        { color: isDark ? "#94A3B8" : "#666666" },
                       ]}
                     >
                       {txt}
@@ -995,20 +1020,23 @@ export function ChatScreen() {
                     isStreaming ? (
                       <View style={{ marginTop: 4 }}>
                         <View style={s.aiRow}>
-                          <Image
-                            source={AI_ORB_IMAGE}
-                            style={[
-                              s.aiAvatarImg,
-                              Platform.OS === "web" && isDark
-                                ? ({
-                                    filter: "invert(1) hue-rotate(180deg)",
-                                    mixBlendMode: "screen",
-                                  } as Record<string, unknown>)
-                                : Platform.OS === "web"
-                                  ? ({ mixBlendMode: "multiply" } as Record<string, unknown>)
-                                  : {},
-                            ]}
-                          />
+                          {Platform.OS === "web" ? (
+                            <img
+                              src={Asset.fromModule(AI_ORB_IMAGE).uri}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                marginRight: 8,
+                                marginTop: 4,
+                                objectFit: "contain",
+                                filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+                                mixBlendMode: isDark ? "screen" : "multiply",
+                              }}
+                            />
+                          ) : (
+                            <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+                          )}
                           <View style={s.aiContentCol}>
                             <View style={s.aiBubble}>
                               <Text style={s.aiBubbleText}>

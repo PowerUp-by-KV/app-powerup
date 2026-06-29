@@ -334,7 +334,7 @@ export function LoginScreen() {
 
             {/* Action Sign In Button */}
             <TouchableOpacity
-              className={`bg-[#3b82f6] py-4 rounded-2xl items-center justify-center shadow-lg shadow-blue-200 mb-6 ${
+              className={`bg-[#3b82f6] py-4 rounded-2xl items-center justify-center mb-6 ${
                 isLoading ? "opacity-75" : ""
               }`}
               disabled={isLoading}

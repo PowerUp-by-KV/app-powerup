@@ -126,8 +126,8 @@ export function RecordingControls({
         <PulsingHalo isRecording={isRecording} size={96} />
         <TouchableOpacity
           className={`${
-            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-blue-500 shadow-blue-200"
-          } rounded-full w-24 h-24 items-center justify-center shadow-lg`}
+            isRecording ? "bg-rose-500" : "bg-blue-500"
+          } rounded-full w-24 h-24 items-center justify-center`}
           activeOpacity={0.8}
           onPress={() => {
             if (isRecording) {
@@ -187,8 +187,8 @@ export function Recorder({
         <PulsingHalo isRecording={isRecording} size={80} />
         <TouchableOpacity
           className={`${
-            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-blue-500 shadow-blue-200"
-          } rounded-full w-20 h-20 items-center justify-center shadow-lg`}
+            isRecording ? "bg-rose-500" : "bg-blue-500"
+          } rounded-full w-20 h-20 items-center justify-center`}
           activeOpacity={0.8}
           onPress={() => {
             if (isRecording) {
@@ -245,8 +245,8 @@ export function RecordingButton({
         <PulsingHalo isRecording={isRecording} size={80} />
         <TouchableOpacity
           className={`${
-            isRecording ? "bg-rose-500 shadow-rose-200" : "bg-blue-500 shadow-blue-200"
-          } rounded-full w-20 h-20 items-center justify-center shadow-md`}
+            isRecording ? "bg-rose-500" : "bg-blue-500"
+          } rounded-full w-20 h-20 items-center justify-center`}
           activeOpacity={0.8}
           disabled={disabled}
           onPress={() => {

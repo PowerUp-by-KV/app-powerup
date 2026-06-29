@@ -115,8 +115,11 @@ export function ModuleScreen() {
     return false;
   };
 
+  const [accumulatedSessionXp, setAccumulatedSessionXp] = useState(0);
+
   const handleActivityComplete = async (result: ActivityResult) => {
     if (!currentActivity || isCompleting) return;
+
     setIsCompleting(true);
     try {
       const res = await completeActivity({
@@ -124,11 +127,14 @@ export function ModuleScreen() {
         body: { passed: result.passed, score: result.score },
       }).unwrap();
 
+      const newSessionXp = accumulatedSessionXp + (res.xp_earned ?? 0);
+      setAccumulatedSessionXp(newSessionXp);
+
       // If the day just completed, jump to the celebration screen.
       if (res.day_completed) {
-        // Attempt to compute day-level XP: prefer server-returned `res.xp_earned`
-        // when available; otherwise compute the delta from module engagement.
-        let dayXp = res.xp_earned ?? 0;
+        // Attempt to compute day-level XP: prefer the locally accumulated XP;
+        // otherwise compute the delta from module engagement.
+        let dayXp = newSessionXp;
 
         if (!dayXp) {
           try {

@@ -74,6 +74,10 @@ export function useLearningJourneyGate(): LearningJourneyGate {
     }
   }, [onboardingStatus]);
 
+  useEffect(() => {
+    setHasFetchedOnboarding(false);
+  }, [userId]);
+
   // profileDone only requires answers_present — resume upload is optional
   const isCefrDone = !!profile?.cefr_range;
   const profileDone = localProfileDone || (onboardingStatus?.answers_present ?? false);
@@ -103,6 +107,10 @@ export function useLearningJourneyGate(): LearningJourneyGate {
       setHasFetchedAssessment(true);
     }
   }, [assessmentSession]);
+
+  useEffect(() => {
+    setHasFetchedAssessment(false);
+  }, [userId]);
 
   // Auto-save session ID and sync completed sections when fetched successfully
   useEffect(() => {
