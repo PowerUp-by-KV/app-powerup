@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,7 +22,6 @@ export function SubscriptionPlansScreen() {
   const [selected, setSelected] = useState<string | null>(null);
 
   const visible = plans.filter((p) => p.code !== "trial_10d");
-  const trialPlan = plans.find((p) => p.code === "trial_10d");
 
   const handleSkip = () => {
     safeBack();

@@ -1,8 +1,5 @@
-import React from "react";
 import { Text, View } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
-import { FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
+import { SimpleLineIcons } from "@expo/vector-icons";
 
 interface WeeklyStreakProps {
   // Optional bool[7] starting Monday. Falls back to a single-day fill at today's index.
@@ -13,8 +10,6 @@ interface WeeklyStreakProps {
 const LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const today = fallbackTodayIndex ?? mondayIndexFromDate(new Date());
   const filled = days ?? Array.from({ length: 7 }, (_, i) => i <= today);
 

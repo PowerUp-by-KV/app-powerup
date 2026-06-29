@@ -156,7 +156,6 @@ const AnimatedOrb = React.memo(function AnimatedOrb() {
           style={{ transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }}
           {...{ className: isDark ? "mix-blend-screen" : "mix-blend-multiply" }}
         >
-          {/* @ts-ignore */}
           <img
             src={Asset.fromModule(AI_ORB_IMAGE).uri}
             style={{
@@ -267,7 +266,6 @@ const MessageBubble = React.memo(function MessageBubble({
       ) : (
         <View style={s.aiRow}>
           {Platform.OS === "web" ? (
-            /* @ts-ignore */
             <img
               src={Asset.fromModule(AI_ORB_IMAGE).uri}
               style={{
@@ -1023,7 +1021,6 @@ export function ChatScreen() {
                       <View style={{ marginTop: 4 }}>
                         <View style={s.aiRow}>
                           {Platform.OS === "web" ? (
-                            /* @ts-ignore */
                             <img
                               src={Asset.fromModule(AI_ORB_IMAGE).uri}
                               style={{

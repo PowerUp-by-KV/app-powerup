@@ -26,9 +26,6 @@ function StatTile({
   iconType: "feather" | "ionicons" | "fontawesome5" | "simplelineicons";
   iconColor: string;
 }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   return (
     <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1 shadow-sm shadow-slate-200/50 dark:shadow-none">
       <View className="mb-2">
