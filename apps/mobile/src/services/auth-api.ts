@@ -133,7 +133,6 @@ export const authApi = api.injectEndpoints({
           const { data } = await queryFulfilled;
           const { saveAuthSession } = await import("./auth-storage");
           await saveAuthSession(data);
-          await new Promise((resolve) => setTimeout(resolve, 200));
         } catch {}
       },
       invalidatesTags: ["Auth"],
@@ -165,7 +164,6 @@ export const authApi = api.injectEndpoints({
             },
           };
           await saveAuthSession(auth);
-          await new Promise((resolve) => setTimeout(resolve, 200));
         } catch {}
       },
       invalidatesTags: ["Auth"],
@@ -212,7 +210,6 @@ export const authApi = api.injectEndpoints({
           const { data } = await queryFulfilled;
           const { saveAuthSession } = await import("./auth-storage");
           await saveAuthSession(data);
-          await new Promise((resolve) => setTimeout(resolve, 200));
         } catch {}
       },
       invalidatesTags: ["Auth"],
@@ -229,7 +226,6 @@ export const authApi = api.injectEndpoints({
           const { data } = await queryFulfilled;
           const { saveAuthSession } = await import("./auth-storage");
           await saveAuthSession(data);
-          await new Promise((resolve) => setTimeout(resolve, 200));
         } catch {}
       },
       invalidatesTags: ["Auth"],

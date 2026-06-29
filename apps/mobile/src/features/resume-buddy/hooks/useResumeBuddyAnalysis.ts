@@ -116,9 +116,23 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
         }
         const res = await analyzeResume(formData).unwrap();
         jobId = res.job_id;
-      } catch {
+      } catch (err: any) {
         if (!isMountedRef.current) return;
-        setError("Could not start the analysis. Please check your connection and try again.");
+        let errMsg = "Could not start the analysis. Please check your connection and try again.";
+
+        if (err?.data?.detail) {
+          if (Array.isArray(err.data.detail) && err.data.detail.length > 0) {
+            const firstErr = err.data.detail[0];
+            // Clean up pydantic's "Value error, " prefix if present
+            errMsg = firstErr.msg?.replace(/^Value error, /, "") || errMsg;
+          } else if (typeof err.data.detail === "string") {
+            errMsg = err.data.detail;
+          }
+        } else if (err?.data?.message) {
+          errMsg = err.data.message;
+        }
+
+        setError(errMsg);
         setPhase("error");
         return;
       }

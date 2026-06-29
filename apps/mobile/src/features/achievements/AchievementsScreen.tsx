@@ -9,11 +9,11 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useThemeToggle } from "@/hooks/useThemeToggle";
 import LottieView from "lottie-react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useListAchievementsQuery, type Achievement } from "@/services/gamification-api";
@@ -22,12 +22,11 @@ import { getAvatarUri } from "@/utils/avatar";
 import { StatTile } from "./components/StatTile";
 
 function ProgressBar({ pct }: { pct: number }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useThemeToggle();
   const w = Math.min(100, Math.max(0, Math.round(pct * 100)));
   return (
     <View
-      className={`h-1.5 rounded-full mt-2 overflow-hidden ${isDark ? "bg-[#232540]" : "bg-[#ECEEF8]"}`}
+      className={`h-1.5 rounded-[3px] mt-2 overflow-hidden ${isDark ? "bg-[#232540]" : "bg-[#ECEEF8]"}`}
     >
       <View className="h-full bg-[#7174F6]" style={{ width: `${w}%` }} />
     </View>
@@ -35,8 +34,7 @@ function ProgressBar({ pct }: { pct: number }) {
 }
 
 function AchievementCard({ a, locked }: { a: Achievement; locked: boolean }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useThemeToggle();
 
   return (
     <View
@@ -117,7 +115,7 @@ export function AchievementsScreen() {
             </View>
             <View className="flex-row items-center space-x-3">
               <Pressable
-                onPress={toggleTheme}
+                onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
@@ -150,22 +148,26 @@ export function AchievementsScreen() {
 
           {/* Trophy Header Display */}
           <View className="items-center mb-6 py-2">
-            <View
+            <LinearGradient
+              colors={isDark ? ["#232540", "#1A1B31"] : ["#7174F6", "#5D6EF2"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              className="w-24 h-24 items-center justify-center mb-3 rounded-full"
               style={{
-                width: 120,
-                height: 120,
-                marginBottom: 8,
-                alignItems: "center",
-                justifyContent: "center",
+                shadowColor: "#7174F6",
+                shadowOpacity: isDark ? 0.2 : 0.15,
+                shadowOffset: { width: 0, height: 4 },
+                shadowRadius: 12,
+                elevation: 2,
               }}
             >
               <LottieView
                 source={require("../../../assets/lottie/trophy.json")}
                 autoPlay
                 loop
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: 80, height: 80 }}
               />
-            </View>
+            </LinearGradient>
             <Text className="text-[#6B7280] dark:text-[#B7BED1] font-bold text-sm text-center">
               Congratulations for your 1st{"\n"}trophy!
             </Text>

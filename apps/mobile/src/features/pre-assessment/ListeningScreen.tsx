@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   ScrollView,
@@ -38,6 +38,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -79,6 +80,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     if (currentQuestion) {
       setTimeLeft(maxDuration + 15);
       setHasAudioFinished(false);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
@@ -246,6 +248,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
         style={{ flex: 1 }}
       >
         <ScrollView
+          ref={scrollViewRef}
           className="flex-1 px-4 py-4"
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
           showsVerticalScrollIndicator={false}

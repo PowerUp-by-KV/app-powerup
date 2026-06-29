@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather, Ionicons, FontAwesome5, Octicons } from "@expo/vector-icons";
+import { Feather, Ionicons, FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 
 interface MyLearningCardProps {
@@ -18,88 +18,47 @@ function StatTile({
   label,
   iconName,
   iconType,
-  isActive,
+  iconColor,
 }: {
   value: string | number;
   label: string;
   iconName: string;
-  iconType: "feather" | "ionicons" | "fontawesome5" | "octicons";
-  isActive?: boolean;
+  iconType: "feather" | "ionicons" | "fontawesome5" | "simplelineicons";
+  iconColor: string;
 }) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
-  // In light mode, keep the vibrant gradient. In dark mode, match the solid minimalist design.
-  const content = (
-    <>
+  return (
+    <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1 shadow-sm shadow-slate-200/50 dark:shadow-none">
       <View className="mb-2">
-        {iconType === "octicons" ? (
-          <Octicons
-            name={iconName as React.ComponentProps<typeof Octicons>["name"]}
-            size={22}
-            color={isDark && !isActive ? "#94a3b8" : "#ffffff"}
-          />
-        ) : iconType === "fontawesome5" ? (
+        {iconType === "fontawesome5" ? (
           <FontAwesome5
             name={iconName as React.ComponentProps<typeof FontAwesome5>["name"]}
             size={22}
-            color={isDark && !isActive ? "#94a3b8" : "#ffffff"}
+            color={iconColor}
           />
         ) : iconType === "ionicons" ? (
           <Ionicons
             name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
             size={22}
-            color={isDark && !isActive ? "#94a3b8" : "#ffffff"}
+            color={iconColor}
+          />
+        ) : iconType === "simplelineicons" ? (
+          <SimpleLineIcons
+            name={iconName as React.ComponentProps<typeof SimpleLineIcons>["name"]}
+            size={22}
+            color={iconColor}
           />
         ) : (
           <Feather
             name={iconName as React.ComponentProps<typeof Feather>["name"]}
             size={22}
-            color={isDark && !isActive ? "#94a3b8" : "#ffffff"}
+            color={iconColor}
           />
         )}
       </View>
-      <Text
-        className={`font-extrabold text-sm text-center ${
-          isDark && !isActive ? "text-slate-400" : "text-white"
-        }`}
-      >
+      <Text className="text-slate-900 dark:text-white font-extrabold text-sm text-center">
         {value} {label}
       </Text>
-    </>
-  );
-
-  if (isDark) {
-    return (
-      <View
-        className="flex-1 items-center justify-center p-3.5 rounded-2xl mx-1"
-        style={{
-          backgroundColor: "#1E202B", // Solid dark background from screenshot
-          borderWidth: 1,
-          borderColor: "rgba(255,255,255,0.03)",
-        }}
-      >
-        {content}
-      </View>
-    );
-  }
-
-  return (
-    <LinearGradient
-      colors={["#4f46e5", "#3b82f6"]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      className="flex-1 items-center justify-center p-3.5 rounded-2xl mx-1 shadow-sm"
-      style={{
-        shadowColor: "#4f46e5",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 3,
-      }}
-    >
-      {content}
-    </LinearGradient>
+    </View>
   );
 }
 
@@ -127,23 +86,23 @@ export function MyLearningCard({
         <StatTile
           value={streakCount}
           label="Streaks"
-          iconType={streakCount >= 7 ? "octicons" : "ionicons"}
-          iconName={streakCount >= 7 ? "flame" : "flame-outline"}
-          isActive={streakCount >= 7}
+          iconType="simplelineicons"
+          iconName="fire"
+          iconColor="#3b82f6"
         />
         <StatTile
           value={badgesCount}
           label="Badges"
           iconType="feather"
           iconName="award"
-          isActive={true}
+          iconColor="#a78bfa"
         />
         <StatTile
           value={xpPoints}
           label="XP Points"
           iconType="feather"
           iconName="zap"
-          isActive={true}
+          iconColor="#fbbf24"
         />
       </View>
 

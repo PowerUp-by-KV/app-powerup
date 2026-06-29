@@ -67,6 +67,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [sessionId, setSessionId] = useState<string | undefined>(propSessionId);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (!sessionId) {
@@ -139,6 +140,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       setCurrentLocalUri(null);
       setCurrentLocalDuration(0);
       setHasAudioFinished(false);
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
@@ -462,6 +464,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         style={{ flex: 1 }}
       >
         <ScrollView
+          ref={scrollViewRef}
           className="flex-1 px-4 py-4"
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 50 }}
           showsVerticalScrollIndicator={false}

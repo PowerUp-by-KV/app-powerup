@@ -167,8 +167,8 @@ export function VerifyPhoneScreen({ flow: propFlow }: { flow?: "signup" | "signi
             <Pressable
               onPress={handleContinue}
               disabled={code.length !== 6}
-              className={`w-full py-4 rounded-2xl items-center justify-center shadow-lg mt-8 ${
-                code.length === 6 ? "bg-[#3b82f6] shadow-blue-200" : "bg-slate-300 shadow-slate-100"
+              className={`w-full py-4 rounded-2xl items-center justify-center mt-8 ${
+                code.length === 6 ? "bg-[#3b82f6]" : "bg-slate-300"
               }`}
             >
               <Text className="text-white font-bold text-sm">Continue</Text>
