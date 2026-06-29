@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import { Feather, Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 
 interface MyLearningCardProps {
@@ -13,29 +13,7 @@ interface MyLearningCardProps {
   onTrack: () => void;
 }
 
-function StatTileLight({
-  value,
-  label,
-  colors,
-}: {
-  value: string | number;
-  label: string;
-  colors: readonly [string, string, ...string[]];
-}) {
-  return (
-    <LinearGradient
-      colors={colors}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.statTile}
-    >
-      <Text className="text-white font-extrabold text-3xl tracking-tight">{value}</Text>
-      <Text className="text-indigo-100 text-[11px] font-semibold mt-1">{label}</Text>
-    </LinearGradient>
-  );
-}
-
-function StatTileDark({
+function StatTile({
   value,
   label,
   iconName,
@@ -45,13 +23,31 @@ function StatTileDark({
   value: string | number;
   label: string;
   iconName: string;
-  iconType: "feather" | "ionicons";
+  iconType: "feather" | "ionicons" | "fontawesome5";
   iconColor: string;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
-    <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-100 dark:border-[#2b2a3a] rounded-2xl mx-1 shadow-sm shadow-slate-100/50 dark:shadow-none">
+    <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1 shadow-sm shadow-slate-200/50 dark:shadow-none">
       <View className="mb-2">
-        {iconType === "ionicons" ? (
+        {iconType === "fontawesome5" ? (
+          <FontAwesome5
+            name={iconName as React.ComponentProps<typeof FontAwesome5>["name"]}
+            size={22}
+            color={iconColor}
+            style={
+              iconName === "fire" && isDark
+                ? {
+                    textShadowColor: iconColor,
+                    textShadowOffset: { width: 0, height: 0 },
+                    textShadowRadius: 10,
+                  }
+                : undefined
+            }
+          />
+        ) : iconType === "ionicons" ? (
           <Ionicons
             name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
             size={22}
@@ -86,8 +82,6 @@ export function MyLearningCard({
   const pct =
     totalDays != null && totalDays > 0 ? Math.round((daysCompleted / totalDays) * 100) : 0;
 
-  const tileColors: readonly [string, string, ...string[]] = ["#4f46e5", "#3b82f6"];
-
   return (
     <View className="bg-white dark:bg-[#16161c] border border-slate-100 dark:border-slate-800/80 rounded-[24px] p-5 mb-5 shadow-sm shadow-slate-100 dark:shadow-none">
       <Text className="text-slate-900 dark:text-white text-base font-bold mb-4 text-center">
@@ -95,37 +89,27 @@ export function MyLearningCard({
       </Text>
 
       <View className="flex-row -mx-1 mb-5">
-        {isDark ? (
-          <>
-            <StatTileDark
-              value={streakCount}
-              label="Streaks"
-              iconType="ionicons"
-              iconName="flame"
-              iconColor="#3b82f6"
-            />
-            <StatTileDark
-              value={badgesCount}
-              label="Badges"
-              iconType="feather"
-              iconName="award"
-              iconColor="#a78bfa"
-            />
-            <StatTileDark
-              value={xpPoints}
-              label="XP Points"
-              iconType="feather"
-              iconName="zap"
-              iconColor="#fbbf24"
-            />
-          </>
-        ) : (
-          <>
-            <StatTileLight value={streakCount} label="Streaks" colors={tileColors} />
-            <StatTileLight value={xpPoints} label="Xp points" colors={tileColors} />
-            <StatTileLight value={badgesCount} label="Badges" colors={tileColors} />
-          </>
-        )}
+        <StatTile
+          value={streakCount}
+          label="Streaks"
+          iconType="fontawesome5"
+          iconName="fire"
+          iconColor={isDark ? "#00e5ff" : "#2563eb"}
+        />
+        <StatTile
+          value={badgesCount}
+          label="Badges"
+          iconType="feather"
+          iconName="award"
+          iconColor="#a78bfa"
+        />
+        <StatTile
+          value={xpPoints}
+          label="XP Points"
+          iconType="feather"
+          iconName="zap"
+          iconColor="#fbbf24"
+        />
       </View>
 
       <View className="mb-5">

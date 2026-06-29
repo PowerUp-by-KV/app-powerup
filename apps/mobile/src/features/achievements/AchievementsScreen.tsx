@@ -26,7 +26,7 @@ function ProgressBar({ pct }: { pct: number }) {
   const w = Math.min(100, Math.max(0, Math.round(pct * 100)));
   return (
     <View
-      className={`h-1.5 rounded-full mt-2 overflow-hidden ${isDark ? "bg-[#232540]" : "bg-[#ECEEF8]"}`}
+      className={`h-1.5 rounded-[3px] mt-2 overflow-hidden ${isDark ? "bg-[#232540]" : "bg-[#ECEEF8]"}`}
     >
       <View className="h-full bg-[#7174F6]" style={{ width: `${w}%` }} />
     </View>

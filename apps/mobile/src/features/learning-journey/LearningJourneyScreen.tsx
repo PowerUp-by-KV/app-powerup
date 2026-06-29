@@ -1514,7 +1514,9 @@ export function LearningJourneyScreen() {
                               </Text>
                             </View>
                             <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
-                              {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                              {item.isCompleted
+                                ? "50 XP earned"
+                                : `${(item.dayObj as any)?.xp_earned ?? Math.round(50 * (compAct / Math.max(1, totalAct)))} XP earned`}
                             </Text>
                           </>
                         );

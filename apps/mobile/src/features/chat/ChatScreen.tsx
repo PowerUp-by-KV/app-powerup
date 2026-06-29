@@ -18,10 +18,12 @@ import {
 import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import { Asset } from "expo-asset";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import {
@@ -108,6 +110,7 @@ type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalMessage;
 const AnimatedOrb = React.memo(function AnimatedOrb() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
+  const { isDark } = useThemeToggle();
 
   React.useEffect(() => {
     const pulse = Animated.loop(
@@ -148,16 +151,34 @@ const AnimatedOrb = React.memo(function AnimatedOrb() {
 
   return (
     <View style={s.orbWrapper}>
-      <Animated.Image
-        source={AI_ORB_IMAGE}
-        style={[
-          s.orbImage,
-          {
-            transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
-          },
-        ]}
-        resizeMode="contain"
-      />
+      {Platform.OS === "web" ? (
+        <Animated.View
+          style={{ transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }}
+          {...{ className: isDark ? "mix-blend-screen" : "mix-blend-multiply" }}
+        >
+          {/* @ts-ignore */}
+          <img
+            src={Asset.fromModule(AI_ORB_IMAGE).uri}
+            style={{
+              width: 190,
+              height: 190,
+              objectFit: "contain",
+              filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+            }}
+          />
+        </Animated.View>
+      ) : (
+        <Animated.Image
+          source={AI_ORB_IMAGE}
+          style={[
+            s.orbImage,
+            {
+              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+            },
+          ]}
+          resizeMode="contain"
+        />
+      )}
     </View>
   );
 });
@@ -212,6 +233,7 @@ interface MessageBubbleProps {
   avatarUri: string;
   isBookmarked: boolean;
   onToggleBookmark: (id: string) => void;
+  isDark: boolean;
 }
 
 const MessageBubble = React.memo(function MessageBubble({
@@ -220,42 +242,76 @@ const MessageBubble = React.memo(function MessageBubble({
   avatarUri,
   isBookmarked,
   onToggleBookmark,
+  isDark,
 }: MessageBubbleProps) {
   const isUser = item.role === "user";
   const showTime = shouldShowTimestamp(item.created_at, prevMsg?.created_at);
 
   return (
     <View>
-      {showTime && <Text style={s.timestamp}>{formatTime(item.created_at)}</Text>}
+      {showTime && (
+        <Text style={[s.timestamp, { color: isDark ? "#94A3B8" : C.textSecondary }]}>
+          {formatTime(item.created_at)}
+        </Text>
+      )}
       {isUser ? (
         <View style={s.userRow}>
-          <View style={s.userBubble}>
-            <Text style={s.userBubbleText}>{item.content}</Text>
+          <View style={[s.userBubble, { backgroundColor: C.userBubble }]}>
+            <Text style={[s.userBubbleText, { color: C.userBubbleText }]}>{item.content}</Text>
           </View>
-          <Image source={{ uri: avatarUri }} style={s.userAvatar} />
+          <Image
+            source={{ uri: avatarUri }}
+            style={[s.userAvatar, { backgroundColor: isDark ? "#334155" : "#e2e8f0" }]}
+          />
         </View>
       ) : (
         <View style={s.aiRow}>
-          <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+          {Platform.OS === "web" ? (
+            /* @ts-ignore */
+            <img
+              src={Asset.fromModule(AI_ORB_IMAGE).uri}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                marginRight: 8,
+                marginTop: 4,
+                objectFit: "contain",
+                filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+                mixBlendMode: isDark ? "screen" : "multiply",
+              }}
+            />
+          ) : (
+            <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+          )}
           <View style={s.aiContentCol}>
-            <View style={s.aiBubble}>
-              <Text style={s.aiBubbleText}>{item.content}</Text>
+            <View style={[s.aiBubble, { backgroundColor: isDark ? "#D4F57A" : C.aiBubble }]}>
+              <Text style={[s.aiBubbleText, { color: C.aiBubbleText }]}>{item.content}</Text>
             </View>
             {!("isLocal" in item && item.isLocal) && (
               <View style={s.aiActions}>
                 <Pressable
                   onPress={() => onToggleBookmark(item.id)}
-                  style={s.aiActionBtn}
+                  style={[s.aiActionBtn, { backgroundColor: isDark ? "#1E293B" : C.cardBg }]}
                   hitSlop={4}
                 >
                   <Feather
                     name="bookmark"
                     size={14}
-                    color={isBookmarked ? C.bookmarkActive : C.bookmarkInactive}
+                    color={
+                      isBookmarked ? C.bookmarkActive : isDark ? "#64748B" : C.bookmarkInactive
+                    }
                   />
                 </Pressable>
-                <Pressable style={s.aiActionBtn} hitSlop={4}>
-                  <Feather name="more-horizontal" size={14} color={C.textMuted} />
+                <Pressable
+                  style={[s.aiActionBtn, { backgroundColor: isDark ? "#1E293B" : C.cardBg }]}
+                  hitSlop={4}
+                >
+                  <Feather
+                    name="more-horizontal"
+                    size={14}
+                    color={isDark ? "#64748B" : C.textMuted}
+                  />
                 </Pressable>
               </View>
             )}
@@ -271,6 +327,7 @@ export function ChatScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
+  const { isDark } = useThemeToggle();
   const params = useLocalSearchParams<{ thread_id?: string }>();
   const { data: profile } = useGetProfileQuery();
   const [threadId, setThreadId] = useState<string | null>(params.thread_id ?? null);
@@ -556,10 +613,11 @@ export function ChatScreen() {
           avatarUri={avatarUri}
           isBookmarked={isBookmarked}
           onToggleBookmark={handleToggleBookmark}
+          isDark={isDark}
         />
       );
     },
-    [displayMessages, avatarUri, handleToggleBookmark, localBookmarks],
+    [displayMessages, avatarUri, handleToggleBookmark, localBookmarks, isDark],
   );
 
   // ═══════════════════════════════════════════════════════════════════
@@ -576,7 +634,16 @@ export function ChatScreen() {
 
   const renderInputBar = useCallback(
     () => (
-      <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <View
+        style={[
+          s.inputBar,
+          {
+            paddingBottom: Math.max(insets.bottom, 8),
+            backgroundColor: isDark ? "#0B0F19" : C.bg,
+            borderTopColor: isDark ? "#1E293B" : C.border,
+          },
+        ]}
+      >
         <Pressable
           style={s.inputPlusBtn}
           hitSlop={8}
@@ -605,14 +672,35 @@ export function ChatScreen() {
             ])
           }
         >
-          <Feather name="plus" size={20} color={C.textSecondary} />
+          <View
+            style={{
+              backgroundColor: "#ffffff",
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              alignItems: "center",
+              justifyContent: "center",
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 2 },
+            }}
+          >
+            <Feather name="plus" size={20} color="#94A3B8" />
+          </View>
         </Pressable>
         <TextInput
           value={input}
           onChangeText={handleInputChange}
           placeholder="Ask me anything..."
-          placeholderTextColor={C.textMuted}
-          style={s.textInput}
+          placeholderTextColor={isDark ? "#64748B" : C.textMuted}
+          style={[
+            s.textInput,
+            {
+              backgroundColor: isDark ? "#191d20ff" : C.inputBg,
+              color: isDark ? "#F8FAFC" : C.textPrimary,
+            },
+          ]}
           returnKeyType="send"
           onSubmitEditing={handleSend}
           blurOnSubmit={false}
@@ -626,14 +714,14 @@ export function ChatScreen() {
           hitSlop={8}
         >
           {busy || sendLockRef.current ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={isDark ? "#111" : "#fff"} size="small" />
           ) : (
-            <Feather name="arrow-up" size={16} color="#fff" />
+            <Feather name="arrow-up" size={16} color={isDark ? "#111" : "#fff"} />
           )}
         </Pressable>
       </View>
     ),
-    [input, busy, handleInputChange, handleSend, sendBtnBgColor, insets.bottom],
+    [input, busy, handleInputChange, handleSend, sendBtnBgColor, insets.bottom, isDark],
   );
 
   // ═══════════════════════════════════════════════════════════════════
@@ -649,6 +737,8 @@ export function ChatScreen() {
         style={[
           s.card,
           {
+            backgroundColor: isDark ? "#0B0F19" : C.bg,
+            borderColor: isDark ? "#0B0F19" : "#e2e8f0",
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
             height: Platform.OS === "web" ? "82%" : "100%",
@@ -664,18 +754,73 @@ export function ChatScreen() {
         ]}
       >
         {/* ═══ HEADER ═══════════════════════════════════════════════ */}
-        <View style={s.header}>
-          <Pressable onPress={() => safeBack()} style={s.headerBtn}>
-            <Feather name="arrow-left" size={22} color={C.textPrimary} />
-          </Pressable>
+        <View style={[s.header, { borderBottomColor: isDark ? "#1E293B" : C.border }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Pressable onPress={() => safeBack()} style={s.headerBtn}>
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: isDark ? "rgba(151, 36, 36, 0.05)" : "transparent",
+                  borderWidth: isDark ? 1 : 0,
+                  borderColor: "rgba(255,255,255,0.1)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="arrow-left" size={18} color={isDark ? "#F8FAFC" : C.textPrimary} />
+              </View>
+            </Pressable>
+            <View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  color: isDark ? "#F8FAFC" : C.textPrimary,
+                }}
+              >
+                Hi {firstName}!
+              </Text>
+              <Text style={{ fontSize: 12, color: isDark ? "#94A3B8" : C.textSecondary }}>
+                How can I help you today?
+              </Text>
+            </View>
+          </View>
           <View style={s.headerRight}>
             {empty && (
               <Pressable style={s.headerBtn}>
-                <Feather name="bookmark" size={20} color={C.textPrimary} />
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "transparent",
+                    borderWidth: isDark ? 1 : 0,
+                    borderColor: "rgba(255,255,255,0.1)",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Feather name="bookmark" size={16} color={isDark ? "#F8FAFC" : C.textPrimary} />
+                </View>
               </Pressable>
             )}
             <Pressable onPress={() => router.push("/chat/history" as never)} style={s.headerBtn}>
-              <Feather name="menu" size={20} color={C.textPrimary} />
+              <View
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "transparent",
+                  borderWidth: isDark ? 1 : 0,
+                  borderColor: "rgba(255,255,255,0.1)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Feather name="menu" size={16} color={isDark ? "#F8FAFC" : C.textPrimary} />
+              </View>
             </Pressable>
           </View>
         </View>
@@ -692,19 +837,23 @@ export function ChatScreen() {
               contentContainerStyle={s.emptyContent}
               showsVerticalScrollIndicator={false}
             >
-              {/* Greeting */}
-              <Text style={s.greeting}>Hi {firstName}!</Text>
-              <Text style={s.subtitle}>How can I help you today?</Text>
-
-              {/* Animated Orb Image */}
-              <AnimatedOrb />
+              <View style={{ flex: 1, justifyContent: "center" }}>
+                <AnimatedOrb />
+              </View>
 
               {/* Suggestion Chips Row - horizontal scrollable & CLICKABLE */}
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 12 }}
-                style={[s.suggestionChipsContainer, { marginBottom: 16 }]}
+                style={[
+                  s.suggestionChipsContainer,
+                  {
+                    marginBottom: 16,
+                    backgroundColor: isDark ? "#0B0F19" : C.bg,
+                    borderBottomColor: isDark ? "#1E293B" : C.border,
+                  },
+                ]}
               >
                 {[
                   "Draft an email for...",
@@ -712,8 +861,22 @@ export function ChatScreen() {
                   "Review my resume...",
                   "Give me feedback on...",
                 ].map((txt, i) => (
-                  <Pressable key={i} onPress={() => setInput(txt)} style={s.inCardSuggestionChip}>
-                    <Text style={s.inCardSuggestionChipText}>{txt}</Text>
+                  <Pressable
+                    key={i}
+                    onPress={() => setInput(txt)}
+                    style={[
+                      s.inCardSuggestionChip,
+                      { backgroundColor: isDark ? "#1E293B" : "#F0F0F0" },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        s.inCardSuggestionChipText,
+                        { color: isDark ? "#94A3B8" : "#666666" },
+                      ]}
+                    >
+                      {txt}
+                    </Text>
                   </Pressable>
                 ))}
               </ScrollView>
@@ -727,7 +890,7 @@ export function ChatScreen() {
                   <View
                     style={{
                       flex: 1,
-                      backgroundColor: "#EEFACC",
+                      backgroundColor: isDark ? "#D4F57A" : "#EEFACC",
                       borderRadius: 24,
                       padding: 16,
                       justifyContent: "space-between",
@@ -747,7 +910,7 @@ export function ChatScreen() {
                           {qa0.label}
                         </Text>
                       </View>
-                      <Text style={{ fontSize: 11, color: "#666" }}>
+                      <Text style={{ fontSize: 11, color: isDark ? "#333" : "#666" }}>
                         "How do I introduce myself?"
                       </Text>
                     </View>
@@ -781,7 +944,7 @@ export function ChatScreen() {
                       onPress={() => handleQuickAction(qa1.id, qa1.label, qa1.prompt_template)}
                       disabled={busy || sendLockRef.current}
                       style={{
-                        backgroundColor: "#F5F5FF",
+                        backgroundColor: isDark ? "#F8FAFC" : "#F5F5FF",
                         borderRadius: 24,
                         padding: 16,
                         flexDirection: "row",
@@ -859,7 +1022,24 @@ export function ChatScreen() {
                     isStreaming ? (
                       <View style={{ marginTop: 4 }}>
                         <View style={s.aiRow}>
-                          <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+                          {Platform.OS === "web" ? (
+                            /* @ts-ignore */
+                            <img
+                              src={Asset.fromModule(AI_ORB_IMAGE).uri}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: 16,
+                                marginRight: 8,
+                                marginTop: 4,
+                                objectFit: "contain",
+                                filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
+                                mixBlendMode: isDark ? "screen" : "multiply",
+                              }}
+                            />
+                          ) : (
+                            <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
+                          )}
                           <View style={s.aiContentCol}>
                             <View style={s.aiBubble}>
                               <Text style={s.aiBubbleText}>
@@ -880,7 +1060,9 @@ export function ChatScreen() {
 
               {/* ── Quick action pills — FIXED at bottom, never shrinks ─ */}
               {quickActions.length > 0 && (
-                <View style={s.chatPillsContainer}>
+                <View
+                  style={[s.chatPillsContainer, { borderTopColor: isDark ? "#334155" : C.border }]}
+                >
                   <View style={s.chatPillsRow}>
                     {[...quickActions]
                       .sort((a, b) => a.order_index - b.order_index)
