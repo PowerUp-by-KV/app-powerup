@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather, Ionicons, FontAwesome5 } from "@expo/vector-icons";
+import { Feather, Ionicons, FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 
 interface MyLearningCardProps {
@@ -23,7 +23,7 @@ function StatTile({
   value: string | number;
   label: string;
   iconName: string;
-  iconType: "feather" | "ionicons" | "fontawesome5";
+  iconType: "feather" | "ionicons" | "fontawesome5" | "simplelineicons";
   iconColor: string;
 }) {
   const { colorScheme } = useColorScheme();
@@ -37,19 +37,16 @@ function StatTile({
             name={iconName as React.ComponentProps<typeof FontAwesome5>["name"]}
             size={22}
             color={iconColor}
-            style={
-              iconName === "fire" && isDark
-                ? {
-                    textShadowColor: iconColor,
-                    textShadowOffset: { width: 0, height: 0 },
-                    textShadowRadius: 10,
-                  }
-                : undefined
-            }
           />
         ) : iconType === "ionicons" ? (
           <Ionicons
             name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
+            size={22}
+            color={iconColor}
+          />
+        ) : iconType === "simplelineicons" ? (
+          <SimpleLineIcons
+            name={iconName as React.ComponentProps<typeof SimpleLineIcons>["name"]}
             size={22}
             color={iconColor}
           />
@@ -92,9 +89,9 @@ export function MyLearningCard({
         <StatTile
           value={streakCount}
           label="Streaks"
-          iconType="fontawesome5"
+          iconType="simplelineicons"
           iconName="fire"
-          iconColor={isDark ? "#00e5ff" : "#2563eb"}
+          iconColor="#3b82f6"
         />
         <StatTile
           value={badgesCount}

@@ -1,7 +1,7 @@
 import React from "react";
 import { Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { FontAwesome5 } from "@expo/vector-icons";
+import { FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 
 interface WeeklyStreakProps {
@@ -32,28 +32,10 @@ export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
                 <View
                   className="w-10 h-10 rounded-full items-center justify-center mb-1.5"
                   style={{
-                    backgroundColor: isDark ? "#0f172a" : "#eff6ff",
-                    shadowColor: isDark ? "#00e5ff" : "#3b82f6",
-                    shadowOffset: { width: 0, height: 0 },
-                    shadowOpacity: isDark ? 0.6 : 0.3,
-                    shadowRadius: isDark ? 6 : 4,
-                    elevation: isDark ? 5 : 2,
+                    backgroundColor: "#3b82f6",
                   }}
                 >
-                  <FontAwesome5
-                    name="fire"
-                    size={20}
-                    color={isDark ? "#00e5ff" : "#2563eb"}
-                    style={
-                      isDark
-                        ? {
-                            textShadowColor: "#00e5ff",
-                            textShadowOffset: { width: 0, height: 0 },
-                            textShadowRadius: 10,
-                          }
-                        : undefined
-                    }
-                  />
+                  <SimpleLineIcons name="fire" size={20} color="#ffffff" />
                 </View>
               ) : (
                 <View className="w-10 h-10 rounded-full bg-[#e2f9cc] dark:bg-[#1d1d26] border border-transparent dark:border-[#2b2b38] items-center justify-center mb-1.5" />

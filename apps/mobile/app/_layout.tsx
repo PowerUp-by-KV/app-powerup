@@ -4,6 +4,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
+import { SimpleLineIcons } from "@expo/vector-icons";
 import * as SplashScreen from "expo-splash-screen";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -217,6 +218,7 @@ export default function AuthLayout() {
     "Inter-SemiBold": Inter_600SemiBold,
     "Inter-Bold": Inter_700Bold,
     "Inter-ExtraBold": Inter_800ExtraBold,
+    ...SimpleLineIcons.font,
   });
 
   const [authChecked, setAuthChecked] = useState(false);
