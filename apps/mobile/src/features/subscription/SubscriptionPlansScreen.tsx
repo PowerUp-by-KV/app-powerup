@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 
-import { useGetPlansQuery } from "@/services/subscription-api";
+import { useGetSubscriptionPlansQuery } from "@/services/profile-api";
 
 function formatINR(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -18,7 +18,7 @@ export function SubscriptionPlansScreen() {
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
-  const { data: plans = [], isLoading } = useGetPlansQuery();
+  const { data: plans = [], isLoading } = useGetSubscriptionPlansQuery();
   const [selected, setSelected] = useState<string | null>(null);
 
   const visible = plans.filter((p) => p.code !== "trial_10d");
