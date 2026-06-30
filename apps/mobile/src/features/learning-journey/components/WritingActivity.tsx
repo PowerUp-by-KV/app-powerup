@@ -158,55 +158,56 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
         {error ? (
           <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
         ) : null}
-      </ScrollView>
 
-      {/* Docked Submit Button */}
-      <Pressable
-        onPress={handleSubmit}
-        disabled={submitting || text.trim().length === 0}
-        style={({ pressed }) => ({
-          backgroundColor:
-            submitting || text.trim().length === 0
-              ? isDark
-                ? "#27272a"
-                : "#e2e8f0"
-              : pressed
-                ? "#2563eb"
-                : "#3b82f6",
-          paddingVertical: 18,
-          paddingBottom: Platform.OS === "ios" ? 34 : 24,
-          alignItems: "center",
-          width: "100%",
-          ...Platform.select({
-            web: {
-              cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
-            } as Record<string, unknown>,
-          }),
-        })}
-      >
-        {submitting ? (
-          <ActivityIndicator
-            color={
-              submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#64748b") : "#fff"
-            }
-          />
-        ) : (
-          <Text
-            style={{
-              color:
+        <View style={{ marginTop: 24 }}>
+          <Pressable
+            onPress={handleSubmit}
+            disabled={submitting || text.trim().length === 0}
+            style={({ pressed }) => ({
+              backgroundColor:
                 submitting || text.trim().length === 0
                   ? isDark
-                    ? "#52525b"
-                    : "#64748b"
-                  : "#ffffff",
-              fontWeight: "700",
-              fontSize: 16,
-            }}
+                    ? "#27272a"
+                    : "#cbd5e1"
+                  : pressed
+                    ? "#2563eb"
+                    : "#3b82f6",
+              paddingVertical: 14,
+              borderRadius: 10,
+              alignItems: "center",
+              width: "100%",
+              ...Platform.select({
+                web: {
+                  cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
+                } as Record<string, unknown>,
+              }),
+            })}
           >
-            Submit
-          </Text>
-        )}
-      </Pressable>
+            {submitting ? (
+              <ActivityIndicator
+                color={
+                  submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#94a3b8") : "#fff"
+                }
+              />
+            ) : (
+              <Text
+                style={{
+                  color:
+                    submitting || text.trim().length === 0
+                      ? isDark
+                        ? "#52525b"
+                        : "#ffffff"
+                      : "#ffffff",
+                  fontWeight: "700",
+                  fontSize: 16,
+                }}
+              >
+                Submit
+              </Text>
+            )}
+          </Pressable>
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }

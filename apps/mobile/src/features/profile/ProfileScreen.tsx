@@ -17,11 +17,12 @@ import { useColorScheme } from "nativewind";
 
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, Circle, Mask } from "react-native-svg";
 import * as SecureStore from "expo-secure-store";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
+import { useGetModulesQuery, useLazyGetModuleDaysQuery } from "@/services/module-api";
 import { useLogout } from "@/utils/auth";
 import { getAvatarUri } from "@/utils/avatar";
 
@@ -32,9 +33,59 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { logout } = useLogout();
   const [tab, setTab] = useState<"stats" | "space">("space");
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { data: profile, isLoading } = useGetProfileQuery();
+
+  const { data: modulesData } = useGetModulesQuery();
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, any[]>>({});
+
+  const personalizedPath = useMemo(() => {
+    if (!modulesData) return null;
+    return {
+      modules: modulesData.map((m) => ({
+        id: m.id,
+        module_no: m.order_index,
+        title: m.title,
+        variant_id: null,
+        is_unlocked: true,
+      })),
+    };
+  }, [modulesData]);
+
+  useEffect(() => {
+    if (!personalizedPath?.modules?.length) return;
+    const fetchAllDays = async () => {
+      try {
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id).unwrap();
+            return { moduleId: m.id, days: data };
+          } catch {
+            return { moduleId: m.id, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+        const newData: Record<string, any[]> = {};
+        for (const res of results) {
+          newData[res.moduleId] = res.days;
+        }
+        setModuleDaysData(newData);
+      } catch {}
+    };
+    fetchAllDays();
+  }, [personalizedPath, triggerGetModuleDays]);
+
+  const daysCompletedCount = useMemo(() => {
+    let count = 0;
+    for (const key in moduleDaysData) {
+      count += moduleDaysData[key].filter((d) => d.is_completed).length;
+    }
+    return count;
+  }, [moduleDaysData]);
+
+  const { colorScheme, setColorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -50,19 +101,19 @@ export function ProfileScreen() {
           storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
           storedNotifications = await SecureStore.getItemAsync("settings_notifications");
         }
-        if (storedDarkMode !== null) setIsDarkMode(storedDarkMode === "true");
+        if (storedDarkMode !== null) {
+          const darkVal = storedDarkMode === "true";
+          setColorScheme(darkVal ? "dark" : "light");
+        }
         if (storedNotifications !== null) setNotificationsEnabled(storedNotifications === "true");
       } catch (error) {
         console.error("Failed to load settings", error);
       }
     };
     loadSettings();
-  }, []);
-
-  const { setColorScheme } = useColorScheme();
+  }, [setColorScheme]);
 
   const handleToggleDarkMode = async (value: boolean) => {
-    setIsDarkMode(value);
     setColorScheme(value ? "dark" : "light");
     try {
       if (Platform.OS === "web") {
@@ -84,7 +135,9 @@ export function ProfileScreen() {
     setNotificationsEnabled(value);
     try {
       if (Platform.OS === "web") {
-        window.localStorage?.setItem("settings_notifications", String(value));
+        if (typeof window !== "undefined") {
+          window.localStorage?.setItem("settings_notifications", String(value));
+        }
       } else {
         await SecureStore.setItemAsync("settings_notifications", String(value));
       }
@@ -276,7 +329,7 @@ export function ProfileScreen() {
               overflow: "hidden",
             }}
           >
-            {/* Subtle decorative orbs — kept but reduced opacity for restraint */}
+            {/* Subtle decorative orbs */}
             <View
               style={{
                 position: "absolute",
@@ -304,7 +357,6 @@ export function ProfileScreen() {
             <View
               style={{
                 flexDirection: "row",
-                justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: 24,
               }}
@@ -324,58 +376,7 @@ export function ProfileScreen() {
               >
                 <Feather name="arrow-left" size={18} color="rgba(255,255,255,0.85)" />
               </Pressable>
-
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                <Pressable
-                  onPress={() => router.push("/profile/edit" as never)}
-                  style={({ pressed }) => ({
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    borderWidth: 1,
-                    borderColor: "rgba(255,255,255,0.25)",
-                    paddingHorizontal: 14,
-                    paddingVertical: 7,
-                    borderRadius: 20,
-                    backgroundColor: pressed ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.07)",
-                  })}
-                >
-                  <Feather name="edit-2" size={11} color="rgba(255,255,255,0.8)" />
-                  <Text
-                    style={{
-                      color: "rgba(255,255,255,0.85)",
-                      fontSize: 12,
-                      fontWeight: "500",
-                      letterSpacing: 0.2,
-                    }}
-                  >
-                    Edit profile
-                  </Text>
-                </Pressable>
-
-                <Pressable style={{ position: "relative", padding: 2 }}>
-                  <Feather name="bell" size={19} color="rgba(255,255,255,0.75)" />
-                  <View
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      width: 7,
-                      height: 7,
-                      borderRadius: 3.5,
-                      backgroundColor: "#f97316",
-                      borderWidth: 1.5,
-                      borderColor: "#2d1f8c",
-                    }}
-                  />
-                </Pressable>
-
-                <Pressable onPress={() => router.push("/profile/edit" as never)}>
-                  <Feather name="settings" size={19} color="rgba(255,255,255,0.75)" />
-                </Pressable>
-              </View>
             </View>
-
             {/* Profile row */}
             <View
               style={{ flexDirection: "row", alignItems: "flex-end", gap: 16, marginBottom: 24 }}
@@ -433,7 +434,7 @@ export function ProfileScreen() {
                     letterSpacing: 0.2,
                   }}
                 >
-                  Hey, {firstName} 👋
+                  Hey, {firstName}
                 </Text>
                 <Text
                   style={{
@@ -470,44 +471,6 @@ export function ProfileScreen() {
               </View>
             </View>
 
-            {/* XP progress bar — thin, inline with label */}
-            <View style={{ marginBottom: 20 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 6,
-                }}
-              >
-                <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, fontWeight: "400" }}>
-                  {profile?.modules_completed ?? 0} of {profile?.total_modules ?? 0} modules
-                </Text>
-                <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "500" }}>
-                  Level {profile?.current_level ?? 1}
-                </Text>
-              </View>
-              <View
-                style={{
-                  height: 4,
-                  backgroundColor: "rgba(255,255,255,0.12)",
-                  borderRadius: 2,
-                  overflow: "hidden",
-                }}
-              >
-                <LinearGradient
-                  colors={["#a78bfa", "#60a5fa"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={{
-                    height: "100%",
-                    width: `${xpProgress}%` as DimensionValue,
-                    borderRadius: 2,
-                  }}
-                />
-              </View>
-            </View>
-
             {/* Streak chip — single line, right-anchored */}
             <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 28 }}>
               <View
@@ -541,45 +504,28 @@ export function ProfileScreen() {
               preserveAspectRatio="none"
               style={{ marginBottom: -1 }}
             >
-              <Path d="M0 28 Q195 0 390 28 L390 28 L0 28Z" fill="#f0f2ff" />
+              <Path d="M0 28 Q195 0 390 28 L390 28 L0 28Z" fill={isDark ? "#0F1020" : "#f0f2ff"} />
             </Svg>
           </LinearGradient>
 
           {/* ── BODY ── */}
-          <View style={{ flex: 1, backgroundColor: "#f0f2ff" }}>
-            {/* Stat cards — lifted slightly by the arc above them */}
-            <View
-              style={{
-                flexDirection: "row",
-                paddingHorizontal: 16,
-                paddingTop: 16,
-                paddingBottom: 4,
-                gap: 8,
-              }}
-            >
+          <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#f0f2ff" }}>
+            {/* ── STAT CARDS — 2×2 grid matching reference design ── */}
+            <View className="flex-1 flex-row items-center gap-2 py-2.5 px-1">
               <StatCard
-                iconBg="#e8edfe"
-                icon={<Feather name="zap" size={15} color="#4a72f6" />}
+                icon={<Feather name="zap" size={22} color="#fff" />}
                 value={`${profile?.total_xp ?? 0}`}
                 label="XP Points"
               />
               <StatCard
-                iconBg="#fef5e7"
-                icon={<Feather name="book-open" size={15} color="#d97706" />}
-                value={`${profile?.modules_completed ?? 0}`}
+                icon={<Feather name="book-open" size={20} color="#fff" />}
+                value={`${daysCompletedCount}`}
                 label="Completed"
               />
               <StatCard
-                iconBg="#e4faf1"
-                icon={<MaterialCommunityIcons name="star-four-points" size={15} color="#059669" />}
+                icon={<MaterialCommunityIcons name="star-four-points" size={22} color="#fff" />}
                 value={`${profile?.current_level ?? 0}`}
                 label="Level"
-              />
-              <StatCard
-                iconBg="#fce8f3"
-                icon={<MaterialCommunityIcons name="fire" size={15} color="#db2777" />}
-                value={`${profile?.streak_count ?? 0}`}
-                label="Streak"
               />
             </View>
 
@@ -591,7 +537,7 @@ export function ProfileScreen() {
                 marginTop: 10,
                 gap: 28,
                 borderBottomWidth: 1,
-                borderBottomColor: "#e0e4f0",
+                borderBottomColor: isDark ? "#2D3142" : "#e0e4f0",
               }}
             >
               {(["space", "stats"] as const).map((t) => {
@@ -606,7 +552,13 @@ export function ProfileScreen() {
                       style={{
                         fontSize: 14,
                         fontWeight: isActive ? "600" : "400",
-                        color: isActive ? "#4a72f6" : "#94a3b8",
+                        color: isActive
+                          ? isDark
+                            ? "#3b82f6"
+                            : "#3b82f6"
+                          : isDark
+                            ? "#64748b"
+                            : "#94a3b8",
                         letterSpacing: 0.1,
                       }}
                     >
@@ -620,7 +572,7 @@ export function ProfileScreen() {
                           left: 0,
                           right: 0,
                           height: 2,
-                          backgroundColor: "#4a72f6",
+                          backgroundColor: "#3b82f6",
                           borderRadius: 1,
                         }}
                       />
@@ -632,55 +584,47 @@ export function ProfileScreen() {
 
             {/* ── MY SPACE TAB ── */}
             {tab === "space" ? (
-              <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 }}>
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 20,
+                  paddingBottom: insets.bottom + 80,
+                }}
+              >
                 <SectionLabel text="Settings" />
 
                 {/* Settings grouped as one card */}
                 <View
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: isDark ? "#1E1F2A" : "#fff",
                     borderRadius: 20,
                     borderWidth: 1,
-                    borderColor: "#e8ecf5",
+                    borderColor: isDark ? "#2D3142" : "#e8ecf5",
                     overflow: "hidden",
                     marginBottom: 20,
                   }}
                 >
                   <SettingsRow
                     icon="user"
-                    iconBg="#eff3ff"
-                    iconColor="#4a72f6"
                     label="Personal details"
                     onPress={() => router.push("/profile/edit" as never)}
                   />
                   <SettingsRow
                     icon="translate"
                     iconType="mci"
-                    iconBg="#eff3ff"
-                    iconColor="#4a72f6"
                     label="Language"
                     onPress={() => router.push("/profile/language" as never)}
                   />
-                  <SettingsRow
-                    icon="key"
-                    iconBg="#eff3ff"
-                    iconColor="#4a72f6"
-                    label="Passwords"
-                    onPress={() => {}}
-                  />
+                  <SettingsRow icon="key" label="Passwords" onPress={() => {}} />
                   <SettingsRow
                     icon="sun"
-                    iconBg="#fef8ec"
-                    iconColor="#d97706"
                     label="Dark mode"
                     rightElement={
-                      <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
+                      <CustomSwitch value={isDark} onValueChange={handleToggleDarkMode} />
                     }
                   />
                   <SettingsRow
                     icon="bell"
-                    iconBg="#fff0f6"
-                    iconColor="#db2777"
                     label="Notifications"
                     rightElement={
                       <CustomSwitch
@@ -696,32 +640,18 @@ export function ProfileScreen() {
 
                 <View
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: isDark ? "#1E1F2A" : "#fff",
                     borderRadius: 20,
                     borderWidth: 1,
-                    borderColor: "#e8ecf5",
+                    borderColor: isDark ? "#2D3142" : "#e8ecf5",
                     overflow: "hidden",
                     marginBottom: 20,
                   }}
                 >
-                  <SettingsRow
-                    icon="info"
-                    iconBg="#f3f4f8"
-                    iconColor="#94a3b8"
-                    label="About us"
-                    onPress={() => {}}
-                  />
-                  <SettingsRow
-                    icon="shield"
-                    iconBg="#f3f4f8"
-                    iconColor="#94a3b8"
-                    label="Privacy & security"
-                    onPress={() => {}}
-                  />
+                  <SettingsRow icon="info" label="About us" onPress={() => {}} />
+                  <SettingsRow icon="shield" label="Privacy & security" onPress={() => {}} />
                   <SettingsRow
                     icon="log-out"
-                    iconBg="#fff5f5"
-                    iconColor="#ef4444"
                     label="Log out"
                     labelColor="#ef4444"
                     onPress={logout}
@@ -735,7 +665,13 @@ export function ProfileScreen() {
               </View>
             ) : (
               /* ── MY STATS TAB ── */
-              <View style={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 40 }}>
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 20,
+                  paddingBottom: insets.bottom + 80,
+                }}
+              >
                 {/* Calendar header */}
                 <View
                   style={{
@@ -747,7 +683,7 @@ export function ProfileScreen() {
                 >
                   <Text
                     style={{
-                      color: "#1e293b",
+                      color: isDark ? "#ffffff" : "#1e293b",
                       fontWeight: "600",
                       fontSize: 15,
                       letterSpacing: -0.2,
@@ -784,10 +720,10 @@ export function ProfileScreen() {
                 {/* Calendar card */}
                 <View
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: isDark ? "#1E1F2A" : "#fff",
                     borderRadius: 20,
                     borderWidth: 1,
-                    borderColor: "#e8ecf5",
+                    borderColor: isDark ? "#2D3142" : "#e8ecf5",
                     padding: 18,
                     marginBottom: 16,
                   }}
@@ -809,12 +745,18 @@ export function ProfileScreen() {
                         alignItems: "center",
                         justifyContent: "center",
                         borderRadius: 16,
-                        backgroundColor: "#f0f2ff",
+                        backgroundColor: isDark ? "#2A2C3E" : "#f0f2ff",
                       }}
                     >
-                      <Feather name="chevron-left" size={16} color="#4a72f6" />
+                      <Feather name="chevron-left" size={16} color="#3b82f6" />
                     </Pressable>
-                    <Text style={{ color: "#1e293b", fontWeight: "600", fontSize: 15 }}>
+                    <Text
+                      style={{
+                        color: isDark ? "#ffffff" : "#1e293b",
+                        fontWeight: "600",
+                        fontSize: 15,
+                      }}
+                    >
                       {headerLabel}
                     </Text>
                     <Pressable
@@ -825,10 +767,10 @@ export function ProfileScreen() {
                         alignItems: "center",
                         justifyContent: "center",
                         borderRadius: 16,
-                        backgroundColor: "#f0f2ff",
+                        backgroundColor: isDark ? "#2A2C3E" : "#f0f2ff",
                       }}
                     >
-                      <Feather name="chevron-right" size={16} color="#4a72f6" />
+                      <Feather name="chevron-right" size={16} color="#3b82f6" />
                     </Pressable>
                   </View>
 
@@ -889,7 +831,7 @@ export function ProfileScreen() {
                                 left: 0,
                                 right: 0,
                                 flexDirection: "row",
-                                zIndex: -1,
+                                zIndex: 1,
                               }}
                             >
                               {(() => {
@@ -911,7 +853,17 @@ export function ProfileScreen() {
                                       }}
                                     >
                                       <LinearGradient
-                                        colors={["#e0e7ff", "#60a5fa"]} // light indigo to blue
+                                        colors={
+                                          isDark
+                                            ? [
+                                                "rgba(113, 116, 246, 0.15)",
+                                                "rgba(113, 116, 246, 0.15)",
+                                              ]
+                                            : [
+                                                "rgba(59, 130, 246, 0.08)",
+                                                "rgba(59, 130, 246, 0.08)",
+                                              ]
+                                        } // dark or light indigo/blue soft transparent highlights
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         style={{ flex: 1, borderRadius: 15 }}
@@ -926,7 +878,6 @@ export function ProfileScreen() {
                                 return items;
                               })()}
                             </View>
-
                             {rowDays.map((dayObj, dayIdx) => {
                               const isToday = dayObj.date === todayStr;
 
@@ -947,7 +898,7 @@ export function ProfileScreen() {
                                         width: 30,
                                         height: 30,
                                         borderRadius: 15,
-                                        backgroundColor: "#4a72f6",
+                                        backgroundColor: "#3b82f6",
                                         alignItems: "center",
                                         justifyContent: "center",
                                       }}
@@ -960,14 +911,24 @@ export function ProfileScreen() {
                                     </View>
                                   ) : dayObj.active ? (
                                     <Text
-                                      style={{ color: "#4a72f6", fontWeight: "600", fontSize: 13 }}
+                                      style={{
+                                        color: "#3b82f6",
+                                        fontWeight: "600",
+                                        fontSize: 13,
+                                      }}
                                     >
                                       {dayObj.dayNumber}
                                     </Text>
                                   ) : (
                                     <Text
                                       style={{
-                                        color: dayObj.isCurrentMonth ? "#334155" : "#cbd5e1",
+                                        color: dayObj.isCurrentMonth
+                                          ? isDark
+                                            ? "#cbd5e1"
+                                            : "#334155"
+                                          : isDark
+                                            ? "#4b5563"
+                                            : "#cbd5e1",
                                         fontWeight: "400",
                                         fontSize: 13,
                                       }}
@@ -988,16 +949,21 @@ export function ProfileScreen() {
                 {/* Progress summary */}
                 <View
                   style={{
-                    backgroundColor: "#fff",
+                    backgroundColor: isDark ? "#1E1F2A" : "#fff",
                     borderRadius: 20,
                     borderWidth: 1,
-                    borderColor: "#e8ecf5",
+                    borderColor: isDark ? "#2D3142" : "#e8ecf5",
                     padding: 18,
                     marginBottom: 16,
                   }}
                 >
                   <Text
-                    style={{ color: "#1e293b", fontWeight: "600", fontSize: 15, marginBottom: 18 }}
+                    style={{
+                      color: isDark ? "#ffffff" : "#1e293b",
+                      fontWeight: "600",
+                      fontSize: 15,
+                      marginBottom: 18,
+                    }}
                   >
                     Progress overview
                   </Text>
@@ -1005,7 +971,7 @@ export function ProfileScreen() {
                   <ProgressRow
                     label="Total XP"
                     valueLabel={`${profile?.total_xp ?? 0} XP`}
-                    fillColor="#4a72f6"
+                    fillColor="#3b82f6"
                     percent={75}
                   />
                   <ProgressRow
@@ -1056,8 +1022,6 @@ function SectionLabel({ text }: { text: string }) {
 interface SettingsRowProps {
   icon?: string;
   iconType?: "feather" | "mci";
-  iconBg?: string;
-  iconColor?: string;
   label: string;
   labelColor?: string;
   onPress?: () => void;
@@ -1068,14 +1032,17 @@ interface SettingsRowProps {
 function SettingsRow({
   icon,
   iconType = "feather",
-  iconBg = "#eff3ff",
-  iconColor = "#4a72f6",
   label,
-  labelColor = "#1e293b",
+  labelColor,
   onPress,
   rightElement,
   isLast = false,
 }: SettingsRowProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const finalLabelColor = labelColor ?? (isDark ? "#ffffff" : "#1e293b");
+  const iconColor = labelColor ?? (isDark ? "#94a3b8" : "#64748b");
+
   const inner = (
     <View
       style={{
@@ -1085,7 +1052,7 @@ function SettingsRow({
         paddingHorizontal: 16,
         paddingVertical: 13,
         borderBottomWidth: isLast ? 0 : 1,
-        borderBottomColor: "#f1f3f8",
+        borderBottomColor: isDark ? "#2D3142" : "#f1f3f8",
       }}
     >
       <View style={{ flexDirection: "row", alignItems: "center", flex: 1, gap: 12 }}>
@@ -1094,8 +1061,6 @@ function SettingsRow({
             style={{
               width: 34,
               height: 34,
-              borderRadius: 10,
-              backgroundColor: iconBg,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -1103,24 +1068,24 @@ function SettingsRow({
             {iconType === "feather" ? (
               <Feather
                 name={icon as React.ComponentProps<typeof Feather>["name"]}
-                size={15}
+                size={18}
                 color={iconColor}
               />
             ) : (
               <MaterialCommunityIcons
                 name={icon as React.ComponentProps<typeof MaterialCommunityIcons>["name"]}
-                size={17}
+                size={20}
                 color={iconColor}
               />
             )}
           </View>
         )}
-        <Text style={{ fontWeight: "400", fontSize: 14, color: labelColor }}>{label}</Text>
+        <Text style={{ fontWeight: "400", fontSize: 14, color: finalLabelColor }}>{label}</Text>
       </View>
       {rightElement !== undefined ? (
         rightElement
       ) : (
-        <Feather name="chevron-right" size={15} color="#d1d5db" />
+        <Feather name="chevron-right" size={15} color={isDark ? "#4b5563" : "#d1d5db"} />
       )}
     </View>
   );
@@ -1135,49 +1100,64 @@ function SettingsRow({
   return inner;
 }
 
-// ── Stat card ──
-function StatCard({
-  iconBg,
-  icon,
-  value,
-  label,
-}: {
-  iconBg: string;
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-}) {
+// ── Stat card — blue square icon + bold number + label (2×2 grid) ──
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
     <View
       style={{
-        flex: 1,
-        backgroundColor: "#fff",
-        borderRadius: 14,
-        padding: 11,
-        borderWidth: 1,
-        borderColor: "#e8ecf5",
-        alignItems: "flex-start",
+        width: "33.33%",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
       }}
     >
+      {/* Blue rounded square icon */}
       <View
         style={{
-          width: 30,
-          height: 30,
-          borderRadius: 9,
-          backgroundColor: iconBg,
+          width: 48,
+          height: 48,
+          borderRadius: 14,
+          backgroundColor: "#3b82f6",
           alignItems: "center",
           justifyContent: "center",
-          marginBottom: 8,
+          shadowColor: "#3b82f6",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.25,
+          shadowRadius: 8,
+          elevation: 4,
         }}
       >
         {icon}
       </View>
-      <Text style={{ color: "#1e293b", fontWeight: "600", fontSize: 15, lineHeight: 18 }}>
-        {value}
-      </Text>
-      <Text style={{ color: "#94a3b8", fontWeight: "400", fontSize: 10, marginTop: 2 }}>
-        {label}
-      </Text>
+      {/* Number + label */}
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{
+            color: isDark ? "#ffffff" : "#1e293b",
+            fontWeight: "700",
+            fontSize: 20,
+            lineHeight: 24,
+            letterSpacing: -0.3,
+          }}
+        >
+          {value}
+        </Text>
+        <Text
+          style={{
+            color: isDark ? "#a1a1aa" : "#94a3b8",
+            fontWeight: "400",
+            fontSize: 12,
+            marginTop: 2,
+            letterSpacing: 0.1,
+          }}
+        >
+          {label}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -1196,13 +1176,24 @@ function ProgressRow({
   percent: number;
   isLast?: boolean;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
     <View style={{ marginBottom: isLast ? 0 : 18 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 7 }}>
-        <Text style={{ color: "#64748b", fontWeight: "400", fontSize: 13 }}>{label}</Text>
+        <Text style={{ color: isDark ? "#a1a1aa" : "#64748b", fontWeight: "400", fontSize: 13 }}>
+          {label}
+        </Text>
         <Text style={{ color: fillColor, fontWeight: "600", fontSize: 13 }}>{valueLabel}</Text>
       </View>
-      <View style={{ height: 5, backgroundColor: "#eef0f7", borderRadius: 3, overflow: "hidden" }}>
+      <View
+        style={{
+          height: 5,
+          backgroundColor: isDark ? "#2A2C3E" : "#eef0f7",
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
+      >
         <View
           style={{
             height: "100%",
@@ -1224,12 +1215,14 @@ function CustomSwitch({
   value: boolean;
   onValueChange: (v: boolean) => void;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
     <Pressable
       onPress={() => onValueChange(!value)}
       style={[
         { width: 42, height: 24, borderRadius: 12, padding: 3, justifyContent: "center" },
-        { backgroundColor: value ? "#4a72f6" : "#cbd5e1" },
+        { backgroundColor: value ? "#3b82f6" : isDark ? "#3F3F46" : "#cbd5e1" },
       ]}
     >
       <View
@@ -1257,9 +1250,9 @@ function PremiumBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}>
       <LinearGradient
-        colors={["#1a1060", "#2d1f8c", "#3b2fd6"]}
+        colors={["#5ba6f5", "#8ae0b7"]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0.5 }}
         style={{ borderRadius: 22, padding: 22, overflow: "hidden", position: "relative" }}
       >
         {/* Subtle ring decorations */}
@@ -1268,81 +1261,83 @@ function PremiumBanner({ onPress }: { onPress: () => void }) {
             position: "absolute",
             right: -24,
             bottom: -24,
-            width: 110,
-            height: 110,
-            borderRadius: 55,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.07)",
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            borderWidth: 20,
+            borderColor: "rgba(255, 255, 255, 0.12)",
           }}
         />
         <View
           style={{
             position: "absolute",
-            right: 20,
-            top: -16,
-            width: 65,
-            height: 65,
-            borderRadius: 32.5,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.05)",
+            right: 15,
+            top: -30,
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            borderWidth: 15,
+            borderColor: "rgba(255, 255, 255, 0.08)",
           }}
         />
 
         <Text
           style={{
-            color: "rgba(255,255,255,0.45)",
-            fontSize: 11,
-            fontWeight: "400",
-            marginBottom: 6,
-            letterSpacing: 0.3,
+            color: "#ffffff",
+            fontSize: 12,
+            fontWeight: "500",
+            marginBottom: 8,
+            letterSpacing: 0.2,
           }}
         >
-          Supercharge your learning with
+          Supercharge Your Communication With
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700", letterSpacing: -0.5 }}>
-            lumino ✦
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Text style={{ color: "#ffffff", fontSize: 32, fontWeight: "800", letterSpacing: -0.5 }}>
+            lumino
           </Text>
-          <View
+
+          <Svg
+            width={26}
+            height={26}
+            viewBox="0 0 100 100"
+            style={{ transform: [{ translateY: 1 }] }}
+          >
+            <Mask id="star-mask">
+              <Circle cx="50" cy="50" r="50" fill="#ffffff" />
+              <Path
+                d="M 50 15 Q 50 50 15 50 Q 50 50 50 85 Q 50 50 85 50 Q 50 50 50 15 Z"
+                fill="#000000"
+              />
+            </Mask>
+            <Circle cx="50" cy="50" r="50" fill="#ffffff" mask="url(#star-mask)" />
+          </Svg>
+
+          <LinearGradient
+            colors={["#5881F5", "#E5E770"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={{
-              paddingHorizontal: 9,
-              paddingVertical: 3,
-              borderRadius: 6,
-              backgroundColor: "#c4b97a",
+              paddingHorizontal: 12,
+              paddingVertical: 5,
+              borderRadius: 12,
+              marginLeft: 8,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Text
               style={{
-                color: "#1a0f3c",
-                fontSize: 9,
-                fontWeight: "700",
-                letterSpacing: 1,
-                textTransform: "uppercase",
+                color: "#ffffff",
+                fontSize: 10,
+                fontWeight: "800",
+                textTransform: "capitalize",
               }}
             >
               Premium
             </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            alignSelf: "flex-start",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.2)",
-            backgroundColor: "rgba(255,255,255,0.08)",
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 20,
-          }}
-        >
-          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "500" }}>
-            Explore plans
-          </Text>
-          <Feather name="arrow-right" size={12} color="rgba(255,255,255,0.6)" />
+          </LinearGradient>
         </View>
       </LinearGradient>
     </Pressable>
