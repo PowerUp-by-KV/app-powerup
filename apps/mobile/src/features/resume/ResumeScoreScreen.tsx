@@ -1,6 +1,5 @@
 import React from "react";
 import {
-  ActivityIndicator,
   TouchableOpacity,
   SafeAreaView,
   ScrollView,
@@ -14,9 +13,11 @@ import * as SecureStore from "expo-secure-store";
 
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetResumeScoreQuery } from "@/services/resume-api";
+import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
 
 const { width } = Dimensions.get("window");
 // Clamp the radius so it doesn't explode on large screens, and keep it tight
@@ -25,6 +26,7 @@ const SATELLITE_RADIUS = Math.min(width * 0.28, 140);
 import { ResumeScoreResponse, ResumeScoreSection } from "@/services/resume-api";
 
 function ScoreDiagram({ data }: { data: Partial<ResumeScoreResponse> | undefined | null }) {
+  const { isDark } = useThemeToggle();
   const overall = data?.overall_score ?? 0;
   const sections = data?.sections ?? [];
 
@@ -47,10 +49,22 @@ function ScoreDiagram({ data }: { data: Partial<ResumeScoreResponse> | undefined
     <View style={styles.diagramContainer}>
       {/* Center Node */}
       <View style={styles.centerNodeContainer}>
-        <View style={styles.centerCircle}>
-          <Text style={styles.centerScore}>{overall}%</Text>
+        <View
+          style={[
+            styles.centerCircle,
+            {
+              backgroundColor: isDark ? "#1e293b" : "white",
+              borderColor: isDark ? "#374151" : "#e5e7eb",
+            },
+          ]}
+        >
+          <Text style={[styles.centerScore, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+            {overall}%
+          </Text>
         </View>
-        <Text style={styles.centerLabel}>Overall Score</Text>
+        <Text style={[styles.centerLabel, { color: isDark ? "#d1d5db" : "#374151" }]}>
+          Overall Score
+        </Text>
       </View>
 
       {/* Satellite Nodes */}
@@ -77,7 +91,9 @@ function ScoreDiagram({ data }: { data: Partial<ResumeScoreResponse> | undefined
             <View style={styles.satelliteCircle}>
               <Text style={styles.satelliteScore}>{scoreVal}%</Text>
             </View>
-            <Text style={styles.satelliteLabel}>{n.label}</Text>
+            <Text style={[styles.satelliteLabel, { color: isDark ? "#9ca3af" : "#6b7280" }]}>
+              {n.label}
+            </Text>
           </View>
         );
       })}
@@ -86,6 +102,7 @@ function ScoreDiagram({ data }: { data: Partial<ResumeScoreResponse> | undefined
 }
 
 export function ResumeScoreScreen() {
+  const { isDark } = useThemeToggle();
   const router = useRouter();
   const safeBack = useSafeBack();
   const { data: profile } = useGetProfileQuery();
@@ -112,81 +129,130 @@ export function ResumeScoreScreen() {
   const { data, isLoading, isError } = useGetResumeScoreQuery(undefined, { skip: !userId });
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDark ? "#0f172a" : "#fafafa" }]}>
       {/* Background Blobs */}
-      <View style={styles.blobGreen} />
-      <View style={styles.blobPurple} />
+      <View
+        style={[
+          styles.blobGreen,
+          { backgroundColor: isDark ? "rgba(6, 78, 59, 0.4)" : "rgba(209, 250, 229, 0.6)" },
+        ]}
+      />
+      <View
+        style={[
+          styles.blobPurple,
+          { backgroundColor: isDark ? "rgba(49, 46, 129, 0.5)" : "rgba(224, 231, 255, 0.7)" },
+        ]}
+      />
 
       {/* Top Header */}
       <View style={styles.header}>
-        <TouchableOpacity activeOpacity={0.7} onPress={() => safeBack()} style={styles.backButton}>
-          <Feather name="arrow-left" size={20} color="#9ca3af" />
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => safeBack()}
+          style={[
+            styles.backButton,
+            {
+              backgroundColor: isDark ? "#1e293b" : "white",
+              borderColor: isDark ? "#374151" : "#e5e7eb",
+            },
+          ]}
+        >
+          <Feather name="arrow-left" size={20} color={isDark ? "#d1d5db" : "#9ca3af"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Resume Building</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? "#f3f4f6" : "#374151" }]}>
+          Resume Building
+        </Text>
         <View style={styles.backButtonPlaceholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <ActivityIndicator color="#4f46e5" size="large" style={{ marginTop: 60 }} />
-        ) : isError ? (
-          <View style={styles.errorContainer}>
-            <Feather name="alert-circle" size={32} color="#ef4444" />
-            <Text style={styles.errorText}>Failed to load score. Please try again.</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.replace("/resume" as never)}
-              style={styles.errorButton}
-            >
-              <Text style={styles.errorButtonText}>Go to Resume Studio</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.content}>
-            <Text style={styles.mainTitle}>You're half way to a great start!</Text>
-
-            <View style={styles.diagramWrapper}>
-              <ScoreDiagram data={data} />
+      {isLoading ? (
+        <ResumeSkeletonLoader />
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {isError ? (
+            <View style={styles.errorContainer}>
+              <Feather name="alert-circle" size={32} color="#ef4444" />
+              <Text style={[styles.errorText, { color: isDark ? "#f3f4f6" : "#4b5563" }]}>
+                Failed to load score. Please try again.
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.replace("/resume" as never)}
+                style={styles.errorButton}
+              >
+                <Text style={styles.errorButtonText}>Go to Resume Studio</Text>
+              </TouchableOpacity>
             </View>
+          ) : (
+            <View style={styles.content}>
+              <Text style={[styles.mainTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                You're half way to a great start!
+              </Text>
 
-            <Text style={styles.sectionSubtitle}>
-              Here's what you got right and areas we'll help improve
-            </Text>
-
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Feather name="award" size={18} color="#1f2937" />
-                <Text style={styles.cardTitle}>You got it right</Text>
+              <View style={styles.diagramWrapper}>
+                <ScoreDiagram data={data} />
               </View>
-              {(data?.got_right && data.got_right.length > 0
-                ? data.got_right
-                : ["All sections employers look for", "Multiple contact methods"]
-              ).map((b: string, index: number) => (
-                <View key={index} style={styles.listItem}>
-                  <Feather name="check" size={14} color="#9ca3af" style={styles.listIcon} />
-                  <Text style={styles.listText}>{b}</Text>
-                </View>
-              ))}
-            </View>
 
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Feather name="zap" size={18} color="#1f2937" />
-                <Text style={styles.cardTitle}>How we'll help improve:</Text>
-              </View>
-              {(data?.improvements && data.improvements.length > 0
-                ? data.improvements
-                : ["Add education details", "Optimize section titles", "Fix grammar errors"]
-              ).map((b: string, index: number) => (
-                <View key={index} style={styles.listItem}>
-                  <View style={styles.bulletDot} />
-                  <Text style={styles.listText}>{b}</Text>
+              <Text style={[styles.sectionSubtitle, { color: isDark ? "#9ca3af" : "#6b7280" }]}>
+                Here's what you got right and areas we'll help improve
+              </Text>
+
+              <View style={[styles.card, { backgroundColor: isDark ? "#1e293b" : "#f8fafc" }]}>
+                <View style={styles.cardHeader}>
+                  <Feather name="award" size={18} color={isDark ? "#f8fafc" : "#1f2937"} />
+                  <Text style={[styles.cardTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                    You got it right
+                  </Text>
                 </View>
-              ))}
+                {(data?.got_right && data.got_right.length > 0
+                  ? data.got_right
+                  : ["All sections employers look for", "Multiple contact methods"]
+                ).map((b: string, index: number) => (
+                  <View key={index} style={styles.listItem}>
+                    <Feather
+                      name="check"
+                      size={14}
+                      color={isDark ? "#d1d5db" : "#9ca3af"}
+                      style={styles.listIcon}
+                    />
+                    <Text style={[styles.listText, { color: isDark ? "#d1d5db" : "#9ca3af" }]}>
+                      {b}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              <View style={[styles.card, { backgroundColor: isDark ? "#1e293b" : "#f8fafc" }]}>
+                <View style={styles.cardHeader}>
+                  <Feather name="zap" size={18} color={isDark ? "#f8fafc" : "#1f2937"} />
+                  <Text style={[styles.cardTitle, { color: isDark ? "#f8fafc" : "#1f2937" }]}>
+                    How we'll help improve:
+                  </Text>
+                </View>
+                {(data?.improvements && data.improvements.length > 0
+                  ? data.improvements
+                  : ["Add education details", "Optimize section titles", "Fix grammar errors"]
+                ).map((b: string, index: number) => (
+                  <View key={index} style={styles.listItem}>
+                    <View
+                      style={[
+                        styles.bulletDot,
+                        { backgroundColor: isDark ? "#d1d5db" : "#9ca3af" },
+                      ]}
+                    />
+                    <Text style={[styles.listText, { color: isDark ? "#d1d5db" : "#9ca3af" }]}>
+                      {b}
+                    </Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      )}
       {/* Floating Continue Button */}
       {!isLoading && !isError && (
         <View style={styles.floatingFooter}>
