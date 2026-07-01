@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Animated,
   Modal,
+  useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -318,6 +319,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 export function MedalsScreen() {
   const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
   const isLoading = isAchievementsLoading || isMedalsLoading;
@@ -325,6 +327,10 @@ export function MedalsScreen() {
   const isDark = colorScheme === "dark";
 
   const [selectedBadge, setSelectedBadge] = useState<BadgeType | null>(null);
+
+  const cardWidth = useMemo(() => {
+    return (windowWidth - 40) / 3;
+  }, [windowWidth]);
 
   // Map backend achievements data with our premium badge list
   const badges = useMemo<BadgeType[]>(() => {
@@ -467,7 +473,7 @@ export function MedalsScreen() {
                   onPress={() => setSelectedBadge(b)}
                   style={({ pressed }) => [
                     styles.badgeCardPressable,
-                    { transform: [{ scale: pressed ? 0.95 : 1 }] },
+                    { width: cardWidth, transform: [{ scale: pressed ? 0.95 : 1 }] },
                   ]}
                 >
                   {/* Badge Outer Shell */}
