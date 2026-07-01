@@ -7,7 +7,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 
-import { useGetPlansQuery } from "@/services/subscription-api";
+import { useGetSubscriptionPlansQuery } from "@/services/profile-api";
 
 function formatINR(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -18,7 +18,7 @@ export function SubscriptionPlansScreen() {
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
-  const { data: plans = [], isLoading } = useGetPlansQuery();
+  const { data: plans = [], isLoading } = useGetSubscriptionPlansQuery();
   const [selected, setSelected] = useState<string | null>(null);
 
   const visible = plans.filter((p) => p.code !== "trial_10d");
@@ -43,22 +43,12 @@ export function SubscriptionPlansScreen() {
       }}
       className={isDark ? "bg-slate-900" : "bg-white"}
     >
-      {/* Background gradients */}
+      {/* Background gradient */}
       <LinearGradient
-        colors={
-          isDark ? ["rgba(34,197,94,0.15)", "transparent"] : ["rgba(34,197,94,0.1)", "transparent"]
-        }
-        style={{ position: "absolute", top: 0, left: 0, right: 0, height: 350 }}
-      />
-      <LinearGradient
-        colors={
-          isDark
-            ? ["rgba(59,130,246,0.15)", "transparent"]
-            : ["rgba(59,130,246,0.1)", "transparent"]
-        }
-        style={{ position: "absolute", top: 0, right: 0, width: 350, height: 350 }}
-        start={{ x: 1, y: 0 }}
-        end={{ x: 0, y: 1 }}
+        colors={isDark ? ["#1d3219", "#0c1b2b"] : ["#e5f5bb", "#bce3f8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
       />
 
       {/* Header */}

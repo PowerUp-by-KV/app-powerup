@@ -17,13 +17,15 @@ import { useColorScheme } from "nativewind";
 
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Path, Circle, Mask } from "react-native-svg";
 import * as SecureStore from "expo-secure-store";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
+import { useGetModulesQuery, useLazyGetModuleDaysQuery } from "@/services/module-api";
 import { useLogout } from "@/utils/auth";
 import { getAvatarUri } from "@/utils/avatar";
+import type { ModuleDay } from "@powerup/shared";
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -32,9 +34,61 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { logout } = useLogout();
   const [tab, setTab] = useState<"stats" | "space">("space");
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const { data: profile, isLoading } = useGetProfileQuery();
+
+  const { data: modulesData } = useGetModulesQuery();
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
+
+  const personalizedPath = useMemo(() => {
+    if (!modulesData) return null;
+    return {
+      modules: modulesData.map((m) => ({
+        id: m.id,
+        module_no: m.order_index,
+        title: m.title,
+        variant_id: null,
+        is_unlocked: true,
+      })),
+    };
+  }, [modulesData]);
+
+  useEffect(() => {
+    if (!personalizedPath?.modules?.length) return;
+    let active = true;
+    const fetchAllDays = async () => {
+      try {
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id).unwrap();
+            return { moduleId: m.id, days: data };
+          } catch {
+            return { moduleId: m.id, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+        if (!active) return;
+        const newData: Record<string, ModuleDay[]> = {};
+        for (const res of results) {
+          newData[res.moduleId] = res.days;
+        }
+        setModuleDaysData(newData);
+      } catch {}
+    };
+    fetchAllDays();
+    return () => {
+      active = false;
+    };
+  }, [personalizedPath, triggerGetModuleDays]);
+
+  const daysCompletedCount = useMemo(() => {
+    let count = 0;
+    for (const key in moduleDaysData) {
+      count += moduleDaysData[key]?.filter((d) => d?.is_completed).length ?? 0;
+    }
+    return count;
+  }, [moduleDaysData]);
 
   const { colorScheme, setColorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -55,7 +109,6 @@ export function ProfileScreen() {
         }
         if (storedDarkMode !== null) {
           const darkVal = storedDarkMode === "true";
-          setIsDarkMode(darkVal);
           setColorScheme(darkVal ? "dark" : "light");
         }
         if (storedNotifications !== null) setNotificationsEnabled(storedNotifications === "true");
@@ -67,7 +120,6 @@ export function ProfileScreen() {
   }, [setColorScheme]);
 
   const handleToggleDarkMode = async (value: boolean) => {
-    setIsDarkMode(value);
     setColorScheme(value ? "dark" : "light");
     try {
       if (Platform.OS === "web") {
@@ -473,7 +525,7 @@ export function ProfileScreen() {
               />
               <StatCard
                 icon={<Feather name="book-open" size={20} color="#fff" />}
-                value={`${profile?.modules_completed ?? 0}`}
+                value={`${daysCompletedCount}`}
                 label="Completed"
               />
               <StatCard
@@ -508,8 +560,8 @@ export function ProfileScreen() {
                         fontWeight: isActive ? "600" : "400",
                         color: isActive
                           ? isDark
-                            ? "#60a5fa"
-                            : "#4a72f6"
+                            ? "#3b82f6"
+                            : "#3b82f6"
                           : isDark
                             ? "#64748b"
                             : "#94a3b8",
@@ -526,7 +578,7 @@ export function ProfileScreen() {
                           left: 0,
                           right: 0,
                           height: 2,
-                          backgroundColor: isDark ? "#60a5fa" : "#4a72f6",
+                          backgroundColor: "#3b82f6",
                           borderRadius: 1,
                         }}
                       />
@@ -574,7 +626,7 @@ export function ProfileScreen() {
                     icon="sun"
                     label="Dark mode"
                     rightElement={
-                      <CustomSwitch value={isDarkMode} onValueChange={handleToggleDarkMode} />
+                      <CustomSwitch value={isDark} onValueChange={handleToggleDarkMode} />
                     }
                   />
                   <SettingsRow
@@ -702,11 +754,7 @@ export function ProfileScreen() {
                         backgroundColor: isDark ? "#2A2C3E" : "#f0f2ff",
                       }}
                     >
-                      <Feather
-                        name="chevron-left"
-                        size={16}
-                        color={isDark ? "#60a5fa" : "#4a72f6"}
-                      />
+                      <Feather name="chevron-left" size={16} color="#3b82f6" />
                     </Pressable>
                     <Text
                       style={{
@@ -728,11 +776,7 @@ export function ProfileScreen() {
                         backgroundColor: isDark ? "#2A2C3E" : "#f0f2ff",
                       }}
                     >
-                      <Feather
-                        name="chevron-right"
-                        size={16}
-                        color={isDark ? "#60a5fa" : "#4a72f6"}
-                      />
+                      <Feather name="chevron-right" size={16} color="#3b82f6" />
                     </Pressable>
                   </View>
 
@@ -793,7 +837,7 @@ export function ProfileScreen() {
                                 left: 0,
                                 right: 0,
                                 flexDirection: "row",
-                                zIndex: -1,
+                                zIndex: 1,
                               }}
                             >
                               {(() => {
@@ -816,8 +860,16 @@ export function ProfileScreen() {
                                     >
                                       <LinearGradient
                                         colors={
-                                          isDark ? ["#1e1b4b", "#3b82f6"] : ["#e0e7ff", "#60a5fa"]
-                                        } // dark or light indigo/blue
+                                          isDark
+                                            ? [
+                                                "rgba(113, 116, 246, 0.15)",
+                                                "rgba(113, 116, 246, 0.15)",
+                                              ]
+                                            : [
+                                                "rgba(59, 130, 246, 0.08)",
+                                                "rgba(59, 130, 246, 0.08)",
+                                              ]
+                                        } // dark or light indigo/blue soft transparent highlights
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         style={{ flex: 1, borderRadius: 15 }}
@@ -852,7 +904,7 @@ export function ProfileScreen() {
                                         width: 30,
                                         height: 30,
                                         borderRadius: 15,
-                                        backgroundColor: "#4a72f6",
+                                        backgroundColor: "#3b82f6",
                                         alignItems: "center",
                                         justifyContent: "center",
                                       }}
@@ -866,7 +918,7 @@ export function ProfileScreen() {
                                   ) : dayObj.active ? (
                                     <Text
                                       style={{
-                                        color: isDark ? "#60a5fa" : "#4a72f6",
+                                        color: "#3b82f6",
                                         fontWeight: "600",
                                         fontSize: 13,
                                       }}
@@ -925,7 +977,7 @@ export function ProfileScreen() {
                   <ProgressRow
                     label="Total XP"
                     valueLabel={`${profile?.total_xp ?? 0} XP`}
-                    fillColor="#4a72f6"
+                    fillColor="#3b82f6"
                     percent={75}
                   />
                   <ProgressRow
@@ -1075,10 +1127,10 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
           width: 48,
           height: 48,
           borderRadius: 14,
-          backgroundColor: "#4a72f6",
+          backgroundColor: "#3b82f6",
           alignItems: "center",
           justifyContent: "center",
-          shadowColor: "#4a72f6",
+          shadowColor: "#3b82f6",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.25,
           shadowRadius: 8,
@@ -1176,7 +1228,7 @@ function CustomSwitch({
       onPress={() => onValueChange(!value)}
       style={[
         { width: 42, height: 24, borderRadius: 12, padding: 3, justifyContent: "center" },
-        { backgroundColor: value ? "#4a72f6" : isDark ? "#3F3F46" : "#cbd5e1" },
+        { backgroundColor: value ? "#3b82f6" : isDark ? "#3F3F46" : "#cbd5e1" },
       ]}
     >
       <View
@@ -1204,9 +1256,9 @@ function PremiumBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.92 : 1 })}>
       <LinearGradient
-        colors={["#1a1060", "#2d1f8c", "#3b2fd6"]}
+        colors={["#5ba6f5", "#8ae0b7"]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0.5 }}
         style={{ borderRadius: 22, padding: 22, overflow: "hidden", position: "relative" }}
       >
         {/* Subtle ring decorations */}
@@ -1215,81 +1267,83 @@ function PremiumBanner({ onPress }: { onPress: () => void }) {
             position: "absolute",
             right: -24,
             bottom: -24,
-            width: 110,
-            height: 110,
-            borderRadius: 55,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.07)",
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            borderWidth: 20,
+            borderColor: "rgba(255, 255, 255, 0.12)",
           }}
         />
         <View
           style={{
             position: "absolute",
-            right: 20,
-            top: -16,
-            width: 65,
-            height: 65,
-            borderRadius: 32.5,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.05)",
+            right: 15,
+            top: -30,
+            width: 100,
+            height: 100,
+            borderRadius: 50,
+            borderWidth: 15,
+            borderColor: "rgba(255, 255, 255, 0.08)",
           }}
         />
 
         <Text
           style={{
-            color: "rgba(255,255,255,0.45)",
-            fontSize: 11,
-            fontWeight: "400",
-            marginBottom: 6,
-            letterSpacing: 0.3,
+            color: "#ffffff",
+            fontSize: 12,
+            fontWeight: "500",
+            marginBottom: 8,
+            letterSpacing: 0.2,
           }}
         >
-          Supercharge your learning with
+          Supercharge Your Communication With
         </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <Text style={{ color: "#fff", fontSize: 22, fontWeight: "700", letterSpacing: -0.5 }}>
-            lumino ✦
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Text style={{ color: "#ffffff", fontSize: 32, fontWeight: "800", letterSpacing: -0.5 }}>
+            lumino
           </Text>
-          <View
+
+          <Svg
+            width={26}
+            height={26}
+            viewBox="0 0 100 100"
+            style={{ transform: [{ translateY: 1 }] }}
+          >
+            <Mask id="star-mask">
+              <Circle cx="50" cy="50" r="50" fill="#ffffff" />
+              <Path
+                d="M 50 15 Q 50 50 15 50 Q 50 50 50 85 Q 50 50 85 50 Q 50 50 50 15 Z"
+                fill="#000000"
+              />
+            </Mask>
+            <Circle cx="50" cy="50" r="50" fill="#ffffff" mask="url(#star-mask)" />
+          </Svg>
+
+          <LinearGradient
+            colors={["#5881F5", "#E5E770"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
             style={{
-              paddingHorizontal: 9,
-              paddingVertical: 3,
-              borderRadius: 6,
-              backgroundColor: "#c4b97a",
+              paddingHorizontal: 12,
+              paddingVertical: 5,
+              borderRadius: 12,
+              marginLeft: 8,
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Text
               style={{
-                color: "#1a0f3c",
-                fontSize: 9,
-                fontWeight: "700",
-                letterSpacing: 1,
-                textTransform: "uppercase",
+                color: "#ffffff",
+                fontSize: 10,
+                fontWeight: "800",
+                textTransform: "capitalize",
               }}
             >
               Premium
             </Text>
-          </View>
-        </View>
-
-        <View
-          style={{
-            alignSelf: "flex-start",
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 6,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.2)",
-            backgroundColor: "rgba(255,255,255,0.08)",
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 20,
-          }}
-        >
-          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, fontWeight: "500" }}>
-            Explore plans
-          </Text>
-          <Feather name="arrow-right" size={12} color="rgba(255,255,255,0.6)" />
+          </LinearGradient>
         </View>
       </LinearGradient>
     </Pressable>

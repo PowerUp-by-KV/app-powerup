@@ -26,6 +26,7 @@ import {
   useDeleteResumeMutation,
   useGetResumeQuery,
 } from "@/services/resume-api";
+import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
 import { useGetResumeStatusQuery } from "@/services/resume-api";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -362,40 +363,7 @@ export function ResumeHomeScreen() {
   if (uploading) {
     return (
       <View style={styles.fullScreenLoader}>
-        <View style={styles.skeletonLoaderContainer}>
-          <View
-            style={[
-              styles.skeletonPaper,
-              Platform.OS === "web"
-                ? ({ filter: "blur(4px)" } as unknown as React.CSSProperties)
-                : {},
-            ]}
-          >
-            {/* Left sidebar block */}
-            <View style={styles.skeletonSidebar} />
-
-            {/* Right content blocks */}
-            <View style={styles.skeletonContent}>
-              <View style={styles.skeletonRow}>
-                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
-                <View style={[styles.skeletonBlock, { flex: 0.8, height: 40 }]} />
-              </View>
-              <View style={[styles.skeletonBlock, { height: 60 }]} />
-              <View style={[styles.skeletonBlock, { height: 60 }]} />
-              <View style={[styles.skeletonBlock, { height: 60 }]} />
-              <View style={styles.skeletonRow}>
-                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
-                <View style={[styles.skeletonBlock, { flex: 1, height: 40 }]} />
-              </View>
-            </View>
-          </View>
-
-          {/* Overlay with Text and Spinner directly on frosted glass */}
-          <View style={styles.skeletonOverlay}>
-            <Text style={styles.analyzingText}>Analysing Resume...</Text>
-            <ActivityIndicator size="large" color="#3b82f6" />
-          </View>
-        </View>
+        <ResumeSkeletonLoader />
       </View>
     );
   }

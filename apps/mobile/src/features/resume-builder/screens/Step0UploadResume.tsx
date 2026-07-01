@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -46,61 +46,285 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
   } | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+
+    // Dynamically inject Google APIs for Picker on web
+    const script1 = document.createElement("script");
+    script1.src = "https://apis.google.com/js/api.js";
+    script1.async = true;
+    script1.defer = true;
+    document.head.appendChild(script1);
+
+    const script2 = document.createElement("script");
+    script2.src = "https://accounts.google.com/gsi/client";
+    script2.async = true;
+    script2.defer = true;
+    document.head.appendChild(script2);
+
+    // Dynamically inject Dropbox Chooser SDK on web
+    const dropboxKey = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY || "";
+    let script3: HTMLScriptElement | null = null;
+    if (dropboxKey) {
+      script3 = document.createElement("script");
+      script3.src = "https://www.dropbox.com/static/api/2/dropins.js";
+      script3.id = "dropboxjs";
+      script3.setAttribute("data-app-key", dropboxKey);
+      script3.async = true;
+      document.head.appendChild(script3);
+    }
+
+    return () => {
+      try {
+        document.head.removeChild(script1);
+        document.head.removeChild(script2);
+        if (script3) {
+          document.head.removeChild(script3);
+        }
+      } catch {}
+    };
+  }, []);
+
+  const openGooglePicker = () => {
+    const developerKey = process.env.EXPO_PUBLIC_GOOGLE_DEVELOPER_KEY || "";
+    const clientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "";
+
+    if (!developerKey) {
+      if (Platform.OS === "web") {
+        alert(
+          "API Key Required:\nPlease configure EXPO_PUBLIC_GOOGLE_DEVELOPER_KEY in your .env file to enable the Google Picker.",
+        );
+      } else {
+        Alert.alert(
+          "API Key Required",
+          "Please configure EXPO_PUBLIC_GOOGLE_DEVELOPER_KEY in your .env file to enable the Google Picker.",
+        );
+      }
+      return;
+    }
+
+    const gapi = (window as any).gapi;
+    const googleObj = (window as any).google;
+
+    if (!gapi || !googleObj) {
+      if (Platform.OS === "web") {
+        alert(
+          "Google API loading: Google SDK is still loading. Please try again in a few seconds.",
+        );
+      } else {
+        Alert.alert(
+          "Google API loading",
+          "Google SDK is still loading. Please try again in a few seconds.",
+        );
+      }
+      return;
+    }
+
+    gapi.load("client:picker", () => {
+      const tokenClient = googleObj.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: "https://www.googleapis.com/auth/drive.readonly",
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse.error !== undefined) {
+            console.error("Auth error:", tokenResponse);
+            return;
+          }
+          launchPicker(tokenResponse.access_token, developerKey);
+        },
+      });
+
+      tokenClient.requestAccessToken({ prompt: "consent" });
+    });
+  };
+
+  const launchPicker = (token: string, key: string) => {
+    const googleObj = (window as any).google;
+    const view = new googleObj.picker.View(googleObj.picker.ViewId.DOCS);
+    view.setMimeTypes(
+      "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/html,text/rtf",
+    );
+
+    const picker = new googleObj.picker.PickerBuilder()
+      .addView(view)
+      .setOAuthToken(token)
+      .setDeveloperKey(key)
+      .setCallback(async (data: any) => {
+        if (data.action === googleObj.picker.Action.PICKED) {
+          const doc = data.docs?.[0];
+          if (!doc) return;
+          const fileId = doc[googleObj.picker.Document.ID];
+          const fileName = doc[googleObj.picker.Document.NAME];
+          const mimeType = doc[googleObj.picker.Document.MIME_TYPE];
+
+          try {
+            setUploading(true);
+            const downloadUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
+            const response = await fetch(downloadUrl, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error("Failed to download from Drive");
+            }
+
+            const blob = await response.blob();
+            setSelectedFile({
+              name: fileName,
+              uri: URL.createObjectURL(blob),
+              type: mimeType || "application/pdf",
+            });
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert(`Success: Selected ${fileName}`);
+            } else {
+              Alert.alert("Success", `Selected: ${fileName}`);
+            }
+          } catch (err) {
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert("Error: Failed to retrieve the file from Google Drive.");
+            } else {
+              Alert.alert("Error", "Failed to retrieve the file from Google Drive.");
+            }
+            console.error(err);
+          }
+        }
+      })
+      .build();
+
+    picker.setVisible(true);
+  };
+
+  const openDropboxChooser = () => {
+    const appKey = process.env.EXPO_PUBLIC_DROPBOX_APP_KEY || "";
+
+    if (!appKey) {
+      if (Platform.OS === "web") {
+        alert(
+          "Dropbox App Key Required:\nPlease configure EXPO_PUBLIC_DROPBOX_APP_KEY in your .env file to enable the Dropbox Chooser.",
+        );
+      } else {
+        Alert.alert(
+          "Dropbox App Key Required",
+          "Please configure EXPO_PUBLIC_DROPBOX_APP_KEY in your .env file to enable the Dropbox Chooser.",
+        );
+      }
+      return;
+    }
+
+    const dropboxObj = (window as any).Dropbox;
+    if (!dropboxObj) {
+      if (Platform.OS === "web") {
+        alert("Dropbox SDK is loading: Please try again in a few seconds.");
+      } else {
+        Alert.alert("Dropbox SDK is loading", "Please try again in a few seconds.");
+      }
+      return;
+    }
+
+    dropboxObj.choose({
+      success: async (files: any[]) => {
+        if (files && files.length > 0) {
+          const file = files[0];
+          if (!file) return;
+          const name = file.name;
+          const directUrl = file.link;
+
+          try {
+            setUploading(true);
+            const response = await fetch(directUrl);
+            if (!response.ok) {
+              throw new Error("Failed to download from Dropbox");
+            }
+            const blob = await response.blob();
+            setSelectedFile({
+              name: name,
+              uri: URL.createObjectURL(blob),
+              type: blob.type || "application/pdf",
+            });
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert(`Success: Selected ${name}`);
+            } else {
+              Alert.alert("Success", `Selected: ${name}`);
+            }
+          } catch (err) {
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert("Error: Failed to download the file from Dropbox.");
+            } else {
+              Alert.alert("Error", "Failed to download the file from Dropbox.");
+            }
+            console.error(err);
+          }
+        }
+      },
+      cancel: () => {
+        console.log("Dropbox Chooser cancelled");
+      },
+      linkType: "direct",
+      multiselect: false,
+      extensions: [".pdf", ".doc", ".docx", ".txt", ".rtf", ".html"],
+    });
+  };
+
   const handleBrowse = async () => {
     try {
-      if (Platform.OS === "web") {
-        const result = await DocumentPicker.getDocumentAsync({
-          type: [
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
-            "text/html",
-            "text/rtf",
-          ],
-          copyToCacheDirectory: true,
-          multiple: false,
-        });
-        if (isPickerCanceled(result)) return;
-        const file = (result as any).assets?.[0] || result;
-        setSelectedFile({
-          name: file.name,
-          uri: file.uri,
-          type: file.mimeType || "application/pdf",
-        });
-      } else {
-        const result = await DocumentPicker.getDocumentAsync({
-          type: [
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
-            "text/html",
-            "text/rtf",
-          ],
-          copyToCacheDirectory: true,
-          multiple: false,
-        });
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*", // Widen to allow picking Google Drive / Dropbox files on mobile without greying out
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
 
-        if (isPickerCanceled(result)) return;
-        const file = (result as any).assets?.[0] || result;
-        setSelectedFile({
-          name: file.name,
-          uri: file.uri,
-          type: file.mimeType || "application/pdf",
-        });
+      if (isPickerCanceled(result)) return;
+      const file = (result as any).assets?.[0] || result;
+      if (!file) return;
+
+      // Client-side extension validation
+      const allowedExtensions = [".pdf", ".doc", ".docx", ".txt", ".rtf", ".html"];
+      const fileNameLower = (file.name || "").toLowerCase();
+      const isValid = allowedExtensions.some((ext) => fileNameLower.endsWith(ext));
+
+      if (!isValid) {
+        if (Platform.OS === "web") {
+          alert(
+            "Invalid File Type:\nPlease select a valid resume document (PDF, DOC, DOCX, TXT, RTF, or HTML).",
+          );
+        } else {
+          Alert.alert(
+            "Invalid File Type",
+            "Please select a valid resume document (PDF, DOC, DOCX, TXT, RTF, or HTML).",
+          );
+        }
+        return;
       }
+
+      setSelectedFile({
+        name: file.name,
+        uri: file.uri,
+        type: file.mimeType || "application/pdf",
+      });
     } catch {
       Alert.alert("Error", "Failed to pick document. Please try again.");
     }
   };
 
   const handleGoogleDrive = () => {
-    handleBrowse();
+    if (Platform.OS === "web") {
+      openGooglePicker();
+    } else {
+      handleBrowse();
+    }
   };
 
   const handleDropbox = () => {
-    handleBrowse();
+    if (Platform.OS === "web") {
+      openDropboxChooser();
+    } else {
+      handleBrowse();
+    }
   };
 
   const handleContinue = async () => {
