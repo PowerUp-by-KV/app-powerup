@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 import {
   useCheckoutSubscriptionMutation,
@@ -15,6 +16,7 @@ export function CheckoutScreen() {
   const router = useRouter();
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
+  const { isDark } = useThemeToggle();
   const params = useLocalSearchParams<{ plan_id?: string }>();
   const { data: plans = [] } = useGetSubscriptionPlansQuery();
   const [checkout, { isLoading }] = useCheckoutSubscriptionMutation();
