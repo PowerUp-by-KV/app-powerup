@@ -14,6 +14,7 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useColorScheme } from "nativewind";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
 
@@ -42,6 +43,12 @@ const parseMultiSelect = (text: string): string[] => {
 };
 
 export function EditProfileScreen() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const cardClass = `rounded-3xl p-5 border shadow-sm ${isDark ? "bg-[#1E1F2A] border-[#2A2C3E]" : "bg-white border-slate-100"}`;
+  const cardHeaderBorderClass = `flex-row items-center gap-2 mb-4 border-b pb-2 ${isDark ? "border-[#2D3142]" : "border-slate-50"}`;
+  const viewCardTitleClass = `font-black text-sm uppercase tracking-wider ${isDark ? "text-slate-100" : "text-slate-950"}`;
+
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { data: profile, error: profileError, refetch: refetchProfile } = useGetProfileQuery();
@@ -293,14 +300,13 @@ export function EditProfileScreen() {
 
   const handleSave = async () => {
     try {
-      const answersList: any[] = [];
+      const answersMap = new Map<string, { answer_text: string | null; is_skipped: boolean }>();
 
       const addAnswer = (key: string, value: string) => {
         const questionId = questionIds[key];
         if (questionId) {
-          answersList.push({
-            question_id: questionId,
-            answer_text: value,
+          answersMap.set(questionId, {
+            answer_text: value || null,
             is_skipped: !value,
           });
         }
@@ -309,9 +315,8 @@ export function EditProfileScreen() {
       const addMultiAnswer = (key: string, values: string[]) => {
         const questionId = questionIds[key];
         if (questionId) {
-          answersList.push({
-            question_id: questionId,
-            answer_text: values.join(", "),
+          answersMap.set(questionId, {
+            answer_text: values.length > 0 ? values.join(", ") : null,
             is_skipped: values.length === 0,
           });
         }
@@ -323,6 +328,9 @@ export function EditProfileScreen() {
       if (education === "Engineering Student") {
         addAnswer("year_of_study", yearOfStudy);
         addAnswer("branch", branch);
+      } else {
+        addAnswer("year_of_study", "");
+        addAnswer("branch", "");
       }
       addAnswer("dob", dob);
       addAnswer("country", country);
@@ -354,8 +362,23 @@ export function EditProfileScreen() {
       addAnswer("focus_track", focusTrack);
       addAnswer("daily_learning_goal", dailyLearningGoal);
 
+      const newSections = (onboardingAnswers?.onboarding_sections || []).map((section) => ({
+        section: section.section,
+        questions: section.questions.map((q) => {
+          const update = answersMap.get(q.question.id);
+          return {
+            question: q.question,
+            answer: update
+              ? { answer_text: update.answer_text, is_skipped: update.is_skipped }
+              : q.answer
+                ? { answer_text: q.answer.answer_text, is_skipped: q.answer.is_skipped }
+                : { answer_text: null, is_skipped: true },
+          };
+        }),
+      }));
+
       const payload = {
-        answers: answersList,
+        onboarding_sections: newSections,
       };
 
       // 1. Update the onboarding answers in the backend via PUT /api/v1/users/profile
@@ -419,7 +442,7 @@ export function EditProfileScreen() {
 
           const updatedParsedData = {
             contact: resumeData.contact || {},
-            summary: { text: resumeSummary },
+            summary: resumeSummary,
             skills: resumeSkills
               .split(",")
               .map((s) => s.trim())
@@ -506,21 +529,25 @@ export function EditProfileScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-slate-50"
+      className={`flex-1 ${isDark ? "bg-[#0F1020]" : "bg-slate-50"}`}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
         {/* Top Header Bar */}
-        <View className="flex-row items-center justify-between px-5 py-4 bg-white border-b border-slate-100 shadow-sm">
+        <View
+          className={`flex-row items-center justify-between px-5 py-4 border-b shadow-sm ${isDark ? "bg-[#151620] border-[#2A2C3E]" : "bg-white border-slate-100"}`}
+        >
           <Pressable
             onPress={() => safeBack()}
-            className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+            className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-[#1E1F2A]" : "bg-slate-50"}`}
           >
-            <Feather name="chevron-left" size={22} color="#1e293b" />
+            <Feather name="chevron-left" size={22} color={isDark ? "#ffffff" : "#1e293b"} />
           </Pressable>
-          <Text className="text-slate-900 font-extrabold text-lg">Personal Details</Text>
+          <Text className={`font-extrabold text-lg ${isDark ? "text-white" : "text-slate-900"}`}>
+            Personal Details
+          </Text>
 
           {mode === "view" ? (
             <Pressable
@@ -537,9 +564,9 @@ export function EditProfileScreen() {
                   setMode("view");
                   refetch();
                 }}
-                className="w-10 h-10 items-center justify-center rounded-full bg-slate-100"
+                className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? "bg-[#1E1F2A]" : "bg-slate-100"}`}
               >
-                <Feather name="x" size={18} color="#475569" />
+                <Feather name="x" size={18} color={isDark ? "#94a3b8" : "#475569"} />
               </Pressable>
               <Pressable
                 onPress={handleSave}
@@ -569,12 +596,10 @@ export function EditProfileScreen() {
           {mode === "view" && (
             <View className="gap-6">
               {/* 1. Basic Profile Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="user" size={18} color="#6366f1" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Basic Profile
-                  </Text>
+                  <Text className={viewCardTitleClass}>Basic Profile</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Name / Preferred Name" value={name} />
@@ -592,12 +617,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 2. English Level Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="trending-up" size={18} color="#10b981" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    English Level
-                  </Text>
+                  <Text className={viewCardTitleClass}>English Level</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Proficiency Rating" value={englishProficiency} />
@@ -610,12 +633,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 3. Learning Goals Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="target" size={18} color="#f59e0b" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Learning Goals
-                  </Text>
+                  <Text className={viewCardTitleClass}>Learning Goals</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Primary Goal" value={primaryGoal} />
@@ -629,12 +650,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 4. Preferences Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="clock" size={18} color="#ec4899" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Preferences
-                  </Text>
+                  <Text className={viewCardTitleClass}>Preferences</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Daily Time Dedication" value={dailyTime} />
@@ -644,12 +663,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 5. Speaking & Confidence Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="mic" size={18} color="#8b5cf6" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Speaking & Confidence
-                  </Text>
+                  <Text className={viewCardTitleClass}>Speaking & Confidence</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Speaking Comfort Level" value={comfortSpeaking} />
@@ -658,12 +675,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 6. Motivation & Challenges Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="heart" size={18} color="#f43f5e" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Motivation & Challenges
-                  </Text>
+                  <Text className={viewCardTitleClass}>Motivation & Challenges</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Learning Motivators" value={motivation} />
@@ -676,12 +691,10 @@ export function EditProfileScreen() {
               </View>
 
               {/* 7. Learning Path Setup Card */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+              <View className={cardClass}>
+                <View className={cardHeaderBorderClass}>
                   <Feather name="map" size={18} color="#06b6d4" />
-                  <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                    Learning Path Setup
-                  </Text>
+                  <Text className={viewCardTitleClass}>Learning Path Setup</Text>
                 </View>
                 <View className="gap-3">
                   <DetailRow label="Focus Track" value={focusTrack} />
@@ -691,17 +704,43 @@ export function EditProfileScreen() {
 
               {/* 8. Resume Details Card */}
               {resumeData && (
-                <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
-                  <View className="flex-row items-center gap-2 mb-4 border-b border-slate-50 pb-2">
+                <View className={cardClass}>
+                  <View className={cardHeaderBorderClass}>
                     <Feather name="file-text" size={18} color="#4f46e5" />
-                    <Text className="text-slate-950 font-black text-sm uppercase tracking-wider">
-                      Resume Details
-                    </Text>
+                    <Text className={viewCardTitleClass}>Resume Details</Text>
                   </View>
-                  <View className="gap-3">
+                  <View className="gap-4">
                     {resumeSummary ? (
-                      <DetailRow label="Professional Summary" value={resumeSummary} />
+                      <View
+                        style={{
+                          paddingVertical: 10,
+                          borderBottomWidth: 1,
+                          borderBottomColor: isDark ? "#2D3142" : "#f1f5f9",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            fontWeight: "500",
+                            color: isDark ? "#64748b" : "#94a3b8",
+                            marginBottom: 6,
+                          }}
+                        >
+                          Professional Summary
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 13,
+                            lineHeight: 19,
+                            color: isDark ? "#e2e8f0" : "#1e293b",
+                            fontWeight: "400",
+                          }}
+                        >
+                          {resumeSummary}
+                        </Text>
+                      </View>
                     ) : null}
+
                     {resumeSkills ? (
                       <DetailChipsRow
                         label="Key Skills"
@@ -712,24 +751,167 @@ export function EditProfileScreen() {
                         color="indigo"
                       />
                     ) : null}
-                    {resumeExperienceText ? (
-                      <View className="gap-1 mt-2">
-                        <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">
+
+                    {/* Experience — structured timeline entries */}
+                    {resumeData.experience && resumeData.experience.length > 0 ? (
+                      <View style={{ marginTop: 4 }}>
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "700",
+                            letterSpacing: 0.8,
+                            textTransform: "uppercase",
+                            color: isDark ? "#64748b" : "#94a3b8",
+                            marginBottom: 10,
+                          }}
+                        >
                           Experience
                         </Text>
-                        <Text className="text-slate-900 text-sm leading-relaxed whitespace-pre-line">
-                          {resumeExperienceText}
-                        </Text>
+                        <View style={{ gap: 0 }}>
+                          {resumeData.experience.filter(Boolean).map((exp: any, idx: number) => {
+                            const isLast = idx === resumeData.experience.length - 1;
+                            return (
+                              <View key={idx} style={{ flexDirection: "row", gap: 12 }}>
+                                {/* Timeline spine */}
+                                <View style={{ alignItems: "center", width: 18 }}>
+                                  <View
+                                    style={{
+                                      width: 8,
+                                      height: 8,
+                                      borderRadius: 4,
+                                      backgroundColor: "#4f46e5",
+                                      marginTop: 4,
+                                      flexShrink: 0,
+                                    }}
+                                  />
+                                  {!isLast && (
+                                    <View
+                                      style={{
+                                        width: 1.5,
+                                        flex: 1,
+                                        backgroundColor: isDark ? "#2D3142" : "#e2e8f0",
+                                        marginTop: 4,
+                                        marginBottom: 0,
+                                        minHeight: 16,
+                                      }}
+                                    />
+                                  )}
+                                </View>
+
+                                {/* Content */}
+                                <View style={{ flex: 1, paddingBottom: isLast ? 0 : 16 }}>
+                                  <Text
+                                    style={{
+                                      fontSize: 13,
+                                      fontWeight: "700",
+                                      color: isDark ? "#f1f5f9" : "#0f172a",
+                                      lineHeight: 18,
+                                    }}
+                                  >
+                                    {exp.position || exp.title || "Role"}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: "500",
+                                      color: isDark ? "#818cf8" : "#4f46e5",
+                                      marginTop: 1,
+                                      marginBottom: exp.description ? 6 : 0,
+                                    }}
+                                  >
+                                    {exp.company}
+                                  </Text>
+                                  {exp.description ? (
+                                    <Text
+                                      style={{
+                                        fontSize: 12,
+                                        lineHeight: 17,
+                                        color: isDark ? "#94a3b8" : "#64748b",
+                                        fontWeight: "400",
+                                      }}
+                                    >
+                                      {exp.description}
+                                    </Text>
+                                  ) : null}
+                                </View>
+                              </View>
+                            );
+                          })}
+                        </View>
                       </View>
                     ) : null}
-                    {resumeProjectsText ? (
-                      <View className="gap-1 mt-2">
-                        <Text className="text-slate-500 font-bold text-xs uppercase tracking-wider">
+
+                    {/* Projects — card-per-project layout */}
+                    {resumeData.projects && resumeData.projects.length > 0 ? (
+                      <View style={{ marginTop: 4 }}>
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "700",
+                            letterSpacing: 0.8,
+                            textTransform: "uppercase",
+                            color: isDark ? "#64748b" : "#94a3b8",
+                            marginBottom: 10,
+                          }}
+                        >
                           Projects
                         </Text>
-                        <Text className="text-slate-900 text-sm leading-relaxed whitespace-pre-line">
-                          {resumeProjectsText}
-                        </Text>
+                        <View style={{ gap: 8 }}>
+                          {resumeData.projects.map((proj: any, idx: number) => (
+                            <View
+                              key={idx}
+                              style={{
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: isDark ? "#2D3142" : "#e2e8f0",
+                                backgroundColor: isDark ? "#151620" : "#f8fafc",
+                                paddingHorizontal: 14,
+                                paddingVertical: 11,
+                              }}
+                            >
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  marginBottom: proj.description ? 5 : 0,
+                                }}
+                              >
+                                <View
+                                  style={{
+                                    width: 5,
+                                    height: 5,
+                                    borderRadius: 2.5,
+                                    backgroundColor: "#06b6d4",
+                                  }}
+                                />
+                                <Text
+                                  style={{
+                                    fontSize: 13,
+                                    fontWeight: "700",
+                                    color: isDark ? "#f1f5f9" : "#0f172a",
+                                    flex: 1,
+                                  }}
+                                >
+                                  {proj.name}
+                                </Text>
+                              </View>
+                              {proj.description ? (
+                                <Text
+                                  style={{
+                                    fontSize: 12,
+                                    lineHeight: 17,
+                                    color: isDark ? "#94a3b8" : "#64748b",
+                                    fontWeight: "400",
+                                    paddingLeft: 11,
+                                  }}
+                                >
+                                  {proj.description}
+                                </Text>
+                              ) : null}
+                            </View>
+                          ))}
+                        </View>
                       </View>
                     ) : null}
                   </View>
@@ -742,7 +924,7 @@ export function EditProfileScreen() {
           {mode === "edit" && (
             <View className="gap-6">
               {/* 1. Basic Profile Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="user" size={18} color="#6366f1" />
                   <Text className="text-indigo-600 font-bold text-sm uppercase tracking-wider">
@@ -800,7 +982,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 2. English Level Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="trending-up" size={18} color="#10b981" />
                   <Text className="text-emerald-600 font-bold text-sm uppercase tracking-wider">
@@ -828,7 +1010,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 3. Learning Goals Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="target" size={18} color="#f59e0b" />
                   <Text className="text-amber-600 font-bold text-sm uppercase tracking-wider">
@@ -861,7 +1043,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 4. Preferences Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="clock" size={18} color="#ec4899" />
                   <Text className="text-pink-600 font-bold text-sm uppercase tracking-wider">
@@ -894,7 +1076,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 5. Speaking & Confidence Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="mic" size={18} color="#8b5cf6" />
                   <Text className="text-violet-600 font-bold text-sm uppercase tracking-wider">
@@ -920,7 +1102,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 6. Motivation & Challenges Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="heart" size={18} color="#f43f5e" />
                   <Text className="text-rose-600 font-bold text-sm uppercase tracking-wider">
@@ -946,7 +1128,7 @@ export function EditProfileScreen() {
               </View>
 
               {/* 7. Learning Path Setup Fields */}
-              <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+              <View className={cardClass}>
                 <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                   <Feather name="map" size={18} color="#06b6d4" />
                   <Text className="text-cyan-600 font-bold text-sm uppercase tracking-wider">
@@ -973,7 +1155,7 @@ export function EditProfileScreen() {
 
               {/* 8. Resume Details Fields */}
               {resumeData && (
-                <View className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <View className={cardClass}>
                   <View className="flex-row items-center gap-2 mb-4 border-b border-slate-100 pb-2">
                     <Feather name="file-text" size={18} color="#4f46e5" />
                     <Text className="text-indigo-600 font-bold text-sm uppercase tracking-wider">
@@ -1024,10 +1206,20 @@ export function EditProfileScreen() {
 // ------------------- UI HELPER COMPONENTS -------------------
 
 function DetailRow({ label, value }: { label: string; value: string }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
-    <View className="flex-row justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
-      <Text className="text-slate-500 font-medium text-xs flex-1 pr-4">{label}</Text>
-      <Text className="text-slate-800 font-extrabold text-xs text-right max-w-[60%]">
+    <View
+      className={`flex-row justify-between items-center py-2.5 border-b last:border-0 ${isDark ? "border-[#2D3142]" : "border-slate-50"}`}
+    >
+      <Text
+        className={`font-medium text-xs flex-1 pr-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}
+      >
+        {label}
+      </Text>
+      <Text
+        className={`font-extrabold text-xs text-right max-w-[60%] ${isDark ? "text-white" : "text-slate-800"}`}
+      >
         {value || "—"}
       </Text>
     </View>
@@ -1043,30 +1235,53 @@ function DetailChipsRow({
   values: string[];
   color: string;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const getBadgeStyle = () => {
     switch (color) {
       case "emerald":
-        return "bg-emerald-50 text-emerald-700 border-emerald-100";
+        return {
+          view: isDark
+            ? "bg-emerald-950/30 border-emerald-900/50"
+            : "bg-emerald-50 border-emerald-100",
+          text: isDark ? "text-emerald-400" : "text-emerald-700",
+        };
       case "amber":
-        return "bg-amber-50 text-amber-700 border-amber-100";
+        return {
+          view: isDark ? "bg-amber-950/30 border-amber-900/50" : "bg-amber-50 border-amber-100",
+          text: isDark ? "text-amber-400" : "text-amber-700",
+        };
       case "rose":
-        return "bg-rose-50 text-rose-700 border-rose-100";
-      default:
-        return "bg-indigo-50 text-indigo-700 border-indigo-100";
+        return {
+          view: isDark ? "bg-rose-950/30 border-rose-900/50" : "bg-rose-50 border-rose-100",
+          text: isDark ? "text-rose-400" : "text-rose-700",
+        };
+      default: // indigo
+        return {
+          view: isDark ? "bg-indigo-950/30 border-indigo-900/50" : "bg-indigo-50 border-indigo-100",
+          text: isDark ? "text-indigo-400" : "text-indigo-700",
+        };
     }
   };
 
+  const badgeStyle = getBadgeStyle();
+
   return (
-    <View className="py-2.5 border-b border-slate-50 last:border-0 gap-2">
-      <Text className="text-slate-500 font-medium text-xs">{label}</Text>
+    <View
+      className={`py-2.5 border-b last:border-0 gap-2 ${isDark ? "border-[#2D3142]" : "border-slate-50"}`}
+    >
+      <Text className={`font-medium text-xs ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+        {label}
+      </Text>
       <View className="flex-row flex-wrap gap-1.5 mt-1">
         {values.length > 0 ? (
           values.map((v) => (
-            <View
-              key={v}
-              className={`px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider ${getBadgeStyle()}`}
-            >
-              <Text className="text-[10px] font-extrabold">{v}</Text>
+            <View key={v} className={`px-2.5 py-1 rounded-full border ${badgeStyle.view}`}>
+              <Text
+                className={`text-[10px] font-extrabold uppercase tracking-wider ${badgeStyle.text}`}
+              >
+                {v}
+              </Text>
             </View>
           ))
         ) : (
@@ -1090,17 +1305,23 @@ function InputField({
   onChange: (v: string) => void;
   multiline?: boolean;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
-    <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-      <Text className="text-slate-600 font-bold text-xs mb-1.5">{label}</Text>
+    <View
+      className={`rounded-2xl px-4 py-3 border ${isDark ? "bg-[#252839] border-[#2D3142]" : "bg-slate-50 border-slate-100"}`}
+    >
+      <Text className={`font-bold text-xs mb-1.5 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+        {label}
+      </Text>
       <TextInput
         placeholder={placeholder || "Type answer..."}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={isDark ? "#52525b" : "#94a3b8"}
         value={value}
         onChangeText={onChange}
         multiline={multiline}
         numberOfLines={multiline ? 3 : 1}
-        className="text-slate-900 font-extrabold text-sm py-1"
+        className={`font-extrabold text-sm py-1 ${isDark ? "text-white" : "text-slate-900"}`}
         style={multiline ? { textAlignVertical: "top" } : undefined}
       />
     </View>
@@ -1118,9 +1339,15 @@ function SelectField({
   onChange: (v: string) => void;
   options: string[];
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
-    <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-      <Text className="text-slate-600 font-bold text-xs mb-2">{label}</Text>
+    <View
+      className={`rounded-2xl px-4 py-3 border ${isDark ? "bg-[#252839] border-[#2D3142]" : "bg-slate-50 border-slate-100"}`}
+    >
+      <Text className={`font-bold text-xs mb-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+        {label}
+      </Text>
       <View className="flex-row flex-wrap gap-2">
         {options.map((opt) => {
           const isSelected = value === opt;
@@ -1128,10 +1355,18 @@ function SelectField({
             <Pressable
               key={opt}
               onPress={() => onChange(isSelected ? "" : opt)}
-              className={`px-3 py-1.5 rounded-xl border ${isSelected ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-200"}`}
+              className={`px-3 py-1.5 rounded-xl border ${
+                isSelected
+                  ? "bg-indigo-600 border-indigo-600"
+                  : isDark
+                    ? "bg-[#1E1F2A] border-zinc-700"
+                    : "bg-white border-slate-200"
+              }`}
             >
               <Text
-                className={`text-xs font-extrabold ${isSelected ? "text-white" : "text-slate-700"}`}
+                className={`text-xs font-extrabold ${
+                  isSelected ? "text-white" : isDark ? "text-slate-300" : "text-slate-700"
+                }`}
               >
                 {opt}
               </Text>
@@ -1154,9 +1389,15 @@ function MultiSelectField({
   options: string[];
   onToggle: (v: string) => void;
 }) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   return (
-    <View className="bg-slate-50 rounded-2xl px-4 py-3 border border-slate-100">
-      <Text className="text-slate-600 font-bold text-xs mb-2">{label}</Text>
+    <View
+      className={`rounded-2xl px-4 py-3 border ${isDark ? "bg-[#252839] border-[#2D3142]" : "bg-slate-50 border-slate-100"}`}
+    >
+      <Text className={`font-bold text-xs mb-2 ${isDark ? "text-slate-400" : "text-slate-600"}`}>
+        {label}
+      </Text>
       <View className="flex-row flex-wrap gap-2">
         {options.map((opt) => {
           const isSelected = selected.includes(opt);
@@ -1164,10 +1405,18 @@ function MultiSelectField({
             <Pressable
               key={opt}
               onPress={() => onToggle(opt)}
-              className={`px-3 py-1.5 rounded-xl border ${isSelected ? "bg-indigo-600 border-indigo-600" : "bg-white border-slate-200"}`}
+              className={`px-3 py-1.5 rounded-xl border ${
+                isSelected
+                  ? "bg-indigo-600 border-indigo-600"
+                  : isDark
+                    ? "bg-[#1E1F2A] border-zinc-700"
+                    : "bg-white border-slate-200"
+              }`}
             >
               <Text
-                className={`text-xs font-extrabold ${isSelected ? "text-white" : "text-slate-700"}`}
+                className={`text-xs font-extrabold ${
+                  isSelected ? "text-white" : isDark ? "text-slate-300" : "text-slate-700"
+                }`}
               >
                 {opt}
               </Text>

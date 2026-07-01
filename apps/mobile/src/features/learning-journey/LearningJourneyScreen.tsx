@@ -14,11 +14,11 @@ import {
 } from "react-native";
 import { useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useThemeToggle } from "@/hooks/useThemeToggle";
+
 import { getAvatarUri } from "@/utils/avatar";
 import type { ModuleDay } from "@powerup/shared";
 
@@ -64,8 +64,7 @@ const SCORE_SCALE_CONVERSION = 100;
 const SCORE_AVERAGING_DIVISOR = 2;
 
 function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessmentModalProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark } = useThemeToggle();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -845,7 +844,7 @@ export function LearningJourneyScreen() {
             </View>
             <View className="flex-row items-center" style={{ gap: 12 }}>
               <Pressable
-                onPress={toggleTheme}
+                onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
                   isDark
                     ? "bg-[#16161c] border border-slate-800"
@@ -992,7 +991,7 @@ export function LearningJourneyScreen() {
           </View>
           <View className="flex-row items-center" style={{ gap: 12 }}>
             <Pressable
-              onPress={toggleTheme}
+              onPress={() => toggleTheme()}
               className={`w-10 h-10 rounded-full items-center justify-center ${
                 isDark
                   ? "bg-[#16161c] border border-slate-800"
@@ -1511,7 +1510,9 @@ export function LearningJourneyScreen() {
                               </Text>
                             </View>
                             <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
-                              {item.isCompleted ? "50 XP earned" : "50 XP potential"}
+                              {item.isCompleted
+                                ? "50 XP earned"
+                                : `${(item.dayObj as CombinedModuleDay & { xp_earned?: number })?.xp_earned ?? Math.round(50 * (compAct / Math.max(1, totalAct)))} XP earned`}
                             </Text>
                           </>
                         );

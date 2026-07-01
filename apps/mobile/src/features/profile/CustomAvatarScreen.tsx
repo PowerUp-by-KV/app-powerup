@@ -83,6 +83,21 @@ export function CustomAvatarScreen() {
         setMouth(`variant${m}`);
         setGlasses(g === "x" ? "none" : `variant${g}`);
       }
+    } else if (profile?.avatar_id && profile.avatar_id.startsWith("c2d!")) {
+      const data = profile.avatar_id.replace("c2d!", "").split("-");
+      if (data.length === 6) {
+        const [sIdx, hcIdx, h, e, m, g] = data as [string, string, string, string, string, string];
+        setSkinColor(SKIN_COLORS[parseInt(sIdx, 36)] || "f1c27d");
+        setHairColor(HAIR_COLORS[parseInt(hcIdx, 36)] || "090806");
+
+        const hairPrefix = h.startsWith("s") ? "short" : "long";
+        const hairNum = h.replace(/^[sl]/, "").padStart(2, "0");
+        setHair(`${hairPrefix}${hairNum}`);
+
+        setEyes(`variant${e.padStart(2, "0")}`);
+        setMouth(`variant${m.padStart(2, "0")}`);
+        setGlasses(g === "x" ? "none" : `variant${g.padStart(2, "0")}`);
+      }
     }
   }, [profile]);
 
@@ -108,13 +123,20 @@ export function CustomAvatarScreen() {
 
   const handleSave = async () => {
     try {
-      // Compress data to fit within backend string length limits
-      const h = hair.replace("short", "s").replace("long", "l");
-      const e = eyes.replace("variant", "");
-      const m = mouth.replace("variant", "");
-      const g = glasses === "none" ? "x" : glasses.replace("variant", "");
+      // Compress data aggressively to fit within backend string length limits
+      // c2d!s-hc-h-e-m-g
+      const s = SKIN_COLORS.indexOf(skinColor).toString(36);
+      const hc = HAIR_COLORS.indexOf(hairColor).toString(36);
+      const h = hair
+        .replace("short", "s")
+        .replace("long", "l")
+        .replace(/^s0?/, "s")
+        .replace(/^l0?/, "l");
+      const e = eyes.replace("variant", "").replace(/^0/, "");
+      const m = mouth.replace("variant", "").replace(/^0/, "");
+      const g = glasses === "none" ? "x" : glasses.replace("variant", "").replace(/^0/, "");
 
-      const avatarId = `c2d?${skinColor}-${hairColor}-${h}-${e}-${m}-${g}`;
+      const avatarId = `c2d!${s}-${hc}-${h}-${e}-${m}-${g}`;
       await patch({ avatar_id: avatarId }).unwrap();
       safeBack();
     } catch {

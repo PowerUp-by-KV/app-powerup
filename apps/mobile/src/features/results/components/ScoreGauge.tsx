@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, useColorScheme } from "react-native";
 
 interface ScoreGaugeProps {
   score: number;
@@ -72,6 +72,8 @@ function getCefrInfo(cefrStr: string) {
 }
 
 export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: ScoreGaugeProps) {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const cefrInfo = getCefrInfo(cefr);
   const percentage =
     cefrInfo.percentage > 0 ? cefrInfo.percentage : total > 0 ? ((score || 0) / total) * 100 : 0;
@@ -88,7 +90,7 @@ export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: 
         <View
           style={[
             styles.arcBase,
-            { borderColor: "#f1f5f9" }, // slate-100
+            { borderColor: isDark ? "#1E1F2A" : "#f1f5f9" }, // slate-100 / slate-800 equivalent
           ]}
         />
 
@@ -107,14 +109,16 @@ export function ScoreGauge({ score, total, obtainedPoints, totalPoints, cefr }: 
 
         {/* Inner cutout to make it a ring */}
         <View
-          className="absolute bottom-0 left-5 w-50 h-25 bg-white rounded-t-full border-t border-slate-100"
+          className="absolute bottom-0 left-5 w-50 h-25 bg-white dark:bg-[#151620] rounded-t-full border-t border-slate-100 dark:border-[#1E1F2A]"
           style={{ width: 200, height: 100, left: 20 }}
         />
 
         {/* Center Content */}
         <View className="absolute bottom-0 w-full items-center">
-          <Text className="text-3xl font-extrabold text-slate-900">{(score || 0).toFixed(1)}%</Text>
-          <Text className="text-slate-500 font-bold text-xs mt-1">
+          <Text className="text-3xl font-extrabold text-slate-900 dark:text-white">
+            {(score || 0).toFixed(1)}%
+          </Text>
+          <Text className="text-slate-500 dark:text-slate-400 font-bold text-xs mt-1">
             {(obtainedPoints || 0).toFixed(0)} / {(totalPoints || 0).toFixed(0)} Marks
           </Text>
         </View>

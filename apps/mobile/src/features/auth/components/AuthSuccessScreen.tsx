@@ -29,7 +29,7 @@ export function AuthSuccessScreen({ title, subtitle, cta, onCta }: AuthSuccessSc
         </Text>
         <Pressable
           onPress={onCta}
-          className="bg-[#3b82f6] rounded-2xl py-4 items-center w-full active:opacity-85 shadow-lg shadow-blue-200"
+          className="bg-[#3b82f6] rounded-2xl py-4 items-center w-full active:opacity-85"
         >
           <Text className="text-white font-bold text-base">{cta}</Text>
         </Pressable>

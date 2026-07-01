@@ -239,8 +239,8 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
           flex: 1,
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-          backgroundColor: "#f8fafc",
         }}
+        className="bg-[#f8fafc] dark:bg-[#151620]"
       >
         <View
           style={{
@@ -251,24 +251,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
             padding: 24,
           }}
         >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 360,
-              backgroundColor: "#ffffff",
-              borderWidth: 1,
-              borderColor: "#e2e8f0",
-              borderRadius: 24,
-              padding: 24,
-              alignItems: "center",
-              justifyContent: "center",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.05,
-              shadowRadius: 3,
-              elevation: 2,
-            }}
-          >
+          <View className="w-full max-w-[360px] bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 items-center justify-center shadow-sm">
             <View
               style={{
                 width: 140,
@@ -287,27 +270,10 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               />
             </View>
 
-            <Text
-              style={{
-                fontSize: 20,
-                fontWeight: "900",
-                color: "#0f172a",
-                textAlign: "center",
-                marginBottom: 8,
-              }}
-            >
+            <Text className="text-[20px] font-black text-slate-900 dark:text-white text-center mb-2">
               Connection Timeout
             </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                color: "#64748b",
-                textAlign: "center",
-                lineHeight: 18,
-                marginBottom: 16,
-                paddingHorizontal: 8,
-              }}
-            >
+            <Text className="text-[13px] text-slate-500 dark:text-slate-400 text-center leading-[18px] mb-4 px-2">
               We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
               reconnect!
             </Text>
@@ -321,31 +287,17 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               style={{ flexDirection: "row", gap: 12, width: "100%", justifyContent: "center" }}
             >
               <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: "#3b82f6",
-                  paddingVertical: 12,
-                  borderRadius: 16,
-                  alignItems: "center",
-                }}
+                className="flex-1 bg-blue-500 active:bg-blue-600 py-3 rounded-2xl items-center"
                 onPress={handleTryAgain}
               >
                 <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Try Again</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={{
-                  flex: 1,
-                  backgroundColor: "#ffffff",
-                  paddingVertical: 12,
-                  borderRadius: 16,
-                  alignItems: "center",
-                  borderWidth: 1,
-                  borderColor: "#cbd5e1",
-                }}
+                className="flex-1 bg-white dark:bg-[#1E1F2A] py-3 rounded-2xl items-center border border-slate-300 dark:border-slate-700"
                 onPress={handleBack}
               >
-                <Text style={{ color: "#475569", fontWeight: "700", fontSize: 14 }}>
+                <Text className="text-slate-600 dark:text-slate-300 font-bold text-[14px]">
                   Back to Home
                 </Text>
               </TouchableOpacity>
@@ -367,7 +319,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-white"
+      className="bg-white dark:bg-[#151620]"
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -384,7 +336,7 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
           showsVerticalScrollIndicator={false}
         >
           <View className="items-center mb-4">
-            <Text className="text-slate-500 font-bold text-lg mb-2 uppercase tracking-wide">
+            <Text className="text-slate-500 dark:text-slate-400 font-bold text-lg mb-2 uppercase tracking-wide">
               Overall Score
             </Text>
             <ScoreGauge
@@ -395,10 +347,11 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
               cefr={resultData.cefr_level ?? resultData.cefr_range ?? "N/A"}
             />
             {timeTaken && (
-              <View className="flex-row items-center bg-blue-50 border border-blue-100 rounded-2xl px-4 py-2.5 mt-5">
+              <View className="flex-row items-center bg-blue-50 dark:bg-slate-800/50 border border-blue-100 dark:border-slate-700 rounded-2xl px-4 py-2.5 mt-5">
                 <Feather name="clock" size={18} color="#3b82f6" className="mr-2" />
-                <Text className="text-blue-900 font-bold text-sm">
-                  Total Time Taken: <Text className="text-blue-600">{timeTaken}</Text>
+                <Text className="text-blue-900 dark:text-blue-100 font-bold text-sm">
+                  Total Time Taken:{" "}
+                  <Text className="text-blue-600 dark:text-blue-400">{timeTaken}</Text>
                 </Text>
               </View>
             )}

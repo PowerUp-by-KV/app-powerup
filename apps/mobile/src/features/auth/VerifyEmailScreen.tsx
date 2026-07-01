@@ -73,9 +73,6 @@ export function VerifyEmailScreen() {
       const loginEmail = email.trim();
       await saveAuthSession(resp);
 
-      // Wait for secure storage to fully write before reading profile
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
       // ─── USER-SWITCH DETECTION ─────────────────────────────────────────────
       // If a different email has logged in on this device, wipe stale local flags
       // so they don't mistakenly mark the new user's onboarding/assessment as done.
@@ -212,10 +209,8 @@ export function VerifyEmailScreen() {
               <Pressable
                 onPress={() => handleSendOtp()}
                 disabled={isSending || !email.trim()}
-                className={`w-full py-4 rounded-2xl items-center justify-center shadow-lg mb-6 ${
-                  isSending || !email.trim()
-                    ? "bg-slate-300 shadow-slate-100"
-                    : "bg-[#3b82f6] shadow-blue-200"
+                className={`w-full py-4 rounded-2xl items-center justify-center mb-6 ${
+                  isSending ? "bg-slate-400" : "bg-[#3b82f6]"
                 }`}
               >
                 {isSending ? (
@@ -258,10 +253,8 @@ export function VerifyEmailScreen() {
                 <Pressable
                   onPress={handleContinue}
                   disabled={code.length !== 6 || isVerifying}
-                  className={`w-full py-4 rounded-2xl items-center justify-center shadow-lg mt-8 ${
-                    code.length === 6 && !isVerifying
-                      ? "bg-[#3b82f6] shadow-blue-200"
-                      : "bg-slate-300 shadow-slate-100"
+                  className={`w-full py-4 rounded-2xl items-center justify-center mt-8 ${
+                    code.length === 6 && !isVerifying ? "bg-[#3b82f6]" : "bg-slate-300"
                   }`}
                 >
                   {isVerifying ? (

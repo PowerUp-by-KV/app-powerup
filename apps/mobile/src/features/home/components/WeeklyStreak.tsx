@@ -1,7 +1,5 @@
-import React from "react";
 import { Text, View } from "react-native";
-import { Octicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
+import { SimpleLineIcons } from "@expo/vector-icons";
 
 interface WeeklyStreakProps {
   // Optional bool[7] starting Monday. Falls back to a single-day fill at today's index.
@@ -12,8 +10,6 @@ interface WeeklyStreakProps {
 const LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const today = fallbackTodayIndex ?? mondayIndexFromDate(new Date());
   const filled = days ?? Array.from({ length: 7 }, (_, i) => i <= today);
 
@@ -29,24 +25,15 @@ export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
             <View key={i} className="items-center">
               {active ? (
                 <View
-                  className="w-10 h-10 items-center justify-center mb-1.5"
+                  className="w-10 h-10 rounded-full items-center justify-center mb-1.5"
                   style={{
-                    borderRadius: 20,
-                    backgroundColor: "#3B5BF6", // Solid blue for both themes!
+                    backgroundColor: "#3b82f6",
                   }}
                 >
-                  <Octicons name="flame" size={22} color="#ffffff" />
+                  <SimpleLineIcons name="fire" size={20} color="#ffffff" />
                 </View>
               ) : (
-                <View
-                  className="w-10 h-10 items-center justify-center mb-1.5"
-                  style={{
-                    borderRadius: 20,
-                    backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#eafbce",
-                    borderWidth: 1,
-                    borderColor: isDark ? "rgba(255,255,255,0.1)" : "transparent",
-                  }}
-                />
+                <View className="w-10 h-10 rounded-full bg-[#e2f9cc] dark:bg-[#1d1d26] border border-transparent dark:border-[#2b2b38] items-center justify-center mb-1.5" />
               )}
               <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
                 {label}
