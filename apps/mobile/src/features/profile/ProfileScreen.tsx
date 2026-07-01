@@ -79,7 +79,7 @@ export function ProfileScreen() {
   const daysCompletedCount = useMemo(() => {
     let count = 0;
     for (const key in moduleDaysData) {
-      count += moduleDaysData[key].filter((d) => d.is_completed).length;
+      count += (moduleDaysData[key] || []).filter((d) => d.is_completed).length;
     }
     return count;
   }, [moduleDaysData]);

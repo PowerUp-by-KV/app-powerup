@@ -45,7 +45,6 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
     type: string;
   } | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -130,7 +129,6 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
             console.error("Auth error:", tokenResponse);
             return;
           }
-          setAccessToken(tokenResponse.access_token);
           launchPicker(tokenResponse.access_token, developerKey);
         },
       });
