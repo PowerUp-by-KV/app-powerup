@@ -16,8 +16,8 @@ export default function ResumeRoute() {
   };
 
   const handleNextUpload = () => {
-    // Navigate to builder after upload is done (or mocked for now)
-    router.push("/resume/builder");
+    // Navigate to score screen after upload is done
+    router.push("/resume/score");
   };
 
   if (step === "choose") {
