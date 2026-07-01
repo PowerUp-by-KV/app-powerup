@@ -294,17 +294,17 @@ export function AchievementsScreen() {
           </View>
 
           {/* Trophy Header Display */}
-          <View className="items-center mb-6 py-2">
-            <View className="w-24 h-24 items-center justify-center mb-3">
+          <View className="items-center mb-6 py-4">
+            <View className="w-32 h-32 items-center justify-center mb-4 relative">
               <LottieView
                 source={require("../../../assets/lottie/trophy.json")}
                 autoPlay
                 loop
-                style={{ width: 80, height: 80 }}
+                style={{ width: 140, height: 140, zIndex: 1 }}
               />
             </View>
-            <Text className="text-[#6B7280] dark:text-[#B7BED1] font-bold text-sm text-center">
-              Congratulations for your 1st{"\n"}trophy!
+            <Text className="text-[#374151] dark:text-[#B7BED1] font-medium text-sm text-center">
+              Congratulations for your 1st{"\n"}trophy !
             </Text>
           </View>
 

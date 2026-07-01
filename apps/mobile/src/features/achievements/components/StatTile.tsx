@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, View, StyleSheet } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
@@ -67,7 +67,7 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
         );
       case "accuracy":
         return (
-          <View style={{ position: "absolute", right: -30, top: 10, opacity: 1 }}>
+          <View style={{ position: "absolute", right: -30, bottom: -30, opacity: 1 }}>
             <Svg width={120} height={120} viewBox="0 0 100 100">
               <Circle cx="90" cy="50" r="15" stroke={watermarkColor} strokeWidth="12" fill="none" />
               <Circle cx="90" cy="50" r="40" stroke={watermarkColor} strokeWidth="12" fill="none" />
@@ -111,89 +111,98 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        minHeight: 110,
-        backgroundColor: bg,
-        borderRadius: 24,
-        borderWidth: 1,
-        borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(113, 116, 246, 0.12)",
-        overflow: "hidden",
-        position: "relative",
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: isDark ? "#000" : "#7174F6",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: isDark ? 0.2 : 0.04,
-        shadowRadius: 8,
-        elevation: 2,
-      })}
-    >
-      {renderWatermark()}
+    <View style={{ flex: 1 }}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => ({
+          flex: 1,
+          minHeight: 110,
+          backgroundColor: bg,
+          borderRadius: 24,
+          opacity: pressed ? 0.85 : 1,
+          shadowColor: isDark ? "#000" : "#7174F6",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: isDark ? 0.2 : 0.04,
+          shadowRadius: 8,
+          elevation: 2,
+        })}
+      >
+        <View
+          style={{
+            flex: 1,
+            borderRadius: 24,
+            borderWidth: 1,
+            borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(113, 116, 246, 0.12)",
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          {renderWatermark()}
 
-      <View className="flex-1 justify-between relative z-10" style={{ padding: 18 }}>
-        {type === "xp" && (
-          <>
-            <Text
-              style={{
-                color: textColorSecondary,
-                fontWeight: "700",
-                fontSize: 15,
-                letterSpacing: 0.2,
-              }}
-            >
-              XP Points
-            </Text>
-            <Text
-              style={{
-                color: textColorPrimary,
-                fontWeight: "800",
-                fontSize: 32,
-                letterSpacing: -0.5,
-              }}
-            >
-              {value}
-            </Text>
-          </>
-        )}
-        {type === "badges" && (
-          <>
-            <Feather name="award" size={26} color={iconColor} strokeWidth={2.5} />
-            <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
-              Badges
-            </Text>
-          </>
-        )}
-        {type === "accuracy" && (
-          <>
-            <Feather name="target" size={26} color={iconColor} strokeWidth={2.5} />
-            <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
-              Accuracy
-            </Text>
-          </>
-        )}
-        {type === "level" && (
-          <>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Text
-                style={{
-                  color: textColorPrimary,
-                  fontWeight: "800",
-                  fontSize: 26,
-                  letterSpacing: -0.5,
-                }}
-              >
-                {value}
-              </Text>
-              <Feather name="arrow-up-right" size={22} color={iconColor} strokeWidth={3} />
-            </View>
-            <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
-              Level
-            </Text>
-          </>
-        )}
-      </View>
-    </Pressable>
+          <View className="flex-1 justify-between relative z-10" style={{ padding: 18 }}>
+            {type === "xp" && (
+              <>
+                <Text
+                  style={{
+                    color: textColorSecondary,
+                    fontWeight: "700",
+                    fontSize: 15,
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  XP Points
+                </Text>
+                <Text
+                  style={{
+                    color: textColorPrimary,
+                    fontWeight: "800",
+                    fontSize: 32,
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  {value}
+                </Text>
+              </>
+            )}
+            {type === "badges" && (
+              <>
+                <Feather name="award" size={26} color={iconColor} strokeWidth={2.5} />
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                  Badges
+                </Text>
+              </>
+            )}
+            {type === "accuracy" && (
+              <>
+                <Feather name="target" size={26} color={iconColor} strokeWidth={2.5} />
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                  Accuracy
+                </Text>
+              </>
+            )}
+            {type === "level" && (
+              <>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Text
+                    style={{
+                      color: textColorPrimary,
+                      fontWeight: "800",
+                      fontSize: 26,
+                      letterSpacing: -0.5,
+                    }}
+                  >
+                    {value}
+                  </Text>
+                  <Feather name="arrow-up-right" size={22} color={iconColor} strokeWidth={3} />
+                </View>
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                  Level
+                </Text>
+              </>
+            )}
+          </View>
+        </View>
+      </Pressable>
+    </View>
   );
 }

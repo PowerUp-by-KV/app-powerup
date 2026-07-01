@@ -225,7 +225,10 @@ export function ScoreAnalysisStep({
                 </View>
               </View>
               <Text
-                style={[styles.orbLabel, { position: "absolute", left: 75, top: 25, width: 120 }]}
+                style={[
+                  styles.orbLabel,
+                  { position: "absolute", top: 72, left: -25, width: 120, textAlign: "center" },
+                ]}
               >
                 Basic Information
               </Text>
@@ -239,7 +242,10 @@ export function ScoreAnalysisStep({
                 </View>
               </View>
               <Text
-                style={[styles.orbLabel, { position: "absolute", left: 75, top: 25, width: 50 }]}
+                style={[
+                  styles.orbLabel,
+                  { position: "absolute", top: 72, left: 5, width: 60, textAlign: "center" },
+                ]}
               >
                 ATS
               </Text>
@@ -253,7 +259,10 @@ export function ScoreAnalysisStep({
                 </View>
               </View>
               <Text
-                style={[styles.orbLabel, { position: "absolute", left: 55, top: 55, width: 130 }]}
+                style={[
+                  styles.orbLabel,
+                  { position: "absolute", top: 72, left: -30, width: 130, textAlign: "center" },
+                ]}
               >
                 Section completeness
               </Text>
@@ -269,7 +278,7 @@ export function ScoreAnalysisStep({
               <Text
                 style={[
                   styles.orbLabel,
-                  { position: "absolute", right: 65, top: 55, width: 120, textAlign: "right" },
+                  { position: "absolute", top: 72, left: -25, width: 120, textAlign: "center" },
                 ]}
               >
                 Resume Quality
@@ -286,7 +295,7 @@ export function ScoreAnalysisStep({
               <Text
                 style={[
                   styles.orbLabel,
-                  { position: "absolute", right: 75, top: 25, width: 140, textAlign: "right" },
+                  { position: "absolute", top: 72, left: -30, width: 130, textAlign: "center" },
                 ]}
               >
                 Professional Summary
@@ -536,7 +545,7 @@ const styles = StyleSheet.create({
   },
   diagramWrapper: {
     width: 340,
-    height: 300,
+    height: 320,
     alignSelf: "center",
     position: "relative",
     marginTop: 10,

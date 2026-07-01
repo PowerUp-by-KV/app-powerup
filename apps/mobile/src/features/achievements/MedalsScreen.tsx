@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Animated,
   Modal,
-  useWindowDimensions,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -319,7 +318,7 @@ function BadgeDetailModal({ visible, onClose, badge }: BadgeDetailModalProps) {
 export function MedalsScreen() {
   const safeBack = useSafeBack("/(tabs)/achievements");
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
+
   const { data: list, isLoading: isAchievementsLoading } = useListAchievementsQuery();
   const { data: medalsData, isLoading: isMedalsLoading } = useGetMedalsQuery();
   const isLoading = isAchievementsLoading || isMedalsLoading;
@@ -327,10 +326,6 @@ export function MedalsScreen() {
   const isDark = colorScheme === "dark";
 
   const [selectedBadge, setSelectedBadge] = useState<BadgeType | null>(null);
-
-  const cardWidth = useMemo(() => {
-    return (windowWidth - 40) / 3;
-  }, [windowWidth]);
 
   // Map backend achievements data with our premium badge list
   const badges = useMemo<BadgeType[]>(() => {
@@ -402,6 +397,15 @@ export function MedalsScreen() {
     });
   }, [list]);
 
+  // Group badges into rows of 3 for a perfectly mathematically aligned 3-column grid
+  const badgeRows = useMemo(() => {
+    const rows = [];
+    for (let i = 0; i < badges.length; i += 3) {
+      rows.push(badges.slice(i, i + 3));
+    }
+    return rows;
+  }, [badges]);
+
   return (
     <View
       style={{
@@ -466,72 +470,102 @@ export function MedalsScreen() {
             <Text style={[styles.sectionTitle, { color: isDark ? "#ffffff" : "#1B1F35" }]}>
               Your Badge Collection
             </Text>
-            <View style={styles.badgeGridContainer}>
-              {badges.map((b) => (
-                <Pressable
-                  key={b.id}
-                  onPress={() => setSelectedBadge(b)}
-                  style={({ pressed }) => [
-                    styles.badgeCardPressable,
-                    { width: cardWidth, transform: [{ scale: pressed ? 0.95 : 1 }] },
-                  ]}
+            <View style={{ width: "100%" }}>
+              {badgeRows.map((row, rowIndex) => (
+                <View
+                  key={rowIndex}
+                  style={{ flexDirection: "row", width: "100%", justifyContent: "flex-start" }}
                 >
-                  {/* Badge Outer Shell */}
-                  <View
-                    style={[
-                      styles.badgeCircleShell,
-                      {
-                        backgroundColor: b.unlocked ? b.color : isDark ? "#232540" : "#F4F5FA",
-                        borderColor: b.unlocked
-                          ? "#ffffff"
-                          : isDark
-                            ? "rgba(113,116,246,0.15)"
-                            : "#ECEEF8",
-                        shadowColor: b.unlocked ? b.color : isDark ? "transparent" : "#7174F6",
-                        shadowOpacity: b.unlocked ? 0.25 : 0.05,
-                      },
-                    ]}
-                  >
-                    {/* Badge Emoji */}
-                    <Text style={[styles.badgeEmoji, { opacity: b.unlocked ? 1.0 : 0.22 }]}>
-                      {b.emoji}
-                    </Text>
-
-                    {/* Lock Badge Overlay */}
-                    {!b.unlocked && (
-                      <View
-                        style={[
-                          styles.lockOverlayCircle,
-                          {
-                            backgroundColor: isDark ? "#8B93A8" : "#A0A7B8",
-                            borderColor: isDark ? "#1A1B31" : "#ffffff",
-                          },
+                  {row.map((b) => (
+                    <View
+                      key={b.id}
+                      style={[styles.badgeCardPressable, { flex: 1, width: 0, maxWidth: "33.33%" }]}
+                    >
+                      <Pressable
+                        onPress={() => setSelectedBadge(b)}
+                        style={({ pressed }) => [
+                          { alignItems: "center", width: "100%" },
+                          { transform: [{ scale: pressed ? 0.95 : 1 }] },
                         ]}
                       >
-                        <Feather name="lock" size={10} color="#ffffff" />
-                      </View>
-                    )}
-                  </View>
+                        {/* Badge Outer Shell */}
+                        <View
+                          style={[
+                            styles.badgeCircleShell,
+                            {
+                              backgroundColor: b.unlocked
+                                ? b.color
+                                : isDark
+                                  ? "#232540"
+                                  : "#F4F5FA",
+                              borderColor: b.unlocked
+                                ? "#ffffff"
+                                : isDark
+                                  ? "rgba(113,116,246,0.15)"
+                                  : "#ECEEF8",
+                              shadowColor: b.unlocked
+                                ? b.color
+                                : isDark
+                                  ? "transparent"
+                                  : "#7174F6",
+                              shadowOpacity: b.unlocked ? 0.25 : 0.05,
+                            },
+                          ]}
+                        >
+                          {/* Badge Emoji */}
+                          <Text style={[styles.badgeEmoji, { opacity: b.unlocked ? 1.0 : 0.22 }]}>
+                            {b.emoji}
+                          </Text>
 
-                  {/* Badge Label */}
-                  <Text
-                    numberOfLines={2}
-                    style={[
-                      styles.badgeCardTitle,
-                      {
-                        color: b.unlocked
-                          ? isDark
-                            ? "#ffffff"
-                            : "#1B1F35"
-                          : isDark
-                            ? "#8B93A8"
-                            : "#A0A7B8",
-                      },
-                    ]}
-                  >
-                    {b.title}
-                  </Text>
-                </Pressable>
+                          {/* Lock Badge Overlay */}
+                          {!b.unlocked && (
+                            <View
+                              style={[
+                                styles.lockOverlayCircle,
+                                {
+                                  backgroundColor: isDark ? "#8B93A8" : "#A0A7B8",
+                                  borderColor: isDark ? "#1A1B31" : "#ffffff",
+                                },
+                              ]}
+                            >
+                              <Feather name="lock" size={10} color="#ffffff" />
+                            </View>
+                          )}
+                        </View>
+
+                        {/* Badge Label */}
+                        <Text
+                          numberOfLines={2}
+                          style={[
+                            styles.badgeCardTitle,
+                            {
+                              color: b.unlocked
+                                ? isDark
+                                  ? "#ffffff"
+                                  : "#1B1F35"
+                                : isDark
+                                  ? "#8B93A8"
+                                  : "#A0A7B8",
+                            },
+                          ]}
+                        >
+                          {b.title}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                  {/* Invisible spacer columns to maintain exact 3-column alignment for incomplete last row */}
+                  {row.length < 3 &&
+                    Array.from({ length: 3 - row.length }).map((_, i) => (
+                      <View
+                        key={`empty-${i}`}
+                        style={[
+                          styles.badgeCardPressable,
+                          { flex: 1, width: 0, maxWidth: "33.33%" },
+                        ]}
+                      />
+                    ))}
+                </View>
               ))}
             </View>
 
