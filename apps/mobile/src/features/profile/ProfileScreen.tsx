@@ -25,6 +25,7 @@ import { useGetStreakCalendarQuery } from "@/services/profile-api";
 import { useGetModulesQuery, useLazyGetModuleDaysQuery } from "@/services/module-api";
 import { useLogout } from "@/utils/auth";
 import { getAvatarUri } from "@/utils/avatar";
+import type { ModuleDay } from "@powerup/shared";
 
 export function ProfileScreen() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export function ProfileScreen() {
 
   const { data: modulesData } = useGetModulesQuery();
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
-  const [moduleDaysData, setModuleDaysData] = useState<Record<string, any[]>>({});
+  const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
 
   const personalizedPath = useMemo(() => {
     if (!modulesData) return null;
@@ -55,6 +56,7 @@ export function ProfileScreen() {
 
   useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
+    let active = true;
     const fetchAllDays = async () => {
       try {
         const promises = personalizedPath.modules.map(async (m) => {
@@ -66,7 +68,8 @@ export function ProfileScreen() {
           }
         });
         const results = await Promise.all(promises);
-        const newData: Record<string, any[]> = {};
+        if (!active) return;
+        const newData: Record<string, ModuleDay[]> = {};
         for (const res of results) {
           newData[res.moduleId] = res.days;
         }
@@ -74,12 +77,15 @@ export function ProfileScreen() {
       } catch {}
     };
     fetchAllDays();
+    return () => {
+      active = false;
+    };
   }, [personalizedPath, triggerGetModuleDays]);
 
   const daysCompletedCount = useMemo(() => {
     let count = 0;
     for (const key in moduleDaysData) {
-      count += (moduleDaysData[key] || []).filter((d) => d.is_completed).length;
+      count += moduleDaysData[key]?.filter((d) => d?.is_completed).length ?? 0;
     }
     return count;
   }, [moduleDaysData]);

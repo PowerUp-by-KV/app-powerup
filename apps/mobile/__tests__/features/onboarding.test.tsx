@@ -18,6 +18,11 @@ const safeAreaMetrics = {
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ replace: mockReplace, push: jest.fn(), back: jest.fn() }),
+  useNavigation: () => ({
+    canGoBack: jest.fn(() => false),
+    goBack: jest.fn(),
+    getState: jest.fn(),
+  }),
 }));
 
 jest.mock("@/services/auth-api", () => ({

@@ -150,7 +150,8 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       .setDeveloperKey(key)
       .setCallback(async (data: any) => {
         if (data.action === googleObj.picker.Action.PICKED) {
-          const doc = data.docs[0];
+          const doc = data.docs?.[0];
+          if (!doc) return;
           const fileId = doc[googleObj.picker.Document.ID];
           const fileName = doc[googleObj.picker.Document.NAME];
           const mimeType = doc[googleObj.picker.Document.MIME_TYPE];
@@ -169,21 +170,17 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
             }
 
             const blob = await response.blob();
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              setSelectedFile({
-                name: fileName,
-                uri: reader.result as string,
-                type: mimeType || "application/pdf",
-              });
-              setUploading(false);
-              if (Platform.OS === "web") {
-                alert(`Success: Selected ${fileName}`);
-              } else {
-                Alert.alert("Success", `Selected: ${fileName}`);
-              }
-            };
-            reader.readAsDataURL(blob);
+            setSelectedFile({
+              name: fileName,
+              uri: URL.createObjectURL(blob),
+              type: mimeType || "application/pdf",
+            });
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert(`Success: Selected ${fileName}`);
+            } else {
+              Alert.alert("Success", `Selected: ${fileName}`);
+            }
           } catch (err) {
             setUploading(false);
             if (Platform.OS === "web") {
@@ -231,6 +228,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       success: async (files: any[]) => {
         if (files && files.length > 0) {
           const file = files[0];
+          if (!file) return;
           const name = file.name;
           const directUrl = file.link;
 
@@ -241,21 +239,17 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
               throw new Error("Failed to download from Dropbox");
             }
             const blob = await response.blob();
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              setSelectedFile({
-                name: name,
-                uri: reader.result as string,
-                type: blob.type || "application/pdf",
-              });
-              setUploading(false);
-              if (Platform.OS === "web") {
-                alert(`Success: Selected ${name}`);
-              } else {
-                Alert.alert("Success", `Selected: ${name}`);
-              }
-            };
-            reader.readAsDataURL(blob);
+            setSelectedFile({
+              name: name,
+              uri: URL.createObjectURL(blob),
+              type: blob.type || "application/pdf",
+            });
+            setUploading(false);
+            if (Platform.OS === "web") {
+              alert(`Success: Selected ${name}`);
+            } else {
+              Alert.alert("Success", `Selected: ${name}`);
+            }
           } catch (err) {
             setUploading(false);
             if (Platform.OS === "web") {
@@ -286,6 +280,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
 
       if (isPickerCanceled(result)) return;
       const file = (result as any).assets?.[0] || result;
+      if (!file) return;
 
       // Client-side extension validation
       const allowedExtensions = [".pdf", ".doc", ".docx", ".txt", ".rtf", ".html"];

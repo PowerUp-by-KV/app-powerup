@@ -431,8 +431,9 @@ export function AchievementsScreen() {
                   <View style={{ width: cardWidth, height: canvasHeight }}>
                     <Svg width={cardWidth} height={canvasHeight} style={{ position: "absolute" }}>
                       {EDGES.map(([fromId, toId]) => {
-                        const from = NODES.find((n) => n.id === fromId)!;
-                        const to = NODES.find((n) => n.id === toId)!;
+                        const from = NODES.find((n) => n.id === fromId);
+                        const to = NODES.find((n) => n.id === toId);
+                        if (!from || !to) return null;
                         return (
                           <Path
                             key={fromId + "-" + toId}
