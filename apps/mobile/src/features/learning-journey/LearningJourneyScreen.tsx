@@ -842,7 +842,7 @@ export function LearningJourneyScreen() {
               </Text>
               <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
             </View>
-            <View className="flex-row items-center space-x-3">
+            <View className="flex-row items-center" style={{ gap: 12 }}>
               <Pressable
                 onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -989,7 +989,7 @@ export function LearningJourneyScreen() {
               Ready to learn something new?
             </Text>
           </View>
-          <View className="flex-row items-center space-x-3">
+          <View className="flex-row items-center" style={{ gap: 12 }}>
             <Pressable
               onPress={() => toggleTheme()}
               className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -1086,7 +1086,7 @@ export function LearningJourneyScreen() {
                   style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#1b1e32" }]}
                 >
                   <LinearGradient
-                    colors={isDark ? ["#3b82f6", "#3b82f6"] : ["#3b82f6", "#22c55e", "#84cc16"]}
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[timelineStyles.progressBarFill, { width: "100%" }]}
@@ -1164,7 +1164,7 @@ export function LearningJourneyScreen() {
                   style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#1b1e32" }]}
                 >
                   <LinearGradient
-                    colors={isDark ? ["#3b82f6", "#3b82f6"] : ["#3b82f6", "#22c55e", "#84cc16"]}
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[timelineStyles.progressBarFill, { width: "100%" }]}
@@ -1485,11 +1485,7 @@ export function LearningJourneyScreen() {
                               ]}
                             >
                               <LinearGradient
-                                colors={
-                                  isDark
-                                    ? ["#3b82f6", "#3b82f6"]
-                                    : ["#3b82f6", "#22c55e", "#84cc16"]
-                                }
+                                colors={["#3b82f6", "#22c55e", "#84cc16"]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={[timelineStyles.progressBarFill, { width: `${pct}%` }]}

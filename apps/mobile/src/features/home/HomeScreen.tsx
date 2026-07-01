@@ -261,7 +261,7 @@ export function HomeScreen() {
                 Ready to learn something new?
               </Text>
             </View>
-            <View className="flex-row items-center space-x-3">
+            <View className="flex-row items-center" style={{ gap: 12 }}>
               <Pressable
                 onPress={() => toggleTheme()}
                 className={`w-10 h-10 rounded-full items-center justify-center ${

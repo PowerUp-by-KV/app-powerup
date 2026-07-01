@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "rea
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 
@@ -91,6 +92,13 @@ export function CheckoutScreen() {
       style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
       className={isDark ? "bg-slate-900" : "bg-white"}
     >
+      {/* Background gradient */}
+      <LinearGradient
+        colors={isDark ? ["#1d3219", "#0c1b2b"] : ["#e5f5bb", "#bce3f8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+      />
       <View className="flex-row items-center justify-between px-4 py-3">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={24} color={isDark ? "#fff" : "#0f172a"} />

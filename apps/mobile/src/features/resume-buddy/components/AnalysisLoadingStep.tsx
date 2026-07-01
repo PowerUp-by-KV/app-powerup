@@ -17,9 +17,13 @@ type StageStatus = "pending" | "active" | "done";
 interface AnalysisLoadingStepProps {
   // Index (0-5) of the stage the backend is currently working on.
   activeStage?: number;
+  isTransparent?: boolean;
 }
 
-export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProps) {
+export function AnalysisLoadingStep({
+  activeStage = 0,
+  isTransparent = false,
+}: AnalysisLoadingStepProps) {
   const { isDark } = useThemeToggle();
   const clampedActive = Math.min(Math.max(activeStage, 0), STAGES.length);
 
@@ -46,7 +50,10 @@ export function AnalysisLoadingStep({ activeStage = 0 }: AnalysisLoadingStepProp
 
   return (
     <ScrollView
-      style={[styles.scrollContainer, { backgroundColor: isDark ? "#0F1020" : "#F8F9FC" }]}
+      style={[
+        styles.scrollContainer,
+        { backgroundColor: isTransparent ? "transparent" : isDark ? "#0F1020" : "#F8F9FC" },
+      ]}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
