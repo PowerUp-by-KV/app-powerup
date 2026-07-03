@@ -69,7 +69,7 @@ export interface AccuracyResponse {
 }
 
 export const gamificationApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     listAchievements: builder.query<AchievementsList, void>({
       query: () => "/v1/achievements",

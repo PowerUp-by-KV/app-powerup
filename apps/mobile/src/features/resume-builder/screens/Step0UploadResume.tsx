@@ -18,6 +18,7 @@ import * as SecureStore from "expo-secure-store";
 import { WizardHeader } from "../components/WizardHeader";
 import { useUploadResumeMutation } from "@/services/resume-api";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
 
 interface Step0UploadResumeProps {
   onNext: () => void;
@@ -45,6 +46,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
     type: string;
   } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -334,7 +336,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
     }
 
     try {
-      setUploading(true);
+      setIsSubmitting(true);
       const uploadData = new FormData();
       if (Platform.OS === "web") {
         const fileResponse = await fetch(selectedFile.uri);
@@ -362,14 +364,22 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
         }
       }
 
-      setUploading(false);
+      setIsSubmitting(false);
       onNext();
     } catch (error) {
-      setUploading(false);
+      setIsSubmitting(false);
       Alert.alert("Upload Failed", "There was an error uploading your resume. Please try again.");
       console.error("Upload error:", error);
     }
   };
+
+  if (isSubmitting) {
+    return (
+      <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#fafafa" }]}>
+        <ResumeSkeletonLoader text="Uploading Resume..." />
+      </View>
+    );
+  }
 
   return (
     <View

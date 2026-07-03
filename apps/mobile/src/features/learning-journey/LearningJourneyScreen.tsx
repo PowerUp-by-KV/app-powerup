@@ -667,20 +667,22 @@ export function LearningJourneyScreen() {
     if (gate.canEnter) {
       refetchPath();
       refetchProgression();
+      fetchAllDays(false);
     }
 
     const unsubscribe = navigation.addListener("focus", () => {
       if (gate.canEnter) {
         refetchPath();
         refetchProgression();
+        fetchAllDays(false);
       }
     });
     return unsubscribe;
-  }, [navigation, gate.canEnter, refetchPath, refetchProgression]);
+  }, [navigation, gate.canEnter, refetchPath, refetchProgression, fetchAllDays]);
 
   useEffect(() => {
     if (gate.canEnter && personalizedPath?.modules?.length) {
-      fetchAllDays(true);
+      fetchAllDays(false);
     }
   }, [gate.canEnter, personalizedPath, fetchAllDays]);
 

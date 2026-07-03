@@ -3,10 +3,10 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useColorScheme } from "nativewind";
@@ -96,19 +96,22 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             ))}
           </View>
         )}
-        <Pressable
+        <TouchableOpacity
           onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={({ pressed }) => ({
-            marginTop: 8,
-            backgroundColor: pressed ? "#2563eb" : "#3b82f6",
-            paddingVertical: 14,
-            borderRadius: 10,
+          activeOpacity={0.8}
+          style={{
+            marginTop: 20,
+            backgroundColor: "#3b82f6", // Primary blue color
+            paddingVertical: 16,
+            borderRadius: 14,
             alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
             ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }),
-          })}
+          }}
         >
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
-        </Pressable>
+          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>Continue</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -123,7 +126,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           flex: 1,
           ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
         }}
-        contentContainerStyle={{ padding: 24, paddingBottom: 24 }}
+        contentContainerStyle={{ padding: 24, paddingBottom: 64, flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
@@ -159,53 +162,55 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
           <Text style={{ marginTop: 12, color: "#dc2626", textAlign: "center" }}>{error}</Text>
         ) : null}
 
-        <View style={{ marginTop: 24 }}>
-          <Pressable
+        <View style={{ marginTop: 32, marginBottom: 12 }}>
+          <TouchableOpacity
             onPress={handleSubmit}
             disabled={submitting || text.trim().length === 0}
-            style={({ pressed }) => ({
+            activeOpacity={0.85}
+            style={{
               backgroundColor:
                 submitting || text.trim().length === 0
                   ? isDark
-                    ? "#27272a"
-                    : "#cbd5e1"
-                  : pressed
-                    ? "#2563eb"
-                    : "#3b82f6",
-              paddingVertical: 14,
-              borderRadius: 10,
+                    ? "#2E3048" // Distinct contrasting dark color (lighter than background #151620)
+                    : "#E2E8F0" // Distinct light grey
+                  : "#3b82f6", // Match standard activity blue color!
+              paddingVertical: 16,
+              borderRadius: 14,
               alignItems: "center",
+              justifyContent: "center",
               width: "100%",
+              shadowColor: "#3b82f6",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: submitting || text.trim().length === 0 ? 0 : 0.25,
+              shadowRadius: 8,
+              elevation: submitting || text.trim().length === 0 ? 0 : 4,
               ...Platform.select({
                 web: {
                   cursor: submitting || text.trim().length === 0 ? "default" : "pointer",
                 } as Record<string, unknown>,
               }),
-            })}
+            }}
           >
             {submitting ? (
-              <ActivityIndicator
-                color={
-                  submitting || text.trim().length === 0 ? (isDark ? "#52525b" : "#94a3b8") : "#fff"
-                }
-              />
+              <ActivityIndicator color={isDark ? "#ffffff" : "#475569"} />
             ) : (
               <Text
                 style={{
                   color:
                     submitting || text.trim().length === 0
                       ? isDark
-                        ? "#52525b"
-                        : "#ffffff"
-                      : "#ffffff",
-                  fontWeight: "700",
+                        ? "#71717A" // Readable grey on dark button background
+                        : "#A0AEC0" // Readable grey on light button background
+                      : "#ffffff", // High-contrast white for active state
+                  fontWeight: "800",
                   fontSize: 16,
+                  letterSpacing: 0.5,
                 }}
               >
                 Submit
               </Text>
             )}
-          </Pressable>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
