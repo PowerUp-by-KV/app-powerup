@@ -667,16 +667,18 @@ export function LearningJourneyScreen() {
     if (gate.canEnter) {
       refetchPath();
       refetchProgression();
+      fetchAllDays(true);
     }
 
     const unsubscribe = navigation.addListener("focus", () => {
       if (gate.canEnter) {
         refetchPath();
         refetchProgression();
+        fetchAllDays(true);
       }
     });
     return unsubscribe;
-  }, [navigation, gate.canEnter, refetchPath, refetchProgression]);
+  }, [navigation, gate.canEnter, refetchPath, refetchProgression, fetchAllDays]);
 
   useEffect(() => {
     if (gate.canEnter && personalizedPath?.modules?.length) {

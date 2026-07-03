@@ -192,7 +192,9 @@ export function AchievementsScreen() {
   const isTablet = width >= 768;
   const { isDark, toggleTheme } = useThemeToggle();
 
-  const [cardWidth, setCardWidth] = useState(0);
+  const padding = isTablet ? 32 : 20;
+  const initialCardWidth = Math.max(280, width - padding * 2 - 40);
+  const [cardWidth, setCardWidth] = useState(initialCardWidth);
   const DESIGN_W = 480;
   const DESIGN_H = 300;
   const scale = cardWidth ? cardWidth / DESIGN_W : 0;
@@ -335,21 +337,43 @@ export function AchievementsScreen() {
           </View>
 
           {/* Tab toggles */}
-          <View className="w-full flex-row items-center mb-6" style={{ gap: 12 }}>
+          <View
+            style={{
+              width: "100%",
+              flexDirection: "row",
+              alignItems: "center",
+              marginBottom: 24,
+              gap: 12,
+            }}
+          >
             {(["achievements", "skills"] as const).map((t) => {
               const isActive = tab === t;
               return (
                 <Pressable
                   key={t}
                   onPress={() => setTab(t)}
-                  className={`px-5 py-2 rounded-full ${
-                    isActive ? "bg-[#7174F6] shadow-sm shadow-[#7174F6]/25" : "bg-transparent"
-                  }`}
+                  style={[
+                    {
+                      paddingHorizontal: 20,
+                      paddingVertical: 8,
+                      borderRadius: 9999,
+                      backgroundColor: isActive ? "#7174F6" : "transparent",
+                    },
+                    isActive && {
+                      shadowColor: "#7174F6",
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.25,
+                      shadowRadius: 2,
+                      elevation: 2,
+                    },
+                  ]}
                 >
                   <Text
-                    className={`text-sm font-bold ${
-                      isActive ? "text-white" : isDark ? "text-[#8B93A8]" : "text-[#7C8599]"
-                    }`}
+                    style={{
+                      fontSize: 14,
+                      fontWeight: "700",
+                      color: isActive ? "#ffffff" : isDark ? "#8B93A8" : "#7C8599",
+                    }}
                   >
                     {t === "achievements" ? "Achievements" : "Skills"}
                   </Text>
@@ -401,20 +425,41 @@ export function AchievementsScreen() {
             )
           ) : (
             <View
-              className={`rounded-3xl border px-5 py-5 self-center w-full ${
-                isDark
-                  ? "bg-[#1A1B31] border-[rgba(113,116,246,0.15)]"
-                  : "bg-white border-[#ECEEF8] shadow-sm shadow-[#7174F6]/5"
-              }`}
-              style={{ maxWidth: 640 }}
+              style={{
+                borderRadius: 24,
+                borderWidth: 1,
+                padding: 20,
+                alignSelf: "center",
+                width: "100%",
+                maxWidth: 640,
+                backgroundColor: isDark ? "#1A1B31" : "#ffffff",
+                borderColor: isDark ? "rgba(113, 116, 246, 0.15)" : "#ECEEF8",
+                ...(!isDark && {
+                  shadowColor: "#7174F6",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.05,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }),
+              }}
             >
               {/* Card Header inside the card */}
-              <View className="flex-row justify-between items-center mb-4 px-1">
-                <Text className={`text-lg font-black ${isDark ? "text-white" : "text-[#1B1F35]"}`}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                  paddingHorizontal: 4,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 18, fontWeight: "900", color: isDark ? "#ffffff" : "#1B1F35" }}
+                >
                   Skills
                 </Text>
                 <Text
-                  className={`text-xs font-bold ${isDark ? "text-[#8B93A8]" : "text-[#A0A7B8]"}`}
+                  style={{ fontSize: 12, fontWeight: "700", color: isDark ? "#8B93A8" : "#A0A7B8" }}
                 >
                   3/6 unlocked
                 </Text>
@@ -422,9 +467,13 @@ export function AchievementsScreen() {
 
               {/* Inner Roadmap Container */}
               <View
-                className={`rounded-2xl border p-4 ${
-                  isDark ? "bg-[#141526] border-[#22243d]" : "bg-slate-50/50 border-slate-100"
-                }`}
+                style={{
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  padding: 16,
+                  backgroundColor: isDark ? "#141526" : "rgba(241, 245, 249, 0.5)",
+                  borderColor: isDark ? "#22243d" : "#e2e8f0",
+                }}
                 onLayout={(e) => setCardWidth(e.nativeEvent.layout.width)}
               >
                 {cardWidth > 0 && (

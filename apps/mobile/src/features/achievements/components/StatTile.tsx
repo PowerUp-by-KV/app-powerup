@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, View, StyleSheet } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Svg, { Path, Circle } from "react-native-svg";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
@@ -130,6 +130,7 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
         <View
           style={{
             flex: 1,
+            height: 100, // Enforce uniform height for perfect symmetry
             borderRadius: 24,
             borderWidth: 1,
             borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(113, 116, 246, 0.12)",
@@ -137,7 +138,19 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
             position: "relative",
           }}
         >
-          {renderWatermark()}
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              overflow: "hidden",
+              borderRadius: 24,
+            }}
+          >
+            {renderWatermark()}
+          </View>
 
           <View className="flex-1 justify-between relative z-10" style={{ padding: 18 }}>
             {type === "xp" && (
