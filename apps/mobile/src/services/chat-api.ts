@@ -34,7 +34,7 @@ export interface SendMessageArgs {
 }
 
 export const chatApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     listChatThreads: builder.query<ChatThread[], void>({
       query: () => "/v1/chat/threads",

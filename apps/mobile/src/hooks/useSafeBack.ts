@@ -9,10 +9,7 @@ import { Platform } from "react-native";
  */
 export function useSafeBack(fallback = "/(tabs)") {
   const router = useRouter();
-  let navigation: any = null;
-  try {
-    navigation = useNavigation();
-  } catch {}
+  const navigation = useNavigation();
 
   return useCallback(() => {
     try {

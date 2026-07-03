@@ -11,7 +11,7 @@ export function ChatFab({ onPress }: ChatFabProps) {
     <View style={styles.container} pointerEvents="box-none">
       <Pressable onPress={onPress} className="active:scale-95" style={styles.pressable}>
         <View pointerEvents="none" style={styles.mascotWrapper}>
-          <RiveMascot width={110} height={110} />
+          <RiveMascot width={110} height={130} />
         </View>
       </Pressable>
     </View>
@@ -26,12 +26,12 @@ const styles = StyleSheet.create({
   },
   pressable: {
     width: 110,
-    height: 110,
+    height: 130,
     alignItems: "center",
     justifyContent: "center",
   },
   mascotWrapper: {
     width: 110,
-    height: 110,
+    height: 130,
   },
 });

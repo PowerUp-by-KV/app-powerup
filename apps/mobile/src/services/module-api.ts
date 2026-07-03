@@ -113,7 +113,7 @@ export interface ProgressionRead {
 }
 
 export const moduleApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
       query: () => "/v1/learning-path/personalized",
@@ -222,7 +222,7 @@ export const moduleApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
 
     getDayProgress: builder.query<DayProgressResponse, string>({
@@ -240,7 +240,7 @@ export const moduleApi = api.injectEndpoints({
         url: `/v1/modules/${moduleId}/check`,
         method: "POST",
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
 
     advanceCefr: builder.mutation<AdvanceCefrResponse, string>({
@@ -248,7 +248,7 @@ export const moduleApi = api.injectEndpoints({
         url: `/v1/modules/${moduleId}/advance-cefr`,
         method: "POST",
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
   }),
 });

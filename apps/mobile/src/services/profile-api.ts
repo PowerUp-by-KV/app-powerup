@@ -52,7 +52,7 @@ export interface CheckoutArgs {
 }
 
 export const profileApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     getAvatars: builder.query<Avatar[], void>({
       query: () => "/v1/avatars",
