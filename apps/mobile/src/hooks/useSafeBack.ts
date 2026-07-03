@@ -1,6 +1,5 @@
-import { useCallback, useContext } from "react";
+import { useCallback } from "react";
 import { useRouter, useNavigation } from "expo-router";
-import * as ReactNavigation from "@react-navigation/native";
 import { Platform } from "react-native";
 
 /**
@@ -10,8 +9,7 @@ import { Platform } from "react-native";
  */
 export function useSafeBack(fallback = "/(tabs)") {
   const router = useRouter();
-  const navContext = useContext((ReactNavigation as any).NavigationContext);
-  const navigation = navContext ? useNavigation() : null;
+  const navigation = useNavigation();
 
   return useCallback(() => {
     try {

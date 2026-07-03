@@ -26,14 +26,12 @@ const styles = StyleSheet.create({
   },
   pressable: {
     width: 110,
-    height: 110,
+    height: 130,
     alignItems: "center",
     justifyContent: "center",
   },
   mascotWrapper: {
     width: 110,
     height: 130,
-    marginTop: -20,
-    overflow: "visible",
   },
 });

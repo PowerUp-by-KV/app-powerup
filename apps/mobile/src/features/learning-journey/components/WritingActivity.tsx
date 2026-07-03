@@ -192,7 +192,7 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
             }}
           >
             {submitting ? (
-              <ActivityIndicator color="#ffffff" />
+              <ActivityIndicator color={isDark ? "#ffffff" : "#475569"} />
             ) : (
               <Text
                 style={{

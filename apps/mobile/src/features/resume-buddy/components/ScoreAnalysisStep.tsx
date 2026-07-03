@@ -224,14 +224,7 @@ export function ScoreAnalysisStep({
                   <Text style={styles.glowingOrbText}>{skillsRelevanceScore}%</Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.orbLabel,
-                  { position: "absolute", top: 72, left: -25, width: 120, textAlign: "center" },
-                ]}
-              >
-                Basic Information
-              </Text>
+              <Text style={styles.orbLabel}>Basic Information</Text>
             </View>
 
             {/* Radiating Node 2: ATS (Right) */}
@@ -241,14 +234,7 @@ export function ScoreAnalysisStep({
                   <Text style={styles.glowingOrbText}>{atsCompatibilityScore}%</Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.orbLabel,
-                  { position: "absolute", top: 72, left: 5, width: 60, textAlign: "center" },
-                ]}
-              >
-                ATS
-              </Text>
+              <Text style={styles.orbLabel}>ATS</Text>
             </View>
 
             {/* Radiating Node 3: Section completeness (Bottom Right) */}
@@ -258,14 +244,7 @@ export function ScoreAnalysisStep({
                   <Text style={styles.glowingOrbText}>{resumeStructureScore}%</Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.orbLabel,
-                  { position: "absolute", top: 72, left: -30, width: 130, textAlign: "center" },
-                ]}
-              >
-                Section completeness
-              </Text>
+              <Text style={styles.orbLabel}>Section completeness</Text>
             </View>
 
             {/* Radiating Node 4: Resume Quality (Bottom Left) */}
@@ -275,14 +254,7 @@ export function ScoreAnalysisStep({
                   <Text style={styles.glowingOrbText}>{grammarClarityScore}%</Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.orbLabel,
-                  { position: "absolute", top: 72, left: -25, width: 120, textAlign: "center" },
-                ]}
-              >
-                Resume Quality
-              </Text>
+              <Text style={styles.orbLabel}>Resume Quality</Text>
             </View>
 
             {/* Radiating Node 5: Professional Summary (Left) */}
@@ -292,14 +264,7 @@ export function ScoreAnalysisStep({
                   <Text style={styles.glowingOrbText}>{projectsExperienceScore}%</Text>
                 </View>
               </View>
-              <Text
-                style={[
-                  styles.orbLabel,
-                  { position: "absolute", top: 72, left: -30, width: 130, textAlign: "center" },
-                ]}
-              >
-                Professional Summary
-              </Text>
+              <Text style={styles.orbLabel}>Professional Summary</Text>
             </View>
           </View>
 
@@ -608,6 +573,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     color: "rgba(255, 255, 255, 0.8)",
+    marginTop: 2,
+    textAlign: "center",
+    maxWidth: 120,
   },
   cardSummary: {
     fontSize: 14,
