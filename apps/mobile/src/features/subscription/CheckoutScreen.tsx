@@ -12,6 +12,7 @@ import {
   useGetPlansQuery,
   useSimulatePaymentWebhookMutation,
 } from "@/services/subscription-api";
+import RazorpayCheckout from "react-native-razorpay";
 
 function formatINR(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
@@ -40,7 +41,34 @@ export function CheckoutScreen() {
       // 1. Initiate checkout
       const result = await checkout({ plan_id: plan.id, payment_method: method }).unwrap();
 
-      // 2. Handle actual payment URLs (for Stripe / Razorpay)
+      if (method === "razorpay") {
+        try {
+          const data = await RazorpayCheckout.open({
+            description: `Subscription to ${plan.name}`,
+            image: "https://i.imgur.com/3g7nmJC.png", // Demo image
+            currency: "INR",
+            key: "rzp_test_T7WGVsxWMorhh6",
+            amount: plan.price_inr.toString(),
+            name: "PowerUp App",
+            subscription_id: result.subscription_id,
+            theme: { color: "#3b82f6" },
+          });
+
+          Alert.alert(
+            "Payment Successful",
+            `Your subscription is now active! Payment ID: ${data.razorpay_payment_id}`,
+            [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
+          );
+        } catch (error: any) {
+          Alert.alert(
+            "Payment Failed",
+            error?.description || "Razorpay checkout was cancelled or failed.",
+          );
+        }
+        return;
+      }
+
+      // 2. Handle actual payment URLs (for Stripe)
       if (result.payment_url) {
         import("expo-linking").then((Linking) => {
           Linking.openURL(result.payment_url!);
