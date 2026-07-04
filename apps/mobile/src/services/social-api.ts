@@ -43,7 +43,7 @@ export interface SearchResult {
 }
 
 export const socialApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     getLeaderboard: builder.query<
       LeaderboardResponse,
