@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
 import * as SecureStore from "expo-secure-store";
