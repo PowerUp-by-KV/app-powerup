@@ -843,10 +843,11 @@ export function ChatScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 12 }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 8 }}
                 style={[
                   s.suggestionChipsContainer,
                   {
+                    height: 56,
                     marginBottom: 16,
                     backgroundColor: isDark ? "#0B0F19" : C.bg,
                     borderBottomColor: isDark ? "#1E293B" : C.border,
@@ -864,7 +865,11 @@ export function ChatScreen() {
                     onPress={() => setInput(txt)}
                     style={[
                       s.inCardSuggestionChip,
-                      { backgroundColor: isDark ? "#1E293B" : "#F0F0F0" },
+                      {
+                        backgroundColor: isDark ? "#1E293B" : "#F0F0F0",
+                        marginVertical: 0,
+                        alignSelf: "center",
+                      },
                     ]}
                   >
                     <Text

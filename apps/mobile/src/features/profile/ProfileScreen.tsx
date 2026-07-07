@@ -1116,7 +1116,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
         width: "33.33%",
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: 8,
         paddingVertical: 10,
         paddingHorizontal: 4,
       }}
@@ -1124,9 +1124,9 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
       {/* Blue rounded square icon */}
       <View
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
+          width: 42,
+          height: 42,
+          borderRadius: 12,
           backgroundColor: "#3b82f6",
           alignItems: "center",
           justifyContent: "center",
@@ -1142,21 +1142,26 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
       {/* Number + label */}
       <View style={{ flex: 1 }}>
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
           style={{
             color: isDark ? "#ffffff" : "#1e293b",
             fontWeight: "700",
-            fontSize: 20,
-            lineHeight: 24,
+            fontSize: 18,
             letterSpacing: -0.3,
           }}
         >
           {value}
         </Text>
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
           style={{
             color: isDark ? "#a1a1aa" : "#94a3b8",
             fontWeight: "400",
-            fontSize: 12,
+            fontSize: 11,
             marginTop: 2,
             letterSpacing: 0.1,
           }}
