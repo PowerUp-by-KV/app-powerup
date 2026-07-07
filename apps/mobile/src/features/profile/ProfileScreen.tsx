@@ -1149,7 +1149,6 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
             color: isDark ? "#ffffff" : "#1e293b",
             fontWeight: "700",
             fontSize: 18,
-            lineHeight: 22,
             letterSpacing: -0.3,
           }}
         >

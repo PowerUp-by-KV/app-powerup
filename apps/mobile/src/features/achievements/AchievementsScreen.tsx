@@ -262,22 +262,31 @@ export function AchievementsScreen() {
 
   const rawNodes = skillsData?.nodes || [];
 
+  interface BackendSkillNode {
+    id: string;
+    title?: string;
+    unlocked?: boolean;
+    progress?: number;
+    completed?: number;
+    total?: number;
+  }
+
   const NODES: SkillNodeData[] = HARDCODED_NODES.map((hn) => {
     const backendNode = rawNodes.find((bn) => {
       const mappedId = BACKEND_TO_HARDCODED_MAP[bn.id] || bn.id;
       return mappedId === hn.id;
-    });
+    }) as BackendSkillNode | undefined;
 
     const progress = backendNode
-      ? (backendNode as any).progress !== undefined
-        ? (backendNode as any).progress
+      ? backendNode.progress !== undefined
+        ? backendNode.progress
         : backendNode.unlocked
           ? 100
           : 0
       : 0;
 
-    const completed = (backendNode as any)?.completed ?? 0;
-    const total = (backendNode as any)?.total ?? 0;
+    const completed = backendNode?.completed ?? 0;
+    const total = backendNode?.total ?? 0;
     const title = backendNode?.title ?? hn.id.charAt(0).toUpperCase() + hn.id.slice(1);
 
     return {

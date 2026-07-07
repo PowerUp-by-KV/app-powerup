@@ -19,9 +19,7 @@ export function useThemeToggle() {
 
         if (storedDarkMode !== null) {
           const isDarkStored = storedDarkMode === "true";
-          if (isDarkStored !== (colorScheme === "dark")) {
-            setColorScheme(isDarkStored ? "dark" : "light");
-          }
+          setColorScheme(isDarkStored ? "dark" : "light");
           if (Platform.OS === "web" && typeof document !== "undefined") {
             if (isDarkStored) {
               document.documentElement.classList.add("dark");
