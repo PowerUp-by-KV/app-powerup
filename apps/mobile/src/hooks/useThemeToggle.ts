@@ -5,7 +5,7 @@ import * as SecureStore from "expo-secure-store";
 
 export function useThemeToggle() {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const [isDark, setIsDark] = useState(colorScheme === "dark");
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     const loadTheme = async () => {
@@ -19,8 +19,9 @@ export function useThemeToggle() {
 
         if (storedDarkMode !== null) {
           const isDarkStored = storedDarkMode === "true";
-          setIsDark(isDarkStored);
-          setTimeout(() => setColorScheme(isDarkStored ? "dark" : "light"), 0);
+          if (isDarkStored !== (colorScheme === "dark")) {
+            setColorScheme(isDarkStored ? "dark" : "light");
+          }
           if (Platform.OS === "web" && typeof document !== "undefined") {
             if (isDarkStored) {
               document.documentElement.classList.add("dark");
@@ -28,20 +29,17 @@ export function useThemeToggle() {
               document.documentElement.classList.remove("dark");
             }
           }
-        } else {
-          setIsDark(colorScheme === "dark");
         }
       } catch (err) {
         console.warn("Failed to load theme settings", err);
       }
     };
     loadTheme();
-  }, [colorScheme, setColorScheme]);
+  }, [setColorScheme]);
 
   const toggleTheme = useCallback(async () => {
     const nextIsDark = !isDark;
-    setIsDark(nextIsDark);
-    setTimeout(() => setColorScheme(nextIsDark ? "dark" : "light"), 0);
+    setColorScheme(nextIsDark ? "dark" : "light");
 
     try {
       if (Platform.OS === "web") {
