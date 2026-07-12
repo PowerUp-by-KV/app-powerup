@@ -34,6 +34,7 @@ import { onboardingApi } from "@/services/onboarding-api";
 import { useDispatch } from "react-redux";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { setTier, type Tier } from "@/store/slices/subscription.slice";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
@@ -127,6 +128,7 @@ export function RegisterScreen() {
       const auth: AuthResponse = {
         access_token: regResponse.access_token,
         refresh_token: regResponse.refresh_token,
+        tier: regResponse.tier,
         user: {
           id: regResponse.user?.id || regResponse.user_id || "",
           name: fullName,
@@ -147,6 +149,7 @@ export function RegisterScreen() {
       // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
+      dispatch(setTier((regResponse.tier as Tier | undefined) ?? "free"));
 
       Alert.alert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
