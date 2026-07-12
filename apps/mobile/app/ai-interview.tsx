@@ -13,6 +13,8 @@ import { useGetProfileResumeQuery } from "@/services/resume-api";
 import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
 import { useWebRTCInterview } from "@/features/interview-playground/hooks/useWebRTCInterview";
 import { ConnectionBadge } from "@/features/interview-playground/components/ConnectionBadge";
+import { PaywallScreen } from "@/features/subscription/PaywallScreen";
+import { usePlanTier } from "@/hooks/usePlanTier";
 import type { InterviewSessionSummary } from "@/features/interview-playground/types";
 
 // ---------------------------------------------------------------------------
@@ -67,9 +69,55 @@ function CheckRow({ label, isDark }: { label: string; isDark: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
-// Main screen
+// Shared candidate profile card + checklist
 // ---------------------------------------------------------------------------
-export default function InterviewBuddyScreen() {
+function BuddyHeader({
+  candidateName,
+  skills,
+  totalSkills,
+}: {
+  candidateName: string | null;
+  skills: string[];
+  totalSkills: number;
+}) {
+  return (
+    <>
+      {candidateName && (
+        <View style={styles.candidateCard}>
+          <Text style={styles.candidateLabel}>Candidate</Text>
+          <Text style={styles.candidateName}>{candidateName}</Text>
+          {skills.length > 0 && (
+            <View style={styles.skillsRow}>
+              {skills.map((s) => (
+                <View key={s} style={styles.skillChip}>
+                  <Text style={styles.skillText}>{s}</Text>
+                </View>
+              ))}
+              {totalSkills > 5 && (
+                <View style={styles.skillChip}>
+                  <Text style={styles.skillText}>+{totalSkills - 5} more</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      )}
+
+      <View style={styles.expectCard}>
+        <Text style={styles.expectTitle}>What to expect</Text>
+        <CheckRow label="6–8 questions across Communication & Behavioral skills" />
+        <CheckRow label="Formal AI interviewer — no hints or coaching during session" />
+        <CheckRow label="Full score breakdown with grade (A–F) at the end" />
+        <CheckRow label="Strengths and improvement areas tailored to your answers" />
+      </View>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Premium variant — WebRTC
+// ---------------------------------------------------------------------------
+function WebRTCBuddyScreen() {
   const insets = useSafeAreaInsets();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -110,7 +158,6 @@ export default function InterviewBuddyScreen() {
     );
   }
 
-  // Resume gate
   if (!hasResume) {
     return (
       <View
@@ -237,7 +284,6 @@ export default function InterviewBuddyScreen() {
 
         {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-        {/* Start button */}
         <Pressable
           style={[styles.primaryBtn, isStarting && styles.primaryBtnDisabled]}
           onPress={handleStart}
@@ -253,11 +299,8 @@ export default function InterviewBuddyScreen() {
           )}
         </Pressable>
 
-        <Text style={styles.hint}>
-          Make sure your microphone is enabled. The interview will begin immediately.
-        </Text>
+        <Text style={styles.hint}>Make sure your microphone is enabled.</Text>
 
-        {/* Past sessions */}
         {(sessions?.length ?? 0) > 0 && (
           <View style={styles.historySection}>
             <Text style={[styles.historyTitle, isDark && { color: "#F8FAFC" }]}>Past Sessions</Text>
@@ -270,6 +313,112 @@ export default function InterviewBuddyScreen() {
       </ScrollView>
     </View>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Pro variant — pipeline
+// ---------------------------------------------------------------------------
+function PipelineBuddyScreen() {
+  const insets = useSafeAreaInsets();
+  const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
+
+  const hasResume = !!resume && resume.parse_status === "completed";
+  const candidateName = resume?.full_name ?? null;
+  const skills: string[] = (resume?.skills ?? [])
+    .slice(0, 5)
+    .map((s) => (typeof s === "string" ? s : ((s as { name?: string }).name ?? "")))
+    .filter(Boolean);
+
+  const handleStart = useCallback(() => {
+    router.push({ pathname: "/pipeline-interview-room" as never, params: { mode: "buddy" } });
+  }, []);
+
+  if (isLoadingResume) {
+    return (
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <ActivityIndicator style={styles.loader} size="large" color="#4F46E5" />
+      </View>
+    );
+  }
+
+  if (!hasResume) {
+    return (
+      <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Feather name="arrow-left" size={22} color="#475569" />
+          </Pressable>
+          <Text style={styles.title}>Interview Buddy</Text>
+          <View style={styles.gateCard}>
+            <Feather name="file-text" size={48} color="#4F46E5" />
+            <Text style={styles.gateTitle}>Upload your resume first</Text>
+            <Text style={styles.gateSub}>
+              Interview Buddy tailors every question to your real skills and experience.
+            </Text>
+            <Pressable style={styles.primaryBtn} onPress={() => router.push(ROUTE_RESUME)}>
+              <Text style={styles.primaryBtnText}>Go to Resume Studio</Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Feather name="arrow-left" size={22} color="#475569" />
+        </Pressable>
+
+        <View style={styles.titleRow}>
+          <View style={styles.iconCircle}>
+            <Feather name="user" size={22} color="#4F46E5" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title}>Interview Buddy</Text>
+            <Text style={styles.subtitle}>Full mock interview simulation</Text>
+          </View>
+        </View>
+
+        <BuddyHeader
+          candidateName={candidateName}
+          skills={skills}
+          totalSkills={resume?.skills?.length ?? 0}
+        />
+
+        <Pressable style={styles.primaryBtn} onPress={handleStart}>
+          <Feather name="mic" size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.primaryBtnText}>Start Interview</Text>
+        </Pressable>
+
+        <Text style={styles.hint}>Hold to speak when prompted. Microphone required.</Text>
+      </ScrollView>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main screen — tier routing
+// ---------------------------------------------------------------------------
+export default function InterviewBuddyScreen() {
+  const tier = usePlanTier();
+
+  if (tier === "free") {
+    return (
+      <PaywallScreen
+        requiredTier="pro"
+        featureName="Interview Buddy"
+        onBack={() => router.back()}
+      />
+    );
+  }
+
+  if (tier === "pro") {
+    return <PipelineBuddyScreen />;
+  }
+
+  return <WebRTCBuddyScreen />;
 }
 
 const styles = StyleSheet.create({
@@ -302,7 +451,12 @@ const styles = StyleSheet.create({
     borderColor: "#E2E8F0",
     gap: 6,
   },
-  candidateLabel: { fontSize: 11, color: "#94A3B8", fontWeight: "600", textTransform: "uppercase" },
+  candidateLabel: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
   candidateName: { fontSize: 18, fontWeight: "700", color: "#1E293B" },
   skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 4 },
   skillChip: {
