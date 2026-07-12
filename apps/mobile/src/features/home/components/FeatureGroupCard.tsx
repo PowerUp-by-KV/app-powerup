@@ -7,6 +7,7 @@ interface SubItem {
   title: string;
   subtitle: string;
   onPress: () => void;
+  locked?: boolean;
 }
 
 interface FeatureGroupCardProps {
@@ -48,15 +49,23 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
           <Pressable
             key={i}
             onPress={item.onPress}
-            style={[styles.itemPressable, { marginBottom: i === items.length - 1 ? 0 : 12 }]}
+            style={[
+              styles.itemPressable,
+              { marginBottom: i === items.length - 1 ? 0 : 12 },
+              item.locked && styles.itemPressableLocked,
+            ]}
             className="active:scale-[0.98]"
           >
             <View style={styles.itemTextContainer}>
               <Text className="text-slate-800 font-bold text-sm tracking-tight">{item.title}</Text>
               <Text className="text-slate-400 text-xs font-semibold mt-1">{item.subtitle}</Text>
             </View>
-            <View style={styles.chevronContainer}>
-              <Feather name="chevron-right" size={18} color="#1a202c" />
+            <View style={item.locked ? styles.lockContainer : styles.chevronContainer}>
+              <Feather
+                name={item.locked ? "lock" : "chevron-right"}
+                size={18}
+                color={item.locked ? "#94A3B8" : "#1a202c"}
+              />
             </View>
           </Pressable>
         ))}
@@ -130,5 +139,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 2,
     elevation: 1.5,
+  },
+  itemPressableLocked: {
+    opacity: 0.7,
+  },
+  lockContainer: {
+    backgroundColor: "#F1F5F9",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

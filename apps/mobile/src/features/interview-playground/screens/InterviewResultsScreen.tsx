@@ -3,7 +3,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
+import {
+  useGetInterviewSessionQuery,
+  useGetPipelineSessionQuery,
+} from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
 import { SessionInsights } from "../components/SessionInsights";
 import { TranscriptPanel } from "../components/TranscriptPanel";
@@ -11,23 +14,39 @@ import { TranscriptPanel } from "../components/TranscriptPanel";
 interface InterviewResultsScreenProps {
   sessionId: string | undefined;
   mode?: "buddy" | "playground";
+  transport?: "pipeline" | "webrtc";
 }
 
 export function InterviewResultsScreen({
   sessionId,
   mode = "playground",
+  transport = "webrtc",
 }: InterviewResultsScreenProps) {
   const homeRoute = mode === "buddy" ? "/ai-interview" : "/interview-playground";
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
   const insets = useSafeAreaInsets();
 
+  const isPipeline = transport === "pipeline";
+
   const {
-    data: session,
-    isLoading,
-    isError,
+    data: webrtcSession,
+    isLoading: isLoadingWebrtc,
+    isError: isErrorWebrtc,
   } = useGetInterviewSessionQuery(sessionId ?? "", {
-    skip: !sessionId,
+    skip: !sessionId || isPipeline,
   });
+
+  const {
+    data: pipelineSession,
+    isLoading: isLoadingPipeline,
+    isError: isErrorPipeline,
+  } = useGetPipelineSessionQuery(sessionId ?? "", {
+    skip: !sessionId || !isPipeline,
+  });
+
+  const session = isPipeline ? pipelineSession : webrtcSession;
+  const isLoading = isPipeline ? isLoadingPipeline : isLoadingWebrtc;
+  const isError = isPipeline ? isErrorPipeline : isErrorWebrtc;
 
   if (!sessionId) {
     return (

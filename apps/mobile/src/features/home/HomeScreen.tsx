@@ -15,6 +15,7 @@ import {
   useGetModulesQuery,
 } from "@/services/module-api";
 import { useGetResumeStatusQuery } from "@/services/resume-api";
+import { usePlanTier } from "@/hooks/usePlanTier";
 
 export interface CombinedModuleDay extends ModuleDay {
   module_no: number;
@@ -45,6 +46,7 @@ export function HomeScreen() {
   const { data: profile } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
+  const tier = usePlanTier();
   const insets = useSafeAreaInsets();
 
   const { data: modulesData } = useGetModulesQuery(undefined, {
@@ -307,12 +309,20 @@ export function HomeScreen() {
             items={[
               {
                 title: "Interview Playground",
-                subtitle: "Try, learn and improve — No pressure",
+                subtitle:
+                  tier === "free"
+                    ? "Upgrade to Pro to unlock"
+                    : "Try, learn and improve — No pressure",
+                locked: tier === "free",
                 onPress: () => router.push("/interview-playground" as never),
               },
               {
                 title: "Interview Buddy",
-                subtitle: "Practice with a buddy before it counts",
+                subtitle:
+                  tier === "free"
+                    ? "Upgrade to Pro to unlock"
+                    : "Practice with a buddy before it counts",
+                locked: tier === "free",
                 onPress: () => router.push("/ai-interview" as never),
               },
             ]}

@@ -28,6 +28,7 @@ import {
 import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { setTier, type Tier } from "@/store/slices/subscription.slice";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import * as WebBrowser from "expo-web-browser";
 
@@ -67,6 +68,7 @@ export function LoginScreen() {
       // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
+      dispatch(setTier((auth.tier as Tier | undefined) ?? "free"));
 
       // Prefetch questions immediately upon successful handshake
       prefetchOnboarding();
