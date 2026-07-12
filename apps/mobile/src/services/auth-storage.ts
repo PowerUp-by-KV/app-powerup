@@ -18,6 +18,7 @@ export interface StoredSession {
   access_token: string;
   refresh_token?: string;
   token_type?: string;
+  tier?: string;
   user: User;
 }
 

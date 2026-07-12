@@ -5,7 +5,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
-import { useGetInterviewSessionQuery } from "@/services/interview-playground-api";
+import {
+  useGetInterviewSessionQuery,
+  useGetPipelineSessionQuery,
+} from "@/services/interview-playground-api";
 import { ScoreBreakdown } from "../components/ScoreBreakdown";
 import { SessionInsights } from "../components/SessionInsights";
 import { TranscriptPanel } from "../components/TranscriptPanel";
@@ -14,11 +17,13 @@ import { useColorScheme } from "nativewind";
 interface InterviewResultsScreenProps {
   sessionId: string | undefined;
   mode?: "buddy" | "playground";
+  transport?: "pipeline" | "webrtc";
 }
 
 export function InterviewResultsScreen({
   sessionId,
   mode = "playground",
+  transport = "webrtc",
 }: InterviewResultsScreenProps) {
   const homeRoute = mode === "buddy" ? "/ai-interview" : "/interview-playground";
   const [isTranscriptExpanded, setIsTranscriptExpanded] = useState(false);
@@ -27,13 +32,27 @@ export function InterviewResultsScreen({
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack(homeRoute);
 
+  const isPipeline = transport === "pipeline";
+
   const {
-    data: session,
-    isLoading,
-    isError,
+    data: webrtcSession,
+    isLoading: isLoadingWebrtc,
+    isError: isErrorWebrtc,
   } = useGetInterviewSessionQuery(sessionId ?? "", {
-    skip: !sessionId,
+    skip: !sessionId || isPipeline,
   });
+
+  const {
+    data: pipelineSession,
+    isLoading: isLoadingPipeline,
+    isError: isErrorPipeline,
+  } = useGetPipelineSessionQuery(sessionId ?? "", {
+    skip: !sessionId || !isPipeline,
+  });
+
+  const session = isPipeline ? pipelineSession : webrtcSession;
+  const isLoading = isPipeline ? isLoadingPipeline : isLoadingWebrtc;
+  const isError = isPipeline ? isErrorPipeline : isErrorWebrtc;
 
   if (!sessionId) {
     return (

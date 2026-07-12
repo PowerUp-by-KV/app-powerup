@@ -5,6 +5,7 @@ import onboardingReducer from "./slices/onboardingSlice";
 import resumeReducer from "./slices/resume.slice";
 import resumeBuilderReducer from "./slices/resume-builder.slice";
 import mockInterviewReducer from "./slices/mock-interview.slice";
+import subscriptionReducer from "./slices/subscription.slice";
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     resume: resumeReducer,
     resumeBuilder: resumeBuilderReducer,
     mockInterview: mockInterviewReducer,
+    subscription: subscriptionReducer,
     [api.reducerPath]: api.reducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),

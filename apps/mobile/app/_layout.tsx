@@ -18,6 +18,8 @@ import {
 } from "@expo-google-fonts/inter";
 import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
+import { useAppDispatch } from "@/store/hooks";
+import { setTier, type Tier } from "@/store/slices/subscription.slice";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,6 +39,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
   const currentRoute = segments[0] as string | undefined;
+  const dispatch = useAppDispatch();
 
   const [session, setSession] = useState<StoredSession | null>(null);
   // Tracks the route for which the session read has completed.
@@ -51,6 +54,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       .then((sess) => {
         if (!active) return;
         setSession(sess);
+        if (sess?.tier) dispatch(setTier(sess.tier as Tier));
       })
       .catch((err) => {
         console.warn("Failed to load session in guard:", err);
@@ -61,7 +65,7 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, [currentRoute]);
+  }, [currentRoute, dispatch]);
 
   // Stale while a navigation has changed the route but its session read has not
   // resolved yet — redirect logic must wait for this to become true.

@@ -27,6 +27,7 @@ export interface AuthRegisterResponse {
   user_id?: string;
   access_token: string;
   refresh_token?: string;
+  tier?: string;
   user?: {
     id: string;
     email: string | null;
