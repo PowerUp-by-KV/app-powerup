@@ -241,6 +241,7 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
 
                     onInputChange(question_key, asset.uri);
                     onInputChange(`${question_key}Name`, asset.name);
+                    onInputChange(`${question_key}Type`, asset.mimeType ?? "application/pdf");
                   }
                 } catch {
                   // silently ignore file picker errors
