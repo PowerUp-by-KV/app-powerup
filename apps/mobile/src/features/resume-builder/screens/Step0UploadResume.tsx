@@ -51,6 +51,12 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
   const stageTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    return () => {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (Platform.OS !== "web") return;
 
     // Dynamically inject Google APIs for Picker on web
