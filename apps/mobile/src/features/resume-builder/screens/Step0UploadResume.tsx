@@ -18,7 +18,7 @@ import * as SecureStore from "expo-secure-store";
 import { WizardHeader } from "../components/WizardHeader";
 import { useUploadResumeMutation } from "@/services/resume-api";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
-import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
+import { AnalysisLoadingStep } from "@/features/resume-buddy/components/AnalysisLoadingStep";
 
 interface Step0UploadResumeProps {
   onNext: () => void;
@@ -47,6 +47,14 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
   } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStage, setUploadStage] = useState(0);
+  const stageTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -337,6 +345,12 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
 
     try {
       setIsSubmitting(true);
+      setUploadStage(0);
+      // Advance stages every 4 s — stalls at 3 until upload resolves, then jumps to done
+      stageTimerRef.current = setInterval(() => {
+        setUploadStage((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 4000);
+
       const uploadData = new FormData();
       if (Platform.OS === "web") {
         const fileResponse = await fetch(selectedFile.uri);
@@ -364,21 +378,21 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
         }
       }
 
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+      setUploadStage(5); // mark all stages done before navigating
       setIsSubmitting(false);
       onNext();
     } catch (error) {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
       setIsSubmitting(false);
+      setUploadStage(0);
       Alert.alert("Upload Failed", "There was an error uploading your resume. Please try again.");
       console.error("Upload error:", error);
     }
   };
 
   if (isSubmitting) {
-    return (
-      <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#fafafa" }]}>
-        <ResumeSkeletonLoader text="Uploading Resume..." />
-      </View>
-    );
+    return <AnalysisLoadingStep activeStage={uploadStage} />;
   }
 
   return (
