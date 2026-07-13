@@ -136,43 +136,7 @@ function WebRTCEntry() {
       ]}
     >
       <ScrollView contentContainerStyle={styles.listContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Interview Playground</Text>
-          <Text style={styles.subtitle}>Practice your interview with an AI interviewer</Text>
-
-          {status !== "idle" && status !== "done" && (
-            <View style={styles.badgeRow}>
-              <ConnectionBadge status={status} />
-            </View>
-          )}
-
-          {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
-
-          {!hasResume && !isLoadingResume && (
-            <View style={styles.warningBox}>
-              <Text style={styles.warningText}>
-                Upload your resume first so we can tailor the interview to your profile.
-              </Text>
-              <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
-                <Text style={styles.resumeLinkText}>Go to Resume</Text>
-              </Pressable>
-            </View>
-          )}
-
-          <Pressable
-            style={[styles.startButton, (!hasResume || isStarting) && styles.startButtonDisabled]}
-            onPress={handleStart}
-            disabled={!hasResume || isStarting}
-          >
-            {isStarting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.startButtonText}>Start Interview</Text>
-            )}
-          </Pressable>
-
-          {(sessions?.length ?? 0) > 0 && <Text style={styles.historyTitle}>Past Sessions</Text>}
-        </View>
+        {renderHeader()}
 
         {isLoadingSessions && <ActivityIndicator style={styles.loader} />}
         {(sessions ?? []).map((item) => (
