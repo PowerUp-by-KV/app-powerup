@@ -427,35 +427,9 @@ export default function OnboardingScreen() {
   const handleSkip = async () => {
     if (!question) return;
 
-    // Clear value when skipping
     dispatch(updateField({ field: question.question_key as any, value: "null" }));
-
     if (question.input_type === "file") {
       setResumeUploaded(false);
-      try {
-        const fd = new FormData();
-        if (Platform.OS === "web") {
-          // Create a valid File object containing the string "null"
-          fd.append("file", new File(["null"], "skipped_resume.pdf", { type: "application/pdf" }));
-        } else {
-          // React Native format
-          const rnFile = {
-            uri: "data:application/pdf;base64,bnVsbA==",
-            name: "skipped_resume.pdf",
-            type: "application/pdf",
-          };
-          fd.append("file", rnFile as unknown as Blob, "skipped_resume.pdf");
-        }
-
-        const extractRes = await extractResume(fd).unwrap();
-        const resumeId = extractRes?.resume_id || "null";
-        await confirmResume({
-          resume_id: resumeId,
-          confirmed_data: "null",
-        }).unwrap();
-      } catch (err) {
-        console.warn("Skip resume dummy file API failed:", err);
-      }
     }
 
     if (stepNumber < flattenedQuestions.length) {

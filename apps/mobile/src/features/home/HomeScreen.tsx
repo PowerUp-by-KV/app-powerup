@@ -303,7 +303,7 @@ export function HomeScreen() {
             xpPoints={profile?.total_xp ?? 0}
             daysCompleted={daysCompleted}
             totalDays={totalDays}
-            onTrack={() => router.push("/(tabs)/achievements" as never)}
+            onTrack={() => router.push("/(tabs)/my-learning" as never)}
           />
 
           <View className="flex-row justify-between items-center mb-3 mt-1">
