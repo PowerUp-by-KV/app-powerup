@@ -54,7 +54,7 @@ function SessionCard({ item, isDark }: { item: InterviewSessionSummary; isDark: 
 // ---------------------------------------------------------------------------
 // Checklist row
 // ---------------------------------------------------------------------------
-function CheckRow({ label, isDark }: { label: string; isDark: boolean }) {
+function CheckRow({ label, isDark = false }: { label: string; isDark?: boolean }) {
   return (
     <View style={styles.checkRow}>
       <Feather
