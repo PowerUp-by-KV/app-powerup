@@ -351,16 +351,17 @@ export default function OnboardingScreen() {
           const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
           const fd = new FormData();
 
+          const fileType = (formData[`${question.question_key}Type`] ||
+            "application/pdf") as string;
           if (Platform.OS === "web") {
             const r = await fetch(fileUri);
             const blob = await r.blob();
-            fd.append("file", new File([blob], fileName, { type: "application/pdf" }));
+            fd.append("file", new File([blob], fileName, { type: fileType }));
           } else {
             // React Native FormData accepts an object with { uri, name, type }
             // even though the standard DOM FormData type does not. Cast through
-            // unknown to a Blob shape so TypeScript is satisfied without `any`.
-            const rnFile = { uri: fileUri, name: fileName, type: "application/pdf" };
-            fd.append("file", rnFile as unknown as Blob, fileName);
+            // unknown to avoid the mismatch without using `any`.
+            fd.append("file", { uri: fileUri, name: fileName, type: fileType } as unknown as Blob);
           }
 
           // 1. Extract resume data and save file
