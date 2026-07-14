@@ -44,7 +44,15 @@ declare global {
 
 let scriptPromise: Promise<void> | null = null;
 
+/** The web build is prerendered (app.json sets output: "static"), so there is no DOM at build time. */
+function hasDom(): boolean {
+  return typeof window !== "undefined" && typeof document !== "undefined";
+}
+
+const GATEWAY_UNAVAILABLE = "Could not load the payment gateway. Check your connection.";
+
 function loadCheckoutScript(): Promise<void> {
+  if (!hasDom()) return Promise.reject(new Error(GATEWAY_UNAVAILABLE));
   if (window.Razorpay) return Promise.resolve();
   // Cached so concurrent or repeat checkouts don't inject the tag more than once.
   if (scriptPromise) return scriptPromise;
@@ -56,7 +64,7 @@ function loadCheckoutScript(): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => {
       scriptPromise = null;
-      reject(new Error("Could not load the payment gateway. Check your connection."));
+      reject(new Error(GATEWAY_UNAVAILABLE));
     };
     document.body.appendChild(script);
   });
@@ -83,9 +91,9 @@ function buildOptions(order: RazorpayOrder): Record<string, unknown> {
 async function openOnWeb(order: RazorpayOrder): Promise<RazorpaySuccess> {
   await loadCheckoutScript();
 
-  const Razorpay = window.Razorpay;
+  const Razorpay = hasDom() ? window.Razorpay : undefined;
   if (!Razorpay) {
-    throw new Error("Could not load the payment gateway. Check your connection.");
+    throw new Error(GATEWAY_UNAVAILABLE);
   }
 
   return new Promise<RazorpaySuccess>((resolve, reject) => {
@@ -98,13 +106,20 @@ async function openOnWeb(order: RazorpayOrder): Promise<RazorpaySuccess> {
   });
 }
 
+interface NativeCheckout {
+  open: (options: Record<string, unknown>) => Promise<RazorpaySuccess>;
+}
+
 async function openOnNative(order: RazorpayOrder): Promise<RazorpaySuccess> {
   // Required lazily: importing the native module at module scope would break the web bundle.
-  const RazorpayCheckout = (
-    require("react-native-razorpay") as {
-      default: { open: (options: Record<string, unknown>) => Promise<RazorpaySuccess> };
-    }
-  ).default;
+  // react-native-razorpay is legacy CommonJS (module.exports = RazorpayCheckout), so `.default`
+  // may be undefined depending on interop — fall back to the module object itself.
+  const mod = require("react-native-razorpay") as { default?: NativeCheckout } & NativeCheckout;
+  const RazorpayCheckout: NativeCheckout = mod.default ?? mod;
+
+  if (typeof RazorpayCheckout?.open !== "function") {
+    throw new Error("Payments aren't available in this build. Please update the app.");
+  }
 
   try {
     return await RazorpayCheckout.open(buildOptions(order));

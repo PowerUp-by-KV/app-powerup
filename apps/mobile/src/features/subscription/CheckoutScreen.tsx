@@ -14,10 +14,25 @@ import {
   useVerifyPaymentMutation,
 } from "@/services/subscription-api";
 
-import { openRazorpayCheckout, RazorpayCancelledError } from "./razorpay-checkout";
+import {
+  openRazorpayCheckout,
+  RazorpayCancelledError,
+  type RazorpaySuccess,
+} from "./razorpay-checkout";
 
 function formatINR(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
+}
+
+async function retry<T>(attempts: number, fn: () => Promise<T>): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i >= attempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 500 * i));
+    }
+  }
 }
 
 export function CheckoutScreen() {
@@ -41,6 +56,11 @@ export function CheckoutScreen() {
     if (!plan) return;
     setError(null);
 
+    // Set the moment Razorpay confirms the charge. Past this point the user's money is
+    // gone, so a later failure must never tell them to "try again" — that invites a
+    // double charge.
+    let charged: RazorpaySuccess | null = null;
+
     try {
       const order = await checkout({ plan_id: plan.id, payment_method: "razorpay" }).unwrap();
 
@@ -50,7 +70,7 @@ export function CheckoutScreen() {
       }
 
       setIsPaying(true);
-      const receipt = await openRazorpayCheckout({
+      charged = await openRazorpayCheckout({
         keyId: order.razorpay_key_id,
         orderId: order.order_id,
         amount: order.amount ?? plan.price_inr,
@@ -60,12 +80,15 @@ export function CheckoutScreen() {
       setIsPaying(false);
 
       // Only the server may activate a subscription — a client-side "success" callback
-      // proves nothing until the signature is verified against the key secret.
-      await verifyPayment({
-        razorpay_order_id: receipt.razorpay_order_id,
-        razorpay_payment_id: receipt.razorpay_payment_id,
-        razorpay_signature: receipt.razorpay_signature,
-      }).unwrap();
+      // proves nothing until the signature is verified against the key secret. Verification
+      // is idempotent, so a transient failure is worth retrying before we give up.
+      await retry(3, () =>
+        verifyPayment({
+          razorpay_order_id: charged!.razorpay_order_id,
+          razorpay_payment_id: charged!.razorpay_payment_id,
+          razorpay_signature: charged!.razorpay_signature,
+        }).unwrap(),
+      );
 
       router.replace("/(tabs)");
     } catch (err) {
@@ -73,6 +96,17 @@ export function CheckoutScreen() {
 
       if (err instanceof RazorpayCancelledError) {
         setError("Payment cancelled. You have not been charged.");
+        return;
+      }
+
+      if (charged) {
+        // Charged, but we couldn't confirm it. Razorpay's webhook is the backstop and will
+        // still activate the subscription, so the one thing we must not do is invite a retry.
+        setError(
+          `Your payment went through, but we couldn't confirm it just yet. Do not pay again — ` +
+            `your subscription will activate shortly. If it doesn't, contact support with ` +
+            `payment ID ${charged.razorpay_payment_id}.`,
+        );
         return;
       }
 
