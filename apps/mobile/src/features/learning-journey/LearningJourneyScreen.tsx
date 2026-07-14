@@ -29,7 +29,7 @@ export interface CombinedModuleDay extends ModuleDay {
 }
 
 import {
-  useLazyGetModuleDaysQuery,
+  useLazyGetModuleDaysBulkQuery,
   useGetModulesQuery,
   useGetProgressionQuery,
 } from "@/services/module-api";
@@ -630,38 +630,29 @@ export function LearningJourneyScreen() {
     }
   };
 
-  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [triggerGetModuleDaysBulk] = useLazyGetModuleDaysBulkQuery();
   const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
   const [loadingAllDays, setLoadingAllDays] = useState(false);
 
   const fetchAllDays = useCallback(
     async (force = false) => {
-      if (!personalizedPath?.modules?.length) return;
+      const moduleIds = personalizedPath?.modules?.map((m) => m.id);
+      if (!moduleIds?.length) return;
       setLoadingAllDays(true);
       try {
-        const promises = personalizedPath.modules.map(async (m) => {
-          try {
-            const data = await triggerGetModuleDays(m.id, !force).unwrap();
-            return { moduleId: m.id, days: data };
-          } catch (e) {
-            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { moduleId: m.id, days: [] };
-          }
-        });
-        const results = await Promise.all(promises);
-
-        const newData: Record<string, ModuleDay[]> = {};
-        for (const res of results) {
-          newData[res.moduleId] = res.days;
-        }
-        setModuleDaysData(newData);
+        // One request for the whole path. This used to fan out into a request per module —
+        // 12+ round trips every time the screen regained focus.
+        const daysByModule = await triggerGetModuleDaysBulk(moduleIds, !force).unwrap();
+        // The server omits nothing, but be defensive: a module with no days must still have
+        // an entry, or the UI reads undefined where it expects a list.
+        setModuleDaysData(Object.fromEntries(moduleIds.map((id) => [id, daysByModule[id] ?? []])));
       } catch (err) {
         console.error("Error fetching all days:", err);
       } finally {
         setLoadingAllDays(false);
       }
     },
-    [personalizedPath, triggerGetModuleDays],
+    [personalizedPath, triggerGetModuleDaysBulk],
   );
 
   const navigation = useNavigation();
