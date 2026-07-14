@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -20,6 +19,7 @@ import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { getAvatarUri } from "@/utils/avatar";
+import { isEmailNotVerifiedError } from "@/utils/error-message";
 import type { ModuleDay } from "@powerup/shared";
 
 export interface CombinedModuleDay extends ModuleDay {
@@ -47,6 +47,7 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { showAlert } from "@/utils/alert";
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -590,6 +591,7 @@ export function LearningJourneyScreen() {
   const {
     data: modulesData,
     isError: pathError,
+    error: pathErrorObj,
     isFetching: pathFetching,
     refetch: refetchPath,
   } = useGetModulesQuery(undefined, {
@@ -612,6 +614,7 @@ export function LearningJourneyScreen() {
   const {
     data: progression,
     isError: progressionError,
+    error: progressionErrorObj,
     isFetching: progressionFetching,
     refetch: refetchProgression,
   } = useGetProgressionQuery(undefined, {
@@ -757,7 +760,7 @@ export function LearningJourneyScreen() {
       });
     } catch (err: unknown) {
       console.error("Start/resume assessment session failed:", err);
-      Alert.alert("Error", "Could not start assessment. Please try again.");
+      showAlert("Error", "Could not start assessment. Please try again.");
     } finally {
       setIsStartingSession(false);
     }
@@ -768,6 +771,54 @@ export function LearningJourneyScreen() {
     !profileFetching &&
     !pathFetching &&
     !progressionFetching;
+
+  // The learning routers are gated behind require_verified_email. That 403 is not an
+  // outage — telling the user the server is down sends them to retry forever against a
+  // server that is working fine, with no hint that they need to verify their email.
+  const needsEmailVerification =
+    isError &&
+    (isEmailNotVerifiedError(pathErrorObj) || isEmailNotVerifiedError(progressionErrorObj));
+
+  if (needsEmailVerification) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
+          paddingTop: insets.top,
+        }}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
+              Verify your email to continue
+            </Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-5 px-2">
+              Your learning modules unlock once your email address is confirmed. We'll send you a
+              code.
+            </Text>
+
+            <View className="w-full gap-3">
+              <Pressable
+                onPress={() => router.push("/verify-email" as never)}
+                className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Verify email</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (isError) {
     return (
@@ -1040,7 +1091,7 @@ export function LearningJourneyScreen() {
           {/* Item 1: Free Content */}
           <Pressable
             onPress={() =>
-              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
+              showAlert("Free Content", "This free module is completed! Continue down your path.")
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1115,10 +1166,7 @@ export function LearningJourneyScreen() {
           {/* Item 2: Trial Content */}
           <Pressable
             onPress={() =>
-              Alert.alert(
-                "Trial Content",
-                "This trial module is completed! Continue down your path.",
-              )
+              showAlert("Trial Content", "This trial module is completed! Continue down your path.")
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1323,15 +1371,12 @@ export function LearningJourneyScreen() {
                 key={item.id}
                 onPress={() => {
                   if (item.isLocked) {
-                    Alert.alert(
+                    showAlert(
                       "Locked Day",
                       "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
                     );
                   } else if (!item.dayObj?.id) {
-                    Alert.alert(
-                      "Error",
-                      "Day content is not available yet. Please try refreshing.",
-                    );
+                    showAlert("Error", "Day content is not available yet. Please try refreshing.");
                   } else {
                     router.push({
                       pathname: `/learning-journey/module/${item.dayObj.id}` as never,
@@ -1525,7 +1570,7 @@ export function LearningJourneyScreen() {
                       <Pressable
                         onPress={() => {
                           if (!item.dayObj?.id) {
-                            Alert.alert(
+                            showAlert(
                               "Error",
                               "Day content is not available yet. Please try refreshing.",
                             );

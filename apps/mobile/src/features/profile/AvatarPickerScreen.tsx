@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -8,6 +8,7 @@ import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
 import { useGetAvatarsQuery } from "@/services/profile-api";
 import { getAvatarUri } from "@/utils/avatar";
+import { showAlert } from "@/utils/alert";
 
 export function AvatarPickerScreen() {
   const safeBack = useSafeBack();
@@ -47,7 +48,7 @@ export function AvatarPickerScreen() {
       await patch({ avatar_id: selected }).unwrap();
       safeBack();
     } catch {
-      Alert.alert("Save failed", "Could not save your avatar.");
+      showAlert("Save failed", "Could not save your avatar.");
     }
   };
 
@@ -114,7 +115,7 @@ export function AvatarPickerScreen() {
                     key={a.id}
                     onPress={() => {
                       if (a.locked) {
-                        Alert.alert(
+                        showAlert(
                           "Avatar Locked",
                           a.unlock_criteria ||
                             "Keep learning and earning XP to unlock this avatar!",

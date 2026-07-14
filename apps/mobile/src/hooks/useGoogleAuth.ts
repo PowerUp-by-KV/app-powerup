@@ -15,7 +15,6 @@
 // ---------------------------------------------------------------------------
 
 import { useEffect } from "react";
-import { Alert } from "react-native";
 
 import * as Google from "expo-auth-session/providers/google";
 import { useRouter } from "expo-router";
@@ -30,6 +29,7 @@ import {
 } from "@/services/auth-storage";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { showAlert } from "@/utils/alert";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -99,7 +99,7 @@ export function useGoogleAuth() {
       // a useEffect, so a rejection here would be an unhandled promise rejection.
       // Surface the failure to the user instead.
       console.error("Google login failed:", err);
-      Alert.alert("Google Sign-In", "Could not complete Google sign-in. Please try again.");
+      showAlert("Google Sign-In", "Could not complete Google sign-in. Please try again.");
     }
   };
 

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -29,6 +28,7 @@ import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 interface ListeningScreenProps {
   sessionId?: string;
@@ -212,7 +212,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
       console.error("D_LISTEN_ANSWER submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
   const handleNext = async () => {
@@ -220,7 +220,7 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
     const allAnswered = currentStoryQuestions.every((q: any) => !!answers[q.id]);
 
     if (currentStoryQuestions.length > 0 && !allAnswered) {
-      Alert.alert(
+      showAlert(
         "Answers Required",
         "Please answer all questions for this story before proceeding.",
       );

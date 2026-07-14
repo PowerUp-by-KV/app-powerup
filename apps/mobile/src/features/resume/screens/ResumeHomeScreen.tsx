@@ -8,7 +8,6 @@ import {
   View,
   ScrollView,
   Pressable,
-  Alert,
   ActivityIndicator,
   StyleSheet,
   Platform,
@@ -48,6 +47,7 @@ import type {
   Project,
   Certification,
 } from "@/services/resume-api";
+import { showAlert } from "@/utils/alert";
 
 type SelectedResumeFile = Omit<FileInfo, "uri"> & {
   uri: string | Blob;
@@ -148,7 +148,7 @@ export function ResumeHomeScreen() {
 
     const validation = validatePDFFile(fileInfo);
     if (!validation.isValid) {
-      Alert.alert("Invalid File", validation.error || "File validation failed.");
+      showAlert("Invalid File", validation.error || "File validation failed.");
       return;
     }
 
@@ -185,14 +185,14 @@ export function ResumeHomeScreen() {
         });
       }
     } catch {
-      Alert.alert("Error", "Failed to pick document. Please try again.");
+      showAlert("Error", "Failed to pick document. Please try again.");
     }
   };
 
   const handleUpload = async () => {
     if (isSubmittingRef.current) return;
     if (!selectedFile) {
-      Alert.alert("No File Selected", "Please select a PDF resume first.");
+      showAlert("No File Selected", "Please select a PDF resume first.");
       return;
     }
 
@@ -241,7 +241,7 @@ export function ResumeHomeScreen() {
 
       setUploadSuccess(true);
 
-      Alert.alert("Success", "Resume uploaded and parsed successfully!", [
+      showAlert("Success", "Resume uploaded and parsed successfully!", [
         {
           text: "OK",
         },
@@ -273,7 +273,7 @@ export function ResumeHomeScreen() {
       }
 
       dispatch(setError(errorMessage));
-      Alert.alert("Upload Failed", errorMessage);
+      showAlert("Upload Failed", errorMessage);
 
       console.error("Upload error:", apiError);
     } finally {
@@ -306,7 +306,7 @@ export function ResumeHomeScreen() {
       setIsDeleting(true);
 
       if (!userId) {
-        Alert.alert(
+        showAlert(
           "Error",
           "Unable to delete: User ID not found. Please try uploading your resume again.",
         );
@@ -340,7 +340,7 @@ export function ResumeHomeScreen() {
       if (Platform.OS === "web") {
         window.alert(errorMessage);
       } else {
-        Alert.alert("Delete Failed", errorMessage);
+        showAlert("Delete Failed", errorMessage);
       }
 
       console.error("Delete error:", apiError);

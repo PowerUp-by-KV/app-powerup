@@ -1,13 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -26,6 +18,7 @@ import { ConnectionBadge } from "../components/ConnectionBadge";
 import { TranscriptPanel } from "../components/TranscriptPanel";
 import { AvatarStage } from "../components/AvatarStage";
 import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
+import { showAlert } from "@/utils/alert";
 
 interface InterviewRoomScreenProps {
   sessionId: string | undefined;
@@ -59,12 +52,7 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
       router.replace({ pathname: "/interview-results", params: { session_id: sessionId, mode } });
     } else if (status === "error") {
       const msg = activeSession.errorMessage ?? "An error occurred.";
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined") window.alert(`Interview Error: ${msg}`);
-        router.back();
-      } else {
-        Alert.alert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
-      }
+      showAlert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
     }
   }, [status, sessionId, mode]);
 
@@ -88,19 +76,7 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
       setIsEnding(false);
     };
 
-    // Alert.alert with action buttons is a no-op on React Native Web, so the
-    // confirmation never appears and the interview never ends. Use the native
-    // browser confirm there, and Alert on iOS/Android.
-    if (Platform.OS === "web") {
-      const confirmed =
-        typeof window !== "undefined"
-          ? window.confirm("Are you sure you want to end the interview?")
-          : true;
-      if (confirmed) await runEnd();
-      return;
-    }
-
-    Alert.alert("End Interview?", "Are you sure you want to end the interview?", [
+    showAlert("End Interview?", "Are you sure you want to end the interview?", [
       { text: "Cancel", style: "cancel" },
       { text: "End", style: "destructive", onPress: runEnd },
     ]);

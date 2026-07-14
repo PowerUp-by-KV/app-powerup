@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Pressable,
@@ -28,6 +27,7 @@ import {
 } from "@/services/social-api";
 import { getAvatarUri } from "@/utils/avatar";
 import { SafeFlatListProps } from "@/types";
+import { showAlert } from "@/utils/alert";
 
 const RequestFlatList = FlatList as unknown as React.ComponentType<
   SafeFlatListProps<FriendRequest>
@@ -257,9 +257,7 @@ export function FriendsModal({ visible, onClose }: FriendsModalProps) {
                 </View>
                 <Pressable
                   className="bg-indigo-600 rounded-full px-4 py-2 mr-2"
-                  onPress={() =>
-                    Alert.alert("Coming Soon", "Friend profiles are not available yet.")
-                  }
+                  onPress={() => showAlert("Coming Soon", "Friend profiles are not available yet.")}
                 >
                   <Text className="text-white text-xs font-bold">View Profile</Text>
                 </Pressable>

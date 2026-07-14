@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
@@ -14,6 +14,30 @@ export interface McqActivityResult {
   passed: boolean;
   /** Percentage correct (0–100). */
   score: number;
+}
+
+export const MCQ_PASS_THRESHOLD = 70;
+
+/**
+ * Score an activity from a per-question correctness map.
+ *
+ * Keying by question index is what makes the count idempotent: answering the same question
+ * twice overwrites its entry instead of adding to a running total. A running total is what
+ * produced "You answered 4 of 3 questions correctly" (133%) — and that score was sent to
+ * the server as the real one.
+ */
+export function scoreMcqActivity(
+  correctByIndex: Record<number, boolean>,
+  questionCount: number,
+): { score: number; passed: boolean; totalCorrect: number } {
+  const totalCorrect = Math.min(
+    Object.values(correctByIndex).filter(Boolean).length,
+    questionCount,
+  );
+  const score =
+    questionCount > 0 ? Math.min(100, Math.round((totalCorrect / questionCount) * 100)) : 0;
+
+  return { score, passed: score >= MCQ_PASS_THRESHOLD, totalCorrect };
 }
 
 interface McqActivityProps {
@@ -92,7 +116,11 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     correctAnswer: string;
     totalCorrect: number;
   } | null>(null);
-  const [correctCount, setCorrectCount] = useState(0);
+  // Keyed by question index, not a running total. A running count double-counted: dismissing
+  // the result sheet re-enables the options without clearing `selected` or rolling the count
+  // back, so re-answering the same question incremented it again — 3 questions could score
+  // "4 of 3 correct" (133%), and that score was then POSTed to the server as real.
+  const [correctByIndex, setCorrectByIndex] = useState<Record<number, boolean>>({});
   const [lastCorrect, setLastCorrect] = useState(false);
   const [lastCorrectAnswer, setLastCorrectAnswer] = useState("");
   const [scoreView, setScoreView] = useState<{
@@ -100,6 +128,16 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     passed: boolean;
     totalCorrect: number;
   } | null>(null);
+
+  // ActivityRenderer reuses this component without a key, and ModuleScreen swaps activities
+  // in place — so without this, a new activity would inherit the previous one's answers.
+  useEffect(() => {
+    setIdx(0);
+    setSelected(null);
+    setLastResult(null);
+    setCorrectByIndex({});
+    setScoreView(null);
+  }, [mcqs]);
 
   const current = mcqs[idx];
 
@@ -160,8 +198,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     const selectedIndex = options.findIndex((opt) => opt.id === selected);
     const correct = selectedIndex !== -1 && selectedIndex === correctIndex;
 
-    const nextCorrectCount = correct ? correctCount + 1 : correctCount;
-    if (correct) setCorrectCount(nextCorrectCount);
+    // Record against this question, so re-answering it overwrites rather than adds.
+    const nextCorrectByIndex = { ...correctByIndex, [idx]: correct };
+    setCorrectByIndex(nextCorrectByIndex);
+    const nextCorrectCount = Object.values(nextCorrectByIndex).filter(Boolean).length;
 
     const correctLetter =
       correctIndex !== -1
@@ -188,13 +228,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
       setIdx(idx + 1);
       return;
     }
-    const totalCorrect = result.totalCorrect;
-    const score = Math.round((totalCorrect / mcqs.length) * 100);
-    setScoreView({
-      score,
-      passed: score >= 70,
-      totalCorrect,
-    });
+    setScoreView(scoreMcqActivity(correctByIndex, mcqs.length));
   };
 
   if (scoreView) {

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -29,6 +28,7 @@ import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 interface GrammarScreenProps {
   sessionId?: string;
@@ -166,12 +166,12 @@ export function GrammarScreen({ sessionId: propSessionId }: GrammarScreenProps) 
       console.error("C_GRAMMAR submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
   const handleNext = () => {
     if (!currentAnswer) {
-      Alert.alert("Answer Required", "Please provide an answer before proceeding.");
+      showAlert("Answer Required", "Please provide an answer before proceeding.");
       return;
     }
 

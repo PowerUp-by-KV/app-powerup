@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Platform,
   useWindowDimensions,
@@ -52,6 +51,7 @@ import Svg, {
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
 import companyEmployees from "../../../assets/mascot/company-employees.json";
+import { showAlert } from "@/utils/alert";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -270,7 +270,14 @@ export default function OnboardingScreen() {
             ans.answer_text !== undefined && ans.answer_text !== null && ans.answer_text !== ""
           );
         })
-        .map(({ question_id, answer_text }) => ({ question_id, answer_text }));
+        // A null answer here means the user skipped the question. Say so explicitly rather
+        // than letting the server infer it from an absent value — is_skipped defaults to
+        // false, so a skip was being recorded as an ordinary blank answer.
+        .map(({ question_id, answer_text }) => ({
+          question_id,
+          answer_text,
+          is_skipped: answer_text === null,
+        }));
 
       // 2. Submit Onboarding Answers with localized retry loop
       let ansRetries = 3;
@@ -279,8 +286,12 @@ export default function OnboardingScreen() {
           await submitOnboarding({ answers: answersPayload }).unwrap();
           break;
         } catch (ansErr) {
+          // A 4xx is the server rejecting this payload — retrying sends the identical body
+          // and gets the identical answer, so fail fast instead of stalling for 3 seconds.
+          const status = (ansErr as { status?: number | string })?.status;
+          const isClientError = typeof status === "number" && status >= 400 && status < 500;
           ansRetries--;
-          if (ansRetries === 0) throw ansErr;
+          if (isClientError || ansRetries === 0) throw ansErr;
           await new Promise((res) => setTimeout(res, 1000));
         }
       }
@@ -322,7 +333,7 @@ export default function OnboardingScreen() {
       // 4. Redirect directly to My Learning tab
       router.replace("/(tabs)" as any);
     } catch (err) {
-      Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
+      showAlert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
   };
 
@@ -334,14 +345,14 @@ export default function OnboardingScreen() {
     // Check required fields
     const answerValue = formData[question.question_key as keyof typeof formData];
     if (question.is_required && !answerValue && !isFileQuestion) {
-      Alert.alert("Required", "Please provide an answer to continue.");
+      showAlert("Required", "Please provide an answer to continue.");
       return;
     }
 
     if (isFileQuestion) {
       const fileUri = formData[question.question_key];
       if (!fileUri) {
-        Alert.alert("Required", "Please select a resume to upload.");
+        showAlert("Required", "Please select a resume to upload.");
         return;
       }
 
@@ -388,7 +399,7 @@ export default function OnboardingScreen() {
           return;
         } catch {
           setIsUploading(false);
-          Alert.alert(
+          showAlert(
             "Upload Failed",
             "Could not upload and extract your resume. You can try again or continue onboarding without it.",
             [
