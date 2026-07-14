@@ -145,6 +145,18 @@ export const moduleApi = api.injectEndpoints({
       providesTags: ["Modules"],
     }),
 
+    // One request for the whole learning path. Fetching each module's days separately meant
+    // a round trip per module (12+ on My Learning) every time the screen regained focus.
+    getModuleDaysBulk: builder.query<Record<string, ModuleDay[]>, string[]>({
+      query: (moduleIds) => ({
+        url: "/v1/modules/days/bulk",
+        params: { module_ids: moduleIds },
+      }),
+      transformResponse: (response: { days_by_module: Record<string, ModuleDay[]> }) =>
+        response.days_by_module,
+      providesTags: ["Modules"],
+    }),
+
     getDayActivities: builder.query<Activity[], string>({
       query: (dayId) => `/v1/modules/days/${dayId}/activities`,
       providesTags: ["Modules"],
@@ -262,6 +274,7 @@ export const {
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
   useLazyGetModuleDaysQuery,
+  useLazyGetModuleDaysBulkQuery,
   useGetDayActivitiesQuery,
   useGetActivityQuestionsQuery,
   useSubmitReadingAnswerMutation,
