@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -35,6 +34,7 @@ import { useDispatch } from "react-redux";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
 import { setTier, type Tier } from "@/store/slices/subscription.slice";
+import { showAlert } from "@/utils/alert";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^\d{10}$/;
@@ -151,7 +151,7 @@ export function RegisterScreen() {
       dispatch(resetOnboarding());
       dispatch(setTier((regResponse.tier as Tier | undefined) ?? "free"));
 
-      Alert.alert("Success", "Registration successful.");
+      showAlert("Success", "Registration successful.");
       router.replace({ pathname: "/verify-email", params: { email: email.trim() } });
     } catch (error: any) {
       const status = error?.status;
@@ -168,7 +168,7 @@ export function RegisterScreen() {
         msg = getApiErrorMessage(error, "Registration failed. Please try again.");
       }
 
-      Alert.alert(status === 409 ? "Account already exists" : "Registration failed", msg);
+      showAlert(status === 409 ? "Account already exists" : "Registration failed", msg);
     } finally {
       setIsLoading(false);
     }
@@ -262,7 +262,7 @@ export function RegisterScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       promptGoogle().catch(() =>
-                        Alert.alert(
+                        showAlert(
                           "Google Sign-In",
                           "Could not open Google sign-in. Please try again.",
                         ),

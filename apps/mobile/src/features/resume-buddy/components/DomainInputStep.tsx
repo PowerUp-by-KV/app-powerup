@@ -7,13 +7,13 @@ import {
   KeyboardAvoidingView,
   ScrollView,
   Platform,
-  Alert,
   TouchableOpacity,
 } from "react-native";
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as DocumentPicker from "expo-document-picker";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { showAlert } from "@/utils/alert";
 
 const SUGGESTED_DOMAINS = [
   "Frontend Developer",
@@ -48,7 +48,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
         setSelectedFile(result.assets[0] || null);
       }
     } catch {
-      Alert.alert("Error", "Failed to pick document. Please try again.");
+      showAlert("Error", "Failed to pick document. Please try again.");
     }
   };
 
@@ -59,7 +59,7 @@ export function DomainInputStep({ onAnalyze, onHistory, isLoading }: DomainInput
   const handleSubmit = () => {
     const trimmed = domain.trim();
     if (!trimmed) {
-      Alert.alert("Domain Required", "Please enter a target role or domain to proceed.");
+      showAlert("Domain Required", "Please enter a target role or domain to proceed.");
       return;
     }
     onAnalyze(trimmed, selectedFile || undefined);

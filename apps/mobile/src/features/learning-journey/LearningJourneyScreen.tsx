@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -47,6 +46,7 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { showAlert } from "@/utils/alert";
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -757,7 +757,7 @@ export function LearningJourneyScreen() {
       });
     } catch (err: unknown) {
       console.error("Start/resume assessment session failed:", err);
-      Alert.alert("Error", "Could not start assessment. Please try again.");
+      showAlert("Error", "Could not start assessment. Please try again.");
     } finally {
       setIsStartingSession(false);
     }
@@ -1040,7 +1040,7 @@ export function LearningJourneyScreen() {
           {/* Item 1: Free Content */}
           <Pressable
             onPress={() =>
-              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
+              showAlert("Free Content", "This free module is completed! Continue down your path.")
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1115,10 +1115,7 @@ export function LearningJourneyScreen() {
           {/* Item 2: Trial Content */}
           <Pressable
             onPress={() =>
-              Alert.alert(
-                "Trial Content",
-                "This trial module is completed! Continue down your path.",
-              )
+              showAlert("Trial Content", "This trial module is completed! Continue down your path.")
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1323,15 +1320,12 @@ export function LearningJourneyScreen() {
                 key={item.id}
                 onPress={() => {
                   if (item.isLocked) {
-                    Alert.alert(
+                    showAlert(
                       "Locked Day",
                       "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
                     );
                   } else if (!item.dayObj?.id) {
-                    Alert.alert(
-                      "Error",
-                      "Day content is not available yet. Please try refreshing.",
-                    );
+                    showAlert("Error", "Day content is not available yet. Please try refreshing.");
                   } else {
                     router.push({
                       pathname: `/learning-journey/module/${item.dayObj.id}` as never,
@@ -1525,7 +1519,7 @@ export function LearningJourneyScreen() {
                       <Pressable
                         onPress={() => {
                           if (!item.dayObj?.id) {
-                            Alert.alert(
+                            showAlert(
                               "Error",
                               "Day content is not available yet. Please try refreshing.",
                             );

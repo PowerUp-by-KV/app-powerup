@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { Feather } from "@expo/vector-icons";
@@ -31,6 +31,7 @@ import { ContinueLearningCard } from "./components/ContinueLearningCard";
 import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
 import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
+import { showAlert } from "@/utils/alert";
 
 const PROGRESSION_WAVES = [
   { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
@@ -209,7 +210,7 @@ export function HomeScreen() {
           router.push("/onboarding-resume" as never);
         }
       } else {
-        Alert.alert(
+        showAlert(
           "Resume Required",
           "Your resume is not uploaded. To enable this feature, please upload your resume.",
           [

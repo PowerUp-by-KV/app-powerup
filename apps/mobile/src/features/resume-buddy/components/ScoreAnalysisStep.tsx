@@ -198,9 +198,10 @@ export function ScoreAnalysisStep({
                   fill="none"
                   strokeDasharray={`${(overallScore / 100) * (2 * Math.PI * 40)} 300`}
                   strokeDashoffset={0}
-                  rotation="-90"
-                  originX="45"
-                  originY="45"
+                  // Not rotation/originX/originY: react-native-svg's web shim turns those
+                  // into the invalid DOM prop `transform-origin`, and React's warning about
+                  // it gets promoted into a red error banner the user actually sees.
+                  transform="rotate(-90 45 45)"
                   strokeLinecap="round"
                 />
               </Svg>

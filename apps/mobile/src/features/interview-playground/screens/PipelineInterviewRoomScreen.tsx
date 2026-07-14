@@ -1,13 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Feather } from "@expo/vector-icons";
@@ -17,6 +9,7 @@ import { usePipelineInterview } from "../hooks/usePipelineInterview";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { TranscriptPanel } from "../components/TranscriptPanel";
 import { AvatarStage } from "../components/AvatarStage";
+import { showAlert } from "@/utils/alert";
 
 interface PipelineInterviewRoomScreenProps {
   mode?: "buddy" | "playground";
@@ -62,7 +55,7 @@ export function PipelineInterviewRoomScreen({
         if (typeof window !== "undefined") window.alert(`Interview Error: ${msg}`);
         router.back();
       } else {
-        Alert.alert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
+        showAlert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
       }
     }
   }, [status, sessionId, mode, errorMessage]);
@@ -81,7 +74,7 @@ export function PipelineInterviewRoomScreen({
       return;
     }
 
-    Alert.alert("End Interview?", "Are you sure you want to end the interview?", [
+    showAlert("End Interview?", "Are you sure you want to end the interview?", [
       { text: "Cancel", style: "cancel" },
       { text: "End", style: "destructive", onPress: runEnd },
     ]);

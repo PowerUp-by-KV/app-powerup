@@ -24,12 +24,24 @@ export function normalizeBaseUrlForRuntime(url: string): string {
 }
 
 const resolvedBaseUrl = rawBaseUrl || fallbackDevBaseUrl;
-const BASE_URL = resolvedBaseUrl ? normalizeBaseUrlForRuntime(resolvedBaseUrl) : undefined;
+const BASE_URL = resolvedBaseUrl
+  ? normalizeBaseUrlForRuntime(resolvedBaseUrl.replace(/\/+$/, ""))
+  : undefined;
 
 if (!BASE_URL) {
   throw new Error(
     "EXPO_PUBLIC_API_URL environment variable is required. " +
       "Please set it in your .env file. For local development, use: http://localhost:8000/api",
+  );
+}
+
+// Every endpoint already prefixes its own `v1/`. Including the version here yields
+// /api/v1/v1/... — every request 404s, and because nothing surfaces that, the app just
+// looks broken. Fail loudly at startup instead of silently at every call site.
+if (/\/v\d+$/.test(BASE_URL)) {
+  throw new Error(
+    `EXPO_PUBLIC_API_URL must not include the API version — got "${BASE_URL}". ` +
+      `Endpoint paths already add "v1/". Use "${BASE_URL.replace(/\/v\d+$/, "")}" instead.`,
   );
 }
 

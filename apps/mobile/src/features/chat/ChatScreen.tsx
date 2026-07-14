@@ -15,7 +15,6 @@ import {
   Keyboard,
   KeyboardEvent,
 } from "react-native";
-import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { Asset } from "expo-asset";
@@ -37,6 +36,7 @@ import { SafeFlatListProps } from "@/types";
 import { getAvatarUri } from "@/utils/avatar";
 
 import { useChatStream } from "./useChatStream";
+import { showAlert } from "@/utils/alert";
 
 const AI_ORB_IMAGE = require("@/../assets/images/ai-orb.png");
 
@@ -647,7 +647,7 @@ export function ChatScreen() {
           hitSlop={8}
           disabled={busy || sendLockRef.current}
           onPress={() =>
-            Alert.alert("Attach Media", "Choose an option", [
+            showAlert("Attach Media", "Choose an option", [
               {
                 text: "Camera",
                 onPress: async () => {

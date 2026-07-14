@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert } from "react-native";
 
 import {
   useStartWebRTCInterviewMutation,
@@ -30,6 +29,7 @@ import {
   startAudioRouting,
   stopAudioRouting,
 } from "../platform/webrtc";
+import { showAlert } from "@/utils/alert";
 
 interface UseWebRTCInterviewReturn {
   status: InterviewStatus;
@@ -310,10 +310,9 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
       const { code, message } = describeStartError(err);
       handleError(message);
       // Surface a popup for the most actionable case; the screens also render
-      // `errorMessage` inline (which is the visible path on web, where
-      // Alert.alert is a no-op).
+      // `errorMessage` inline.
       if (code === "NO_RESUME") {
-        Alert.alert("Résumé needed", message, [{ text: "OK" }]);
+        showAlert("Résumé needed", message, [{ text: "OK" }]);
       }
       return null;
     }

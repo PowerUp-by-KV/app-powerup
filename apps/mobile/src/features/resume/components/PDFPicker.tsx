@@ -3,7 +3,7 @@
  * Displays professional PDF upload interface with validation
  */
 
-import { View, Pressable, Alert, ActivityIndicator } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "@/components/Themed";
 import { useState } from "react";
 import * as DocumentPicker from "expo-document-picker";
@@ -13,6 +13,7 @@ import {
   getMaxFileSizeDisplay,
   type FileInfo,
 } from "@/services/pdf-validation";
+import { showAlert } from "@/utils/alert";
 
 export interface PDFPickerProps {
   onFileSelected: (fileInfo: FileInfo) => Promise<void>;
@@ -108,7 +109,7 @@ export function PDFPicker({ onFileSelected, isLoading = false, disabled = false 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to select PDF";
       setValidationError(errorMessage);
-      Alert.alert("Error", errorMessage);
+      showAlert("Error", errorMessage);
     } finally {
       setIsProcessing(false);
     }
