@@ -20,6 +20,7 @@ import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { getAvatarUri } from "@/utils/avatar";
+import { isEmailNotVerifiedError } from "@/utils/error-message";
 import type { ModuleDay } from "@powerup/shared";
 
 export interface CombinedModuleDay extends ModuleDay {
@@ -590,6 +591,7 @@ export function LearningJourneyScreen() {
   const {
     data: modulesData,
     isError: pathError,
+    error: pathErrorObj,
     isFetching: pathFetching,
     refetch: refetchPath,
   } = useGetModulesQuery(undefined, {
@@ -612,6 +614,7 @@ export function LearningJourneyScreen() {
   const {
     data: progression,
     isError: progressionError,
+    error: progressionErrorObj,
     isFetching: progressionFetching,
     refetch: refetchProgression,
   } = useGetProgressionQuery(undefined, {
@@ -768,6 +771,54 @@ export function LearningJourneyScreen() {
     !profileFetching &&
     !pathFetching &&
     !progressionFetching;
+
+  // The learning routers are gated behind require_verified_email. That 403 is not an
+  // outage — telling the user the server is down sends them to retry forever against a
+  // server that is working fine, with no hint that they need to verify their email.
+  const needsEmailVerification =
+    isError &&
+    (isEmailNotVerifiedError(pathErrorObj) || isEmailNotVerifiedError(progressionErrorObj));
+
+  if (needsEmailVerification) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
+          paddingTop: insets.top,
+        }}
+      >
+        <ScrollView
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
+              Verify your email to continue
+            </Text>
+            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-5 px-2">
+              Your learning modules unlock once your email address is confirmed. We'll send you a
+              code.
+            </Text>
+
+            <View className="w-full gap-3">
+              <Pressable
+                onPress={() => router.push("/verify-email" as never)}
+                className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
+              >
+                <Text className="text-white font-extrabold text-sm">Verify email</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (isError) {
     return (

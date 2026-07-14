@@ -24,7 +24,9 @@ export type GroupedOnboardingQuestions = Record<string, OnboardingQuestion[]>;
 
 export interface OnboardingAnswer {
   question_id: string;
-  answer_text: string;
+  answer_text: string | null;
+  /** Distinguishes "deliberately skipped" from "left blank" — they are stored differently. */
+  is_skipped?: boolean;
 }
 export interface OnboardingSubmissionRequest {
   answers: OnboardingAnswer[];

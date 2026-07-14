@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { isEmailNotVerifiedError } from "@/utils/error-message";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { LinearGradient } from "expo-linear-gradient";
@@ -40,6 +41,7 @@ export function ModuleScreen() {
     isLoading: actsLoading,
     isFetching: actsFetching,
     isError: actsError,
+    error: actsErrorObj,
     refetch: refetchActivities,
   } = useGetDayActivitiesQuery(dayId, {
     skip: !dayId,
@@ -62,6 +64,7 @@ export function ModuleScreen() {
     isLoading: qLoading,
     isFetching: qFetching,
     isError: qError,
+    error: qErrorObj,
     refetch: refetchQuestions,
   } = useGetActivityQuestionsQuery(currentActivity?.id ?? "", {
     skip: !currentActivity,
@@ -205,6 +208,42 @@ export function ModuleScreen() {
   }
 
   const isError = (actsError || qError) && !actsFetching && !qFetching;
+
+  // A 403 from require_verified_email is not a server outage — see LearningJourneyScreen.
+  const needsEmailVerification =
+    isError && (isEmailNotVerifiedError(actsErrorObj) || isEmailNotVerifiedError(qErrorObj));
+
+  if (needsEmailVerification) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
+          justifyContent: "center",
+          alignItems: "center",
+          paddingTop: insets.top,
+          paddingBottom: Math.max(insets.bottom, 16),
+        }}
+        className="p-6"
+      >
+        <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
+            Verify your email to continue
+          </Text>
+          <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-5 px-2">
+            Your learning modules unlock once your email address is confirmed. We'll send you a
+            code.
+          </Text>
+          <Pressable
+            onPress={() => router.push("/verify-email" as never)}
+            className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
+          >
+            <Text className="text-white font-extrabold text-sm">Verify email</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
 
   if (isError) {
     return (
