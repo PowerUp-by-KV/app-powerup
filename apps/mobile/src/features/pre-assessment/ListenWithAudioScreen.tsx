@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -33,6 +32,7 @@ import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -183,13 +183,13 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
   async function startRecording() {
     if (!hasAudioFinished) {
-      Alert.alert("Locked", "Please listen to the audio completely before recording.");
+      showAlert("Locked", "Please listen to the audio completely before recording.");
       return;
     }
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
-        Alert.alert("Permission", "Microphone access is required.");
+        showAlert("Permission", "Microphone access is required.");
         return;
       }
 
@@ -208,7 +208,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
         setHasStartedRecording(true);
       }
     } catch (err) {
-      Alert.alert("Failed to start recording", (err as Error).message);
+      showAlert("Failed to start recording", (err as Error).message);
     }
   }
 
@@ -236,7 +236,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
           .catch((err) => {
             // Background upload failure handler with user alerts
             console.error("Audio upload failed:", err);
-            Alert.alert(
+            showAlert(
               "Upload Failed",
               "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
             );
@@ -352,7 +352,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       (qId) => uploadingQuestions[qId] === true,
     );
     if (pendingQIds.length > 0 || isAnyUploading) {
-      Alert.alert(
+      showAlert(
         "Upload in Progress",
         "Your recorded answer is still uploading. Please wait a few seconds and try again.",
       );
@@ -362,7 +362,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     // Verify all questions have answers
     const unanswered = questions.filter((q) => !answers[q.id]);
     if (unanswered.length > 0) {
-      Alert.alert("Incomplete Answers", "Please record and upload your answer before proceeding.");
+      showAlert("Incomplete Answers", "Please record and upload your answer before proceeding.");
       return;
     }
 
@@ -409,7 +409,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     } catch (err: any) {
       console.error("A_LISTEN submission failed:", err);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
       setIsFinished(false);
     }
   };
@@ -423,7 +423,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
     // Gating transitions if background audio upload is still in progress
     if (uploadingQuestions[currentQId] === true) {
-      Alert.alert(
+      showAlert(
         "Upload In Progress",
         "Please wait a few seconds for your audio recording to finish uploading.",
       );
@@ -431,7 +431,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
     }
 
     if (!hasRecorded[currentQId] || !answers[currentQId]) {
-      Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      showAlert("Recording Required", "Please record your answer before proceeding.");
       return;
     }
 

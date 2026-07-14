@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -30,6 +29,7 @@ import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -235,13 +235,13 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       console.error("A_READING submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
 
   const handleNext = () => {
     if (!currentAnswer) {
-      Alert.alert("Answer Required", "Please select or type an answer before proceeding.");
+      showAlert("Answer Required", "Please select or type an answer before proceeding.");
       return;
     }
 

@@ -16,6 +16,7 @@ import {
   Inter_700Bold,
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
+import { AlertHost } from "@/components/AlertHost";
 import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 import { useAppDispatch } from "@/store/hooks";
@@ -315,6 +316,8 @@ export default function AuthLayout() {
           />
         </Stack>
       </RouteGuard>
+      {/* Renders showAlert() dialogs on web, where React Native's Alert is a no-op. */}
+      <AlertHost />
     </Provider>
   );
 }

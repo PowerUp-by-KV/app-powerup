@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,6 +10,7 @@ import {
   useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
 } from "@/services/onboarding-api";
+import { showAlert } from "@/utils/alert";
 
 export function ResumeUploadStep() {
   const router = useRouter();
@@ -91,7 +92,7 @@ export function ResumeUploadStep() {
         }
       }, 2000);
     } catch {
-      Alert.alert(
+      showAlert(
         "Upload failed",
         "Could not upload and extract your resume. You can try again or continue without it.",
         [

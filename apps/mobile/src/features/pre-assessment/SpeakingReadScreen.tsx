@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +31,7 @@ import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -170,7 +170,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
-        Alert.alert("Permission", "Microphone access is required.");
+        showAlert("Permission", "Microphone access is required.");
         return;
       }
 
@@ -190,7 +190,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
         setTimeLeft(maxDuration + 5);
       }
     } catch (err) {
-      Alert.alert("Failed to start recording", (err as Error).message);
+      showAlert("Failed to start recording", (err as Error).message);
     }
   }
 
@@ -217,7 +217,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
             return sasUrl;
           })
           .catch((_err) => {
-            Alert.alert(
+            showAlert(
               "Upload Failed",
               "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
             );
@@ -319,21 +319,18 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
   const handleFinish = async () => {
     const qId = currentQuestion?.id;
     if (uploadingQuestions[qId]) {
-      Alert.alert("Uploading Audio", "Please wait for your last audio upload to complete.");
+      showAlert("Uploading Audio", "Please wait for your last audio upload to complete.");
       return;
     }
     if (!answers[qId]) {
-      Alert.alert(
-        "Upload Error",
-        "Last audio upload failed. Please tap 'Retake' and record again.",
-      );
+      showAlert("Upload Error", "Last audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 
     // Verify all questions have an answer
     const missingAny = questions.some((q) => !answers[q.id]);
     if (missingAny) {
-      Alert.alert(
+      showAlert(
         "Incomplete Answers",
         "Some of your recordings were not uploaded successfully. Please review and record them again.",
       );
@@ -377,7 +374,7 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
       console.error("A_SPEAKING submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
 
@@ -388,17 +385,17 @@ export function SpeakingReadScreen({ sessionId: propSessionId }: SpeakingReadScr
 
     const qId = currentQuestion?.id;
     if (!hasRecorded[qId]) {
-      Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      showAlert("Recording Required", "Please record your answer before proceeding.");
       return;
     }
 
     if (uploadingQuestions[qId]) {
-      Alert.alert("Uploading Audio", "Please wait for your audio upload to complete.");
+      showAlert("Uploading Audio", "Please wait for your audio upload to complete.");
       return;
     }
 
     if (!answers[qId]) {
-      Alert.alert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
+      showAlert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 

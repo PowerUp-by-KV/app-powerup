@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   Platform,
   useWindowDimensions,
@@ -52,6 +51,7 @@ import Svg, {
   LinearGradient as SvgLinearGradient,
 } from "react-native-svg";
 import companyEmployees from "../../../assets/mascot/company-employees.json";
+import { showAlert } from "@/utils/alert";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -333,7 +333,7 @@ export default function OnboardingScreen() {
       // 4. Redirect directly to My Learning tab
       router.replace("/(tabs)" as any);
     } catch (err) {
-      Alert.alert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
+      showAlert("Error", getApiErrorMessage(err, "Submission failed. Please try again."));
     }
   };
 
@@ -345,14 +345,14 @@ export default function OnboardingScreen() {
     // Check required fields
     const answerValue = formData[question.question_key as keyof typeof formData];
     if (question.is_required && !answerValue && !isFileQuestion) {
-      Alert.alert("Required", "Please provide an answer to continue.");
+      showAlert("Required", "Please provide an answer to continue.");
       return;
     }
 
     if (isFileQuestion) {
       const fileUri = formData[question.question_key];
       if (!fileUri) {
-        Alert.alert("Required", "Please select a resume to upload.");
+        showAlert("Required", "Please select a resume to upload.");
         return;
       }
 
@@ -399,7 +399,7 @@ export default function OnboardingScreen() {
           return;
         } catch {
           setIsUploading(false);
-          Alert.alert(
+          showAlert(
             "Upload Failed",
             "Could not upload and extract your resume. You can try again or continue onboarding without it.",
             [
