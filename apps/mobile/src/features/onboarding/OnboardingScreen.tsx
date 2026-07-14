@@ -270,7 +270,14 @@ export default function OnboardingScreen() {
             ans.answer_text !== undefined && ans.answer_text !== null && ans.answer_text !== ""
           );
         })
-        .map(({ question_id, answer_text }) => ({ question_id, answer_text }));
+        // A null answer here means the user skipped the question. Say so explicitly rather
+        // than letting the server infer it from an absent value — is_skipped defaults to
+        // false, so a skip was being recorded as an ordinary blank answer.
+        .map(({ question_id, answer_text }) => ({
+          question_id,
+          answer_text,
+          is_skipped: answer_text === null,
+        }));
 
       // 2. Submit Onboarding Answers with localized retry loop
       let ansRetries = 3;
@@ -279,8 +286,12 @@ export default function OnboardingScreen() {
           await submitOnboarding({ answers: answersPayload }).unwrap();
           break;
         } catch (ansErr) {
+          // A 4xx is the server rejecting this payload — retrying sends the identical body
+          // and gets the identical answer, so fail fast instead of stalling for 3 seconds.
+          const status = (ansErr as { status?: number | string })?.status;
+          const isClientError = typeof status === "number" && status >= 400 && status < 500;
           ansRetries--;
-          if (ansRetries === 0) throw ansErr;
+          if (isClientError || ansRetries === 0) throw ansErr;
           await new Promise((res) => setTimeout(res, 1000));
         }
       }
