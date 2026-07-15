@@ -52,6 +52,18 @@ export interface VerifyPaymentRequest {
   razorpay_signature: string;
 }
 
+/**
+ * Shape actually returned by GET /subscription/current and POST /subscription/verify.
+ * Both wrap the subscription in { active, tier, subscription } — the `tier` here is what
+ * drives feature gating (usePlanTier). Previously these endpoints were mis-typed as the
+ * inner subscription object, so nothing read `tier` and every user looked free-tier.
+ */
+export interface CurrentSubscription {
+  active: boolean;
+  tier: PlanTier;
+  subscription: UserSubscription | null;
+}
+
 export const subscriptionApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -62,7 +74,7 @@ export const subscriptionApi = api.injectEndpoints({
       providesTags: ["Subscription"],
     }),
 
-    getCurrentSubscription: builder.query<UserSubscription | null, void>({
+    getCurrentSubscription: builder.query<CurrentSubscription, void>({
       query: () => "/v1/subscription/current",
       providesTags: ["Subscription"],
     }),
@@ -85,7 +97,7 @@ export const subscriptionApi = api.injectEndpoints({
     }),
 
     // Confirms a Razorpay Checkout callback server-side and activates the subscription.
-    verifyPayment: builder.mutation<UserSubscription, VerifyPaymentRequest>({
+    verifyPayment: builder.mutation<CurrentSubscription, VerifyPaymentRequest>({
       query: (data) => ({
         url: "/v1/subscription/verify",
         method: "POST",

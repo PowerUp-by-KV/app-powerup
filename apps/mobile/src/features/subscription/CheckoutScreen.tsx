@@ -7,6 +7,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { getApiErrorMessage } from "@/utils/error-message";
+import { useAppDispatch } from "@/store/hooks";
+import { setTier } from "@/store/slices/subscription.slice";
 
 import {
   useCheckoutMutation,
@@ -37,6 +39,7 @@ async function retry<T>(attempts: number, fn: () => Promise<T>): Promise<T> {
 
 export function CheckoutScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
@@ -82,13 +85,18 @@ export function CheckoutScreen() {
       // Only the server may activate a subscription — a client-side "success" callback
       // proves nothing until the signature is verified against the key secret. Verification
       // is idempotent, so a transient failure is worth retrying before we give up.
-      await retry(3, () =>
+      const verified = await retry(3, () =>
         verifyPayment({
           razorpay_order_id: charged!.razorpay_order_id,
           razorpay_payment_id: charged!.razorpay_payment_id,
           razorpay_signature: charged!.razorpay_signature,
         }).unwrap(),
       );
+
+      // Unlock gated features immediately. Without this the tier stays whatever it was when
+      // the app started (usually "free"), so a just-purchased plan still reads as locked
+      // until the next full app relaunch.
+      dispatch(setTier(verified.tier));
 
       router.replace("/(tabs)");
     } catch (err) {
