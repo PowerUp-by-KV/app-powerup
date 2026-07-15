@@ -6,13 +6,29 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 
 import { getAuthSession } from "@/services/auth-storage";
+import { useGetCurrentSubscriptionQuery } from "@/services/subscription-api";
+import { useAppDispatch } from "@/store/hooks";
+import { setTier } from "@/store/slices/subscription.slice";
 
 export default function TabLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const dispatch = useAppDispatch();
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  // The plan tier gates Convo Coach etc. Login never returns a tier, so without this the
+  // app assumes "free" forever — a paid user stays locked out of what they bought. Fetch the
+  // real subscription once we know we're authenticated and set the tier from it. It provides
+  // the "Subscription" cache tag, so verifying a new payment auto-refetches and re-unlocks.
+  const { data: currentSub } = useGetCurrentSubscriptionQuery(undefined, {
+    skip: !isAuthed,
+  });
+
+  useEffect(() => {
+    if (currentSub?.tier) dispatch(setTier(currentSub.tier));
+  }, [currentSub, dispatch]);
 
   const activeColor = "#3b82f6";
   const inactiveColor = isDark ? "#7f85a3" : "#94a3b8";
