@@ -8,6 +8,7 @@ import {
   clearProfileCompletedInSession,
   getAuthSession,
 } from "@/services/auth-storage";
+import { setTier } from "@/store/slices/subscription.slice";
 
 export const useLogout = () => {
   const router = useRouter();
@@ -17,6 +18,10 @@ export const useLogout = () => {
       await clearAssessmentSessionId();
       await clearProfileCompletedInSession();
       store.dispatch(api.util.resetApiState());
+      // resetApiState() drops the cached /subscription/current, but the tier lives in its own
+      // slice — reset it too, or the next user (e.g. a free one on a shared device) inherits
+      // the previous user's unlocked features until their own fetch resolves.
+      store.dispatch(setTier("free"));
       router.replace("/login");
     } catch {}
   };
