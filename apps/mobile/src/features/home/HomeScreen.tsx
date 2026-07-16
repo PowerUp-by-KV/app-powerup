@@ -53,7 +53,7 @@ export function HomeScreen() {
   const tier = usePlanTier();
   const insets = useSafeAreaInsets();
 
-  const { data: modulesData } = useGetModulesQuery(undefined, {
+  const { data: modulesData, isLoading: isModulesLoading } = useGetModulesQuery(undefined, {
     skip: !gate.canEnter,
   });
 
@@ -72,15 +72,11 @@ export function HomeScreen() {
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
   const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
-  // Starts true so the dashboard shows a skeleton on first paint instead of a flash of
-  // "0 / 156 days" and zeroed stat tiles before the day data resolves.
-  const [isDaysLoading, setIsDaysLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
 
     const fetchAllDays = async () => {
-      setIsDaysLoading(true);
       try {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
@@ -100,8 +96,6 @@ export function HomeScreen() {
         setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
-      } finally {
-        setIsDaysLoading(false);
       }
     };
 
@@ -176,9 +170,16 @@ export function HomeScreen() {
   const firstName = profile?.name?.split(" ")[0] || "there";
 
   // The dashboard's numbers come from two sources: profile (streaks/badges/xp) and the
-  // per-module day data (days completed). Treat the card as loading until both are in, so
-  // it renders a skeleton rather than zeros that snap to real values a beat later.
-  const isDashboardLoading = isProfileLoading || (gate.canEnter && isDaysLoading);
+  // per-module day data (days completed). Treat the card as loading until both are in, so it
+  // renders a skeleton rather than zeros that snap to real values a beat later. Derive the
+  // day-loading state from what has actually resolved rather than a manual flag: a flag set
+  // in an effect gets stuck on skeleton forever when there are no modules or the modules
+  // query fails (the effect returns early without clearing it).
+  const isDaysLoading =
+    gate.canEnter &&
+    (isModulesLoading ||
+      ((modulesData?.length ?? 0) > 0 && Object.keys(moduleDaysData).length === 0));
+  const isDashboardLoading = isProfileLoading || isDaysLoading;
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {

@@ -16,16 +16,16 @@ interface MyLearningCardProps {
 }
 
 function SkeletonBlock({ className }: { className: string }) {
-  return (
-    <View className={`bg-slate-200 dark:bg-slate-700/60 rounded-lg animate-pulse ${className}`} />
-  );
+  // No default rounding — each caller sets its own (rounded-full for the icon dot,
+  // rounded-lg for bars) so the two radius classes never collide on one element.
+  return <View className={`bg-slate-200 dark:bg-slate-700/60 animate-pulse ${className}`} />;
 }
 
 function StatTileSkeleton() {
   return (
     <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1">
       <SkeletonBlock className="w-6 h-6 mb-2 rounded-full" />
-      <SkeletonBlock className="w-14 h-3.5" />
+      <SkeletonBlock className="w-14 h-3.5 rounded-lg" />
     </View>
   );
 }
@@ -109,8 +109,8 @@ export function MyLearningCard({
           </View>
           <View className="mb-5">
             <View className="flex-row justify-between mb-2">
-              <SkeletonBlock className="w-20 h-3" />
-              <SkeletonBlock className="w-8 h-3" />
+              <SkeletonBlock className="w-20 h-3 rounded-lg" />
+              <SkeletonBlock className="w-8 h-3 rounded-lg" />
             </View>
             <SkeletonBlock className="h-2.5 w-full rounded-full" />
           </View>

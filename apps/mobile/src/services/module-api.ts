@@ -152,9 +152,11 @@ export const moduleApi = api.injectEndpoints({
         // Send repeated params (module_ids=a&module_ids=b), which is what FastAPI's list[…]
         // query expects. The default array serialization is comma-joined, which the API
         // rejected with 422 — collapsing the whole My Learning path to locked placeholders.
-        url: `/v1/modules/days/bulk?${moduleIds
-          .map((id) => `module_ids=${encodeURIComponent(id)}`)
-          .join("&")}`,
+        url:
+          "/v1/modules/days/bulk" +
+          (moduleIds.length
+            ? `?${moduleIds.map((id) => `module_ids=${encodeURIComponent(id)}`).join("&")}`
+            : ""),
       }),
       transformResponse: (response: { days_by_module: Record<string, ModuleDay[]> }) =>
         response.days_by_module,
