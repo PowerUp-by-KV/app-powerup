@@ -1,14 +1,8 @@
-import { Platform } from "react-native";
-
 /**
- * Razorpay Checkout, wrapped so the caller doesn't care which platform it's on.
+ * Razorpay Checkout - Native Platform Implementation.
  *
- * Web loads Razorpay's checkout.js and drives `window.Razorpay`. Native defers to
- * `react-native-razorpay`, which is a native module: it needs a custom dev client or an
- * EAS build, and is not available in Expo Go.
+ * Native defers to `react-native-razorpay`, which is a native module.
  */
-
-const CHECKOUT_JS = "https://checkout.razorpay.com/v1/checkout.js";
 
 export interface RazorpayOrder {
   /** Publishable key id from the backend (never the secret). */
@@ -36,40 +30,8 @@ export class RazorpayCancelledError extends Error {
   }
 }
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
-
-let scriptPromise: Promise<void> | null = null;
-
-/** The web build is prerendered (app.json sets output: "static"), so there is no DOM at build time. */
-function hasDom(): boolean {
-  return typeof window !== "undefined" && typeof document !== "undefined";
-}
-
-const GATEWAY_UNAVAILABLE = "Could not load the payment gateway. Check your connection.";
-
-function loadCheckoutScript(): Promise<void> {
-  if (!hasDom()) return Promise.reject(new Error(GATEWAY_UNAVAILABLE));
-  if (window.Razorpay) return Promise.resolve();
-  // Cached so concurrent or repeat checkouts don't inject the tag more than once.
-  if (scriptPromise) return scriptPromise;
-
-  scriptPromise = new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = CHECKOUT_JS;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => {
-      scriptPromise = null;
-      reject(new Error(GATEWAY_UNAVAILABLE));
-    };
-    document.body.appendChild(script);
-  });
-
-  return scriptPromise;
+interface NativeCheckout {
+  open: (options: Record<string, unknown>) => Promise<RazorpaySuccess>;
 }
 
 function buildOptions(order: RazorpayOrder): Record<string, unknown> {
@@ -88,30 +50,7 @@ function buildOptions(order: RazorpayOrder): Record<string, unknown> {
   };
 }
 
-async function openOnWeb(order: RazorpayOrder): Promise<RazorpaySuccess> {
-  await loadCheckoutScript();
-
-  const Razorpay = hasDom() ? window.Razorpay : undefined;
-  if (!Razorpay) {
-    throw new Error(GATEWAY_UNAVAILABLE);
-  }
-
-  return new Promise<RazorpaySuccess>((resolve, reject) => {
-    const checkout = new Razorpay({
-      ...buildOptions(order),
-      handler: (response: RazorpaySuccess) => resolve(response),
-      modal: { ondismiss: () => reject(new RazorpayCancelledError()) },
-    });
-    checkout.open();
-  });
-}
-
-interface NativeCheckout {
-  open: (options: Record<string, unknown>) => Promise<RazorpaySuccess>;
-}
-
-async function openOnNative(order: RazorpayOrder): Promise<RazorpaySuccess> {
-  // Required lazily: importing the native module at module scope would break the web bundle.
+export async function openRazorpayCheckout(order: RazorpayOrder): Promise<RazorpaySuccess> {
   // react-native-razorpay is legacy CommonJS (module.exports = RazorpayCheckout), so `.default`
   // may be undefined depending on interop — fall back to the module object itself.
   const mod = require("react-native-razorpay") as { default?: NativeCheckout } & NativeCheckout;
@@ -129,8 +68,4 @@ async function openOnNative(order: RazorpayOrder): Promise<RazorpaySuccess> {
     if (code === 0 || code === 2) throw new RazorpayCancelledError();
     throw err;
   }
-}
-
-export function openRazorpayCheckout(order: RazorpayOrder): Promise<RazorpaySuccess> {
-  return Platform.OS === "web" ? openOnWeb(order) : openOnNative(order);
 }
