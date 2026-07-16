@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
-import { isEmailNotVerifiedError } from "@/utils/error-message";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,6 +18,7 @@ import {
   useGetModuleEngagementQuery,
   useLazyGetProgressionQuery,
 } from "@/services/module-api";
+import type { Activity } from "@powerup/shared";
 
 import { ActivityRenderer, ActivityResult } from "./components/ActivityRenderer";
 
@@ -32,30 +32,51 @@ export function ModuleScreen() {
     day_id?: string;
     module_id?: string;
     day_number?: string;
+    retake_activity_id?: string;
   }>();
   const dayId = params.day_id ?? "";
   const moduleId = params.module_id ?? "";
 
   const {
-    data: activities = [],
+    data: rawActivities = [],
     isLoading: actsLoading,
     isFetching: actsFetching,
     isError: actsError,
-    error: actsErrorObj,
     refetch: refetchActivities,
   } = useGetDayActivitiesQuery(dayId, {
     skip: !dayId,
   });
-  const activitiesToPlay = useMemo(() => {
-    const incomplete = activities.filter((act) => !act.passed);
-    return incomplete.length > 0 ? incomplete : activities;
-  }, [activities]);
 
-  const [activityIdx, setActivityIdx] = useState(0);
+  const activities = useMemo(() => {
+    if (!rawActivities) return [];
+    return [...rawActivities].sort((a, b) => {
+      return (a.order_index ?? 0) - (b.order_index ?? 0);
+    });
+  }, [rawActivities]);
+
+  const [activitiesToPlay, setActivitiesToPlay] = useState<Activity[]>([]);
+  const [hasInitializedList, setHasInitializedList] = useState(false);
+  const [initialPassedCount, setInitialPassedCount] = useState<number | null>(null);
 
   useEffect(() => {
-    setActivityIdx(0);
-  }, [activities]);
+    if (activities.length > 0 && !hasInitializedList) {
+      if (params.retake_activity_id) {
+        const retake = activities.filter((act) => act.id === params.retake_activity_id);
+        if (retake.length > 0) {
+          setActivitiesToPlay(retake);
+          setHasInitializedList(true);
+          return;
+        }
+      }
+      const incomplete = activities.filter((act) => !act.passed);
+      setActivitiesToPlay(incomplete.length > 0 ? incomplete : activities);
+      const passedCount = activities.filter((act) => act.passed).length;
+      setInitialPassedCount(passedCount);
+      setHasInitializedList(true);
+    }
+  }, [activities, hasInitializedList, params.retake_activity_id]);
+
+  const [activityIdx, setActivityIdx] = useState(0);
 
   const currentActivity = activitiesToPlay[activityIdx];
 
@@ -64,7 +85,6 @@ export function ModuleScreen() {
     isLoading: qLoading,
     isFetching: qFetching,
     isError: qError,
-    error: qErrorObj,
     refetch: refetchQuestions,
   } = useGetActivityQuestionsQuery(currentActivity?.id ?? "", {
     skip: !currentActivity,
@@ -118,78 +138,57 @@ export function ModuleScreen() {
     return false;
   };
 
-  const [accumulatedSessionXp, setAccumulatedSessionXp] = useState(0);
-
   const handleActivityComplete = async (result: ActivityResult) => {
     if (!currentActivity || isCompleting) return;
-
     setIsCompleting(true);
     try {
-      const res = await completeActivity({
-        activity_id: currentActivity.id,
-        body: { passed: result.passed, score: result.score },
-      }).unwrap();
+      const skill = String(currentActivity.skill_type || "").toLowerCase();
+      const isAsync = skill === "speaking" || skill === "writing";
 
-      const newSessionXp = accumulatedSessionXp + (res.xp_earned ?? 0);
-      setAccumulatedSessionXp(newSessionXp);
-
-      // If the day just completed, jump to the celebration screen.
-      if (res.day_completed) {
-        // Attempt to compute day-level XP: prefer the locally accumulated XP;
-        // otherwise compute the delta from module engagement.
-        let dayXp = newSessionXp;
-
-        if (!dayXp) {
-          try {
-            const refreshed = await refetchModuleEngagement();
-            const latestXp = refreshed?.data?.xp_earned ?? moduleEngagement?.xp_earned ?? 0;
-            const previousXp = initialModuleXpRef.current ?? 0;
-            const delta = Math.max(0, latestXp - previousXp);
-            if (delta > 0) {
-              dayXp = delta;
-              // update the saved baseline for future days
-              initialModuleXpRef.current = latestXp;
-            }
-          } catch {
-            // ignore — fall back to res.xp_earned (which may be 0)
-          }
-        }
-
-        // Give progression a short chance to update so the UI can show newly unlocked days.
-        // This will return quickly if nothing changed.
-        await tryRefreshProgression();
-
-        router.replace({
-          // The day-complete route is generated by expo-router on next build;
-          // cast keeps TS happy until typegen catches up.
-          pathname: "/learning-journey/day-complete" as never,
-          params: {
-            day_number: params.day_number || String(res.module_check_result ? "12" : ""),
-            module_id: moduleId,
-            xp_earned: String(dayXp ?? 0),
-            module_check_score: res.module_check_result
-              ? String(res.module_check_result.score_pct)
-              : "",
-            ready_to_advance: res.module_check_result?.ready_to_advance ? "1" : "0",
-            next_cefr: res.module_check_result?.next_cefr ?? "",
-            current_cefr: res.module_check_result?.current_cefr ?? "",
-            at_ceiling: res.module_check_result?.at_ceiling ? "1" : "0",
-          },
-        });
-        return;
+      if (!isAsync) {
+        await completeActivity({
+          activity_id: currentActivity.id,
+          body: { passed: result.passed, score: result.score },
+        }).unwrap();
       }
+
+      const earned =
+        moduleEngagement?.xp_earned != null && initialModuleXpRef.current != null
+          ? Math.max(0, moduleEngagement.xp_earned - initialModuleXpRef.current)
+          : 0;
 
       if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
-        safeBack();
+        router.replace({
+          pathname: "/learning-journey/day-complete" as never,
+          params: {
+            day_id: dayId,
+            module_id: moduleId,
+            day_number: params.day_number || "",
+            xp_earned: String(earned || 20),
+          },
+        });
       }
     } catch {
       // Soft-fail: still advance the local UX so the user isn't stuck.
+      const earned =
+        moduleEngagement?.xp_earned != null && initialModuleXpRef.current != null
+          ? Math.max(0, moduleEngagement.xp_earned - initialModuleXpRef.current)
+          : 0;
+
       if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
-        safeBack();
+        router.replace({
+          pathname: "/learning-journey/day-complete" as never,
+          params: {
+            day_id: dayId,
+            module_id: moduleId,
+            day_number: params.day_number || "",
+            xp_earned: String(earned || 20),
+          },
+        });
       }
     } finally {
       setIsCompleting(false);
@@ -207,13 +206,7 @@ export function ModuleScreen() {
     );
   }
 
-  const isError = (actsError || qError) && !actsFetching && !qFetching;
-
-  // A 403 from require_verified_email is not a server outage — see LearningJourneyScreen.
-  const needsEmailVerification =
-    isError && (isEmailNotVerifiedError(actsErrorObj) || isEmailNotVerifiedError(qErrorObj));
-
-  if (needsEmailVerification) {
+  if (actsError || qError) {
     return (
       <View
         style={{
@@ -226,39 +219,7 @@ export function ModuleScreen() {
         }}
         className="p-6"
       >
-        <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
-          <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
-            Verify your email to continue
-          </Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-5 px-2">
-            Your learning modules unlock once your email address is confirmed. We'll send you a
-            code.
-          </Text>
-          <Pressable
-            onPress={() => router.push("/verify-email" as never)}
-            className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
-          >
-            <Text className="text-white font-extrabold text-sm">Verify email</Text>
-          </Pressable>
-        </View>
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
-          justifyContent: "center",
-          alignItems: "center",
-          paddingTop: insets.top,
-          paddingBottom: Math.max(insets.bottom, 16),
-        }}
-        className="p-6"
-      >
-        <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
+        <View className="w-full max-w-sm bg-white dark:bg-[#1e1f2a] border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm items-center justify-center">
           <View
             style={{
               width: 140,
@@ -280,7 +241,7 @@ export function ModuleScreen() {
           <Text className="text-slate-900 dark:text-white font-extrabold text-xl text-center mb-2">
             Server Connection Lost
           </Text>
-          <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4">
+          <Text className="text-slate-500 dark:text-zinc-400 text-sm text-center leading-5 mb-4">
             We couldn't connect to the learning server. Please ensure the backend service is running
             and try again.
           </Text>
@@ -291,16 +252,18 @@ export function ModuleScreen() {
           <View className="w-full gap-3">
             <Pressable
               onPress={handleRetry}
-              className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
+              className="w-full bg-slate-900 dark:bg-zinc-100 active:bg-slate-800 dark:active:bg-zinc-200 py-4 rounded-xl items-center justify-center shadow-sm"
             >
-              <Text className="text-white font-extrabold text-sm">Try Again</Text>
+              <Text className="text-white dark:text-zinc-900 font-extrabold text-sm">
+                Try Again
+              </Text>
             </Pressable>
 
             <Pressable
               onPress={() => safeBack()}
-              className="w-full bg-slate-100 active:bg-slate-200 dark:bg-slate-800 py-4 rounded-xl items-center justify-center"
+              className="w-full bg-slate-100 dark:bg-zinc-800 active:bg-slate-200 dark:active:bg-zinc-700 py-4 rounded-xl items-center justify-center"
             >
-              <Text className="text-slate-700 dark:text-slate-300 font-extrabold text-sm">
+              <Text className="text-slate-700 dark:text-zinc-300 font-extrabold text-sm">
                 Go Back
               </Text>
             </Pressable>
@@ -310,28 +273,55 @@ export function ModuleScreen() {
     );
   }
 
-  if (actsLoading || qLoading || actsFetching || qFetching || isCompleting || !currentActivity) {
-    return <GamifiedMascotLoader title="Loading Activities..." />;
+  if (
+    actsLoading ||
+    activitiesToPlay.length === 0 ||
+    qLoading ||
+    actsFetching ||
+    qFetching ||
+    isCompleting ||
+    !currentActivity
+  ) {
+    let loaderTitle = "Loading Activities...";
+    if (isCompleting) {
+      loaderTitle = "Saving Progress...";
+    } else if (qLoading || qFetching) {
+      loaderTitle = "Loading Questions...";
+    }
+    return <GamifiedMascotLoader title={loaderTitle} />;
   }
 
   const totalSteps = activities.length;
-  const currentStepIndex = currentActivity
+  const absoluteIndex = currentActivity
     ? activities.findIndex((a) => a.id === currentActivity.id)
-    : 0;
-  const currentStep = currentStepIndex + 1;
-  const progressPct = Math.min(100, Math.round((currentStep / Math.max(1, totalSteps)) * 100));
+    : -1;
+
+  const passedCount = activities.filter((act) => act.passed).length;
+  const basePassedCount = initialPassedCount ?? passedCount;
+
+  // Determine current step based on the activity's absolute index in the module.
+  const currentStep = absoluteIndex !== -1 ? absoluteIndex + 1 : activityIdx + 1;
+
+  const progressPct = Math.min(
+    100,
+    Math.round(
+      ((absoluteIndex !== -1 ? absoluteIndex : basePassedCount + activityIdx) /
+        Math.max(1, totalSteps)) *
+        100,
+    ),
+  );
 
   return (
     <View
       style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}
-      className="bg-white dark:bg-[#151620]"
+      className="bg-white dark:bg-[#0e0e11]"
     >
-      <View className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#151620]">
+      <View className="px-4 pt-4 pb-2 border-b border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#0e0e11]">
         {/* Top Header Row with Close 'X' and Horizontal Progress Bar */}
         <View className="flex-row items-center w-full mb-3">
           <Pressable
             onPress={() => safeBack()}
-            className="w-10 h-10 rounded-full bg-white dark:bg-zinc-800 border border-slate-100 dark:border-zinc-750 items-center justify-center shadow-sm active:opacity-85"
+            className="w-10 h-10 rounded-full bg-white dark:bg-[#1E1F2A] border border-slate-100 dark:border-slate-800 items-center justify-center shadow-sm active:opacity-85"
           >
             <Feather name="x" size={20} color={isDark ? "#ffffff" : "#0f172a"} />
           </Pressable>
@@ -348,10 +338,10 @@ export function ModuleScreen() {
 
         {/* Section details with Category title and progress count */}
         <View className="flex-row items-center justify-between px-1 mb-1">
-          <Text className="text-xs font-extrabold text-slate-400 dark:text-zinc-500 tracking-widest uppercase">
+          <Text className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
             {currentActivity?.skill_type || "Activity"}
           </Text>
-          <View className="bg-slate-100/80 dark:bg-zinc-800/80 px-3 py-1 rounded-full border border-slate-200/40 dark:border-zinc-700/40">
+          <View className="bg-slate-100/80 dark:bg-zinc-800/80 px-3 py-1 rounded-full border border-slate-200/40 dark:border-zinc-800">
             <Text className="text-[10px] font-extrabold text-slate-500 dark:text-zinc-400">
               Activity {currentStep} of {totalSteps}
             </Text>

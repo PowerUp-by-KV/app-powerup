@@ -112,6 +112,38 @@ export interface ProgressionRead {
   unlocked_modules: ProgressionModuleRead[];
 }
 
+export interface ActivityResultDetail {
+  activity_id: string;
+  activity_name: string;
+  evaluation_status: string | null;
+  passed: boolean;
+  score: number | null;
+  feedback: string | null;
+  score_breakdown: Record<string, any> | null;
+  xp_earned: number;
+  response_id: string | null;
+  skill_type: string | null;
+  activity_type: string | null;
+}
+
+export interface DailyResultsResponse {
+  day_id: string;
+  all_evaluations_completed: boolean;
+  all_activities_passed: boolean;
+  failed_count: number;
+  pending_count: number;
+  total_day_xp: number;
+  current_total_xp: number;
+  activities: ActivityResultDetail[];
+}
+
+export interface AdvanceDayResponse {
+  advanced: boolean;
+  new_day: number;
+  xp_bonus: number;
+  new_total_xp: number;
+}
+
 export const moduleApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
@@ -268,6 +300,19 @@ export const moduleApi = api.injectEndpoints({
       }),
       invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
+
+    getDayResults: builder.query<DailyResultsResponse, string>({
+      query: (dayId) => `/v1/modules/days/${dayId}/results`,
+      providesTags: ["Modules"],
+    }),
+
+    advanceDay: builder.mutation<AdvanceDayResponse, string>({
+      query: (dayId) => ({
+        url: `/v1/modules/days/${dayId}/advance`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
+    }),
   }),
 });
 
@@ -293,4 +338,7 @@ export const {
   useGetModuleEngagementQuery,
   useEvaluateModuleCheckMutation,
   useAdvanceCefrMutation,
+  useGetDayResultsQuery,
+  useLazyGetDayResultsQuery,
+  useAdvanceDayMutation,
 } = moduleApi;

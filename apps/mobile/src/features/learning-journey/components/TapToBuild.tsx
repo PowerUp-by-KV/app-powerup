@@ -69,26 +69,24 @@ export function TapToBuild({
 
   return (
     <View style={{ ...Platform.select({ web: { userSelect: "none" } as any }) }}>
-      <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-4">
-        {promptText}
-      </Text>
+      <Text className="text-slate-900 text-lg font-bold mb-4">{promptText}</Text>
 
       {audioUrl && (
         <Pressable
           onPress={onPlayAudio}
-          className="flex-row items-center bg-slate-100 dark:bg-zinc-800 rounded-2xl px-4 py-4 mb-6 active:opacity-80"
+          className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-4 mb-6 active:opacity-80"
           style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
         >
           <View className="w-10 h-10 rounded-full bg-slate-900 items-center justify-center mr-3">
             <Feather name="volume-2" size={18} color="#fff" />
           </View>
-          <Text className="text-slate-900 dark:text-white font-semibold">Play audio</Text>
+          <Text className="text-slate-900 font-semibold">Play audio</Text>
         </Pressable>
       )}
 
-      <View className="bg-slate-50 dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6 min-h-[100px]">
+      <View className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6 min-h-[100px]">
         {filledCount === 0 ? (
-          <Text className="text-slate-400 dark:text-slate-500 text-center my-4">
+          <Text className="text-slate-400 text-center my-4">
             Tap the words to build your response
           </Text>
         ) : (
@@ -98,18 +96,18 @@ export function TapToBuild({
                 <View
                   key={idx}
                   style={{ width: 64, height: 36 }}
-                  className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg"
+                  className="border-2 border-dashed border-slate-300 rounded-lg"
                 />
               ) : (
                 <Pressable
                   key={idx}
                   onPress={() => handleSlotTap(idx)}
-                  className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-2"
+                  className="bg-white border border-slate-300 rounded-lg px-3 py-2"
                   style={{
                     ...Platform.select({ web: { cursor: "pointer" } as any }),
                   }}
                 >
-                  <Text className="text-slate-900 dark:text-white font-semibold">{token}</Text>
+                  <Text className="text-slate-900 font-semibold">{token}</Text>
                 </Pressable>
               ),
             )}
@@ -125,16 +123,14 @@ export function TapToBuild({
               key={`${token}-${idx}`}
               onPress={() => handleTokenTap(token, idx)}
               disabled={used}
-              className={`px-4 py-2 rounded-lg border ${used ? "bg-slate-100 dark:bg-zinc-800 border-slate-200 dark:border-zinc-700" : "bg-white dark:bg-[#1E1F2A] border-slate-300 dark:border-slate-700"}`}
+              className={`px-4 py-2 rounded-lg border ${used ? "bg-slate-100 border-slate-200" : "bg-white border-slate-300"}`}
               style={{
                 ...Platform.select({
                   web: { cursor: used ? "default" : "pointer" } as any,
                 }),
               }}
             >
-              <Text
-                className={`font-semibold ${used ? "text-slate-300 dark:text-slate-600" : "text-slate-900 dark:text-white"}`}
-              >
+              <Text className={`font-semibold ${used ? "text-slate-300" : "text-slate-900"}`}>
                 {token}
               </Text>
             </Pressable>

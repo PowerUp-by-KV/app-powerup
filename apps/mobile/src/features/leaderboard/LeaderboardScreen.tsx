@@ -167,7 +167,16 @@ export function LeaderboardScreen() {
       className={isDark ? "bg-[#06070f]" : "bg-white"}
     >
       <View style={{ flex: 1, width: "100%", position: "relative" }}>
-        <View className="px-5 pt-10 pb-3 flex-row justify-between items-center">
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+          }}
+          className="flex-row justify-between items-center"
+        >
           <View>
             <Text
               className={`text-2xl font-extrabold ${isDark ? "text-slate-100" : "text-slate-900"}`}
@@ -209,6 +218,7 @@ export function LeaderboardScreen() {
           className="flex-row rounded-full p-1 mx-5 mb-5"
           style={{
             gap: 4,
+            marginTop: 16,
             backgroundColor: isDark ? "rgba(148, 163, 184, 0.15)" : "#ebd5ff40",
             borderWidth: 1,
             borderColor: isDark ? "rgba(100, 116, 139, 0.35)" : "#ebd5ff60",

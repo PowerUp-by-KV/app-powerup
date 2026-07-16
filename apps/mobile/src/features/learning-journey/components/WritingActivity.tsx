@@ -14,7 +14,6 @@ import { useColorScheme } from "nativewind";
 import type { ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitWritingAnswerMutation } from "@/services/module-api";
-import type { WritingResultRead } from "@/services/module-api";
 
 export interface WritingActivityResult {
   passed: boolean;
@@ -27,14 +26,13 @@ interface WritingActivityProps {
   onComplete: (result: WritingActivityResult) => void;
 }
 
-export function WritingActivity({ questions, onComplete }: WritingActivityProps) {
+export function WritingActivity({ activityId, questions, onComplete }: WritingActivityProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const prompt = questions[0];
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scoreView, setScoreView] = useState<WritingResultRead | null>(null);
 
   const [submitWriting] = useSubmitWritingAnswerMutation();
 
@@ -43,78 +41,19 @@ export function WritingActivity({ questions, onComplete }: WritingActivityProps)
     setSubmitting(true);
     setError(null);
     try {
-      const res = await submitWriting({
+      // Await the main LLM submission query so the server registers the response
+      await submitWriting({
         question_id: prompt?.id ?? "",
         response_text: text.trim(),
       }).unwrap();
-      setScoreView(res);
+
+      onComplete({ passed: true, score: 0 });
     } catch {
       setError("Submission failed. Tap retry.");
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (scoreView) {
-    return (
-      <ScrollView
-        style={{
-          flex: 1,
-          ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
-        }}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
-      >
-        <Text className="text-slate-900 dark:text-white text-xl font-bold mb-2">
-          Your writing score
-        </Text>
-        <Text
-          style={{
-            fontSize: 48,
-            fontWeight: "800",
-            color: scoreView.passed ? "#16a34a" : "#dc2626",
-          }}
-        >
-          {Math.round(scoreView.score)}
-        </Text>
-        <Text className="text-slate-500 dark:text-zinc-400 mb-2">
-          {scoreView.passed ? "Nicely written." : "Try once more — aim for clearer structure."}
-        </Text>
-        <Text style={{ color: isDark ? "#cbd5e1" : "#475569", marginBottom: 12 }}>
-          {scoreView.feedback}
-        </Text>
-        {scoreView.grammar_errors.length > 0 && (
-          <View style={{ marginBottom: 16 }}>
-            <Text
-              style={{ color: isDark ? "#e2e8f0" : "#334155", fontWeight: "600", marginBottom: 6 }}
-            >
-              Grammar notes
-            </Text>
-            {scoreView.grammar_errors.map((err, i) => (
-              <Text key={i} style={{ color: isDark ? "#cbd5e1" : "#64748b", marginBottom: 4 }}>
-                • {err}
-              </Text>
-            ))}
-          </View>
-        )}
-        <TouchableOpacity
-          onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          activeOpacity={0.8}
-          style={{
-            marginTop: 20,
-            backgroundColor: "#3b82f6", // Primary blue color
-            paddingVertical: 16,
-            borderRadius: 14,
-            alignItems: "center",
-            justifyContent: "center",
-            width: "100%",
-            ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }),
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>Continue</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    );
-  }
 
   return (
     <KeyboardAvoidingView
