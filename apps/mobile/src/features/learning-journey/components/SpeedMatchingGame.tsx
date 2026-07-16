@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
@@ -47,19 +46,20 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds timer
   const [isGameOver, setIsGameOver] = useState(false);
-  const [hasWon, setHasWon] = useState(false);
 
   // Handle game end state
-  const handleGameOver = (won: boolean, customMatchedCount?: number) => {
-    setIsGameOver(true);
-    setHasWon(won);
-    const totalPairs = leftItems.length;
-    const matchedPairsCount =
-      customMatchedCount !== undefined ? customMatchedCount : matchedLefts.size;
-    const score = totalPairs > 0 ? Math.round((matchedPairsCount / totalPairs) * 100) : 0;
-    const passed = won || score >= 70;
-    onComplete({ passed, score });
-  };
+  const handleGameOver = useCallback(
+    (won: boolean, customMatchedCount?: number) => {
+      setIsGameOver(true);
+      const totalPairs = leftItems.length;
+      const matchedPairsCount =
+        customMatchedCount !== undefined ? customMatchedCount : matchedLefts.size;
+      const score = totalPairs > 0 ? Math.round((matchedPairsCount / totalPairs) * 100) : 0;
+      const passed = won || score >= 70;
+      onComplete({ passed, score });
+    },
+    [leftItems.length, matchedLefts.size, onComplete],
+  );
 
   // Timer logic
   useEffect(() => {
@@ -82,7 +82,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     if (timeLeft === 0 && !isGameOver) {
       handleGameOver(false);
     }
-  }, [timeLeft, isGameOver, matchedLefts, leftItems]);
+  }, [timeLeft, isGameOver, handleGameOver]);
 
   // Check match when both sides are selected
   useEffect(() => {
@@ -121,7 +121,15 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
         }, 1000);
       }
     }
-  }, [selectedLeft, selectedRight, correctMatches, matchedLefts, matchedRights, leftItems]);
+  }, [
+    selectedLeft,
+    selectedRight,
+    correctMatches,
+    matchedLefts,
+    matchedRights,
+    handleGameOver,
+    leftItems.length,
+  ]);
 
   const progressPercentage = (timeLeft / 90) * 100;
   const progressColor =
@@ -129,7 +137,6 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   const totalPairs = leftItems.length;
   const matchedPairsCount = matchedLefts.size;
-  const currentScore = totalPairs > 0 ? Math.round((matchedPairsCount / totalPairs) * 100) : 0;
 
   if (isGameOver) {
     return (
@@ -143,7 +150,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     <ScrollView
       style={{
         flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as any }),
+        ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
       }}
       contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
     >
@@ -210,7 +217,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-4 rounded-2xl border-2 min-h-[72px] items-center justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
                   }),
                 }}
               >
@@ -257,7 +264,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-3 rounded-2xl border-2 min-h-[72px] justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
                   }),
                 }}
               >

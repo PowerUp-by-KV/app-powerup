@@ -150,6 +150,7 @@ export function McqActivity({
   const [correctCount, setCorrectCount] = useState(0);
   const [lastCorrect, setLastCorrect] = useState(false);
   const [lastCorrectAnswer, setLastCorrectAnswer] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [scoreView, setScoreView] = useState<{
     score: number;
     passed: boolean;

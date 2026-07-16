@@ -16,7 +16,6 @@ import {
   useGetActivityQuestionsQuery,
   useGetDayActivitiesQuery,
   useGetModuleEngagementQuery,
-  useLazyGetProgressionQuery,
 } from "@/services/module-api";
 import type { Activity } from "@powerup/shared";
 
@@ -102,10 +101,7 @@ export function ModuleScreen() {
 
   // Track module XP when the user opens the module so we can compute
   // the per-day XP delta if the backend doesn't return per-activity xp.
-  const { data: moduleEngagement, refetch: refetchModuleEngagement } = useGetModuleEngagementQuery(
-    moduleId,
-    { skip: !moduleId },
-  );
+  const { data: moduleEngagement } = useGetModuleEngagementQuery(moduleId, { skip: !moduleId });
   const initialModuleXpRef = React.useRef<number | null>(null);
 
   useEffect(() => {
@@ -113,30 +109,6 @@ export function ModuleScreen() {
       initialModuleXpRef.current = moduleEngagement.xp_earned;
     }
   }, [moduleEngagement?.xp_earned]);
-
-  const [triggerProgression] = useLazyGetProgressionQuery();
-
-  const tryRefreshProgression = async () => {
-    // Try a few times with short delays to let backend settle; stop early if unlocks appear.
-    for (let i = 0; i < 3; i++) {
-      try {
-        const resp = await triggerProgression();
-        const prog = resp?.data;
-        if (prog && Array.isArray(prog.unlocked_modules)) {
-          const moduleEntries = prog.unlocked_modules.filter((m) => m.module_id === moduleId);
-          const anyNextDays = moduleEntries
-            .flatMap((m) => m.unlocked_days ?? [])
-            .some((d) => d > 6);
-          if (anyNextDays) return true;
-        }
-      } catch {
-        // ignore and retry
-      }
-      // wait before next try
-      await new Promise((r) => setTimeout(r, 700));
-    }
-    return false;
-  };
 
   const handleActivityComplete = async (result: ActivityResult) => {
     if (!currentActivity || isCompleting) return;

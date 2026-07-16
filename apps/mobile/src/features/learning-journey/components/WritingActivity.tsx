@@ -26,7 +26,11 @@ interface WritingActivityProps {
   onComplete: (result: WritingActivityResult) => void;
 }
 
-export function WritingActivity({ activityId, questions, onComplete }: WritingActivityProps) {
+export function WritingActivity({
+  activityId: _activityId,
+  questions,
+  onComplete,
+}: WritingActivityProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const prompt = questions[0];

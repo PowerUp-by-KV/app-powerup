@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -194,7 +194,10 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View
@@ -227,9 +230,9 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               borderRadius: 36,
               overflow: "hidden",
               ...(Platform.OS === "web"
-                ? ({ cursor: hasPlayed ? "default" : "pointer" } as any)
+                ? ({ cursor: hasPlayed ? "default" : "pointer" } as Record<string, unknown>)
                 : {}),
-            } as any
+            } as Record<string, unknown>
           }
         >
           {({ pressed }) => (
@@ -279,7 +282,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -336,7 +339,9 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               onPress={() => onComplete({ passed: true, score: 100 })}
               style={{
                 borderRadius: 10,
-                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (

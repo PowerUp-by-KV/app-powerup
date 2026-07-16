@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio, AVPlaybackStatus } from "expo-av";
 import { useColorScheme } from "nativewind";
 
 import type { Activity, ActivityQuestion } from "@powerup/shared";
@@ -27,13 +27,6 @@ interface SpeakingActivityProps {
   activity: Activity;
   questions: ActivityQuestion[];
   onComplete: (result: SpeakingActivityResult) => void;
-}
-
-interface Breakdown {
-  fluency?: number;
-  vocab?: number;
-  grammar?: number;
-  feedback?: string;
 }
 
 // 32 robust preset heights for a full soundwave with no silent dots
@@ -265,10 +258,10 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
     }
   };
 
-  const onPlaybackStatus = (status: any) => {
+  const onPlaybackStatus = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) return;
-    setPlaybackPosition(status.positionMillis);
-    setPlaybackDuration(status.durationMillis);
+    setPlaybackPosition(status.positionMillis ?? null);
+    setPlaybackDuration(status.durationMillis ?? null);
     if (status.didJustFinish) {
       setIsPlaybackPlaying(false);
     }
@@ -341,7 +334,10 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
     >
       <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2">
@@ -440,7 +436,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                   justifyContent: "space-between",
                   height: "100%",
                   width: "100%",
-                  ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                  ...(Platform.OS === "web"
+                    ? ({ cursor: "pointer" } as Record<string, unknown>)
+                    : {}),
                 }}
               >
                 {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -496,7 +494,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                     height: 56,
                     borderRadius: 28,
                     overflow: "hidden",
-                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   {({ pressed }) => (
@@ -539,7 +539,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                     backgroundColor: "#dc2626",
                     alignItems: "center",
                     justifyContent: "center",
-                    ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                    ...(Platform.OS === "web"
+                      ? ({ cursor: "pointer" } as Record<string, unknown>)
+                      : {}),
                   }}
                 >
                   <Feather name="refresh-cw" size={22} color="#fff" />
@@ -569,7 +571,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                 shadowOpacity: 0.1,
                 shadowRadius: 4,
                 elevation: 3,
-                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (
@@ -597,7 +601,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                 height: 96,
                 borderRadius: 48,
                 overflow: "hidden",
-                ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
               }}
             >
               {({ pressed }) => (

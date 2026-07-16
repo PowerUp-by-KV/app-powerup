@@ -719,7 +719,7 @@ export default function DailyResultsScreen() {
   } = useGetDayResultsQuery(dayId, {
     skip: !dayId,
   });
-  const { data: profile, refetch: refetchProfile } = useGetProfileQuery();
+  const { refetch: refetchProfile } = useGetProfileQuery();
   const [advanceDay, { isLoading: advancing }] = useAdvanceDayMutation();
 
   const [activeSpeakingModal, setActiveSpeakingModal] = useState<ActivityResultDetail | null>(null);
@@ -1259,8 +1259,6 @@ export default function DailyResultsScreen() {
     </View>
   );
 }
-
-const { width } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   container: {

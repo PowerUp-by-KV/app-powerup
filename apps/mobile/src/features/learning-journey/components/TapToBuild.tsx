@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
@@ -68,14 +67,16 @@ export function TapToBuild({
   };
 
   return (
-    <View style={{ ...Platform.select({ web: { userSelect: "none" } as any }) }}>
+    <View
+      style={{ ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }) }}
+    >
       <Text className="text-slate-900 text-lg font-bold mb-4">{promptText}</Text>
 
       {audioUrl && (
         <Pressable
           onPress={onPlayAudio}
           className="flex-row items-center bg-slate-100 rounded-2xl px-4 py-4 mb-6 active:opacity-80"
-          style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
+          style={{ ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }) }}
         >
           <View className="w-10 h-10 rounded-full bg-slate-900 items-center justify-center mr-3">
             <Feather name="volume-2" size={18} color="#fff" />
@@ -104,7 +105,7 @@ export function TapToBuild({
                   onPress={() => handleSlotTap(idx)}
                   className="bg-white border border-slate-300 rounded-lg px-3 py-2"
                   style={{
-                    ...Platform.select({ web: { cursor: "pointer" } as any }),
+                    ...Platform.select({ web: { cursor: "pointer" } as Record<string, unknown> }),
                   }}
                 >
                   <Text className="text-slate-900 font-semibold">{token}</Text>
@@ -126,7 +127,7 @@ export function TapToBuild({
               className={`px-4 py-2 rounded-lg border ${used ? "bg-slate-100 border-slate-200" : "bg-white border-slate-300"}`}
               style={{
                 ...Platform.select({
-                  web: { cursor: used ? "default" : "pointer" } as any,
+                  web: { cursor: used ? "default" : "pointer" } as Record<string, unknown>,
                 }),
               }}
             >
@@ -144,7 +145,7 @@ export function TapToBuild({
         className={`rounded-2xl py-4 items-center ${canCheck ? "bg-blue-500 active:bg-blue-600" : "bg-slate-300"}`}
         style={{
           ...Platform.select({
-            web: { cursor: canCheck ? "pointer" : "default" } as any,
+            web: { cursor: canCheck ? "pointer" : "default" } as Record<string, unknown>,
           }),
         }}
       >

@@ -494,8 +494,6 @@ const PROGRESSION_WAVES = [
   { wave: 6, modules: [3, 7, 11], days: [7, 8, 9, 10, 11, 12] },
   { wave: 7, modules: [4, 8, 12, 13], days: [1, 2, 3, 4, 5, 6] },
   { wave: 8, modules: [4, 8, 12, 13], days: [7, 8, 9, 10, 11, 12] },
-
-
 ];
 
 export function LearningJourneyScreen() {
@@ -746,7 +744,12 @@ export function LearningJourneyScreen() {
     }
   };
 
-  const handleDayTap = async (item: any) => {
+  const handleDayTap = async (item: {
+    isLocked: boolean;
+    isCompleted: boolean;
+    globalDayNumber: number;
+    dayObj?: CombinedModuleDay;
+  }) => {
     if (item.isLocked) {
       Alert.alert(
         "Locked Day",
@@ -774,7 +777,9 @@ export function LearningJourneyScreen() {
 
     try {
       // 1. Check local storage first
-      const localCompleted = await AsyncStorage.getItem(`day_first_run_completed_${item.dayObj.id}`);
+      const localCompleted = await AsyncStorage.getItem(
+        `day_first_run_completed_${item.dayObj.id}`,
+      );
       if (localCompleted === "true") {
         router.push({
           pathname: "/learning-journey/day-complete" as never,
@@ -792,7 +797,7 @@ export function LearningJourneyScreen() {
       const results = await triggerGetDayResults(item.dayObj.id).unwrap();
       const totalActivitiesCount = results?.activities?.length ?? 0;
       const attemptedActivitiesCount = (results?.activities ?? []).filter(
-        (act: any) =>
+        (act) =>
           act.score !== null ||
           act.evaluation_status === "COMPLETED" ||
           act.evaluation_status === "FAILED" ||
