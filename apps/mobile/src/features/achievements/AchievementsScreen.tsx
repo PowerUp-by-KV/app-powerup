@@ -68,14 +68,16 @@ function AchievementCard({ a, locked }: { a: Achievement; locked: boolean }) {
             <Text className={`font-bold ${isDark ? "text-white" : "text-[#1B1F35]"}`}>
               {a.title}
             </Text>
-            <Text
-              className={
-                "text-xs font-bold " +
-                (locked ? "text-[#A0A7B8] dark:text-[#8B93A8]" : "text-[#7174F6]")
-              }
-            >
-              +{a.xp_reward} XP
-            </Text>
+            {a.xp_reward > 0 && (
+              <Text
+                className={
+                  "text-xs font-bold " +
+                  (locked ? "text-[#A0A7B8] dark:text-[#8B93A8]" : "text-[#7174F6]")
+                }
+              >
+                +{a.xp_reward} XP
+              </Text>
+            )}
           </View>
           <Text className={`text-xs mt-0.5 ${isDark ? "text-[#B7BED1]" : "text-[#6B7280]"}`}>
             {a.description}
@@ -151,7 +153,7 @@ function SkillNode({
 
   const isUnlocked = progress > 0;
   const shadowStyle =
-    isUnlocked && (progress === 100 || isSelected || node.id === "book")
+    isUnlocked && (progress === 100 || isSelected)
       ? {
           shadowColor: isDark ? "#bef264" : "#7174F6",
           shadowOffset: { width: 0, height: 0 },
@@ -168,6 +170,15 @@ function SkillNode({
         borderRadius: size / 2,
       }
     : {};
+
+  // Background and border colors get brighter as progress/filling increases
+  const bgOpacity = isDark
+    ? 0.15 + 0.25 * (progress / 100)
+    : 0.12 + 0.3 * (progress / 100);
+    
+  const borderOpacity = isDark
+    ? 0.06 + 0.5 * (progress / 100)
+    : 0.06 + 0.5 * (progress / 100);
 
   return (
     <Pressable
@@ -189,8 +200,12 @@ function SkillNode({
         className="w-full h-full items-center justify-center rounded-full overflow-hidden"
         style={{
           borderWidth: 1,
-          borderColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-          backgroundColor: isDark ? "rgba(190, 242, 100, 0.15)" : "rgba(113, 116, 246, 0.12)",
+          borderColor: isDark
+            ? `rgba(190, 242, 100, ${borderOpacity})`
+            : `rgba(113, 116, 246, ${borderOpacity})`,
+          backgroundColor: isDark
+            ? `rgba(190, 242, 100, ${bgOpacity})`
+            : `rgba(113, 116, 246, ${bgOpacity})`,
         }}
       >
         <Svg width={size} height={size} style={{ position: "absolute" }}>
@@ -230,7 +245,7 @@ export function AchievementsScreen() {
   const canvasHeight = DESIGN_H * scale;
 
   const HARDCODED_NODES = [
-    { id: "book", x: 75, y: 60, icon: "book" as const, size: 64 },
+    { id: "book", x: 75, y: 60, icon: "book" as const, size: 56 },
     { id: "code", x: 190, y: 100, icon: "code-tags" as const, size: 56 },
     { id: "bulb", x: 115, y: 185, icon: "lightbulb-outline" as const, size: 56 },
     { id: "brain", x: 300, y: 135, icon: "brain" as const, size: 56 },
@@ -313,50 +328,64 @@ export function AchievementsScreen() {
 
   return (
     <View style={{ flex: 1, paddingTop: insets.top }} className="bg-[#F4F5FA] dark:bg-[#0F1020]">
+      {/* Top Header greeting with avatar - FIXED AT TOP */}
+      <View
+        style={{
+          paddingHorizontal: isTablet ? 32 : 20,
+          paddingTop: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+        }}
+        className="w-full flex-row justify-between items-center bg-[#F4F5FA] dark:bg-[#0F1020]"
+      >
+        <View>
+          <Text className="text-[#1B1F35] dark:text-white text-2xl font-extrabold">
+            Your Achievements!
+          </Text>
+        </View>
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          <Pressable
+            onPress={() => toggleTheme()}
+            className={`w-10 h-10 rounded-full items-center justify-center ${
+              isDark
+                ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
+                : "bg-[#F8F8FF] border border-[#ECEEF8]"
+            }`}
+          >
+            <Feather
+              name={isDark ? "sun" : "moon"}
+              size={18}
+              color={isDark ? "#f8fafc" : "#1e293b"}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/profile" as never)}
+            className="w-12 h-12 rounded-full items-center justify-center overflow-hidden border active:opacity-80"
+            style={{
+              backgroundColor: isDark ? "#232540" : "#F8F8FF",
+              borderColor: isDark ? "rgba(113, 116, 246, 0.15)" : "#ECEEF8",
+            }}
+          >
+            <Image
+              source={{
+                uri: getAvatarUri(profile?.avatar_id, profile?.id),
+              }}
+              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            />
+          </Pressable>
+        </View>
+      </View>
+
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: isTablet ? 32 : 20, paddingBottom: 96 }}
+        contentContainerStyle={{
+          paddingHorizontal: isTablet ? 32 : 20,
+          paddingBottom: 96,
+          paddingTop: 16,
+        }}
       >
         <View style={{ width: "100%" }}>
-          <View className="w-full flex-row justify-between items-center mb-4">
-            <View>
-              <Text className="text-[#1B1F35] dark:text-white text-2xl font-extrabold">
-                Your Achievements!
-              </Text>
-            </View>
-            <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Pressable
-                onPress={() => toggleTheme()}
-                className={`w-10 h-10 rounded-full items-center justify-center ${
-                  isDark
-                    ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
-                    : "bg-[#F8F8FF] border border-[#ECEEF8]"
-                }`}
-              >
-                <Feather
-                  name={isDark ? "sun" : "moon"}
-                  size={18}
-                  color={isDark ? "#f8fafc" : "#1e293b"}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/profile" as never)}
-                className="w-12 h-12 rounded-full items-center justify-center overflow-hidden border active:opacity-80"
-                style={{
-                  backgroundColor: isDark ? "#232540" : "#F8F8FF",
-                  borderColor: isDark ? "rgba(113, 116, 246, 0.15)" : "#ECEEF8",
-                }}
-              >
-                <Image
-                  source={{
-                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                  }}
-                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-                />
-              </Pressable>
-            </View>
-          </View>
-
           {/* Trophy Header Display */}
           <View className="items-center mb-6 py-2">
             <View className="w-24 h-24 items-center justify-center mb-3">

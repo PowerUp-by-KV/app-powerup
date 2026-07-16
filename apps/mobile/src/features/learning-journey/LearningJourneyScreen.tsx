@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -13,14 +14,13 @@ import {
 } from "react-native";
 import { useRouter, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { getAvatarUri } from "@/utils/avatar";
-import { isEmailNotVerifiedError } from "@/utils/error-message";
 import type { ModuleDay } from "@powerup/shared";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export interface CombinedModuleDay extends ModuleDay {
   module_no: number;
@@ -29,9 +29,10 @@ export interface CombinedModuleDay extends ModuleDay {
 }
 
 import {
-  useLazyGetModuleDaysBulkQuery,
+  useLazyGetModuleDaysQuery,
   useGetModulesQuery,
   useGetProgressionQuery,
+  useLazyGetDayResultsQuery,
 } from "@/services/module-api";
 import {
   useStartSessionMutation,
@@ -45,9 +46,9 @@ import {
 } from "@/services/auth-storage";
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
-import { showAlert } from "@/utils/alert";
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -126,21 +127,14 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         <Animated.View
           style={[
             scoreStyles.modalCard,
-            isDark && { backgroundColor: "#252945", borderColor: "#383c56" },
+            isDark && { backgroundColor: "#151620", borderColor: "#242635" },
             { transform: [{ scale: scaleAnim }] },
           ]}
         >
-          <Pressable
-            onPress={handleClose}
-            style={[
-              scoreStyles.closeButton,
-              isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
-            ]}
-            hitSlop={8}
-          >
-            <Feather name="x" size={20} color={isDark ? "#b4b8da" : "#64748b"} />
+          <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+            <Feather name="x" size={20} color="#64748b" />
           </Pressable>
-          <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#b4b8da" }]}>
+          <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#94a3b8" }]}>
             Pre-Assessment
           </Text>
           <View style={{ alignItems: "center", paddingVertical: 32 }}>
@@ -159,7 +153,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
             <Text
               style={{
                 fontSize: 13,
-                color: isDark ? "#b4b8da" : "#64748b",
+                color: isDark ? "#a1a1aa" : "#64748b",
                 textAlign: "center",
                 paddingHorizontal: 16,
               }}
@@ -169,7 +163,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
           </View>
           <Pressable
             onPress={handleClose}
-            style={[scoreStyles.doneButton, isDark && { backgroundColor: "#3b82f6" }]}
+            style={[scoreStyles.doneButton, isDark && { backgroundColor: "#4f46e5" }]}
           >
             <Text style={scoreStyles.doneButtonText}>Close</Text>
           </Pressable>
@@ -185,21 +179,14 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         <Animated.View
           style={[
             scoreStyles.modalCard,
-            isDark && { backgroundColor: "#252945", borderColor: "#383c56" },
+            isDark && { backgroundColor: "#151620", borderColor: "#242635" },
             { transform: [{ scale: scaleAnim }] },
           ]}
         >
-          <Pressable
-            onPress={handleClose}
-            style={[
-              scoreStyles.closeButton,
-              isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
-            ]}
-            hitSlop={8}
-          >
-            <Feather name="x" size={20} color={isDark ? "#b4b8da" : "#64748b"} />
+          <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+            <Feather name="x" size={20} color="#64748b" />
           </Pressable>
-          <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#b4b8da" }]}>
+          <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#94a3b8" }]}>
             Pre-Assessment
           </Text>
           <View style={{ alignItems: "center", paddingVertical: 48 }}>
@@ -219,7 +206,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
             <Text
               style={{
                 fontSize: 13,
-                color: isDark ? "#b4b8da" : "#64748b",
+                color: isDark ? "#a1a1aa" : "#64748b",
                 textAlign: "center",
                 paddingHorizontal: 24,
               }}
@@ -266,47 +253,31 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
       <Animated.View
         style={[
           scoreStyles.modalCard,
-          isDark && { backgroundColor: "#252945", borderColor: "#383c56" },
+          isDark && { backgroundColor: "#151620", borderColor: "#242635" },
           { transform: [{ scale: scaleAnim }] },
         ]}
       >
         {/* Close Button top-right */}
-        <Pressable
-          onPress={handleClose}
-          style={[
-            scoreStyles.closeButton,
-            isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
-          ]}
-          hitSlop={8}
-        >
-          <Feather name="x" size={20} color={isDark ? "#b4b8da" : "#64748b"} />
+        <Pressable onPress={handleClose} style={scoreStyles.closeButton} hitSlop={8}>
+          <Feather name="x" size={20} color="#64748b" />
         </Pressable>
 
-        <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#b4b8da" }]}>
+        <Text style={[scoreStyles.overallScoreTitle, isDark && { color: "#94a3b8" }]}>
           Overall Score
         </Text>
 
         {/* 1. Curved Gauge */}
         <View style={scoreStyles.gaugeWrapper}>
           {/* Background curved track */}
-          <View style={[scoreStyles.gaugeTrack, isDark && { borderColor: "#1b1e32" }]} />
+          <View style={[scoreStyles.gaugeTrack, isDark && { borderColor: "#242635" }]} />
           {/* Active lavender path */}
-          <View
-            style={[
-              scoreStyles.gaugeFill,
-              isDark && {
-                borderTopColor: "#3b82f6",
-                borderLeftColor: "#3b82f6",
-                borderRightColor: "#3b82f6",
-              },
-            ]}
-          />
+          <View style={scoreStyles.gaugeFill} />
           {/* Central score content labels */}
           <View style={scoreStyles.gaugeCutout}>
             <Text style={[scoreStyles.gaugeScoreText, isDark && { color: "#ffffff" }]}>
               {formattedOverall}
             </Text>
-            <Text style={[scoreStyles.gaugePointsText, isDark && { color: "#b4b8da" }]}>
+            <Text style={[scoreStyles.gaugePointsText, isDark && { color: "#94a3b8" }]}>
               {formattedPoints}
             </Text>
           </View>
@@ -326,17 +297,17 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
                 <Feather
                   name="book-open"
                   size={15}
-                  color={isDark ? "#b4b8da" : "#475569"}
+                  color={isDark ? "#94a3b8" : "#475569"}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[scoreStyles.skillLabel, isDark && { color: "#b4b8da" }]}>
+                <Text style={[scoreStyles.skillLabel, isDark && { color: "#94a3b8" }]}>
                   Reading
                 </Text>
               </View>
               <View
                 style={[
                   scoreStyles.skillCard,
-                  isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
+                  isDark && { backgroundColor: "#1e1f2a", borderColor: "#2d2d3a" },
                 ]}
               >
                 <Text style={[scoreStyles.skillScoreText, isDark && { color: "#ffffff" }]}>
@@ -351,17 +322,17 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
                 <Feather
                   name="headphones"
                   size={15}
-                  color={isDark ? "#b4b8da" : "#475569"}
+                  color={isDark ? "#94a3b8" : "#475569"}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[scoreStyles.skillLabel, isDark && { color: "#b4b8da" }]}>
+                <Text style={[scoreStyles.skillLabel, isDark && { color: "#94a3b8" }]}>
                   Listening
                 </Text>
               </View>
               <View
                 style={[
                   scoreStyles.skillCard,
-                  isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
+                  isDark && { backgroundColor: "#1e1f2a", borderColor: "#2d2d3a" },
                 ]}
               >
                 <Text style={[scoreStyles.skillScoreText, isDark && { color: "#ffffff" }]}>
@@ -379,17 +350,17 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
                 <Feather
                   name="edit-2"
                   size={15}
-                  color={isDark ? "#b4b8da" : "#475569"}
+                  color={isDark ? "#94a3b8" : "#475569"}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[scoreStyles.skillLabel, isDark && { color: "#b4b8da" }]}>
+                <Text style={[scoreStyles.skillLabel, isDark && { color: "#94a3b8" }]}>
                   Writing
                 </Text>
               </View>
               <View
                 style={[
                   scoreStyles.skillCard,
-                  isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
+                  isDark && { backgroundColor: "#1e1f2a", borderColor: "#2d2d3a" },
                 ]}
               >
                 <Text style={[scoreStyles.skillScoreText, isDark && { color: "#ffffff" }]}>
@@ -404,17 +375,17 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
                 <Feather
                   name="mic"
                   size={15}
-                  color={isDark ? "#b4b8da" : "#475569"}
+                  color={isDark ? "#94a3b8" : "#475569"}
                   style={{ marginRight: 6 }}
                 />
-                <Text style={[scoreStyles.skillLabel, isDark && { color: "#b4b8da" }]}>
+                <Text style={[scoreStyles.skillLabel, isDark && { color: "#94a3b8" }]}>
                   Speaking
                 </Text>
               </View>
               <View
                 style={[
                   scoreStyles.skillCard,
-                  isDark && { backgroundColor: "#1b1e32", borderColor: "#383c56" },
+                  isDark && { backgroundColor: "#1e1f2a", borderColor: "#2d2d3a" },
                 ]}
               >
                 <Text style={[scoreStyles.skillScoreText, isDark && { color: "#ffffff" }]}>
@@ -428,7 +399,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
         {/* Done primary button */}
         <Pressable
           onPress={handleClose}
-          style={[scoreStyles.doneButton, isDark && { backgroundColor: "#3b82f6" }]}
+          style={[scoreStyles.doneButton, isDark && { backgroundColor: "#4f46e5" }]}
         >
           <Text style={scoreStyles.doneButtonText}>Done</Text>
         </Pressable>
@@ -527,6 +498,7 @@ const PROGRESSION_WAVES = [
 
 export function LearningJourneyScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const gate = useLearningJourneyGate();
   const insets = useSafeAreaInsets();
   const { isDark, toggleTheme } = useThemeToggle();
@@ -591,7 +563,6 @@ export function LearningJourneyScreen() {
   const {
     data: modulesData,
     isError: pathError,
-    error: pathErrorObj,
     isFetching: pathFetching,
     refetch: refetchPath,
   } = useGetModulesQuery(undefined, {
@@ -614,7 +585,6 @@ export function LearningJourneyScreen() {
   const {
     data: progression,
     isError: progressionError,
-    error: progressionErrorObj,
     isFetching: progressionFetching,
     refetch: refetchProgression,
   } = useGetProgressionQuery(undefined, {
@@ -630,59 +600,63 @@ export function LearningJourneyScreen() {
     }
   };
 
-  const [triggerGetModuleDaysBulk] = useLazyGetModuleDaysBulkQuery();
+  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [triggerGetDayResults] = useLazyGetDayResultsQuery();
   const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
   const [loadingAllDays, setLoadingAllDays] = useState(false);
 
   const fetchAllDays = useCallback(
     async (force = false) => {
-      const moduleIds = personalizedPath?.modules?.map((m) => m.id);
-      if (!moduleIds?.length) return;
+      if (!personalizedPath?.modules?.length) return;
       setLoadingAllDays(true);
       try {
-        // One request for the whole path. This used to fan out into a request per module —
-        // 12+ round trips every time the screen regained focus.
-        const daysByModule = await triggerGetModuleDaysBulk(moduleIds, !force).unwrap();
-        // The server omits nothing, but be defensive: a module with no days must still have
-        // an entry, or the UI reads undefined where it expects a list.
-        setModuleDaysData(Object.fromEntries(moduleIds.map((id) => [id, daysByModule[id] ?? []])));
+        const promises = personalizedPath.modules.map(async (m) => {
+          try {
+            const data = await triggerGetModuleDays(m.id, !force).unwrap();
+            return { moduleId: m.id, days: data };
+          } catch (e) {
+            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
+            return { moduleId: m.id, days: [] };
+          }
+        });
+        const results = await Promise.all(promises);
+
+        const newData: Record<string, ModuleDay[]> = {};
+        for (const res of results) {
+          newData[res.moduleId] = res.days;
+        }
+        setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
       } finally {
         setLoadingAllDays(false);
       }
     },
-    [personalizedPath, triggerGetModuleDaysBulk],
+    [personalizedPath, triggerGetModuleDays],
   );
-
-  const navigation = useNavigation();
 
   useEffect(() => {
     if (gate.canEnter) {
-      refetchPath();
-      refetchProgression();
       fetchAllDays(false);
     }
+  }, [fetchAllDays, gate.canEnter]);
 
+  useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
+      refetchProfile();
       if (gate.canEnter) {
         refetchPath();
         refetchProgression();
-        fetchAllDays(false);
+        fetchAllDays(true);
       }
     });
     return unsubscribe;
-  }, [navigation, gate.canEnter, refetchPath, refetchProgression, fetchAllDays]);
-
-  useEffect(() => {
-    if (gate.canEnter && personalizedPath?.modules?.length) {
-      fetchAllDays(false);
-    }
-  }, [gate.canEnter, personalizedPath, fetchAllDays]);
+  }, [navigation, refetchProfile, refetchPath, refetchProgression, fetchAllDays, gate.canEnter]);
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
-    const moduleByNo: Record<number, { module_no: number; title: string; id: string }> = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const moduleByNo: Record<number, any> = {};
 
     if (personalizedPath?.modules?.length) {
       for (const m of personalizedPath.modules) {
@@ -729,6 +703,19 @@ export function LearningJourneyScreen() {
     return allDaysList.findIndex((d) => !d.is_completed);
   }, [allDaysList]);
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const scrollToActiveDay = useCallback(() => {
+    if (firstIncompleteIndex <= 0) return;
+    const estimatedY = 480 + firstIncompleteIndex * 85;
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({
+        y: estimatedY,
+        animated: false,
+      });
+    }, 150);
+  }, [firstIncompleteIndex]);
+
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -751,65 +738,126 @@ export function LearningJourneyScreen() {
       });
     } catch (err: unknown) {
       console.error("Start/resume assessment session failed:", err);
-      showAlert("Error", "Could not start assessment. Please try again.");
+      Alert.alert("Error", "Could not start assessment. Please try again.");
     } finally {
       setIsStartingSession(false);
     }
   };
+
+  const handleDayTap = async (item: {
+    isLocked: boolean;
+    isCompleted: boolean;
+    globalDayNumber: number;
+    dayObj?: CombinedModuleDay;
+  }) => {
+    if (item.isLocked) {
+      Alert.alert(
+        "Locked Day",
+        "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
+      );
+      return;
+    }
+    if (!item.dayObj?.id) {
+      Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+      return;
+    }
+
+    if (item.isCompleted) {
+      router.push({
+        pathname: "/learning-journey/day-complete" as never,
+        params: {
+          day_id: item.dayObj.id,
+          module_id: item.dayObj.module_id,
+          day_number: String(item.globalDayNumber),
+          xp_earned: "0",
+        },
+      });
+      return;
+    }
+
+    try {
+      // 1. Check local storage first
+      const localCompleted = await AsyncStorage.getItem(
+        `day_first_run_completed_${item.dayObj.id}`,
+      );
+      if (localCompleted === "true") {
+        router.push({
+          pathname: "/learning-journey/day-complete" as never,
+          params: {
+            day_id: item.dayObj.id,
+            module_id: item.dayObj.module_id,
+            day_number: String(item.globalDayNumber),
+            xp_earned: "0",
+          },
+        });
+        return;
+      }
+
+      // 2. Fetch and check results status
+      const results = await triggerGetDayResults(item.dayObj.id).unwrap();
+      const totalActivitiesCount = results?.activities?.length ?? 0;
+      const attemptedActivitiesCount = (results?.activities ?? []).filter(
+        (act) =>
+          act.score !== null ||
+          act.evaluation_status === "COMPLETED" ||
+          act.evaluation_status === "FAILED" ||
+          act.passed,
+      ).length;
+
+      const isDayFullyPlayed =
+        totalActivitiesCount > 0 && attemptedActivitiesCount === totalActivitiesCount;
+
+      if (isDayFullyPlayed) {
+        // Save flag in AsyncStorage
+        await AsyncStorage.setItem(`day_first_run_completed_${item.dayObj.id}`, "true");
+        router.push({
+          pathname: "/learning-journey/day-complete" as never,
+          params: {
+            day_id: item.dayObj.id,
+            module_id: item.dayObj.module_id,
+            day_number: String(item.globalDayNumber),
+            xp_earned: "0",
+          },
+        });
+      } else {
+        router.push({
+          pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+          params: {
+            module_id: item.dayObj.module_id,
+            day_number: String(item.globalDayNumber),
+          },
+        });
+      }
+    } catch {
+      router.push({
+        pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+        params: {
+          module_id: item.dayObj.module_id,
+          day_number: String(item.globalDayNumber),
+        },
+      });
+    }
+  };
+  const isPathLoading =
+    gate.canEnter &&
+    (pathFetching ||
+      progressionFetching ||
+      loadingAllDays ||
+      !personalizedPath ||
+      !progression ||
+      !allDaysList.length);
+
+  useEffect(() => {
+    if (!isPathLoading && allDaysList.length > 0) {
+      scrollToActiveDay();
+    }
+  }, [isPathLoading, allDaysList.length, scrollToActiveDay]);
 
   const isError =
     (profileError || (gate.canEnter && (pathError || progressionError))) &&
     !profileFetching &&
     !pathFetching &&
     !progressionFetching;
-
-  // The learning routers are gated behind require_verified_email. That 403 is not an
-  // outage — telling the user the server is down sends them to retry forever against a
-  // server that is working fine, with no hint that they need to verify their email.
-  const needsEmailVerification =
-    isError &&
-    (isEmailNotVerifiedError(pathErrorObj) || isEmailNotVerifiedError(progressionErrorObj));
-
-  if (needsEmailVerification) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: isDark ? "#0e0e11" : "#f8fafc",
-          paddingTop: insets.top,
-        }}
-      >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: "center",
-            alignItems: "center",
-            padding: 24,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
-            <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
-              Verify your email to continue
-            </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-5 px-2">
-              Your learning modules unlock once your email address is confirmed. We'll send you a
-              code.
-            </Text>
-
-            <View className="w-full gap-3">
-              <Pressable
-                onPress={() => router.push("/verify-email" as never)}
-                className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
-              >
-                <Text className="text-white font-extrabold text-sm">Verify email</Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
 
   if (isError) {
     return (
@@ -829,7 +877,7 @@ export function LearningJourneyScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View className="w-full max-w-sm bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm items-center justify-center">
+          <View className="w-full max-w-sm bg-white dark:bg-[#1e1f2a] border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm items-center justify-center">
             <LottieView
               source={require("../../../assets/mascot/Error 404.lottie")}
               autoPlay
@@ -837,10 +885,10 @@ export function LearningJourneyScreen() {
               style={{ width: 140, height: 140, marginBottom: 12 }}
             />
 
-            <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2 text-center">
+            <Text className="text-slate-900 dark:text-white font-extrabold text-xl mb-2">
               Server Connection Lost
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-sm text-center leading-5 mb-4 px-2">
+            <Text className="text-slate-500 dark:text-zinc-400 text-sm text-center leading-5 mb-4 px-2">
               We couldn't connect to the learning server. Please ensure the backend service is
               running and try again.
             </Text>
@@ -851,9 +899,11 @@ export function LearningJourneyScreen() {
             <View className="w-full gap-3 mt-4">
               <Pressable
                 onPress={handleRetry}
-                className="w-full bg-slate-900 active:bg-slate-800 dark:bg-blue-600 py-4 rounded-xl items-center justify-center shadow-sm"
+                className="w-full bg-slate-900 dark:bg-zinc-100 active:bg-slate-800 dark:active:bg-zinc-200 py-4 rounded-xl items-center justify-center shadow-sm"
               >
-                <Text className="text-white font-extrabold text-sm">Try Again</Text>
+                <Text className="text-white dark:text-zinc-900 font-extrabold text-sm">
+                  Try Again
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -862,17 +912,8 @@ export function LearningJourneyScreen() {
     );
   }
 
-  const isPathLoading =
-    gate.canEnter &&
-    (pathFetching ||
-      progressionFetching ||
-      loadingAllDays ||
-      !personalizedPath ||
-      !progression ||
-      !allDaysList.length);
-
   if (!gate.ready || isPathLoading) {
-    return <GamifiedMascotLoader title="Consulting AI Mentor..." />;
+    return <GamifiedMascotLoader title="Loading Learning Path..." />;
   }
 
   if (!gate.canEnter && gate.blockedReason === "onboarding") {
@@ -886,33 +927,17 @@ export function LearningJourneyScreen() {
               </Text>
               <Text className="text-slate-900 text-2xl font-extrabold">My Learning</Text>
             </View>
-            <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Pressable
-                onPress={() => toggleTheme()}
-                className={`w-10 h-10 rounded-full items-center justify-center ${
-                  isDark
-                    ? "bg-[#16161c] border border-slate-800"
-                    : "bg-slate-200 border border-slate-100"
-                }`}
-              >
-                <Feather
-                  name={isDark ? "sun" : "moon"}
-                  size={18}
-                  color={isDark ? "#f8fafc" : "#1e293b"}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/profile" as never)}
-                className="w-12 h-12 rounded-full bg-slate-200 dark:bg-[#16161c] border border-slate-100 dark:border-slate-800 items-center justify-center overflow-hidden active:opacity-80"
-              >
-                <Image
-                  source={{
-                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                  }}
-                  style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-                />
-              </Pressable>
-            </View>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-slate-200 border border-slate-100 items-center justify-center overflow-hidden active:opacity-80"
+            >
+              <Image
+                source={{
+                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                }}
+                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              />
+            </Pressable>
           </View>
           <GateEmptyState
             reason="onboarding"
@@ -1003,71 +1028,68 @@ export function LearningJourneyScreen() {
         results={resultsToPass}
       />
 
+      {/* Top Header greeting with avatar - FIXED AT TOP */}
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingTop: 16,
+          paddingBottom: 12,
+          borderBottomWidth: 1,
+          borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+        }}
+        className="flex-row justify-between items-center bg-slate-50 dark:bg-[#0e0e11]"
+      >
+        <View className="flex-1">
+          <Text style={{ fontSize: 26, fontWeight: "900", color: "#4f46e5" }}>
+            Hi,{" "}
+            <Text style={{ color: "#94a3b8" }}>
+              {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(0, 2)}
+            </Text>
+            <Text style={{ color: "#84cc16" }}>
+              {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(2)}!
+            </Text>
+          </Text>
+          <Text style={{ fontSize: 14, color: "#94a3b8", marginTop: 4 }}>
+            Ready to learn something new?
+          </Text>
+        </View>
+        <View className="flex-row items-center" style={{ gap: 12 }}>
+          <Pressable
+            onPress={() => toggleTheme()}
+            className="w-10 h-10 rounded-full bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 items-center justify-center active:opacity-80 shadow-sm"
+          >
+            <Feather
+              name={isDark ? "sun" : "moon"}
+              size={20}
+              color={isDark ? "#fbbf24" : "#475569"}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/profile" as never)}
+            className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 border border-slate-100 dark:border-slate-800 items-center justify-center overflow-hidden active:opacity-80"
+          >
+            <Image
+              source={{
+                uri: getAvatarUri(profile?.avatar_id, profile?.id),
+              }}
+              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+            />
+          </Pressable>
+        </View>
+      </View>
+
       <ScrollView
+        ref={scrollViewRef}
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 24, paddingBottom: 96 }}
+        contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 96, paddingTop: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Top Header greeting with avatar */}
-        <View className="flex-row justify-between items-center mb-6">
-          <View className="flex-1">
-            {isDark ? (
-              <Text style={{ fontSize: 26, fontWeight: "900", color: "#3b82f6" }}>
-                Hi,{" "}
-                <Text style={{ color: "#bef264" }}>
-                  {profile?.name?.split(" ")[0]?.toUpperCase() || "TINA"}!
-                </Text>
-              </Text>
-            ) : (
-              <Text style={{ fontSize: 26, fontWeight: "900", color: "#4f46e5" }}>
-                Hi,{" "}
-                <Text style={{ color: "#94a3b8" }}>
-                  {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(0, 2)}
-                </Text>
-                <Text style={{ color: "#84cc16" }}>
-                  {(profile?.name?.split(" ")[0]?.toUpperCase() || "TINA").slice(2)}!
-                </Text>
-              </Text>
-            )}
-            <Text style={{ fontSize: 14, color: isDark ? "#7f85a3" : "#94a3b8", marginTop: 4 }}>
-              Ready to learn something new?
-            </Text>
-          </View>
-          <View className="flex-row items-center" style={{ gap: 12 }}>
-            <Pressable
-              onPress={() => toggleTheme()}
-              className={`w-10 h-10 rounded-full items-center justify-center ${
-                isDark
-                  ? "bg-[#16161c] border border-slate-800"
-                  : "bg-slate-200 border border-slate-100"
-              }`}
-            >
-              <Feather
-                name={isDark ? "sun" : "moon"}
-                size={18}
-                color={isDark ? "#f8fafc" : "#1e293b"}
-              />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push("/profile" as never)}
-              className="w-12 h-12 rounded-full bg-slate-200 dark:bg-[#16161c] border border-slate-100 dark:border-slate-800 items-center justify-center overflow-hidden active:opacity-80"
-            >
-              <Image
-                source={{
-                  uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                }}
-                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
-              />
-            </Pressable>
-          </View>
-        </View>
-
         {/* Section title header */}
         <View style={{ marginBottom: 16, marginTop: 8 }}>
           <Text style={{ fontSize: 22, fontWeight: "800", color: isDark ? "#ffffff" : "#0f172a" }}>
             My Learning
           </Text>
-          <Text style={{ fontSize: 14, color: isDark ? "#7f85a3" : "#64748b", marginTop: 4 }}>
+          <Text style={{ fontSize: 14, color: isDark ? "#b4b8da" : "#64748b", marginTop: 4 }}>
             Track where you're headed
           </Text>
         </View>
@@ -1076,13 +1098,13 @@ export function LearningJourneyScreen() {
         <View
           style={[
             timelineStyles.stagesCard,
-            isDark && { backgroundColor: "#252945", shadowColor: "#000000", shadowOpacity: 0.2 },
+            isDark && { backgroundColor: "#151620", borderColor: "#242635" },
           ]}
         >
           {/* Item 1: Free Content */}
           <Pressable
             onPress={() =>
-              showAlert("Free Content", "This free module is completed! Continue down your path.")
+              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1106,29 +1128,18 @@ export function LearningJourneyScreen() {
               </View>
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
-                  <Text className="flex-1 text-lg font-bold text-slate-800 dark:text-white">
+                  <Text
+                    className={`flex-1 text-lg font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}
+                  >
                     Free Content
                   </Text>
-                  <View
-                    style={[
-                      timelineStyles.statusBadge,
-                      isDark ? { backgroundColor: "#16a34a" } : timelineStyles.badgeCompleted,
-                    ]}
-                  >
-                    <Text
-                      style={[timelineStyles.badgeText, { color: isDark ? "#ffffff" : "#15803d" }]}
-                    >
-                      Completed
-                    </Text>
+                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
                   </View>
                 </View>
-                <Text style={[timelineStyles.stageSubtitle, isDark && { color: "#b4b8da" }]}>
-                  The Fundamentals of Communication
-                </Text>
+                <Text style={timelineStyles.stageSubtitle}>The Fundamentals of Communication</Text>
 
-                <View
-                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#1b1e32" }]}
-                >
+                <View style={timelineStyles.progressBarBg}>
                   <LinearGradient
                     colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
@@ -1138,18 +1149,10 @@ export function LearningJourneyScreen() {
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={[timelineStyles.progressLabelText, isDark && { color: "#b4b8da" }]}>
-                    8 lessons completed
-                  </Text>
-                  <Text
-                    style={[timelineStyles.progressLabelPercent, isDark && { color: "#b4b8da" }]}
-                  >
-                    100%
-                  </Text>
+                  <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
+                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
                 </View>
-                <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
-                  350 XP earned
-                </Text>
+                <Text style={timelineStyles.xpText}>350 XP earned</Text>
               </View>
             </View>
           </Pressable>
@@ -1157,7 +1160,10 @@ export function LearningJourneyScreen() {
           {/* Item 2: Trial Content */}
           <Pressable
             onPress={() =>
-              showAlert("Trial Content", "This trial module is completed! Continue down your path.")
+              Alert.alert(
+                "Trial Content",
+                "This trial module is completed! Continue down your path.",
+              )
             }
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
@@ -1181,29 +1187,18 @@ export function LearningJourneyScreen() {
               </View>
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
-                  <Text className="flex-1 text-lg font-bold text-slate-800 dark:text-white">
+                  <Text
+                    className={`flex-1 text-lg font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}
+                  >
                     Trial Content
                   </Text>
-                  <View
-                    style={[
-                      timelineStyles.statusBadge,
-                      isDark ? { backgroundColor: "#16a34a" } : timelineStyles.badgeCompleted,
-                    ]}
-                  >
-                    <Text
-                      style={[timelineStyles.badgeText, { color: isDark ? "#ffffff" : "#15803d" }]}
-                    >
-                      Completed
-                    </Text>
+                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
                   </View>
                 </View>
-                <Text style={[timelineStyles.stageSubtitle, isDark && { color: "#b4b8da" }]}>
-                  Behaviour in Workplace
-                </Text>
+                <Text style={timelineStyles.stageSubtitle}>Behaviour in Workplace</Text>
 
-                <View
-                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#1b1e32" }]}
-                >
+                <View style={timelineStyles.progressBarBg}>
                   <LinearGradient
                     colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
@@ -1213,18 +1208,10 @@ export function LearningJourneyScreen() {
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={[timelineStyles.progressLabelText, isDark && { color: "#b4b8da" }]}>
-                    7 lessons completed
-                  </Text>
-                  <Text
-                    style={[timelineStyles.progressLabelPercent, isDark && { color: "#b4b8da" }]}
-                  >
-                    100%
-                  </Text>
+                  <Text style={timelineStyles.progressLabelText}>7 lessons completed</Text>
+                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
                 </View>
-                <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
-                  250 XP earned
-                </Text>
+                <Text style={timelineStyles.xpText}>250 XP earned</Text>
               </View>
             </View>
           </Pressable>
@@ -1266,33 +1253,23 @@ export function LearningJourneyScreen() {
               </View>
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
-                  <Text className="flex-1 text-lg font-bold text-slate-800 dark:text-white">
+                  <Text
+                    className={`flex-1 text-lg font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}
+                  >
                     Diagnostic Assessment
                   </Text>
                   <View
                     style={[
                       timelineStyles.statusBadge,
                       isDiagnosticComplete
-                        ? isDark
-                          ? { backgroundColor: "#16a34a" }
-                          : timelineStyles.badgeCompleted
-                        : isDark
-                          ? { backgroundColor: "#facc15" }
-                          : timelineStyles.badgeInProgress,
+                        ? timelineStyles.badgeCompleted
+                        : timelineStyles.badgeInProgress,
                     ]}
                   >
                     <Text
                       style={[
                         timelineStyles.badgeText,
-                        {
-                          color: isDiagnosticComplete
-                            ? isDark
-                              ? "#ffffff"
-                              : "#15803d"
-                            : isDark
-                              ? "#1e293b"
-                              : "#a16207",
-                        },
+                        { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
                       ]}
                     >
                       {isDiagnosticComplete
@@ -1301,13 +1278,9 @@ export function LearningJourneyScreen() {
                     </Text>
                   </View>
                 </View>
-                <Text style={[timelineStyles.stageSubtitle, isDark && { color: "#b4b8da" }]}>
-                  Assessing your skills
-                </Text>
+                <Text style={timelineStyles.stageSubtitle}>Assessing your skills</Text>
 
-                <View
-                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#1b1e32" }]}
-                >
+                <View style={timelineStyles.progressBarBg}>
                   <LinearGradient
                     colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
@@ -1320,16 +1293,12 @@ export function LearningJourneyScreen() {
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={[timelineStyles.progressLabelText, isDark && { color: "#b4b8da" }]}>
+                  <Text style={timelineStyles.progressLabelText}>
                     {diagLessonsCompleted} of 6 sections completed
                   </Text>
-                  <Text
-                    style={[timelineStyles.progressLabelPercent, isDark && { color: "#b4b8da" }]}
-                  >
-                    {diagProgress}%
-                  </Text>
+                  <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
                 </View>
-                <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
+                <Text style={timelineStyles.xpText}>
                   {isStartingSession
                     ? "Launching..."
                     : isDiagnosticComplete
@@ -1355,29 +1324,12 @@ export function LearningJourneyScreen() {
           {dayItems.map((item, idx) => {
             const isLast = idx === dayItems.length - 1;
             const lineBgColor =
-              item.isCompleted || item.isInProgress ? "#3b82f6" : isDark ? "#3f4460" : "#cbd5e1";
+              item.isCompleted || item.isInProgress ? "#3b82f6" : isDark ? "#2d2d3a" : "#cbd5e1";
 
             return (
               <Pressable
                 key={item.id}
-                onPress={() => {
-                  if (item.isLocked) {
-                    showAlert(
-                      "Locked Day",
-                      "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
-                    );
-                  } else if (!item.dayObj?.id) {
-                    showAlert("Error", "Day content is not available yet. Please try refreshing.");
-                  } else {
-                    router.push({
-                      pathname: `/learning-journey/module/${item.dayObj.id}` as never,
-                      params: {
-                        module_id: item.dayObj.module_id,
-                        day_number: String(item.globalDayNumber),
-                      },
-                    });
-                  }
-                }}
+                onPress={() => handleDayTap(item)}
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.8 : 1,
                   marginBottom: isLast ? 0 : 32,
@@ -1406,10 +1358,10 @@ export function LearningJourneyScreen() {
                           ? timelineStyles.stageCircleCompleted
                           : item.isInProgress
                             ? timelineStyles.stageCircleInProgress
-                            : [
-                                timelineStyles.stageCircleLocked,
-                                isDark && { backgroundColor: "#383c56" },
-                              ],
+                            : timelineStyles.stageCircleLocked,
+                        isDark &&
+                          !item.isCompleted &&
+                          !item.isInProgress && { backgroundColor: "#2d2d3a" },
                       ]}
                     >
                       <Feather
@@ -1419,7 +1371,7 @@ export function LearningJourneyScreen() {
                           item.isCompleted || item.isInProgress
                             ? "white"
                             : isDark
-                              ? "#a5a9c9"
+                              ? "#4b5563"
                               : "#b4b8da"
                         }
                       />
@@ -1430,61 +1382,33 @@ export function LearningJourneyScreen() {
                       <Text
                         className={`flex-1 text-lg font-bold ${
                           item.isLocked
-                            ? "text-slate-400 dark:text-[#7f85a3]"
-                            : "text-slate-800 dark:text-white"
+                            ? isDark
+                              ? "text-zinc-600"
+                              : "text-slate-400"
+                            : isDark
+                              ? "text-slate-200"
+                              : "text-slate-800"
                         }`}
                       >
                         {item.title}
                       </Text>
                       {item.isLocked && (
-                        <View
-                          style={[
-                            timelineStyles.statusBadge,
-                            isDark ? { backgroundColor: "#383c56" } : timelineStyles.badgeLocked,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              timelineStyles.badgeText,
-                              { color: isDark ? "#b4b8da" : "#6366f1" },
-                            ]}
-                          >
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeLocked]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#6366f1" }]}>
                             Locked
                           </Text>
                         </View>
                       )}
                       {item.isCompleted && (
-                        <View
-                          style={[
-                            timelineStyles.statusBadge,
-                            isDark ? { backgroundColor: "#16a34a" } : timelineStyles.badgeCompleted,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              timelineStyles.badgeText,
-                              { color: isDark ? "#ffffff" : "#15803d" },
-                            ]}
-                          >
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>
                             Completed
                           </Text>
                         </View>
                       )}
                       {item.isInProgress && (
-                        <View
-                          style={[
-                            timelineStyles.statusBadge,
-                            isDark
-                              ? { backgroundColor: "#facc15" }
-                              : timelineStyles.badgeInProgress,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              timelineStyles.badgeText,
-                              { color: isDark ? "#1e293b" : "#a16207" },
-                            ]}
-                          >
+                        <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
                             In Progress
                           </Text>
                         </View>
@@ -1493,8 +1417,8 @@ export function LearningJourneyScreen() {
                     <Text
                       style={[
                         timelineStyles.stageSubtitle,
-                        item.isLocked && (isDark ? { color: "#5a5e7b" } : { color: "#cbd5e1" }),
-                        isDark && !item.isLocked && { color: "#b4b8da" },
+                        isDark && { color: "#71717a" },
+                        item.isLocked && { color: isDark ? "#3f3f46" : "#cbd5e1" },
                       ]}
                     >
                       {item.subtitle}
@@ -1516,12 +1440,7 @@ export function LearningJourneyScreen() {
 
                         return (
                           <>
-                            <View
-                              style={[
-                                timelineStyles.progressBarBg,
-                                isDark && { backgroundColor: "#1b1e32" },
-                              ]}
-                            >
+                            <View style={timelineStyles.progressBarBg}>
                               <LinearGradient
                                 colors={["#3b82f6", "#22c55e", "#84cc16"]}
                                 start={{ x: 0, y: 0 }}
@@ -1530,28 +1449,11 @@ export function LearningJourneyScreen() {
                               />
                             </View>
                             <View style={timelineStyles.progressLabelRow}>
-                              <Text
-                                style={[
-                                  timelineStyles.progressLabelText,
-                                  isDark && { color: "#b4b8da" },
-                                ]}
-                              >
+                              <Text style={timelineStyles.progressLabelText}>
                                 {progressLabelText}
                               </Text>
-                              <Text
-                                style={[
-                                  timelineStyles.progressLabelPercent,
-                                  isDark && { color: "#b4b8da" },
-                                ]}
-                              >
-                                {pct}%
-                              </Text>
+                              <Text style={timelineStyles.progressLabelPercent}>{pct}%</Text>
                             </View>
-                            <Text style={[timelineStyles.xpText, isDark && { color: "#b4b8da" }]}>
-                              {item.isCompleted
-                                ? "50 XP earned"
-                                : `${(item.dayObj as CombinedModuleDay & { xp_earned?: number })?.xp_earned ?? Math.round(50 * (compAct / Math.max(1, totalAct)))} XP earned`}
-                            </Text>
                           </>
                         );
                       })()}
@@ -1561,7 +1463,7 @@ export function LearningJourneyScreen() {
                       <Pressable
                         onPress={() => {
                           if (!item.dayObj?.id) {
-                            showAlert(
+                            Alert.alert(
                               "Error",
                               "Day content is not available yet. Please try refreshing.",
                             );
@@ -1647,7 +1549,7 @@ const timelineStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    alignSelf: "stretch",
+    width: "100%",
   },
   statusBadge: {
     paddingVertical: 4,
@@ -1680,7 +1582,7 @@ const timelineStyles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
     marginBottom: 6,
-    alignSelf: "stretch",
+    width: "100%",
   },
   progressBarFill: {
     height: "100%",
@@ -1691,7 +1593,7 @@ const timelineStyles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 6,
-    alignSelf: "stretch",
+    width: "100%",
   },
   progressLabelText: {
     fontSize: 11,
