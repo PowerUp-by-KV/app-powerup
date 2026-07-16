@@ -149,8 +149,14 @@ export const moduleApi = api.injectEndpoints({
     // a round trip per module (12+ on My Learning) every time the screen regained focus.
     getModuleDaysBulk: builder.query<Record<string, ModuleDay[]>, string[]>({
       query: (moduleIds) => ({
-        url: "/v1/modules/days/bulk",
-        params: { module_ids: moduleIds },
+        // Send repeated params (module_ids=a&module_ids=b), which is what FastAPI's list[…]
+        // query expects. The default array serialization is comma-joined, which the API
+        // rejected with 422 — collapsing the whole My Learning path to locked placeholders.
+        url:
+          "/v1/modules/days/bulk" +
+          (moduleIds.length
+            ? `?${moduleIds.map((id) => `module_ids=${encodeURIComponent(id)}`).join("&")}`
+            : ""),
       }),
       transformResponse: (response: { days_by_module: Record<string, ModuleDay[]> }) =>
         response.days_by_module,

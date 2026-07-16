@@ -47,13 +47,13 @@ const PROGRESSION_WAVES = [
 export function HomeScreen() {
   const router = useRouter();
   const { isDark, toggleTheme } = useThemeToggle();
-  const { data: profile } = useGetProfileQuery();
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
   const tier = usePlanTier();
   const insets = useSafeAreaInsets();
 
-  const { data: modulesData } = useGetModulesQuery(undefined, {
+  const { data: modulesData, isLoading: isModulesLoading } = useGetModulesQuery(undefined, {
     skip: !gate.canEnter,
   });
 
@@ -168,6 +168,18 @@ export function HomeScreen() {
   });
 
   const firstName = profile?.name?.split(" ")[0] || "there";
+
+  // The dashboard's numbers come from two sources: profile (streaks/badges/xp) and the
+  // per-module day data (days completed). Treat the card as loading until both are in, so it
+  // renders a skeleton rather than zeros that snap to real values a beat later. Derive the
+  // day-loading state from what has actually resolved rather than a manual flag: a flag set
+  // in an effect gets stuck on skeleton forever when there are no modules or the modules
+  // query fails (the effect returns early without clearing it).
+  const isDaysLoading =
+    gate.canEnter &&
+    (isModulesLoading ||
+      ((modulesData?.length ?? 0) > 0 && Object.keys(moduleDaysData).length === 0));
+  const isDashboardLoading = isProfileLoading || isDaysLoading;
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {
@@ -304,6 +316,7 @@ export function HomeScreen() {
             xpPoints={profile?.total_xp ?? 0}
             daysCompleted={daysCompleted}
             totalDays={totalDays}
+            isLoading={isDashboardLoading}
             onTrack={() => router.push("/(tabs)/my-learning" as never)}
           />
 
