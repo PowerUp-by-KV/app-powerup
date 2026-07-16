@@ -47,7 +47,7 @@ const PROGRESSION_WAVES = [
 export function HomeScreen() {
   const router = useRouter();
   const { isDark, toggleTheme } = useThemeToggle();
-  const { data: profile } = useGetProfileQuery();
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
   const tier = usePlanTier();
@@ -72,11 +72,15 @@ export function HomeScreen() {
 
   const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
   const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
+  // Starts true so the dashboard shows a skeleton on first paint instead of a flash of
+  // "0 / 156 days" and zeroed stat tiles before the day data resolves.
+  const [isDaysLoading, setIsDaysLoading] = React.useState(true);
 
   React.useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
 
     const fetchAllDays = async () => {
+      setIsDaysLoading(true);
       try {
         const promises = personalizedPath.modules.map(async (m) => {
           try {
@@ -96,6 +100,8 @@ export function HomeScreen() {
         setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
+      } finally {
+        setIsDaysLoading(false);
       }
     };
 
@@ -168,6 +174,11 @@ export function HomeScreen() {
   });
 
   const firstName = profile?.name?.split(" ")[0] || "there";
+
+  // The dashboard's numbers come from two sources: profile (streaks/badges/xp) and the
+  // per-module day data (days completed). Treat the card as loading until both are in, so
+  // it renders a skeleton rather than zeros that snap to real values a beat later.
+  const isDashboardLoading = isProfileLoading || (gate.canEnter && isDaysLoading);
 
   const handleContinuePress = () => {
     if (!gate.canEnter) {
@@ -304,6 +315,7 @@ export function HomeScreen() {
             xpPoints={profile?.total_xp ?? 0}
             daysCompleted={daysCompleted}
             totalDays={totalDays}
+            isLoading={isDashboardLoading}
             onTrack={() => router.push("/(tabs)/my-learning" as never)}
           />
 
