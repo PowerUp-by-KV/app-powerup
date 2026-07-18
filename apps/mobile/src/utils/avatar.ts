@@ -20,12 +20,20 @@ export function getAvatarUri(
     const data = avatarId.replace("c2d?", "").split("-");
     if (data.length === 6) {
       const [s, hc, h, e, m, g] = data as [string, string, string, string, string, string];
-      let params = `skinColor=${s}&hairColor=${hc}&hair=${h.startsWith("s") ? h.replace("s", "short") : h.replace("l", "long")}&eyes=variant${e}&mouth=variant${m}`;
+      const params = new URLSearchParams({
+        skinColor: s,
+        hairColor: hc,
+        hair: h.startsWith("s") ? h.replace("s", "short") : h.replace("l", "long"),
+        eyes: "variant" + e,
+        mouth: "variant" + m,
+        backgroundColor: "b6e3f4,c0aede,d1d4f9",
+        seed: "user_custom",
+      });
       if (g !== "x") {
-        params += `&glasses=variant${g}&glassesProbability=100`;
+        params.append("glasses", "variant" + g);
+        params.append("glassesProbability", "100");
       }
-      params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
-      return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
+      return "https://api.dicebear.com/7.x/adventurer/png?" + params.toString();
     }
   }
 
@@ -66,13 +74,20 @@ export function getAvatarUri(
         ? `short${h.replace("s", "").padStart(2, "0")}`
         : `long${h.replace("l", "").padStart(2, "0")}`;
 
-      let params = `skinColor=${sColor}&hairColor=${hColor}&hair=${hairStyle}&eyes=variant${e.padStart(2, "0")}&mouth=variant${m.padStart(2, "0")}`;
-
+      const params = new URLSearchParams({
+        skinColor: sColor,
+        hairColor: hColor,
+        hair: hairStyle,
+        eyes: "variant" + e.padStart(2, "0"),
+        mouth: "variant" + m.padStart(2, "0"),
+        backgroundColor: "b6e3f4,c0aede,d1d4f9",
+        seed: "user_custom",
+      });
       if (g !== "x") {
-        params += `&glasses=variant${g.padStart(2, "0")}&glassesProbability=100`;
+        params.append("glasses", "variant" + g.padStart(2, "0"));
+        params.append("glassesProbability", "100");
       }
-      params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
-      return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
+      return "https://api.dicebear.com/7.x/adventurer/png?" + params.toString();
     }
   }
 

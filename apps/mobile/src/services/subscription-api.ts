@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
 
 export type PlanTier = "free" | "pro" | "premium";
@@ -26,7 +25,7 @@ export interface UserSubscription {
   cancel_at_period_end?: boolean;
   payment_provider?: string;
   provider_subscription_id?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface CheckoutRequest {
@@ -89,7 +88,7 @@ export const subscriptionApi = api.injectEndpoints({
       invalidatesTags: ["Subscription"],
     }),
 
-    cancelSubscription: builder.mutation<any, void>({
+    cancelSubscription: builder.mutation<Record<string, unknown>, void>({
       query: () => ({
         url: "/v1/subscription/cancel",
         method: "POST",
