@@ -15,7 +15,6 @@ import {
   useGetPlansQuery,
   useVerifyPaymentMutation,
 } from "@/services/subscription-api";
-import RazorpayCheckout from "react-native-razorpay";
 
 import {
   openRazorpayCheckout,

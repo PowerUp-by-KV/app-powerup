@@ -12,7 +12,7 @@ export function Step0AnalysingResume({ onNext }: Step0AnalysingResumeProps) {
   useEffect(() => {
     const timer = setTimeout(onNext, 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [onNext]);
 
   return (
     <View
