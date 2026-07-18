@@ -638,7 +638,7 @@ function CelebrationModal({
             isDark && { backgroundColor: "#151620", borderColor: "#242635" },
           ]}
         >
-          <View style={{ alignItems: "center" }}>
+          <View style={{ alignItems: "center", width: "100%" }}>
             <LottieView
               source={require("../../assets/lottie/trophy.json")}
               autoPlay

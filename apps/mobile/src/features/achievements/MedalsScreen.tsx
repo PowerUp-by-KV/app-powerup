@@ -478,6 +478,7 @@ export function MedalsScreen() {
                     flexDirection: "row",
                     width: "100%",
                     justifyContent: "space-between",
+                    alignItems: "flex-start",
                     marginBottom: 16,
                   }}
                 >

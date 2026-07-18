@@ -333,7 +333,7 @@ export function HomeScreen() {
 
           <View className="flex-row justify-between items-center mb-3 mt-1">
             <Text className="text-slate-900 dark:text-white font-bold text-base">
-              {isDark ? "Track My Learning" : "Continue Learning"}
+              Continue Learning
             </Text>
             <Pressable onPress={() => router.push("/(tabs)/my-learning" as never)}>
               <Text className="text-indigo-600 dark:text-slate-400 text-sm font-semibold">

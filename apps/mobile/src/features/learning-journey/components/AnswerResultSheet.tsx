@@ -8,7 +8,6 @@ interface AnswerResultSheetProps {
   isCorrect: boolean;
   correctSentence?: string;
   onContinue: () => void;
-  onDismiss: () => void;
 }
 
 export function AnswerResultSheet({
@@ -16,18 +15,14 @@ export function AnswerResultSheet({
   isCorrect,
   correctSentence,
   onContinue,
-  onDismiss,
 }: AnswerResultSheetProps) {
   const insets = useSafeAreaInsets();
   const bg = isCorrect ? "#0f172a" : "#7f1d1d";
   const accent = isCorrect ? "#22c55e" : "#ef4444";
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onDismiss}>
+    <Modal transparent visible={visible} animationType="slide" onRequestClose={() => {}}>
       <View style={{ flex: 1, justifyContent: "flex-end" }}>
-        <Pressable
-          style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "transparent" }}
-          onPress={onDismiss}
-        />
+        <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "transparent" }} />
         <View
           style={{
             backgroundColor: bg,
@@ -48,9 +43,6 @@ export function AnswerResultSheet({
                 {isCorrect ? "Correct!" : "Wrong!"}
               </Text>
             </View>
-            <Pressable onPress={onDismiss}>
-              <Feather name="x" size={20} color="#94a3b8" />
-            </Pressable>
           </View>
           {!isCorrect && correctSentence && (
             <View className="mb-3">
