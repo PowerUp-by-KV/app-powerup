@@ -1,103 +1,125 @@
 import React, { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { getApiErrorMessage } from "@/utils/error-message";
+import { useAppDispatch } from "@/store/hooks";
+import { setTier } from "@/store/slices/subscription.slice";
 
 import {
   useCheckoutMutation,
   useGetPlansQuery,
-  useSimulatePaymentWebhookMutation,
+  useVerifyPaymentMutation,
 } from "@/services/subscription-api";
 import RazorpayCheckout from "react-native-razorpay";
+
+import {
+  openRazorpayCheckout,
+  RazorpayCancelledError,
+  type RazorpaySuccess,
+} from "./razorpay-checkout";
 
 function formatINR(paise: number): string {
   return `₹${(paise / 100).toFixed(0)}`;
 }
 
+async function retry<T>(attempts: number, fn: () => Promise<T>): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i >= attempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, 500 * i));
+    }
+  }
+}
+
 export function CheckoutScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
   const params = useLocalSearchParams<{ plan_id?: string }>();
   const { data: plans = [] } = useGetPlansQuery();
   const [checkout, { isLoading: isCheckingOut }] = useCheckoutMutation();
-  const [simulateWebhook, { isLoading: isSimulating }] = useSimulatePaymentWebhookMutation();
+  const [verifyPayment, { isLoading: isVerifying }] = useVerifyPaymentMutation();
 
-  // Default to mock for smooth testing
-  const [method, setMethod] = useState<"razorpay" | "stripe" | "mock">("mock");
+  const [error, setError] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
 
   const plan = useMemo(() => plans.find((p) => p.id === params.plan_id), [plans, params.plan_id]);
 
-  const isLoading = isCheckingOut || isSimulating;
+  const isLoading = isCheckingOut || isVerifying || isPaying;
 
   const handlePay = async () => {
     if (!plan) return;
+    setError(null);
+
+    // Set the moment Razorpay confirms the charge. Past this point the user's money is
+    // gone, so a later failure must never tell them to "try again" — that invites a
+    // double charge.
+    let charged: RazorpaySuccess | null = null;
+
     try {
-      // 1. Initiate checkout
-      const result = await checkout({ plan_id: plan.id, payment_method: method }).unwrap();
+      const order = await checkout({ plan_id: plan.id, payment_method: "razorpay" }).unwrap();
 
-      if (method === "razorpay") {
-        try {
-          const data = await RazorpayCheckout.open({
-            description: `Subscription to ${plan.name}`,
-            image: "https://i.imgur.com/3g7nmJC.png", // Demo image
-            currency: "INR",
-            key: "rzp_test_T7WGVsxWMorhh6",
-            amount: plan.price_inr.toString(),
-            name: "PowerUp App",
-            subscription_id: result.subscription_id,
-            theme: { color: "#3b82f6" },
-          });
-
-          Alert.alert(
-            "Payment Successful",
-            `Your subscription is now active! Payment ID: ${data.razorpay_payment_id}`,
-            [{ text: "OK", onPress: () => router.replace("/(tabs)") }],
-          );
-        } catch (error: any) {
-          Alert.alert(
-            "Payment Failed",
-            error?.description || "Razorpay checkout was cancelled or failed.",
-          );
-        }
+      if (!order.order_id || !order.razorpay_key_id) {
+        setError("Payments aren't available right now. Please try again later.");
         return;
       }
 
-      // 2. Handle actual payment URLs (for Stripe)
-      if (result.payment_url) {
-        import("expo-linking").then((Linking) => {
-          Linking.openURL(result.payment_url!);
-        });
-        // We do not show the success alert yet because the user needs to complete the payment in the browser
-        return;
-      }
+      setIsPaying(true);
+      charged = await openRazorpayCheckout({
+        keyId: order.razorpay_key_id,
+        orderId: order.order_id,
+        amount: order.amount ?? plan.price_inr,
+        currency: order.currency ?? "INR",
+        planName: plan.name,
+      });
+      setIsPaying(false);
 
-      // 3. Simulate payment completion via webhook (only if pending AND method is mock)
-      if (result.subscription_id && result.status === "pending" && method === "mock") {
-        try {
-          await simulateWebhook({
-            provider_ref: `mock_${result.subscription_id}`,
-            status: "active",
-          }).unwrap();
-        } catch (webhookErr) {
-          console.error(
-            `Webhook 404 Error: The backend could not find a subscription with provider_ref = mock_${result.subscription_id}`,
-          );
-          throw webhookErr;
-        }
-      }
+      // Only the server may activate a subscription — a client-side "success" callback
+      // proves nothing until the signature is verified against the key secret. Verification
+      // is idempotent, so a transient failure is worth retrying before we give up.
+      const verified = await retry(3, () =>
+        verifyPayment({
+          razorpay_order_id: charged!.razorpay_order_id,
+          razorpay_payment_id: charged!.razorpay_payment_id,
+          razorpay_signature: charged!.razorpay_signature,
+        }).unwrap(),
+      );
 
-      Alert.alert("Payment Successful", `Your subscription is now active!`, [
-        { text: "OK", onPress: () => router.replace("/(tabs)") },
-      ]);
+      // Unlock gated features immediately. Without this the tier stays whatever it was when
+      // the app started (usually "free"), so a just-purchased plan still reads as locked
+      // until the next full app relaunch.
+      dispatch(setTier(verified.tier));
+
+      router.replace("/(tabs)");
     } catch (err) {
-      console.error(err);
-      Alert.alert("Checkout failed", "Could not complete checkout and payment.");
+      setIsPaying(false);
+
+      if (err instanceof RazorpayCancelledError) {
+        setError("Payment cancelled. You have not been charged.");
+        return;
+      }
+
+      if (charged) {
+        // Charged, but we couldn't confirm it. Razorpay's webhook is the backstop and will
+        // still activate the subscription, so the one thing we must not do is invite a retry.
+        setError(
+          `Your payment went through, but we couldn't confirm it just yet. Do not pay again — ` +
+            `your subscription will activate shortly. If it doesn't, contact support with ` +
+            `payment ID ${charged.razorpay_payment_id}.`,
+        );
+        return;
+      }
+
+      setError(getApiErrorMessage(err, "We couldn't complete your payment. Please try again."));
     }
   };
 
@@ -164,12 +186,7 @@ export function CheckoutScreen() {
           </View>
 
           <View className="mt-2">
-            {[
-              "Unlimited access to all courses",
-              "Download courses for offline learning",
-              "Access to exclusive content",
-              "Certificate upon completion",
-            ].map((b) => (
+            {(plan.benefits_json ?? []).map((b) => (
               <View key={b} className="flex-row items-center mt-2.5">
                 <Feather name="check" size={14} color="#3b82f6" />
                 <Text className={`text-sm ml-3 ${isDark ? "text-slate-300" : "text-slate-600"}`}>
@@ -187,43 +204,31 @@ export function CheckoutScreen() {
           You can directly pay through any online payment method.
         </Text>
 
-        {/* Vertical Payment Methods */}
+        {/* Razorpay is the only provider with a backend integration. */}
         <View className="mb-8">
-          {[
-            { id: "razorpay" as const, name: "Razorpay (UPI, Cards)", icon: "smartphone" as const },
-            { id: "stripe" as const, name: "Stripe (International)", icon: "credit-card" as const },
-            { id: "mock" as const, name: "Test Payment (Mock)", icon: "code" as const },
-          ].map((m) => {
-            const isSel = method === m.id;
-            return (
-              <Pressable
-                key={m.id}
-                onPress={() => setMethod(m.id)}
-                className={`flex-row items-center justify-between p-4 mb-3 rounded-2xl border ${
-                  isSel
-                    ? isDark
-                      ? "bg-slate-700 border-slate-500"
-                      : "bg-white border-blue-500 shadow-sm"
-                    : isDark
-                      ? "bg-slate-800 border-slate-700"
-                      : "bg-slate-50 border-transparent"
-                }`}
-              >
-                <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-                    <Feather name={m.icon} size={16} color="#333" />
-                  </View>
-                  <Text
-                    className={`font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}
-                  >
-                    {m.name}
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={18} color={isDark ? "#94a3b8" : "#cbd5e1"} />
-              </Pressable>
-            );
-          })}
+          <View
+            className={`flex-row items-center justify-between p-4 rounded-2xl border ${
+              isDark ? "bg-slate-700 border-slate-500" : "bg-white border-blue-500 shadow-sm"
+            }`}
+          >
+            <View className="flex-row items-center">
+              <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
+                <Feather name="smartphone" size={16} color="#333" />
+              </View>
+              <Text className={`font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>
+                Razorpay (UPI, Cards, Netbanking)
+              </Text>
+            </View>
+            <Feather name="check-circle" size={18} color="#3b82f6" />
+          </View>
         </View>
+
+        {error && (
+          <View className="flex-row items-start p-4 mb-4 rounded-2xl bg-red-50 border border-red-200">
+            <Feather name="alert-circle" size={16} color="#dc2626" />
+            <Text className="text-red-700 text-sm ml-3 flex-1">{error}</Text>
+          </View>
+        )}
 
         <Pressable
           onPress={handlePay}
@@ -233,7 +238,7 @@ export function CheckoutScreen() {
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text className="text-white font-bold text-lg">Pay Now</Text>
+            <Text className="text-white font-bold text-lg">Pay {formatINR(plan.price_inr)}</Text>
           )}
         </Pressable>
 

@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
   Linking,
   ScrollView,
   Share,
@@ -20,6 +19,7 @@ import {
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { showAlert } from "@/utils/alert";
 
 interface ResumeExportViewProps {
   onBack: () => void;
@@ -62,7 +62,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
       const err = error as Record<string, unknown>;
       const errorData = err?.data as Record<string, unknown> | undefined;
       const errorDetail = errorData?.detail || errorData?.message || JSON.stringify(err);
-      Alert.alert("Export Failed", `Failed to generate your resume. Details: ${errorDetail}`);
+      showAlert("Export Failed", `Failed to generate your resume. Details: ${errorDetail}`);
       return null;
     } finally {
       setIsProcessing(false);

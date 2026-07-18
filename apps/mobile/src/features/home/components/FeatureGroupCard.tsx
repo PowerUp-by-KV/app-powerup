@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -7,6 +7,7 @@ interface SubItem {
   title: string;
   subtitle: string;
   onPress: () => void;
+  locked?: boolean;
 }
 
 interface FeatureGroupCardProps {
@@ -53,7 +54,10 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
           <Pressable
             key={i}
             onPress={item.onPress}
-            style={{ marginBottom: i === items.length - 1 ? 0 : 12 }}
+            style={[
+              { marginBottom: i === items.length - 1 ? 0 : 12 },
+              item.locked && styles.itemPressableLocked,
+            ]}
             className="flex-row items-center p-4 bg-[#f8fafc] dark:bg-[#202029] border border-slate-100/50 dark:border-[#2d2d3a] rounded-[16px] active:scale-[0.98] shadow-sm shadow-slate-100/20 dark:shadow-none"
           >
             <View className="flex-1 pr-3">
@@ -64,8 +68,19 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
                 {item.subtitle}
               </Text>
             </View>
-            <View className="bg-[#bef264] w-8 h-8 rounded-full items-center justify-center shadow-sm shadow-[#bef264]/20">
-              <Feather name="chevron-right" size={18} color="#1a202c" />
+            <View
+              style={item.locked ? styles.lockContainer : undefined}
+              className={
+                item.locked
+                  ? undefined
+                  : "bg-[#bef264] w-8 h-8 rounded-full items-center justify-center shadow-sm shadow-[#bef264]/20"
+              }
+            >
+              <Feather
+                name={item.locked ? "lock" : "chevron-right"}
+                size={18}
+                color={item.locked ? "#94A3B8" : "#1a202c"}
+              />
             </View>
           </Pressable>
         ))}
@@ -73,3 +88,17 @@ export function FeatureGroupCard({ title, subtitle, icon, items }: FeatureGroupC
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  itemPressableLocked: {
+    opacity: 0.7,
+  },
+  lockContainer: {
+    backgroundColor: "#F1F5F9",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

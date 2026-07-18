@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
@@ -30,6 +29,7 @@ import LottieView from "lottie-react-native";
 import { OfflineGameView } from "@/components/OfflineGameView";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 interface ReadingScreenProps {
   sessionId?: string;
@@ -235,13 +235,13 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       console.error("A_READING submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
 
   const handleNext = () => {
     if (!currentAnswer) {
-      Alert.alert("Answer Required", "Please select or type an answer before proceeding.");
+      showAlert("Answer Required", "Please select or type an answer before proceeding.");
       return;
     }
 
@@ -364,7 +364,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               <ActivityIndicator color="white" />
             ) : (
               <Text className="text-white font-bold text-base">
-                {isLastQuestion ? "Check Answers" : "Next Question"}
+                {isLastQuestion ? "Next Section" : "Next Question"}
               </Text>
             )}
           </TouchableOpacity>
@@ -379,12 +379,12 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
-              style={{ width: 40, height: 40 }}
+              style={{ width: 140, height: 140 }}
             />
-            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+            <Text className="text-slate-800 dark:text-white font-bold text-lg mt-4 text-center">
               Submitting Answers…
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-2 text-center px-4">
               Please wait, do not close the app
             </Text>
           </View>

@@ -29,13 +29,6 @@ interface SpeakingActivityProps {
   onComplete: (result: SpeakingActivityResult) => void;
 }
 
-interface Breakdown {
-  fluency?: number;
-  vocab?: number;
-  grammar?: number;
-  feedback?: string;
-}
-
 // 32 robust preset heights for a full soundwave with no silent dots
 const WAVEFORM_BARS = [
   12, 16, 22, 18, 26, 32, 40, 36, 44, 48, 42, 30, 24, 28, 36, 44, 50, 46, 38, 32, 24, 20, 26, 32,
@@ -48,7 +41,8 @@ const WAVEFORM_BARS = [
 export function SpeakingActivity({ activity, questions, onComplete }: SpeakingActivityProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-  const prompt = questions[0];
+  const speakingQuestion = questions.find((q) => q.question_type === "speaking") || questions[0];
+  const prompt = speakingQuestion;
 
   const questionText =
     typeof prompt?.question_text === "object" && prompt?.question_text !== null
@@ -103,12 +97,6 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [scoreView, setScoreView] = useState<{
-    score: number;
-    passed: boolean;
-    feedback?: string;
-    breakdown: Breakdown;
-  } | null>(null);
 
   const [submitSpeaking] = useSubmitSpeakingAnswerMutation();
 
@@ -333,185 +321,16 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
         } as unknown as Blob);
       }
 
-      const res = await submitSpeaking(form).unwrap();
-      const score = Number(res?.score ?? 0);
-      const passed = res?.passed ?? score >= 60;
-      const breakdown: Breakdown =
-        (res as unknown as { score_breakdown?: Breakdown }).score_breakdown ?? {};
-      const feedback =
-        ((res as unknown as Record<string, unknown>)?.feedback as string) ??
-        breakdown?.feedback ??
-        "";
-      setScoreView({ score, passed, feedback, breakdown });
+      // Await the main AI audio scoring query so the server registers the response
+      await submitSpeaking(form).unwrap();
+
+      onComplete({ passed: true, score: 0 });
     } catch {
       setError("Scoring failed. Tap retry to send again.");
     } finally {
       setSubmitting(false);
     }
   };
-
-  if (scoreView) {
-    const getCategoryDetails = (key: string, value: number) => {
-      switch (key.toLowerCase()) {
-        case "relevance":
-          return {
-            label: "Relevance & Content",
-            max: 3.0,
-            formatted: `${value} / 3.0`,
-            pct: (value / 3.0) * 100,
-          };
-        case "fluency":
-          if (value <= 2.0) {
-            return {
-              label: "Fluency & Coherence",
-              max: 2.0,
-              formatted: `${value} / 2.0`,
-              pct: (value / 2.0) * 100,
-            };
-          } else {
-            return { label: "Fluency", max: 100, formatted: `${Math.round(value)}%`, pct: value };
-          }
-        case "vocab":
-          return {
-            label: "Vocabulary",
-            max: 1.5,
-            formatted: `${value} / 1.5`,
-            pct: (value / 1.5) * 100,
-          };
-        case "grammar":
-          return {
-            label: "Grammar",
-            max: 1.0,
-            formatted: `${value} / 1.0`,
-            pct: (value / 1.0) * 100,
-          };
-        case "accuracy":
-          return { label: "Accuracy", max: 100, formatted: `${Math.round(value)}%`, pct: value };
-        case "consistency":
-          return { label: "Consistency", max: 100, formatted: `${Math.round(value)}%`, pct: value };
-        default:
-          return {
-            label: key.charAt(0).toUpperCase() + key.slice(1),
-            max: 100,
-            formatted: `${value}`,
-            pct: value,
-          };
-      }
-    };
-
-    return (
-      <ScrollView
-        style={[
-          { flex: 1 },
-          Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
-        ]}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
-      >
-        <Text className="text-slate-900 dark:text-white text-xl font-bold mb-2">
-          Your speaking score
-        </Text>
-        <Text
-          style={{
-            fontSize: 48,
-            fontWeight: "800",
-            color: scoreView.passed ? "#16a34a" : "#dc2626",
-          }}
-        >
-          {scoreView.score}
-        </Text>
-        <Text className="text-slate-500 dark:text-zinc-400 mb-2">
-          {scoreView.passed ? "Great work — you passed." : "Below 60% — try again for the bonus."}
-        </Text>
-        {scoreView.feedback ? (
-          <Text
-            style={{
-              color: isDark ? "#cbd5e1" : "#475569",
-              marginTop: 8,
-              marginBottom: 16,
-              fontSize: 15,
-              lineHeight: 22,
-            }}
-          >
-            {scoreView.feedback}
-          </Text>
-        ) : null}
-
-        <View style={{ width: "100%", maxWidth: 400, marginTop: 16 }}>
-          {Object.entries(scoreView.breakdown).map(([k, v]) => {
-            if (k === "feedback" || k === "transcript" || k === "error" || typeof v !== "number")
-              return null;
-            const details = getCategoryDetails(k, v);
-            return (
-              <View key={k} style={{ marginBottom: 14 }}>
-                <View
-                  style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}
-                >
-                  <Text
-                    style={{
-                      color: isDark ? "#e2e8f0" : "#334155",
-                      fontWeight: "600",
-                      fontSize: 14,
-                    }}
-                  >
-                    {details.label}
-                  </Text>
-                  <Text
-                    style={{
-                      color: isDark ? "#ffffff" : "#0f172a",
-                      fontWeight: "600",
-                      fontSize: 14,
-                    }}
-                  >
-                    {details.formatted}
-                  </Text>
-                </View>
-                <View
-                  style={{
-                    height: 6,
-                    backgroundColor: isDark ? "#3f3f46" : "#e2e8f0",
-                    borderRadius: 3,
-                    width: "100%",
-                    overflow: "hidden",
-                  }}
-                >
-                  <View
-                    style={{
-                      height: "100%",
-                      width: `${Math.max(0, Math.min(100, details.pct))}%`,
-                      backgroundColor: scoreView.passed ? "#16a34a" : "#dc2626",
-                      borderRadius: 3,
-                    }}
-                  />
-                </View>
-              </View>
-            );
-          })}
-        </View>
-
-        <Pressable
-          onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={{
-            marginTop: 24,
-            borderRadius: 10,
-            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
-          }}
-        >
-          {({ pressed }) => (
-            <View
-              style={{
-                backgroundColor: pressed ? "#2563eb" : "#3b82f6",
-                paddingVertical: 14,
-                borderRadius: 10,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
-            </View>
-          )}
-        </Pressable>
-      </ScrollView>
-    );
-  }
 
   return (
     <ScrollView
@@ -521,7 +340,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
       ]}
       contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
     >
-      <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+      <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2">
         Speaking
       </Text>
 
@@ -529,9 +348,9 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
         style={{
           flexDirection: "row",
           alignItems: "center",
-          backgroundColor: isDark ? "#1E1F2A" : "#eff6ff",
+          backgroundColor: isDark ? "#1e293b" : "#eff6ff",
           borderWidth: 1,
-          borderColor: isDark ? "#2d2d3a" : "#bfdbfe",
+          borderColor: isDark ? "#334155" : "#bfdbfe",
           borderRadius: 12,
           padding: 12,
           marginBottom: 20,
@@ -547,14 +366,13 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
             lineHeight: 18,
           }}
         >
-          {isReadAloud
-            ? "Practice speaking the conversation dialogue below. Tap the microphone and read it out loud."
-            : "Practice speaking your response. Tap the microphone and record your answer."}
+          Practice speaking the conversation dialogue below. Tap the microphone and read it out
+          loud.
         </Text>
       </View>
 
-      <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-4">
-        {questionText}
+      <Text className="text-slate-900 dark:text-slate-100 text-lg font-bold mb-4">
+        {prompt?.question_text ?? ""}
       </Text>
 
       {isReadAloud && cleanedTextToRead ? (
@@ -571,29 +389,20 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
       {(prompt?.criteria ?? []).length > 0 ? (
         <View
           style={{
-            backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
-            borderWidth: isDark ? 1 : 0,
-            borderColor: isDark ? "#2d2d3a" : "transparent",
+            backgroundColor: isDark ? "#1e1f2a" : "#f8fafc",
             borderRadius: 10,
             padding: 14,
             marginBottom: 24,
           }}
         >
-          <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+          <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2">
             You'll be scored on
           </Text>
-          {(prompt?.criteria ?? []).map((c, i) => {
-            const obj = c as unknown as Record<string, unknown>;
-            const textVal =
-              typeof c === "object" && c !== null
-                ? String(obj.text || obj.name || JSON.stringify(c))
-                : String(c);
-            return (
-              <Text key={i} style={{ color: isDark ? "#cbd5e1" : "#475569", marginBottom: 4 }}>
-                • {textVal}
-              </Text>
-            );
-          })}
+          {(prompt?.criteria ?? []).map((c, i) => (
+            <Text key={i} style={{ color: isDark ? "#cbd5e1" : "#475569", marginBottom: 4 }}>
+              • {c}
+            </Text>
+          ))}
         </View>
       ) : null}
 
@@ -601,7 +410,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
         {submitting ? (
           <View style={{ alignItems: "center" }}>
             <ActivityIndicator size="large" color="#3b82f6" />
-            <Text style={{ marginTop: 12, color: isDark ? "#94a3b8" : "#475569" }}>
+            <Text style={{ marginTop: 12, color: isDark ? "#cbd5e1" : "#475569" }}>
               Analyzing your answer…
             </Text>
           </View>
@@ -658,7 +467,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
             <Text
               style={{
                 fontSize: 13,
-                color: isDark ? "#e2e8f0" : "#475569",
+                color: isDark ? "#cbd5e1" : "#475569",
                 fontWeight: "600",
                 marginBottom: 16,
               }}
@@ -710,7 +519,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                 <Text
                   style={{
                     fontSize: 12,
-                    color: isDark ? "#94a3b8" : "#475569",
+                    color: isDark ? "#cbd5e1" : "#475569",
                     fontWeight: "600",
                     marginTop: 8,
                   }}
@@ -740,7 +549,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                 <Text
                   style={{
                     fontSize: 12,
-                    color: isDark ? "#94a3b8" : "#475569",
+                    color: isDark ? "#cbd5e1" : "#475569",
                     fontWeight: "600",
                     marginTop: 8,
                   }}
@@ -810,7 +619,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
                 </View>
               )}
             </Pressable>
-            <Text style={{ marginTop: 12, color: isDark ? "#94a3b8" : "#64748b" }}>
+            <Text style={{ marginTop: 12, color: "#64748b" }}>
               {isRecording ? `Recording… ${elapsed}s — tap to stop` : "Tap to record"}
             </Text>
           </>

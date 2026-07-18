@@ -1,18 +1,11 @@
 import React, { useState } from "react";
-import {
-  View,
-  Pressable,
-  ActivityIndicator,
-  Image,
-  Alert,
-  StyleSheet,
-  Platform,
-} from "react-native";
+import { View, Pressable, ActivityIndicator, Image, StyleSheet, Platform } from "react-native";
 import { Text } from "@/components/Themed";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useUploadBuiltResumePhotoMutation } from "@/services/resume-builder-api";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { showAlert } from "@/utils/alert";
 
 interface PhotoUploaderProps {
   photoUrl?: string | null;
@@ -42,7 +35,7 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
 
       // Validate maximum file size (5MB)
       if (fileSize > 5 * 1024 * 1024) {
-        Alert.alert("File Too Large", "Photo must not exceed 5MB in size.");
+        showAlert("File Too Large", "Photo must not exceed 5MB in size.");
         return;
       }
 
@@ -54,7 +47,7 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
         mime.includes("image/jpg") ||
         asset.name.match(/\.(jpe?g|png)$/i);
       if (!isImage) {
-        Alert.alert("Invalid File", "Only JPEG/PNG profile photos are supported.");
+        showAlert("Invalid File", "Only JPEG/PNG profile photos are supported.");
         return;
       }
 
@@ -86,7 +79,7 @@ export function PhotoUploader({ photoUrl, onPhotoUploaded }: PhotoUploaderProps)
       }
     } catch (error) {
       console.error("Profile photo upload failed:", error);
-      Alert.alert("Upload Failed", "Failed to upload profile photo. Please try again.");
+      showAlert("Upload Failed", "Failed to upload profile photo. Please try again.");
       setLocalPreview(photoUrl || null);
     }
   };

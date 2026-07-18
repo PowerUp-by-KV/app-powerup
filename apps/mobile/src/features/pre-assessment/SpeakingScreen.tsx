@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Text,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +31,7 @@ import { Audio } from "expo-av";
 import { uploadAudioFile } from "@/services/audio-upload";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { pollAssessmentScoringStatus } from "@/utils/assessment-poll";
+import { showAlert } from "@/utils/alert";
 
 const getOptimizedRecordingSettings = (): any => {
   return {
@@ -170,7 +170,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (permission.status !== "granted") {
-        Alert.alert("Permission", "Microphone access is required.");
+        showAlert("Permission", "Microphone access is required.");
         return;
       }
 
@@ -190,7 +190,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
         setTimeLeft(maxDuration + 5);
       }
     } catch (err) {
-      Alert.alert("Failed to start recording", (err as Error).message);
+      showAlert("Failed to start recording", (err as Error).message);
     }
   }
 
@@ -217,7 +217,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             return sasUrl;
           })
           .catch((_err) => {
-            Alert.alert(
+            showAlert(
               "Upload Failed",
               "We had trouble uploading your audio. Please tap 'Retake' and try recording again.",
             );
@@ -320,21 +320,18 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const handleFinish = async () => {
     const qId = currentQuestion?.id;
     if (uploadingQuestions[qId]) {
-      Alert.alert("Uploading Audio", "Please wait for your last audio upload to complete.");
+      showAlert("Uploading Audio", "Please wait for your last audio upload to complete.");
       return;
     }
     if (!answers[qId]) {
-      Alert.alert(
-        "Upload Error",
-        "Last audio upload failed. Please tap 'Retake' and record again.",
-      );
+      showAlert("Upload Error", "Last audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 
     // Verify all questions have an answer
     const missingAny = questions.some((q) => !answers[q.id]);
     if (missingAny) {
-      Alert.alert(
+      showAlert(
         "Incomplete Answers",
         "Some of your recordings were not uploaded successfully. Please review and record them again.",
       );
@@ -378,7 +375,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       console.error("B_SPEAKING submission failed:", err);
       setIsFinished(false);
       const msg = getApiErrorMessage(err, "Could not submit answers.");
-      Alert.alert("Submission Failed", msg);
+      showAlert("Submission Failed", msg);
     }
   };
 
@@ -389,17 +386,17 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
     const qId = currentQuestion?.id;
     if (!hasRecorded[qId]) {
-      Alert.alert("Recording Required", "Please record your answer before proceeding.");
+      showAlert("Recording Required", "Please record your answer before proceeding.");
       return;
     }
 
     if (uploadingQuestions[qId]) {
-      Alert.alert("Uploading Audio", "Please wait for your audio upload to complete.");
+      showAlert("Uploading Audio", "Please wait for your audio upload to complete.");
       return;
     }
 
     if (!answers[qId]) {
-      Alert.alert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
+      showAlert("Upload Error", "Audio upload failed. Please tap 'Retake' and record again.");
       return;
     }
 
@@ -460,7 +457,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
               recordedDuration={currentLocalDuration}
               onRetake={handleRetake}
               onSubmit={handleNext}
-              submitButtonText={isLastQuestion ? "Check Answers" : "Next Question"}
+              submitButtonText={isLastQuestion ? "Next Section" : "Next Question"}
               isSubmitting={isSubmitting || (isLastQuestion && isAnyUploading)}
             />
           ) : (
@@ -494,12 +491,12 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
-              style={{ width: 40, height: 40 }}
+              style={{ width: 140, height: 140 }}
             />
-            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+            <Text className="text-slate-800 dark:text-white font-bold text-lg mt-4 text-center">
               Submitting Answers…
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-2 text-center px-4">
               Please wait, do not close the app
             </Text>
           </View>

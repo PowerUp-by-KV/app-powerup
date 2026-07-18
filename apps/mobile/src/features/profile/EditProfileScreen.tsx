@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -28,6 +27,7 @@ import {
 import { getApiErrorMessage } from "@/utils/error-message";
 import { ErrorMascot } from "@/components";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { showAlert } from "@/utils/alert";
 
 // Helper to parse multi-select answers
 const parseMultiSelect = (text: string): string[] => {
@@ -460,7 +460,7 @@ export function EditProfileScreen() {
               resumeErr?.status === "TIMEOUT" ||
               String(resumeErr?.message).includes("504")
             ) {
-              Alert.alert(
+              showAlert(
                 "Processing Resume",
                 "Your resume is being updated and compiled in the background. It will reflect on your profile shortly!",
               );
@@ -477,7 +477,7 @@ export function EditProfileScreen() {
       refetch();
       refetchResume();
     } catch (err) {
-      Alert.alert("Save failed", getApiErrorMessage(err, "Could not save your profile."));
+      showAlert("Save failed", getApiErrorMessage(err, "Could not save your profile."));
     }
   };
 

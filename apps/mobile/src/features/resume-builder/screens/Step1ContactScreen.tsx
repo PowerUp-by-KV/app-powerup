@@ -7,7 +7,6 @@ import {
   TextInput as RNTextInput,
   Modal,
   FlatList,
-  Alert,
   Platform,
   KeyboardAvoidingView,
 } from "react-native";
@@ -35,6 +34,7 @@ import { getLocationSuggestions, type LocationSuggestion } from "@/utils/locatio
 import { useAutoSave } from "../hooks/useAutoSave";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { showAlert } from "@/utils/alert";
 
 export function Step1ContactScreen() {
   const router = useRouter();
@@ -136,21 +136,14 @@ export function Step1ContactScreen() {
       router.replace("/resume" as never);
     };
 
-    if (Platform.OS === "web") {
-      // Alert.alert is a silent no-op on web — use window.confirm instead
-      if (window.confirm("Exit Resume Builder?\n\nYour progress is saved as a draft.")) {
-        performExit();
-      }
-    } else {
-      Alert.alert(
-        "Exit Resume Builder",
-        "Are you sure you want to exit? Your progress is saved as a draft.",
-        [
-          { text: "Continue Editing", style: "cancel" },
-          { text: "Exit", style: "destructive", onPress: performExit },
-        ],
-      );
-    }
+    showAlert(
+      "Exit Resume Builder",
+      "Are you sure you want to exit? Your progress is saved as a draft.",
+      [
+        { text: "Continue Editing", style: "cancel" },
+        { text: "Exit", style: "destructive", onPress: performExit },
+      ],
+    );
   };
 
   // Hook up debounced auto-save

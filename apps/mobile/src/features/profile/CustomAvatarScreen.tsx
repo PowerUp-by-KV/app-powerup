@@ -6,13 +6,13 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
-  Alert,
   Platform,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { usePatchProfileMutation, useGetProfileQuery } from "@/services/auth-api";
+import { showAlert } from "@/utils/alert";
 
 // Options for the Adventurer DiceBear style
 const SKIN_COLORS = [
@@ -133,7 +133,7 @@ export function CustomAvatarScreen() {
       await patch({ avatar_id: avatarId }).unwrap();
       safeBack();
     } catch {
-      Alert.alert("Error", "Could not save avatar. Please try again.");
+      showAlert("Error", "Could not save avatar. Please try again.");
     }
   };
 

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Modal, Alert, Platform } from "react-native";
+import { View, Text, TouchableOpacity, Modal, Platform } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -10,6 +10,7 @@ import {
   saveAssessmentElapsedTime,
 } from "@/services/auth-storage";
 import { useGetAssessmentStatusQuery } from "@/services/assessment-api";
+import { showAlert } from "@/utils/alert";
 
 export type SectionCode =
   | "A_READING"
@@ -118,7 +119,7 @@ export function AssessmentHeader({
       return;
     }
 
-    Alert.alert(
+    showAlert(
       "Exit Assessment",
       "Are you sure you want to exit the assessment? You can resume it later from where you left off.",
       [

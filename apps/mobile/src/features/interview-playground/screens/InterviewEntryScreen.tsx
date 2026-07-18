@@ -7,10 +7,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
 import { useGetProfileResumeQuery } from "@/services/resume-api";
+import { usePlanTier } from "@/hooks/usePlanTier";
 import type { InterviewSessionSummary } from "../types";
 import { ConnectionBadge } from "../components/ConnectionBadge";
 import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
 import { useColorScheme } from "nativewind";
+import { PaywallScreen } from "@/features/subscription/PaywallScreen";
 
 function SessionItem({ item }: { item: InterviewSessionSummary }) {
   const { colorScheme } = useColorScheme();
@@ -41,7 +43,8 @@ function SessionItem({ item }: { item: InterviewSessionSummary }) {
   );
 }
 
-export function InterviewEntryScreen() {
+// Wrapper: handles tier routing internally so each hook can be conditionally used
+function WebRTCEntry() {
   const insets = useSafeAreaInsets();
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "playground",
@@ -134,6 +137,7 @@ export function InterviewEntryScreen() {
     >
       <ScrollView contentContainerStyle={styles.listContent}>
         {renderHeader()}
+
         {isLoadingSessions && <ActivityIndicator style={styles.loader} />}
         {(sessions ?? []).map((item) => (
           <SessionItem key={item.session_id} item={item} />
@@ -141,6 +145,71 @@ export function InterviewEntryScreen() {
       </ScrollView>
     </View>
   );
+}
+
+function PipelineEntry() {
+  const insets = useSafeAreaInsets();
+  const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
+
+  const hasResume = !!resume && resume.parse_status === "completed";
+
+  const handleStart = useCallback(() => {
+    router.push({
+      pathname: "/pipeline-interview-room" as never,
+      params: { mode: "playground" },
+    });
+  }, []);
+
+  return (
+    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <ScrollView contentContainerStyle={styles.listContent}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Interview Playground</Text>
+          <Text style={styles.subtitle}>Practice your interview with an AI interviewer</Text>
+
+          {!hasResume && !isLoadingResume && (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>
+                Upload your resume first so we can tailor the interview to your profile.
+              </Text>
+              <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
+                <Text style={styles.resumeLinkText}>Go to Resume</Text>
+              </Pressable>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.startButton, !hasResume && styles.startButtonDisabled]}
+            onPress={handleStart}
+            disabled={!hasResume}
+          >
+            <Text style={styles.startButtonText}>Start Interview</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+export function InterviewEntryScreen() {
+  const tier = usePlanTier();
+
+  if (tier === "free") {
+    return (
+      <PaywallScreen
+        requiredTier="pro"
+        featureName="Interview Playground"
+        onBack={() => router.back()}
+      />
+    );
+  }
+
+  if (tier === "pro") {
+    return <PipelineEntry />;
+  }
+
+  // premium
+  return <WebRTCEntry />;
 }
 
 const styles = StyleSheet.create({
@@ -237,17 +306,6 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     flex: 1,
   },
-  gradeBadge: {
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  gradeText: {
-    color: "#4F46E5",
-    fontSize: 13,
-    fontWeight: "700",
-  },
   sessionMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -256,11 +314,6 @@ const styles = StyleSheet.create({
   sessionDate: {
     fontSize: 12,
     color: "#94A3B8",
-  },
-  sessionScore: {
-    fontSize: 12,
-    color: "#64748B",
-    fontWeight: "600",
   },
   sessionRecapHint: {
     fontSize: 12,

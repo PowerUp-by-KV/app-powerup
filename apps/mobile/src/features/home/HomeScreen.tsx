@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Platform, Alert, Pressable, ScrollView, Text, View, Image } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { Feather } from "@expo/vector-icons";
@@ -17,6 +17,7 @@ import {
   useGetModulesQuery,
 } from "@/services/module-api";
 import { useGetResumeStatusQuery } from "@/services/resume-api";
+import { usePlanTier } from "@/hooks/usePlanTier";
 
 export interface CombinedModuleDay extends ModuleDay {
   module_no: number;
@@ -30,6 +31,7 @@ import { ContinueLearningCard } from "./components/ContinueLearningCard";
 import { FeatureGroupCard } from "./components/FeatureGroupCard";
 import { ChatFab } from "./components/ChatFab";
 import { VerifyEmailBanner } from "./components/VerifyEmailBanner";
+import { showAlert } from "@/utils/alert";
 
 const PROGRESSION_WAVES = [
   { wave: 1, modules: [1, 5, 9], days: [1, 2, 3, 4, 5, 6] },
@@ -45,12 +47,13 @@ const PROGRESSION_WAVES = [
 export function HomeScreen() {
   const router = useRouter();
   const { isDark, toggleTheme } = useThemeToggle();
-  const { data: profile } = useGetProfileQuery();
+  const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
+  const tier = usePlanTier();
   const insets = useSafeAreaInsets();
 
-  const { data: modulesData } = useGetModulesQuery(undefined, {
+  const { data: modulesData, isLoading: isModulesLoading } = useGetModulesQuery(undefined, {
     skip: !gate.canEnter,
   });
 
@@ -166,6 +169,18 @@ export function HomeScreen() {
 
   const firstName = profile?.name?.split(" ")[0] || "there";
 
+  // The dashboard's numbers come from two sources: profile (streaks/badges/xp) and the
+  // per-module day data (days completed). Treat the card as loading until both are in, so it
+  // renders a skeleton rather than zeros that snap to real values a beat later. Derive the
+  // day-loading state from what has actually resolved rather than a manual flag: a flag set
+  // in an effect gets stuck on skeleton forever when there are no modules or the modules
+  // query fails (the effect returns early without clearing it).
+  const isDaysLoading =
+    gate.canEnter &&
+    (isModulesLoading ||
+      ((modulesData?.length ?? 0) > 0 && Object.keys(moduleDaysData).length === 0));
+  const isDashboardLoading = isProfileLoading || isDaysLoading;
+
   const handleContinuePress = () => {
     if (!gate.canEnter) {
       if (gate.blockedReason === "onboarding") {
@@ -207,7 +222,7 @@ export function HomeScreen() {
           router.push("/onboarding-resume" as never);
         }
       } else {
-        Alert.alert(
+        showAlert(
           "Resume Required",
           "Your resume is not uploaded. To enable this feature, please upload your resume.",
           [
@@ -240,55 +255,66 @@ export function HomeScreen() {
         style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: 0 }}
       />
       <View style={{ flex: 1, paddingTop: insets.top }} className="flex-1">
+        {/* Top Header greeting with avatar - FIXED AT TOP */}
+        <View
+          style={{
+            paddingHorizontal: 20,
+            paddingTop: 16,
+            paddingBottom: 12,
+            borderBottomWidth: 1,
+            borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+          }}
+          className="flex-row items-center justify-between"
+        >
+          <View>
+            <Text className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              <Text className="text-[#4f46e5] dark:text-[#3b82f6]">Hi, </Text>
+              <Text className="text-[#94a3b8] dark:text-[#bef264]">
+                {(firstName?.toUpperCase() || "").slice(0, 2)}
+              </Text>
+              <Text className="text-[#84cc16] dark:text-[#bef264]">
+                {(firstName?.toUpperCase() || "").slice(2)}!
+              </Text>
+            </Text>
+            <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1 font-semibold">
+              Ready to learn something new?
+            </Text>
+          </View>
+          <View className="flex-row items-center" style={{ gap: 12 }}>
+            <Pressable
+              onPress={() => toggleTheme()}
+              className={`w-10 h-10 rounded-full items-center justify-center ${
+                isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
+              }`}
+            >
+              <Feather
+                name={isDark ? "sun" : "moon"}
+                size={18}
+                color={isDark ? "#f8fafc" : "#1e293b"}
+              />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push("/profile" as never)}
+              className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"
+            >
+              <View className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-900 items-center justify-center overflow-hidden">
+                <Image
+                  source={{
+                    uri: getAvatarUri(profile?.avatar_id, profile?.id),
+                  }}
+                  className="w-full h-full"
+                />
+              </View>
+            </Pressable>
+          </View>
+        </View>
+
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120, paddingTop: 16 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="flex-row items-center justify-between mb-6">
-            <View>
-              <Text className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-                <Text className="text-[#4f46e5] dark:text-[#3b82f6]">Hi, </Text>
-                <Text className="text-[#94a3b8] dark:text-[#bef264]">
-                  {(firstName?.toUpperCase() || "").slice(0, 2)}
-                </Text>
-                <Text className="text-[#84cc16] dark:text-[#bef264]">
-                  {(firstName?.toUpperCase() || "").slice(2)}!
-                </Text>
-              </Text>
-              <Text className="text-slate-400 dark:text-slate-500 text-sm mt-1 font-semibold">
-                Ready to learn something new?
-              </Text>
-            </View>
-            <View className="flex-row items-center" style={{ gap: 12 }}>
-              <Pressable
-                onPress={() => toggleTheme()}
-                className={`w-10 h-10 rounded-full items-center justify-center ${
-                  isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
-                }`}
-              >
-                <Feather
-                  name={isDark ? "sun" : "moon"}
-                  size={18}
-                  color={isDark ? "#f8fafc" : "#1e293b"}
-                />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push("/profile" as never)}
-                className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"
-              >
-                <View className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-slate-900 items-center justify-center overflow-hidden">
-                  <Image
-                    source={{
-                      uri: getAvatarUri(profile?.avatar_id, profile?.id),
-                    }}
-                    className="w-full h-full"
-                  />
-                </View>
-              </Pressable>
-            </View>
-          </View>
           {profile && profile.email_verified === false && (
             <VerifyEmailBanner email={profile.email} />
           )}
@@ -301,7 +327,8 @@ export function HomeScreen() {
             xpPoints={profile?.total_xp ?? 0}
             daysCompleted={daysCompleted}
             totalDays={totalDays}
-            onTrack={() => router.push("/(tabs)/achievements" as never)}
+            isLoading={isDashboardLoading}
+            onTrack={() => router.push("/(tabs)/my-learning" as never)}
           />
 
           <View className="flex-row justify-between items-center mb-3 mt-1">
@@ -328,12 +355,20 @@ export function HomeScreen() {
             items={[
               {
                 title: "Interview Playground",
-                subtitle: "Try, learn and improve — No pressure",
+                subtitle:
+                  tier === "free"
+                    ? "Upgrade to Pro to unlock"
+                    : "Try, learn and improve — No pressure",
+                locked: tier === "free",
                 onPress: () => router.push("/interview-playground" as never),
               },
               {
                 title: "Interview Buddy",
-                subtitle: "Practice with a buddy before it counts",
+                subtitle:
+                  tier === "free"
+                    ? "Upgrade to Pro to unlock"
+                    : "Practice with a buddy before it counts",
+                locked: tier === "free",
                 onPress: () => router.push("/ai-interview" as never),
               },
             ]}

@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { OnboardingQuestion } from "@/services/onboarding-api";
 import * as DocumentPicker from "expo-document-picker";
 import { Feather } from "@expo/vector-icons";
 import { DatePicker } from "./DatePicker";
 import { Dropdown } from "./Dropdown";
+import { showAlert } from "@/utils/alert";
 
 const COMMON_LANGUAGES = [
   "Hindi",
@@ -235,12 +236,13 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
                     const sizeMB = (asset.size || 0) / (1024 * 1024);
 
                     if (sizeMB > 10) {
-                      Alert.alert("File too large", "Please upload a resume smaller than 10MB");
+                      showAlert("File too large", "Please upload a resume smaller than 10MB");
                       return;
                     }
 
                     onInputChange(question_key, asset.uri);
                     onInputChange(`${question_key}Name`, asset.name);
+                    onInputChange(`${question_key}Type`, asset.mimeType ?? "application/pdf");
                   }
                 } catch {
                   // silently ignore file picker errors

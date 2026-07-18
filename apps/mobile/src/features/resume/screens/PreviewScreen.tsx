@@ -7,7 +7,6 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   Platform,
   Modal,
@@ -32,6 +31,7 @@ import { useState, useEffect, useRef } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as SecureStore from "expo-secure-store";
 import { ApiErrorHandler } from "@/services/error-handler";
+import { showAlert } from "@/utils/alert";
 
 const getErrorStatus = (error: unknown) => {
   if (typeof error !== "object" || error === null || !("status" in error)) {
@@ -109,13 +109,13 @@ export function PreviewScreen() {
       console.log("Starting save process...");
       if (!validateForm()) {
         console.warn("Validation failed before save");
-        Alert.alert("Validation Error", "Please fill in all required fields.");
+        showAlert("Validation Error", "Please fill in all required fields.");
         return;
       }
 
       if (!userId) {
         console.warn("No user ID found before save");
-        Alert.alert(
+        showAlert(
           "Unable to Save",
           "No uploaded resume was found for this session. Please upload your resume before saving changes.",
         );
@@ -148,7 +148,7 @@ export function PreviewScreen() {
       const errorMessage = parsedError.userMessage || "Failed to save resume. Please try again.";
 
       dispatch(setError(errorMessage));
-      Alert.alert("Save Failed", errorMessage);
+      showAlert("Save Failed", errorMessage);
     } finally {
       console.log("Save process finished, resetting saving state.");
       dispatch(setIsSaving(false));
@@ -158,7 +158,7 @@ export function PreviewScreen() {
 
   const executeDelete = async () => {
     if (!userId) {
-      Alert.alert(
+      showAlert(
         "Unable to Delete",
         "No uploaded resume was found for this session. Please upload your resume before deleting it.",
       );
@@ -198,7 +198,7 @@ export function PreviewScreen() {
         const parsedError = ApiErrorHandler.parseError(error, "delete");
         const errorMessage = parsedError.userMessage || "Failed to delete resume.";
         dispatch(setError(errorMessage));
-        Alert.alert("Delete Failed", errorMessage);
+        showAlert("Delete Failed", errorMessage);
       }
     } finally {
       setIsDeletingLocal(false);

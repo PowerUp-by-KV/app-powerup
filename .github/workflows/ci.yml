@@ -1,10 +1,13 @@
 name: CI
 
+# The working branch here is `development`, but the triggers below only ever named `dev`.
+# Feature work lands on `development` first, so every PR in that lane merged with no checks
+# at all — CI only woke up once code had already reached qa. Name both.
 on:
   push:
-    branches: [main, qa]
+    branches: [main, qa, development, dev]
   pull_request:
-    branches: [main, qa, dev]
+    branches: [main, qa, development, dev]
   # Manual trigger: lets you queue an EAS Android build on demand from the
   # Actions tab without pushing/merging.
   workflow_dispatch:
@@ -95,5 +98,5 @@ jobs:
       - name: Summary
         run: |
           echo "Android preview build queued on EAS." >> $GITHUB_STEP_SUMMARY
-          echo "Track at https://expo.dev/accounts/deepakdev6055/projects/powerup/builds" >> $GITHUB_STEP_SUMMARY
+          echo "Track at https://expo.dev/accounts/komalvardhanlolugu-team/projects/memora/builds" >> $GITHUB_STEP_SUMMARY
           echo "You will get an email when the APK is ready." >> $GITHUB_STEP_SUMMARY

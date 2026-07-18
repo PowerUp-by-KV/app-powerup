@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,6 +22,7 @@ import {
   Contact,
   Summary,
 } from "@/services/resume-api";
+import { showAlert } from "@/utils/alert";
 
 interface ExtendedResume extends Omit<ResumeRead, "contact"> {
   parsed_data?: ResumeParsedData;
@@ -102,12 +102,12 @@ export function ProfileResumeScreen() {
       };
 
       await updateProfileResume(updatePayload).unwrap();
-      Alert.alert("Success", "Your resume details have been updated successfully!");
+      showAlert("Success", "Your resume details have been updated successfully!");
       setActiveTab("view");
       refetch();
     } catch (err) {
       console.error("Failed to update profile resume:", err);
-      Alert.alert("Update Failed", "Could not update your resume details. Please try again.");
+      showAlert("Update Failed", "Could not update your resume details. Please try again.");
     }
   };
 

@@ -1,10 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
-
-import type { ActivityQuestion } from "@powerup/shared";
-
 import { useColorScheme } from "nativewind";
+import { Feather } from "@expo/vector-icons";
+import type { Activity, ActivityQuestion } from "@powerup/shared";
 
 import { AnswerResultSheet } from "./AnswerResultSheet";
 import { SpeedMatchingGame } from "./SpeedMatchingGame";
@@ -16,7 +14,27 @@ export interface McqActivityResult {
   score: number;
 }
 
+export const MCQ_PASS_THRESHOLD = 70;
+
+/**
+ * Score an activity from a per-question correctness map.
+ */
+export function scoreMcqActivity(
+  correctByIndex: Record<number, boolean>,
+  questionCount: number,
+): { score: number; passed: boolean; totalCorrect: number } {
+  const totalCorrect = Math.min(
+    Object.values(correctByIndex).filter(Boolean).length,
+    questionCount,
+  );
+  const score =
+    questionCount > 0 ? Math.min(100, Math.round((totalCorrect / questionCount) * 100)) : 0;
+
+  return { score, passed: score >= MCQ_PASS_THRESHOLD, totalCorrect };
+}
+
 interface McqActivityProps {
+  activity?: Activity;
   /** Questions to ask in order. Non-MCQ entries are filtered out. */
   questions: ActivityQuestion[];
   /** Called once when the last question's result sheet is dismissed. */
@@ -31,29 +49,39 @@ function asOption(opt: unknown): { id: string; text: string } {
   return { id: o.id ?? o.text ?? "", text: o.text ?? o.id ?? "" };
 }
 
-function normalize(str: string): string {
-  return str.toLowerCase().replace(/→/g, "->").replace(/\s+/g, " ").trim();
-}
-
 // Helper to check if an option matches the correct answer
 function isMatch(opt: { id: string; text: string }, index: number, correctAnswer: string): boolean {
-  const optId = normalize(opt.id);
-  const optText = normalize(opt.text);
-  const ans = normalize(correctAnswer);
+  const optId = opt.id.trim().toUpperCase();
+  const optText = opt.text.trim().toLowerCase();
+  const ans = correctAnswer.trim();
+  const ansUpper = ans.toUpperCase();
+  const ansLower = ans.toLowerCase();
 
-  if (optId === ans || optText === ans) return true;
+  // 1. Direct match on Option ID or Option Text
+  if (optId === ansUpper) return true;
+  if (optText === ansLower) return true;
 
-  const letter = String.fromCharCode(65 + index).toLowerCase();
-  if (ans === letter) return true;
+  const letter = String.fromCharCode(65 + index); // "A", "B", etc.
+  if (ansUpper === letter) return true;
 
-  // Check if answer starts with letter prefix (e.g. "c: ...", "c. ...", "c) ...")
-  const prefixes = [`${letter}:`, `${letter}.`, `${letter})`];
-  for (const prefix of prefixes) {
-    if (ans.startsWith(prefix)) {
-      const remaining = ans.substring(prefix.length).trim();
-      if (remaining === optId || remaining === optText) return true;
+  // 2. Prefix matches (e.g. correct_answer is "B: text" or option starts with letter)
+  if (
+    ansUpper.startsWith(`${letter}:`) ||
+    ansUpper.startsWith(`${letter}.`) ||
+    ansUpper.startsWith(`${letter} `)
+  ) {
+    // If the correct answer is prefixed with the letter, check if the remaining text matches the option text
+    for (const sep of [":", ".", " "]) {
+      if (ansUpper.startsWith(`${letter}${sep}`)) {
+        const remaining = ans.substring(2).trim().toLowerCase();
+        if (remaining === optText || remaining === optId.toLowerCase()) return true;
+      }
     }
+    return true;
   }
+
+  // 3. Substring match for cases like "A, B, C, D" matching option A's text "A, B, C, D"
+  if (ansLower.includes(optText) && optText.length > 2) return true;
 
   return false;
 }
@@ -62,10 +90,14 @@ function isMatch(opt: { id: string; text: string }, index: number, correctAnswer
  * Reading / vocabulary / grammar MCQ renderer — 4 option cards, submit, result.
  * Builds an aggregate pass/fail across the question set when the user finishes.
  */
-export function McqActivity({ questions, onComplete, isNested = false }: McqActivityProps) {
+export function McqActivity({
+  activity,
+  questions,
+  onComplete,
+  isNested = false,
+}: McqActivityProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-
   const isSpeedMatching = useMemo(
     () => questions.some((q) => q.question_type === "speed_matching"),
     [questions],
@@ -85,6 +117,29 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
 
   const passage = useMemo(() => questions.find((q) => q.question_type === "passage"), [questions]);
 
+  const passageText = useMemo(() => {
+    if (passage?.question_text) {
+      return passage.question_text;
+    }
+
+    const val = activity?.content;
+    if (val && typeof val === "object") {
+      if (val.text) return String(val.text).trim();
+      if (val.name) return String(val.name).trim();
+      if (val.description) return String(val.description).trim();
+    } else if (val) {
+      const str = String(val).trim();
+      if (str !== "{}" && str !== "[]") return str;
+    }
+
+    const rawAct = activity as Record<string, unknown> | undefined;
+    if (rawAct && typeof rawAct.description === "string") {
+      return rawAct.description.trim();
+    }
+
+    return null;
+  }, [passage, activity]);
+
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<{
@@ -95,16 +150,18 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
   const [correctCount, setCorrectCount] = useState(0);
   const [lastCorrect, setLastCorrect] = useState(false);
   const [lastCorrectAnswer, setLastCorrectAnswer] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [scoreView, setScoreView] = useState<{
     score: number;
     passed: boolean;
     totalCorrect: number;
   } | null>(null);
 
-  const current = mcqs[idx];
+  const current = mcqs[idx]!;
 
   const parsedQuestion = useMemo(() => {
-    const text = current?.question_text ?? "";
+    const rawText = current?.question_text ?? "";
+    const text = rawText.replace(/^\d+[\.\)\:\s-]+\s*/, "");
     const parts = text.split("—");
     if (parts.length >= 3) {
       const sentenceLabel = parts[0]?.trim() ?? "";
@@ -141,10 +198,35 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     return <SpeedMatchingGame questions={questions} onComplete={onComplete} />;
   }
 
-  if (!current) {
+  if (mcqs.length === 0) {
     return (
-      <View className="items-center justify-center py-12">
-        <Text className="text-slate-500">No MCQ questions available.</Text>
+      <View style={{ padding: 24, alignItems: "center" }}>
+        <Text
+          style={{ color: isDark ? "#cbd5e1" : "#475569", textAlign: "center", marginBottom: 20 }}
+        >
+          No questions available for this activity.
+        </Text>
+        <Pressable
+          onPress={() => onComplete({ passed: true, score: 100 })}
+          style={{
+            width: "100%",
+            borderRadius: 10,
+            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
+          }}
+        >
+          {({ pressed }) => (
+            <View
+              style={{
+                backgroundColor: pressed ? "#2563eb" : "#3b82f6",
+                paddingVertical: 14,
+                borderRadius: 10,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
+            </View>
+          )}
+        </Pressable>
       </View>
     );
   }
@@ -164,9 +246,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     if (correct) setCorrectCount(nextCorrectCount);
 
     const correctLetter =
-      correctIndex !== -1
-        ? `${String.fromCharCode(65 + correctIndex)}: ${options[correctIndex]?.text}`
-        : correctAnswerStr;
+      correctIndex !== -1 ? String.fromCharCode(65 + correctIndex) : correctAnswerStr;
 
     setLastCorrect(correct);
     setLastCorrectAnswer(correctLetter);
@@ -190,11 +270,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
     }
     const totalCorrect = result.totalCorrect;
     const score = Math.round((totalCorrect / mcqs.length) * 100);
-    setScoreView({
-      score,
-      passed: score >= 70,
-      totalCorrect,
-    });
+    onComplete({ passed: score >= 70, score });
   };
 
   if (scoreView) {
@@ -209,6 +285,14 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           contentContainerStyle: { padding: 24, paddingBottom: 120 },
         };
 
+    const scoreColor = scoreView.passed
+      ? isDark
+        ? "#22c55e"
+        : "#15803d"
+      : isDark
+        ? "#ef4444"
+        : "#b91c1c";
+
     return (
       <ScoreWrapper {...scoreWrapperProps}>
         <View style={{ alignItems: "center", marginVertical: 32 }}>
@@ -219,10 +303,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               borderRadius: 40,
               backgroundColor: scoreView.passed
                 ? isDark
-                  ? "rgba(34, 197, 94, 0.2)"
+                  ? "#14532d"
                   : "#dcfce7"
                 : isDark
-                  ? "rgba(239, 68, 68, 0.2)"
+                  ? "#7f1d1d"
                   : "#fee2e2",
               alignItems: "center",
               justifyContent: "center",
@@ -232,9 +316,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             <Feather
               name={scoreView.passed ? "check-circle" : "alert-circle"}
               size={40}
-              color={
-                scoreView.passed ? (isDark ? "#22c55e" : "#15803d") : isDark ? "#f87171" : "#b91c1c"
-              }
+              color={scoreColor}
             />
           </View>
           <Text className="text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wider font-bold mb-1">
@@ -244,19 +326,13 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             style={{
               fontSize: 64,
               fontWeight: "900",
-              color: scoreView.passed
-                ? isDark
-                  ? "#22c55e"
-                  : "#15803d"
-                : isDark
-                  ? "#f87171"
-                  : "#b91c1c",
+              color: scoreColor,
               lineHeight: 72,
             }}
           >
             {scoreView.score}%
           </Text>
-          <Text className="text-slate-900 dark:text-white text-xl font-bold mt-4 text-center">
+          <Text className="text-slate-900 dark:text-slate-100 text-xl font-bold mt-4 text-center">
             {scoreView.passed ? "Nicely done!" : "Keep practicing!"}
           </Text>
           <Text className="text-slate-500 dark:text-zinc-400 text-sm mt-2 text-center">
@@ -308,10 +384,10 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
       ]}
     >
       <ContentWrapper {...wrapperProps}>
-        {passage?.question_text ? (
+        {passageText ? (
           <View
             style={{
-              backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
+              backgroundColor: isDark ? "#1e1f2a" : "#f8fafc",
               borderWidth: 1,
               borderColor: isDark ? "#2d2d3a" : "#e2e8f0",
               borderRadius: 16,
@@ -320,12 +396,12 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-              <Feather name="book-open" size={16} color={isDark ? "#3b82f6" : "#6366f1"} />
+              <Feather name="book-open" size={16} color="#6366f1" />
               <Text
                 style={{
                   fontSize: 12,
                   fontWeight: "700",
-                  color: isDark ? "#60a5fa" : "#4f46e5",
+                  color: "#4f46e5",
                   textTransform: "uppercase",
                   letterSpacing: 0.8,
                   marginLeft: 8,
@@ -334,13 +410,13 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                 Reading Passage
               </Text>
             </View>
-            <Text style={{ color: isDark ? "#e2e8f0" : "#334155", fontSize: 14, lineHeight: 22 }}>
-              {passage.question_text}
+            <Text style={{ color: isDark ? "#cbd5e1" : "#334155", fontSize: 14, lineHeight: 22 }}>
+              {passageText}
             </Text>
           </View>
         ) : null}
 
-        <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-400 mb-2">
+        <Text className="text-xs uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2">
           Question {idx + 1} of {mcqs.length}
         </Text>
         {parsedQuestion.isParsed ? (
@@ -348,9 +424,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             {/* The Target Sentence Card */}
             <View
               style={{
-                backgroundColor: isDark ? "rgba(91, 33, 182, 0.15)" : "#f5f3ff",
+                backgroundColor: isDark ? "#231e3d" : "#f5f3ff",
                 borderWidth: 1,
-                borderColor: isDark ? "#5b21b6" : "#ddd6fe",
+                borderColor: isDark ? "#3f2d59" : "#ddd6fe",
                 borderRadius: 12,
                 padding: 16,
                 marginBottom: 16,
@@ -379,7 +455,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
               </View>
               <Text
                 style={{
-                  color: isDark ? "#d8b4fe" : "#4c1d95",
+                  color: isDark ? "#c084fc" : "#4c1d95",
                   fontSize: 16,
                   fontWeight: "600",
                   fontStyle: "italic",
@@ -404,8 +480,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             </Text>
           </View>
         ) : (
-          <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-6">
-            {current.question_text}
+          <Text className="text-slate-900 dark:text-slate-100 text-lg font-bold mb-6">
+            {parsedQuestion.questionPrompt.charAt(0).toUpperCase() +
+              parsedQuestion.questionPrompt.slice(1)}
           </Text>
         )}
 
@@ -414,9 +491,9 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
           const hasSubmitted = lastResult !== null;
 
           let borderColor = isDark ? "#2d2d3a" : "#e5e7eb";
-          let backgroundColor = isDark ? "#1E1F2A" : "#ffffff";
+          let backgroundColor = isDark ? "#1e1f2a" : "#ffffff";
           let dotBorderColor = isDark ? "#4b5563" : "#cbd5e1";
-          let dotTextColor = isDark ? "#9ca3af" : "#64748b";
+          let dotTextColor = isDark ? "#a1a1aa" : "#64748b";
           let feedbackIcon = null;
 
           if (hasSubmitted) {
@@ -424,20 +501,20 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             const isCorrectAnswer = isMatch(opt, i, correctAnswerStr);
             if (isCorrectAnswer) {
               borderColor = "#22c55e"; // Green border
-              backgroundColor = isDark ? "rgba(34, 197, 94, 0.15)" : "#f0fdf4"; // Light green bg
+              backgroundColor = isDark ? "#14532d" : "#f0fdf4"; // Light green bg
               dotBorderColor = "#22c55e";
               dotTextColor = "#22c55e";
               feedbackIcon = <Feather name="check-circle" size={20} color="#22c55e" />;
             } else if (isSelected) {
               borderColor = "#ef4444"; // Red border
-              backgroundColor = isDark ? "rgba(239, 68, 68, 0.15)" : "#fef2f2"; // Light red bg
+              backgroundColor = isDark ? "#7f1d1d" : "#fef2f2"; // Light red bg
               dotBorderColor = "#ef4444";
               dotTextColor = "#ef4444";
               feedbackIcon = <Feather name="x-circle" size={20} color="#ef4444" />;
             }
           } else if (isSelected) {
             borderColor = "#3b82f6"; // Blue border
-            backgroundColor = isDark ? "rgba(37, 99, 235, 0.15)" : "#eff6ff"; // Light blue bg
+            backgroundColor = isDark ? "#1e3a8a" : "#eff6ff"; // Light blue bg
             dotBorderColor = "#3b82f6";
             dotTextColor = "#3b82f6";
             feedbackIcon = <Feather name="check-circle" size={20} color="#3b82f6" />;
@@ -478,7 +555,7 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
                   {String.fromCharCode(65 + i)}
                 </Text>
               </View>
-              <Text style={{ flex: 1, color: isDark ? "#e2e8f0" : "#0f172a", fontSize: 15 }}>
+              <Text style={{ flex: 1, color: isDark ? "#ffffff" : "#0f172a", fontSize: 15 }}>
                 {opt.text}
               </Text>
               {feedbackIcon}
@@ -505,13 +582,27 @@ export function McqActivity({ questions, onComplete, isNested = false }: McqActi
             {({ pressed }) => (
               <View
                 style={{
-                  backgroundColor: selected === null ? "#cbd5e1" : pressed ? "#2563eb" : "#3b82f6",
+                  backgroundColor:
+                    selected === null
+                      ? isDark
+                        ? "#2d2d3a"
+                        : "#cbd5e1"
+                      : pressed
+                        ? "#2563eb"
+                        : "#3b82f6",
                   paddingVertical: 14,
                   borderRadius: 10,
                   alignItems: "center",
                 }}
               >
-                <Text style={{ color: "#fff", fontWeight: "700" }}>Submit</Text>
+                <Text
+                  style={{
+                    color: selected === null ? (isDark ? "#4b5563" : "#fff") : "#fff",
+                    fontWeight: "700",
+                  }}
+                >
+                  Submit
+                </Text>
               </View>
             )}
           </Pressable>

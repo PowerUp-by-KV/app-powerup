@@ -49,6 +49,9 @@ export interface SkillNode {
   x: number;
   y: number;
   connects_to: string[];
+  progress?: number;
+  completed?: number;
+  total?: number;
 }
 
 export interface SkillsResponse {
@@ -69,7 +72,7 @@ export interface AccuracyResponse {
 }
 
 export const gamificationApi = api.injectEndpoints({
-  overrideExisting: true,
+  overrideExisting: false,
   endpoints: (builder) => ({
     listAchievements: builder.query<AchievementsList, void>({
       query: () => "/v1/achievements",

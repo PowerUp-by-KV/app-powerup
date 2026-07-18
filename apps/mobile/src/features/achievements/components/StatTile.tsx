@@ -26,8 +26,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
     switch (type) {
       case "xp":
         return (
-          <View style={{ position: "absolute", right: -15, top: -5, opacity: 1 }}>
-            <Svg width={120} height={120} viewBox="0 0 100 100">
+          <View style={{ position: "absolute", right: -12, top: -8, opacity: 0.95 }}>
+            <Svg width={96} height={96} viewBox="0 0 100 100">
               <Path
                 d="M 60 10 L 68 35 L 94 35 L 73 50 L 81 75 L 60 60 L 39 75 L 47 50 L 26 35 L 52 35 Z"
                 fill={watermarkColor}
@@ -51,8 +51,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
         );
       case "badges":
         return (
-          <View style={{ position: "absolute", right: -20, top: -15, opacity: 1 }}>
-            <Svg width={140} height={140} viewBox="0 0 100 100">
+          <View style={{ position: "absolute", right: -15, top: -12, opacity: 0.95 }}>
+            <Svg width={110} height={110} viewBox="0 0 100 100">
               <Path d="M 35 50 L 25 90 L 40 80 L 50 90 L 55 50 Z" fill={watermarkColor} />
               <Path d="M 65 50 L 55 90 L 70 80 L 85 90 L 75 50 Z" fill={watermarkColor} />
               <Circle cx="60" cy="45" r="35" fill={watermarkColor} />
@@ -67,8 +67,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
         );
       case "accuracy":
         return (
-          <View style={{ position: "absolute", right: -30, bottom: -30, opacity: 1 }}>
-            <Svg width={120} height={120} viewBox="0 0 100 100">
+          <View style={{ position: "absolute", right: -25, bottom: -25, opacity: 0.95 }}>
+            <Svg width={96} height={96} viewBox="0 0 100 100">
               <Circle cx="90" cy="50" r="15" stroke={watermarkColor} strokeWidth="12" fill="none" />
               <Circle cx="90" cy="50" r="40" stroke={watermarkColor} strokeWidth="12" fill="none" />
               <Circle cx="90" cy="50" r="65" stroke={watermarkColor} strokeWidth="12" fill="none" />
@@ -78,8 +78,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
         );
       case "level":
         return (
-          <View style={{ position: "absolute", right: -20, bottom: -20, opacity: 1 }}>
-            <Svg width={130} height={130} viewBox="0 0 100 100">
+          <View style={{ position: "absolute", right: -15, bottom: -15, opacity: 0.95 }}>
+            <Svg width={100} height={100} viewBox="0 0 100 100">
               <Path
                 d="M 10 90 L 50 50 L 10 10"
                 fill="none"
@@ -111,12 +111,12 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, height: 82 }}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => ({
-          flex: 1,
-          minHeight: 110,
+          width: "100%",
+          height: "100%",
           backgroundColor: bg,
           borderRadius: 24,
           opacity: pressed ? 0.85 : 1,
@@ -129,8 +129,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
       >
         <View
           style={{
-            flex: 1,
-            height: 100, // Enforce uniform height for perfect symmetry
+            width: "100%",
+            height: "100%",
             borderRadius: 24,
             borderWidth: 1,
             borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(113, 116, 246, 0.12)",
@@ -152,14 +152,17 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
             {renderWatermark()}
           </View>
 
-          <View className="flex-1 justify-between relative z-10" style={{ padding: 18 }}>
+          <View
+            className="flex-1 justify-between relative z-10"
+            style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+          >
             {type === "xp" && (
               <>
                 <Text
                   style={{
                     color: textColorSecondary,
                     fontWeight: "700",
-                    fontSize: 15,
+                    fontSize: 14,
                     letterSpacing: 0.2,
                   }}
                 >
@@ -169,7 +172,8 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
                   style={{
                     color: textColorPrimary,
                     fontWeight: "800",
-                    fontSize: 32,
+                    fontSize: 28,
+                    lineHeight: 28,
                     letterSpacing: -0.5,
                   }}
                 >
@@ -179,36 +183,37 @@ export function StatTile({ type, value, onPress }: StatTileProps) {
             )}
             {type === "badges" && (
               <>
-                <Feather name="award" size={26} color={iconColor} strokeWidth={2.5} />
-                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                <Feather name="award" size={22} color={iconColor} strokeWidth={2.5} />
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 14 }}>
                   Badges
                 </Text>
               </>
             )}
             {type === "accuracy" && (
               <>
-                <Feather name="target" size={26} color={iconColor} strokeWidth={2.5} />
-                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                <Feather name="target" size={22} color={iconColor} strokeWidth={2.5} />
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 14 }}>
                   Accuracy
                 </Text>
               </>
             )}
             {type === "level" && (
               <>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                   <Text
                     style={{
                       color: textColorPrimary,
                       fontWeight: "800",
-                      fontSize: 26,
+                      fontSize: 24,
+                      lineHeight: 24,
                       letterSpacing: -0.5,
                     }}
                   >
                     {value}
                   </Text>
-                  <Feather name="arrow-up-right" size={22} color={iconColor} strokeWidth={3} />
+                  <Feather name="arrow-up-right" size={18} color={iconColor} strokeWidth={3} />
                 </View>
-                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 16 }}>
+                <Text style={{ color: textColorSecondary, fontWeight: "700", fontSize: 14 }}>
                   Level
                 </Text>
               </>
