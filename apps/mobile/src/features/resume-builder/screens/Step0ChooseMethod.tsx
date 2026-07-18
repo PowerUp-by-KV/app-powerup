@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, Text, Dimensions } from "react-native";
+import { View, StyleSheet, Pressable, Text, Dimensions, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,94 +35,100 @@ export function Step0ChooseMethod({ onNext, onBack }: Step0ChooseMethodProps) {
           <Circle cx="100%" cy="0" r={Dimensions.get("window").width * 0.8} fill="url(#glow)" />
         </Svg>
       </View>
-      <View style={styles.topBar}>
-        <Pressable
-          onPress={onBack}
-          style={[
-            styles.backButton,
-            {
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
-              borderColor: isDark ? "#374151" : "#E5E7EB",
-            },
-          ]}
-        >
-          <Feather name="arrow-left" size={20} color={isDark ? "#D1D5DB" : "#9CA3AF"} />
-        </Pressable>
-      </View>
 
-      {/* Title & Subtitle */}
-      <View style={styles.titleContainer}>
-        <Text style={[styles.title, { color: isDark ? "#F9FAFB" : "#111827" }]}>
-          Ready to Build your Resume?
-        </Text>
-        <Text style={[styles.subtitle, { color: isDark ? "#9CA3AF" : "#6B7280" }]}>
-          Just review, edit, and update it with new information
-        </Text>
-      </View>
-
-      <View style={styles.cardsContainer}>
-        {/* Upload Card */}
-        <Pressable
-          onPress={() => setSelectedMethod("upload")}
-          style={[
-            styles.card,
-            {
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
-              borderColor: isDark ? "#374151" : "#E5E7EB",
-            },
-            selectedMethod === "upload" && [
-              styles.cardSelected,
-              { backgroundColor: isDark ? "#1e3a8a" : "#F8FAFF" },
-            ],
-          ]}
-        >
-          {/* Recommended Badge */}
-          <LinearGradient
-            colors={["#60A5FA", "#A3E635"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.recommendedBadge}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={onBack}
+            style={[
+              styles.backButton,
+              {
+                backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                borderColor: isDark ? "#374151" : "#E5E7EB",
+              },
+            ]}
           >
-            <Text style={styles.recommendedText}>Recommended</Text>
-          </LinearGradient>
+            <Feather name="arrow-left" size={20} color={isDark ? "#D1D5DB" : "#9CA3AF"} />
+          </Pressable>
+        </View>
 
-          <View style={[styles.iconCircle, { backgroundColor: isDark ? "#374151" : "#F3F4F6" }]}>
-            <Feather name="upload" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
-          </View>
-          <Text style={[styles.cardTitle, { color: isDark ? "#F3F4F6" : "#4B5563" }]}>
-            Yes, upload my resume
+        {/* Title & Subtitle */}
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { color: isDark ? "#F9FAFB" : "#111827" }]}>
+            Ready to Build your Resume?
           </Text>
-          <Text style={[styles.cardSubtitle, { color: isDark ? "#9CA3AF" : "#9CA3AF" }]}>
-            We'll extract and enhance your info
+          <Text style={[styles.subtitle, { color: isDark ? "#9CA3AF" : "#6B7280" }]}>
+            Just review, edit, and update it with new information
           </Text>
-        </Pressable>
+        </View>
 
-        {/* From Scratch Card */}
-        <Pressable
-          onPress={() => setSelectedMethod("scratch")}
-          style={[
-            styles.card,
-            {
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
-              borderColor: isDark ? "#374151" : "#E5E7EB",
-            },
-            selectedMethod === "scratch" && [
-              styles.cardSelected,
-              { backgroundColor: isDark ? "#1e3a8a" : "#F8FAFF" },
-            ],
-          ]}
-        >
-          <View style={[styles.iconCircle, { backgroundColor: isDark ? "#374151" : "#F3F4F6" }]}>
-            <Feather name="file-text" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
-          </View>
-          <Text style={[styles.cardTitle, { color: isDark ? "#F3F4F6" : "#4B5563" }]}>
-            No, start from scratch
-          </Text>
-          <Text style={[styles.cardSubtitle, { color: isDark ? "#9CA3AF" : "#9CA3AF" }]}>
-            Build step-by-step with AI
-          </Text>
-        </Pressable>
-      </View>
+        <View style={styles.cardsContainer}>
+          {/* Upload Card */}
+          <Pressable
+            onPress={() => setSelectedMethod("upload")}
+            style={[
+              styles.card,
+              {
+                backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                borderColor: isDark ? "#374151" : "#E5E7EB",
+              },
+              selectedMethod === "upload" && [
+                styles.cardSelected,
+                { backgroundColor: isDark ? "#1e3a8a" : "#F8FAFF" },
+              ],
+            ]}
+          >
+            {/* Recommended Badge */}
+            <LinearGradient
+              colors={["#60A5FA", "#A3E635"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.recommendedBadge}
+            >
+              <Text style={styles.recommendedText}>Recommended</Text>
+            </LinearGradient>
+
+            <View style={[styles.iconCircle, { backgroundColor: isDark ? "#374151" : "#F3F4F6" }]}>
+              <Feather name="upload" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
+            </View>
+            <Text style={[styles.cardTitle, { color: isDark ? "#F3F4F6" : "#4B5563" }]}>
+              Yes, upload my resume
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: isDark ? "#9CA3AF" : "#9CA3AF" }]}>
+              We'll extract and enhance your info
+            </Text>
+          </Pressable>
+
+          {/* From Scratch Card */}
+          <Pressable
+            onPress={() => setSelectedMethod("scratch")}
+            style={[
+              styles.card,
+              {
+                backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                borderColor: isDark ? "#374151" : "#E5E7EB",
+              },
+              selectedMethod === "scratch" && [
+                styles.cardSelected,
+                { backgroundColor: isDark ? "#1e3a8a" : "#F8FAFF" },
+              ],
+            ]}
+          >
+            <View style={[styles.iconCircle, { backgroundColor: isDark ? "#374151" : "#F3F4F6" }]}>
+              <Feather name="file-text" size={24} color={isDark ? "#9CA3AF" : "#6B7280"} />
+            </View>
+            <Text style={[styles.cardTitle, { color: isDark ? "#F3F4F6" : "#4B5563" }]}>
+              No, start from scratch
+            </Text>
+            <Text style={[styles.cardSubtitle, { color: isDark ? "#9CA3AF" : "#9CA3AF" }]}>
+              Build step-by-step with AI
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
 
       {/* Continue Button */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>

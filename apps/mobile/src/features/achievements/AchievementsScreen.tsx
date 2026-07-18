@@ -172,13 +172,9 @@ function SkillNode({
     : {};
 
   // Background and border colors get brighter as progress/filling increases
-  const bgOpacity = isDark
-    ? 0.15 + 0.25 * (progress / 100)
-    : 0.12 + 0.3 * (progress / 100);
-    
-  const borderOpacity = isDark
-    ? 0.06 + 0.5 * (progress / 100)
-    : 0.06 + 0.5 * (progress / 100);
+  const bgOpacity = isDark ? 0.15 + 0.25 * (progress / 100) : 0.12 + 0.3 * (progress / 100);
+
+  const borderOpacity = isDark ? 0.06 + 0.5 * (progress / 100) : 0.06 + 0.5 * (progress / 100);
 
   return (
     <Pressable

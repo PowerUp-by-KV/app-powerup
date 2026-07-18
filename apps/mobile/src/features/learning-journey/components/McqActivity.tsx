@@ -614,7 +614,6 @@ export function McqActivity({
         isCorrect={lastResult !== null ? lastResult.correct : lastCorrect}
         correctSentence={lastResult !== null ? lastResult.correctAnswer : lastCorrectAnswer}
         onContinue={handleContinue}
-        onDismiss={() => setLastResult(null)}
       />
     </View>
   );
