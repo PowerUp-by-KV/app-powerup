@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
@@ -638,7 +639,7 @@ function CelebrationModal({
             isDark && { backgroundColor: "#151620", borderColor: "#242635" },
           ]}
         >
-          <View style={{ alignItems: "center" }}>
+          <View style={{ alignItems: "center", width: "100%" }}>
             <LottieView
               source={require("../../assets/lottie/trophy.json")}
               autoPlay

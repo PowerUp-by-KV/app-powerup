@@ -97,7 +97,7 @@ export function LoginScreen() {
     }
 
     if (!password_value) {
-      showAlert("Error", "Password is required");
+      showAlert("Error", "Please enter your password to continue.");
       return;
     }
 
@@ -329,7 +329,7 @@ export function LoginScreen() {
                   Remember me
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push("/login-otp")} activeOpacity={0.7}>
                 <Text className="text-xs text-blue-600 font-medium">Forgot password?</Text>
               </TouchableOpacity>
             </View>
