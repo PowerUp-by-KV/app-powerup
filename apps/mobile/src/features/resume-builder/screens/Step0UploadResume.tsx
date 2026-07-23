@@ -20,6 +20,49 @@ import { useUploadResumeMutation } from "@/services/resume-api";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
 
+interface GooglePickerBuilder {
+  addView: (view: unknown) => GooglePickerBuilder;
+  setOAuthToken: (token: string) => GooglePickerBuilder;
+  setDeveloperKey: (key: string) => GooglePickerBuilder;
+  setCallback: (
+    callback: (data: { action: string; docs?: Record<string, string>[] }) => Promise<void>,
+  ) => GooglePickerBuilder;
+  build: () => { setVisible: (visible: boolean) => void };
+}
+
+interface WindowWithGlobals {
+  gapi?: {
+    load: (api: string, callback: () => void) => void;
+  };
+  google?: {
+    accounts: {
+      oauth2: {
+        initTokenClient: (config: {
+          client_id: string;
+          scope: string;
+          callback: (response: { error?: unknown; access_token: string }) => Promise<void>;
+        }) => { requestAccessToken: (options: { prompt: string }) => void };
+      };
+    };
+    picker: {
+      View: new (viewId: string) => { setMimeTypes: (mime: string) => void };
+      ViewId: { DOCS: string };
+      PickerBuilder: new () => GooglePickerBuilder;
+      Action: { PICKED: string };
+      Document: { ID: string; NAME: string; MIME_TYPE: string };
+    };
+  };
+  Dropbox?: {
+    choose: (options: {
+      success: (files: { name: string; link: string }[]) => Promise<void>;
+      cancel: () => void;
+      linkType: string;
+      multiselect: boolean;
+      extensions: string[];
+    }) => void;
+  };
+}
+
 interface Step0UploadResumeProps {
   onNext: () => void;
   onBack: () => void;
@@ -105,8 +148,8 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       return;
     }
 
-    const gapi = (window as any).gapi;
-    const googleObj = (window as any).google;
+    const gapi = (window as unknown as WindowWithGlobals).gapi;
+    const googleObj = (window as unknown as WindowWithGlobals).google;
 
     if (!gapi || !googleObj) {
       if (Platform.OS === "web") {
@@ -126,7 +169,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       const tokenClient = googleObj.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: "https://www.googleapis.com/auth/drive.readonly",
-        callback: async (tokenResponse: any) => {
+        callback: async (tokenResponse) => {
           if (tokenResponse.error !== undefined) {
             console.error("Auth error:", tokenResponse);
             return;
@@ -140,7 +183,8 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
   };
 
   const launchPicker = (token: string, key: string) => {
-    const googleObj = (window as any).google;
+    const googleObj = (window as unknown as WindowWithGlobals).google;
+    if (!googleObj) return;
     const view = new googleObj.picker.View(googleObj.picker.ViewId.DOCS);
     view.setMimeTypes(
       "application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/html,text/rtf",
@@ -150,7 +194,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       .addView(view)
       .setOAuthToken(token)
       .setDeveloperKey(key)
-      .setCallback(async (data: any) => {
+      .setCallback(async (data) => {
         if (data.action === googleObj.picker.Action.PICKED) {
           const doc = data.docs?.[0];
           if (!doc) return;
@@ -173,15 +217,15 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
 
             const blob = await response.blob();
             setSelectedFile({
-              name: fileName,
+              name: fileName || "",
               uri: URL.createObjectURL(blob),
               type: mimeType || "application/pdf",
             });
             setUploading(false);
             if (Platform.OS === "web") {
-              alert(`Success: Selected ${fileName}`);
+              alert(`Success: Selected ${fileName || ""}`);
             } else {
-              Alert.alert("Success", `Selected: ${fileName}`);
+              Alert.alert("Success", `Selected: ${fileName || ""}`);
             }
           } catch (err) {
             setUploading(false);
@@ -216,7 +260,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       return;
     }
 
-    const dropboxObj = (window as any).Dropbox;
+    const dropboxObj = (window as unknown as WindowWithGlobals).Dropbox;
     if (!dropboxObj) {
       if (Platform.OS === "web") {
         alert("Dropbox SDK is loading: Please try again in a few seconds.");
@@ -227,7 +271,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
     }
 
     dropboxObj.choose({
-      success: async (files: any[]) => {
+      success: async (files) => {
         if (files && files.length > 0) {
           const file = files[0];
           if (!file) return;
@@ -281,7 +325,10 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       });
 
       if (isPickerCanceled(result)) return;
-      const file = (result as any).assets?.[0] || result;
+      const successResult = result as {
+        assets?: { uri: string; name: string; mimeType?: string; size?: number }[];
+      };
+      const file = successResult.assets?.[0];
       if (!file) return;
 
       // Client-side extension validation

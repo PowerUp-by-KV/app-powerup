@@ -7,9 +7,11 @@ import {
   Alert,
   Linking,
   ScrollView,
-  Share,
   TouchableOpacity,
 } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import * as MailComposer from "expo-mail-composer";
 import { Text } from "@/components/Themed";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectBuilderDraft, resetBuilderState } from "@/store/slices/resume-builder.slice";
@@ -85,21 +87,36 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
     }
   };
 
-  const handleEmailToMyself = async () => {
+  const handleEmailAction = async (prefillToEmail: boolean) => {
     const url = await getExportUrl("pdf");
     if (url) {
-      await Linking.openURL(
-        `mailto:?subject=My Professional Resume&body=Here is my resume: ${url}`,
-      );
-    }
-  };
+      try {
+        setIsProcessing(true);
+        const localUri = `${FileSystem.cacheDirectory}My_Professional_Resume.pdf`;
 
-  const handleShareLinkedIn = async () => {
-    const url = await getExportUrl("pdf");
-    if (url) {
-      await Linking.openURL(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-      );
+        const { uri } = await FileSystem.downloadAsync(url, localUri);
+
+        const isAvailable = await MailComposer.isAvailableAsync();
+        const userEmail = draftResume?.contact?.email;
+        if (isAvailable) {
+          await MailComposer.composeAsync({
+            recipients: prefillToEmail && userEmail ? [userEmail] : undefined,
+            subject: "My Professional Resume",
+            body: "Here is my professional resume.",
+            attachments: [uri],
+          });
+        } else {
+          Alert.alert(
+            "Mail Not Available",
+            "Your device doesn't have a mail client configured. Try using the Native Share button instead.",
+          );
+        }
+      } catch (error) {
+        console.error("Error emailing:", error);
+        Alert.alert("Error", "Failed to download and email the resume.");
+      } finally {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -107,11 +124,26 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
     const url = await getExportUrl("pdf");
     if (url) {
       try {
-        await Share.share({
-          message: `Check out my professional resume: ${url}`,
-        });
+        setIsProcessing(true);
+        const localUri = `${FileSystem.cacheDirectory}My_Professional_Resume.pdf`;
+
+        const { uri } = await FileSystem.downloadAsync(url, localUri);
+
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: "application/pdf",
+            dialogTitle: "Share your resume",
+            UTI: "com.adobe.pdf",
+          });
+        } else {
+          Alert.alert("Sharing not available", "Sharing is not available on this device.");
+        }
       } catch (error) {
         console.error("Error sharing:", error);
+        Alert.alert("Error", "Failed to download and share the resume.");
+      } finally {
+        setIsProcessing(false);
       }
     }
   };
@@ -202,7 +234,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
                 borderColor: isDark ? "#334155" : "#e5e7eb",
               },
             ]}
-            onPress={handleEmailToMyself}
+            onPress={() => handleEmailAction(true)}
             disabled={isProcessing}
           >
             <Feather
@@ -225,14 +257,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
           <View style={styles.shareIconsContainer}>
             <Pressable
               style={styles.shareIconCircle}
-              onPress={handleShareLinkedIn}
-              disabled={isProcessing}
-            >
-              <Feather name="linkedin" size={24} color="#4d7c0f" />
-            </Pressable>
-            <Pressable
-              style={styles.shareIconCircle}
-              onPress={handleEmailToMyself}
+              onPress={() => handleEmailAction(false)}
               disabled={isProcessing}
             >
               <MaterialIcons name="mail-outline" size={24} color="#4d7c0f" />

@@ -51,6 +51,7 @@
     "expo-image-picker": "~55.0.20",
     "expo-linear-gradient": "^55.0.14",
     "expo-linking": "~55.0.15",
+    "expo-mail-composer": "^55.0.16",
     "expo-print": "^55.0.15",
     "expo-router": "~55.0.16",
     "expo-secure-store": "^55.0.14",
