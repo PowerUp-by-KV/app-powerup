@@ -10,7 +10,24 @@ interface MyLearningCardProps {
   xpPoints: number;
   daysCompleted: number;
   totalDays: number | null;
+  /** While true, show skeleton placeholders instead of zeros that haven't resolved yet. */
+  isLoading?: boolean;
   onTrack: () => void;
+}
+
+function SkeletonBlock({ className }: { className: string }) {
+  // No default rounding — each caller sets its own (rounded-full for the icon dot,
+  // rounded-lg for bars) so the two radius classes never collide on one element.
+  return <View className={`bg-slate-200 dark:bg-slate-700/60 animate-pulse ${className}`} />;
+}
+
+function StatTileSkeleton() {
+  return (
+    <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1">
+      <SkeletonBlock className="w-6 h-6 mb-2 rounded-full" />
+      <SkeletonBlock className="w-14 h-3.5 rounded-lg" />
+    </View>
+  );
 }
 
 function StatTile({
@@ -68,6 +85,7 @@ export function MyLearningCard({
   xpPoints,
   daysCompleted,
   totalDays,
+  isLoading = false,
   onTrack,
 }: MyLearningCardProps) {
   const { colorScheme } = useColorScheme();
@@ -82,47 +100,68 @@ export function MyLearningCard({
         Daily Progress
       </Text>
 
-      <View className="flex-row -mx-1 mb-5">
-        <StatTile
-          value={streakCount}
-          label="Streaks"
-          iconType="simplelineicons"
-          iconName="fire"
-          iconColor="#3b82f6"
-        />
-        <StatTile
-          value={badgesCount}
-          label="Badges"
-          iconType="feather"
-          iconName="award"
-          iconColor="#a78bfa"
-        />
-        <StatTile
-          value={xpPoints}
-          label="XP Points"
-          iconType="feather"
-          iconName="zap"
-          iconColor="#fbbf24"
-        />
-      </View>
+      {isLoading ? (
+        <>
+          <View className="flex-row -mx-1 mb-5">
+            <StatTileSkeleton />
+            <StatTileSkeleton />
+            <StatTileSkeleton />
+          </View>
+          <View className="mb-5">
+            <View className="flex-row justify-between mb-2">
+              <SkeletonBlock className="w-20 h-3 rounded-lg" />
+              <SkeletonBlock className="w-8 h-3 rounded-lg" />
+            </View>
+            <SkeletonBlock className="h-2.5 w-full rounded-full" />
+          </View>
+        </>
+      ) : (
+        <>
+          <View className="flex-row -mx-1 mb-5">
+            <StatTile
+              value={streakCount}
+              label="Streaks"
+              iconType="simplelineicons"
+              iconName="fire"
+              iconColor="#3b82f6"
+            />
+            <StatTile
+              value={badgesCount}
+              label="Badges"
+              iconType="feather"
+              iconName="award"
+              iconColor="#a78bfa"
+            />
+            <StatTile
+              value={xpPoints}
+              label="XP Points"
+              iconType="feather"
+              iconName="zap"
+              iconColor="#fbbf24"
+            />
+          </View>
 
-      <View className="mb-5">
-        <View className="flex-row justify-between mb-2">
-          <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
-            {daysCompleted}
-            {totalDays != null ? ` / ${totalDays}` : ""} days
-          </Text>
-          <Text className="text-slate-300 dark:text-slate-500 text-xs font-semibold">{pct}%</Text>
-        </View>
-        <View className="h-2.5 bg-[#f1f5f9] dark:bg-[#21212b] rounded-full overflow-hidden">
-          <LinearGradient
-            colors={["#3b82f6", "#22c55e", "#84cc16"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ width: `${pct}%`, height: "100%", borderRadius: 9999 }}
-          />
-        </View>
-      </View>
+          <View className="mb-5">
+            <View className="flex-row justify-between mb-2">
+              <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
+                {daysCompleted}
+                {totalDays != null ? ` / ${totalDays}` : ""} days
+              </Text>
+              <Text className="text-slate-300 dark:text-slate-500 text-xs font-semibold">
+                {pct}%
+              </Text>
+            </View>
+            <View className="h-2.5 bg-[#f1f5f9] dark:bg-[#21212b] rounded-full overflow-hidden">
+              <LinearGradient
+                colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ width: `${pct}%`, height: "100%", borderRadius: 9999 }}
+              />
+            </View>
+          </View>
+        </>
+      )}
 
       <Pressable
         onPress={onTrack}

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useDispatch } from "react-redux";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -29,8 +28,10 @@ import {
 import { onboardingApi } from "@/services/onboarding-api";
 import { api } from "@/services/api";
 import { resetOnboarding } from "@/store/slices/onboardingSlice";
+import { setTier, type Tier } from "@/store/slices/subscription.slice";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import * as WebBrowser from "expo-web-browser";
+import { showAlert } from "@/utils/alert";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -68,6 +69,7 @@ export function LoginScreen() {
       // Wipe RTK Query caches and reset onboarding state to prevent leak from previous user sessions
       dispatch(api.util.resetApiState());
       dispatch(resetOnboarding());
+      dispatch(setTier((auth.tier as Tier | undefined) ?? "free"));
 
       // Prefetch questions immediately upon successful handshake
       prefetchOnboarding();
@@ -81,7 +83,7 @@ export function LoginScreen() {
       // Instantly route to the main app. The LearningJourneyGate will fetch onboarding status asynchronously
       router.replace("/(tabs)");
     } catch (err) {
-      Alert.alert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
+      showAlert("Login Failed", getApiErrorMessage(err, "Could not sign in. Please try again."));
     }
   };
 
@@ -90,12 +92,12 @@ export function LoginScreen() {
     const password_value = password.trim();
 
     if (!email_value) {
-      Alert.alert("Error", "Email is required");
+      showAlert("Error", "Email is required");
       return;
     }
 
     if (!password_value) {
-      Alert.alert("Error", "Password is required");
+      showAlert("Error", "Please enter your password to continue.");
       return;
     }
 
@@ -121,14 +123,14 @@ export function LoginScreen() {
       const apiError = error as { status?: number; data?: { message?: string } };
       if (apiError?.status === 401) {
         await clearAuthSession();
-        Alert.alert("Error", "Invalid credentials");
+        showAlert("Error", "Invalid credentials");
         return;
       }
 
       const errorMessage =
         apiError?.data?.message ||
         getApiErrorMessage(error, "Unable to login right now. Please try again.");
-      Alert.alert("Login Failed", errorMessage);
+      showAlert("Login Failed", errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -222,7 +224,7 @@ export function LoginScreen() {
                   <TouchableOpacity
                     onPress={() => {
                       promptGoogle().catch(() =>
-                        Alert.alert(
+                        showAlert(
                           "Google Sign-In",
                           "Could not open Google sign-in. Please try again.",
                         ),
@@ -327,7 +329,7 @@ export function LoginScreen() {
                   Remember me
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => {}} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push("/login-otp")} activeOpacity={0.7}>
                 <Text className="text-xs text-blue-600 font-medium">Forgot password?</Text>
               </TouchableOpacity>
             </View>

@@ -474,17 +474,37 @@ export function MedalsScreen() {
               {badgeRows.map((row, rowIndex) => (
                 <View
                   key={rowIndex}
-                  style={{ flexDirection: "row", width: "100%", justifyContent: "flex-start" }}
+                  style={{
+                    flexDirection: "row",
+                    width: "100%",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    marginBottom: 16,
+                  }}
                 >
                   {row.map((b) => (
                     <View
                       key={b.id}
-                      style={[styles.badgeCardPressable, { flex: 1, width: 0, maxWidth: "33.33%" }]}
+                      style={[
+                        styles.badgeCardPressable,
+                        {
+                          width: "30%",
+                          maxWidth: "30%",
+                          height: 115,
+                          marginBottom: 0,
+                          paddingHorizontal: 0,
+                        },
+                      ]}
                     >
                       <Pressable
                         onPress={() => setSelectedBadge(b)}
                         style={({ pressed }) => [
-                          { alignItems: "center", width: "100%" },
+                          {
+                            alignItems: "center",
+                            width: "100%",
+                            height: "100%",
+                            justifyContent: "flex-start",
+                          },
                           { transform: [{ scale: pressed ? 0.95 : 1 }] },
                         ]}
                       >
@@ -493,22 +513,10 @@ export function MedalsScreen() {
                           style={[
                             styles.badgeCircleShell,
                             {
-                              backgroundColor: b.unlocked
-                                ? b.color
-                                : isDark
-                                  ? "#232540"
-                                  : "#F4F5FA",
-                              borderColor: b.unlocked
-                                ? "#ffffff"
-                                : isDark
-                                  ? "rgba(113,116,246,0.15)"
-                                  : "#ECEEF8",
-                              shadowColor: b.unlocked
-                                ? b.color
-                                : isDark
-                                  ? "transparent"
-                                  : "#7174F6",
-                              shadowOpacity: b.unlocked ? 0.25 : 0.05,
+                              backgroundColor: b.unlocked ? b.color : `${b.color}1F`, // Faint version of the badge's unique color
+                              borderColor: b.unlocked ? "#ffffff" : `${b.color}2B`, // Faint matching border
+                              shadowColor: b.color,
+                              shadowOpacity: b.unlocked ? 0.25 : 0.04,
                             },
                           ]}
                         >
@@ -539,6 +547,8 @@ export function MedalsScreen() {
                           style={[
                             styles.badgeCardTitle,
                             {
+                              width: "100%",
+                              paddingHorizontal: 2,
                               color: b.unlocked
                                 ? isDark
                                   ? "#ffffff"
@@ -561,7 +571,13 @@ export function MedalsScreen() {
                         key={`empty-${i}`}
                         style={[
                           styles.badgeCardPressable,
-                          { flex: 1, width: 0, maxWidth: "33.33%" },
+                          {
+                            width: "30%",
+                            maxWidth: "30%",
+                            height: 115,
+                            marginBottom: 0,
+                            paddingHorizontal: 0,
+                          },
                         ]}
                       />
                     ))}

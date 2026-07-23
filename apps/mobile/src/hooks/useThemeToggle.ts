@@ -1,35 +1,53 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// In-memory cache to make tab-switching and loads instantaneous
+let cachedTheme: "light" | "dark" | null = null;
+let isLoadInitiated = false;
 
 export function useThemeToggle() {
   const { colorScheme, setColorScheme } = useColorScheme();
-  const [isDark, setIsDark] = useState(colorScheme === "dark");
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
+    // If already cached in memory, apply it immediately if it doesn't match
+    if (cachedTheme !== null) {
+      if (colorScheme !== cachedTheme) {
+        setColorScheme(cachedTheme);
+      }
+      return;
+    }
+
+    // Prevent multiple concurrent reads
+    if (isLoadInitiated) return;
+    isLoadInitiated = true;
+
     const loadTheme = async () => {
       try {
         let storedDarkMode: string | null = null;
         if (Platform.OS === "web" && typeof window !== "undefined") {
           storedDarkMode = window.localStorage.getItem("settings_dark_mode");
-        } else if (Platform.OS !== "web") {
-          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
+        } else {
+          storedDarkMode = await AsyncStorage.getItem("settings_dark_mode");
         }
 
         if (storedDarkMode !== null) {
-          const isDarkStored = storedDarkMode === "true";
-          setIsDark(isDarkStored);
-          setTimeout(() => setColorScheme(isDarkStored ? "dark" : "light"), 0);
+          const targetTheme: "light" | "dark" = storedDarkMode === "true" ? "dark" : "light";
+          cachedTheme = targetTheme;
+
+          if (colorScheme !== targetTheme) {
+            setColorScheme(targetTheme);
+          }
+
           if (Platform.OS === "web" && typeof document !== "undefined") {
-            if (isDarkStored) {
+            if (targetTheme === "dark") {
               document.documentElement.classList.add("dark");
             } else {
               document.documentElement.classList.remove("dark");
             }
           }
-        } else {
-          setIsDark(colorScheme === "dark");
         }
       } catch (err) {
         console.warn("Failed to load theme settings", err);
@@ -38,13 +56,17 @@ export function useThemeToggle() {
     loadTheme();
   }, [colorScheme, setColorScheme]);
 
-  const toggleTheme = useCallback(async () => {
+  const toggleTheme = useCallback(() => {
     const nextIsDark = !isDark;
-    setIsDark(nextIsDark);
-    setTimeout(() => setColorScheme(nextIsDark ? "dark" : "light"), 0);
+    const nextTheme: "light" | "dark" = nextIsDark ? "dark" : "light";
 
-    try {
-      if (Platform.OS === "web") {
+    // Update local cache and state instantly
+    cachedTheme = nextTheme;
+    setColorScheme(nextTheme);
+
+    // Perform the disk write in the background without blocking the UI rendering thread
+    if (Platform.OS === "web") {
+      try {
         window.localStorage?.setItem("settings_dark_mode", String(nextIsDark));
         if (typeof document !== "undefined") {
           if (nextIsDark) {
@@ -53,11 +75,13 @@ export function useThemeToggle() {
             document.documentElement.classList.remove("dark");
           }
         }
-      } else {
-        await SecureStore.setItemAsync("settings_dark_mode", String(nextIsDark));
+      } catch (err) {
+        console.warn("Failed to save theme setting", err);
       }
-    } catch (err) {
-      console.warn("Failed to save theme setting", err);
+    } else {
+      AsyncStorage.setItem("settings_dark_mode", String(nextIsDark)).catch((err) => {
+        console.warn("Failed to save theme setting", err);
+      });
     }
   }, [isDark, setColorScheme]);
 

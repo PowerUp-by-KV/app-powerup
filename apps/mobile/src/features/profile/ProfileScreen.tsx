@@ -152,6 +152,7 @@ export function ProfileScreen() {
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"weekly" | "monthly">("monthly");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const monthIso = useMemo(
     () =>
@@ -685,6 +686,7 @@ export function ProfileScreen() {
                     justifyContent: "space-between",
                     alignItems: "center",
                     marginBottom: 14,
+                    zIndex: 10,
                   }}
                 >
                   <Text
@@ -697,30 +699,92 @@ export function ProfileScreen() {
                   >
                     Streak calendar
                   </Text>
-                  <Pressable
-                    onPress={() => setViewMode(viewMode === "weekly" ? "monthly" : "weekly")}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 4,
-                      backgroundColor: "#1e293b",
-                      paddingHorizontal: 12,
-                      paddingVertical: 6,
-                      borderRadius: 20,
-                    }}
-                  >
-                    <Text
+                  <View style={{ position: "relative", zIndex: 1001 }}>
+                    <Pressable
+                      onPress={() => setIsDropdownOpen(!isDropdownOpen)}
                       style={{
-                        color: "#fff",
-                        fontSize: 12,
-                        fontWeight: "500",
-                        textTransform: "capitalize",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        backgroundColor: isDark ? "rgba(37,99,235,0.15)" : "#eff6ff",
+                        borderWidth: 1,
+                        borderColor: isDark ? "rgba(37,99,235,0.4)" : "#dbeafe",
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 20,
                       }}
                     >
-                      {viewMode}
-                    </Text>
-                    <Feather name="chevron-down" size={11} color="rgba(255,255,255,0.7)" />
-                  </Pressable>
+                      <Text
+                        style={{
+                          color: isDark ? "#60a5fa" : "#2563eb",
+                          fontSize: 12,
+                          fontWeight: "600",
+                          textTransform: "capitalize",
+                        }}
+                      >
+                        {viewMode}
+                      </Text>
+                      <Feather
+                        name={isDropdownOpen ? "chevron-up" : "chevron-down"}
+                        size={11}
+                        color={isDark ? "#60a5fa" : "#2563eb"}
+                      />
+                    </Pressable>
+
+                    {isDropdownOpen && (
+                      <View
+                        style={{
+                          position: "absolute",
+                          top: 34,
+                          right: 0,
+                          backgroundColor: isDark ? "#1E1F2A" : "#ffffff",
+                          borderRadius: 12,
+                          borderWidth: 1,
+                          borderColor: isDark ? "#2D3142" : "#e2e8f0",
+                          paddingVertical: 4,
+                          width: 100,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.1,
+                          shadowRadius: 4,
+                          elevation: 3,
+                          zIndex: 1002,
+                        }}
+                      >
+                        {(["weekly", "monthly"] as const).map((mode) => (
+                          <Pressable
+                            key={mode}
+                            onPress={() => {
+                              setViewMode(mode);
+                              setIsDropdownOpen(false);
+                            }}
+                            style={{
+                              paddingVertical: 8,
+                              paddingHorizontal: 12,
+                              backgroundColor:
+                                viewMode === mode
+                                  ? isDark
+                                    ? "#2D3142"
+                                    : "#f1f5f9"
+                                  : "transparent",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                fontWeight: "600",
+                                textTransform: "capitalize",
+                                color:
+                                  viewMode === mode ? "#3b82f6" : isDark ? "#ffffff" : "#475569",
+                              }}
+                            >
+                              {mode}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
+                  </View>
                 </View>
 
                 {/* Calendar card */}
@@ -1116,7 +1180,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
         width: "33.33%",
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: 8,
         paddingVertical: 10,
         paddingHorizontal: 4,
       }}
@@ -1124,9 +1188,9 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
       {/* Blue rounded square icon */}
       <View
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: 14,
+          width: 42,
+          height: 42,
+          borderRadius: 12,
           backgroundColor: "#3b82f6",
           alignItems: "center",
           justifyContent: "center",
@@ -1142,21 +1206,26 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string
       {/* Number + label */}
       <View style={{ flex: 1 }}>
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
           style={{
             color: isDark ? "#ffffff" : "#1e293b",
             fontWeight: "700",
-            fontSize: 20,
-            lineHeight: 24,
+            fontSize: 18,
             letterSpacing: -0.3,
           }}
         >
           {value}
         </Text>
         <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}
           style={{
             color: isDark ? "#a1a1aa" : "#94a3b8",
             fontWeight: "400",
-            fontSize: 12,
+            fontSize: 11,
             marginTop: 2,
             letterSpacing: 0.1,
           }}

@@ -49,6 +49,9 @@ export interface SkillNode {
   x: number;
   y: number;
   connects_to: string[];
+  progress?: number;
+  completed?: number;
+  total?: number;
 }
 
 export interface SkillsResponse {

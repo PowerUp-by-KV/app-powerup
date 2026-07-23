@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -29,6 +28,7 @@ import {
 import { useDispatch } from "react-redux";
 import { api } from "../../services/api";
 import { resetOnboarding } from "../../store/slices/onboardingSlice";
+import { showAlert } from "@/utils/alert";
 
 export function VerifyEmailScreen() {
   const router = useRouter();
@@ -53,7 +53,7 @@ export function VerifyEmailScreen() {
   const handleSendOtp = async (target?: string) => {
     const addr = (target ?? email).trim();
     if (!addr) {
-      Alert.alert("Enter your email", "Please type your email address first.");
+      showAlert("Enter your email", "Please type your email address first.");
       return;
     }
     try {
@@ -61,7 +61,7 @@ export function VerifyEmailScreen() {
       setOtpSent(true);
     } catch (err) {
       const data = (err as { data?: { detail?: string } })?.data;
-      Alert.alert("Couldn't send code", data?.detail ?? "Please try again in a moment.");
+      showAlert("Couldn't send code", data?.detail ?? "Please try again in a moment.");
     }
   };
 
@@ -98,7 +98,7 @@ export function VerifyEmailScreen() {
       router.replace(next as never);
     } catch (err) {
       const data = (err as { data?: { detail?: string } })?.data;
-      Alert.alert("Invalid code", data?.detail ?? "That code didn't match. Try again.");
+      showAlert("Invalid code", data?.detail ?? "That code didn't match. Try again.");
       setCode("");
     }
   };

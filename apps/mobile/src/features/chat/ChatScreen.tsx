@@ -15,7 +15,6 @@ import {
   Keyboard,
   KeyboardEvent,
 } from "react-native";
-import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { Asset } from "expo-asset";
@@ -37,6 +36,7 @@ import { SafeFlatListProps } from "@/types";
 import { getAvatarUri } from "@/utils/avatar";
 
 import { useChatStream } from "./useChatStream";
+import { showAlert } from "@/utils/alert";
 
 const AI_ORB_IMAGE = require("@/../assets/images/ai-orb.png");
 
@@ -647,7 +647,7 @@ export function ChatScreen() {
           hitSlop={8}
           disabled={busy || sendLockRef.current}
           onPress={() =>
-            Alert.alert("Attach Media", "Choose an option", [
+            showAlert("Attach Media", "Choose an option", [
               {
                 text: "Camera",
                 onPress: async () => {
@@ -843,10 +843,11 @@ export function ChatScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 12 }}
+                contentContainerStyle={{ gap: 8, paddingHorizontal: 24, paddingVertical: 8 }}
                 style={[
                   s.suggestionChipsContainer,
                   {
+                    height: 56,
                     marginBottom: 16,
                     backgroundColor: isDark ? "#0B0F19" : C.bg,
                     borderBottomColor: isDark ? "#1E293B" : C.border,
@@ -864,7 +865,11 @@ export function ChatScreen() {
                     onPress={() => setInput(txt)}
                     style={[
                       s.inCardSuggestionChip,
-                      { backgroundColor: isDark ? "#1E293B" : "#F0F0F0" },
+                      {
+                        backgroundColor: isDark ? "#1E293B" : "#F0F0F0",
+                        marginVertical: 0,
+                        alignSelf: "center",
+                      },
                     ]}
                   >
                     <Text

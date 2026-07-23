@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Platform, Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
 
 import type { ActivityQuestion } from "@powerup/shared";
 
@@ -22,8 +20,6 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGameProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const speedQuestion = useMemo(
     () => questions.find((q) => q.question_type === "speed_matching") || questions[0],
     [questions],
@@ -50,13 +46,20 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   const [timeLeft, setTimeLeft] = useState(90); // 90 seconds timer
   const [isGameOver, setIsGameOver] = useState(false);
-  const [hasWon, setHasWon] = useState(false);
 
   // Handle game end state
-  const handleGameOver = (won: boolean) => {
-    setIsGameOver(true);
-    setHasWon(won);
-  };
+  const handleGameOver = useCallback(
+    (won: boolean, customMatchedCount?: number) => {
+      setIsGameOver(true);
+      const totalPairs = leftItems.length;
+      const matchedPairsCount =
+        customMatchedCount !== undefined ? customMatchedCount : matchedLefts.size;
+      const score = totalPairs > 0 ? Math.round((matchedPairsCount / totalPairs) * 100) : 0;
+      const passed = won || score >= 70;
+      onComplete({ passed, score });
+    },
+    [leftItems.length, matchedLefts.size, onComplete],
+  );
 
   // Timer logic
   useEffect(() => {
@@ -79,7 +82,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     if (timeLeft === 0 && !isGameOver) {
       handleGameOver(false);
     }
-  }, [timeLeft, isGameOver]);
+  }, [timeLeft, isGameOver, handleGameOver]);
 
   // Check match when both sides are selected
   useEffect(() => {
@@ -99,7 +102,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
         // Check if all left items are matched
         if (newMatchedLefts.size >= leftItems.length && leftItems.length > 0) {
-          handleGameOver(true);
+          handleGameOver(true, newMatchedLefts.size);
         }
       } else {
         // Mismatch
@@ -118,7 +121,15 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
         }, 1000);
       }
     }
-  }, [selectedLeft, selectedRight, correctMatches, matchedLefts, matchedRights, leftItems]);
+  }, [
+    selectedLeft,
+    selectedRight,
+    correctMatches,
+    matchedLefts,
+    matchedRights,
+    handleGameOver,
+    leftItems.length,
+  ]);
 
   const progressPercentage = (timeLeft / 90) * 100;
   const progressColor =
@@ -126,78 +137,12 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
   const totalPairs = leftItems.length;
   const matchedPairsCount = matchedLefts.size;
-  const currentScore = totalPairs > 0 ? Math.round((matchedPairsCount / totalPairs) * 100) : 0;
 
   if (isGameOver) {
-    const passed = hasWon || currentScore >= 70;
     return (
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          flexGrow: 1,
-          padding: 24,
-          paddingBottom: 120,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <View style={{ alignItems: "center", marginVertical: 32 }}>
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: passed
-                ? isDark
-                  ? "rgba(34, 197, 94, 0.2)"
-                  : "#dcfce7"
-                : isDark
-                  ? "rgba(239, 68, 68, 0.2)"
-                  : "#fee2e2",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Feather
-              name={passed ? "check-circle" : "alert-circle"}
-              size={40}
-              color={passed ? (isDark ? "#22c55e" : "#10b981") : "#ef4444"}
-            />
-          </View>
-
-          <Text className="text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wider font-bold mb-1">
-            Matching Completion
-          </Text>
-          <Text
-            style={{
-              fontSize: 64,
-              fontWeight: "900",
-              color: passed ? (isDark ? "#22c55e" : "#10b981") : "#ef4444",
-              lineHeight: 72,
-            }}
-          >
-            {currentScore}%
-          </Text>
-
-          <Text className="text-slate-900 dark:text-white text-xl font-bold mt-4 text-center">
-            {passed ? "Brilliant Job!" : "Keep Practicing!"}
-          </Text>
-          <Text className="text-slate-500 dark:text-zinc-400 text-sm mt-2 text-center px-4">
-            {passed
-              ? `You successfully matched ${matchedPairsCount} of ${totalPairs} vocabulary pairs.`
-              : `You matched ${matchedPairsCount} of ${totalPairs} pairs. You need 70% to pass.`}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => onComplete({ passed, score: currentScore })}
-          className="w-full max-w-sm mt-8 bg-blue-500 active:bg-blue-600 py-4 rounded-2xl items-center shadow-md"
-          style={{ ...Platform.select({ web: { cursor: "pointer" } as any }) }}
-        >
-          <Text className="text-white font-bold text-base">Continue</Text>
-        </Pressable>
-      </ScrollView>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#3b82f6" />
+      </View>
     );
   }
 
@@ -205,38 +150,32 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
     <ScrollView
       style={{
         flex: 1,
-        ...Platform.select({ web: { userSelect: "none" } as any }),
+        ...Platform.select({ web: { userSelect: "none" } as Record<string, unknown> }),
       }}
       contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
     >
       {/* Gamified Header */}
       <View className="mb-6">
-        <Text className="text-slate-900 dark:text-white text-2xl font-black mb-1">
-          Speed Matcher
-        </Text>
-        <Text className="text-slate-500 dark:text-zinc-400 text-sm mb-4">
+        <Text className="text-slate-900 text-2xl font-black mb-1">Speed Matcher</Text>
+        <Text className="text-slate-500 text-sm mb-4">
           Match the action verbs with their definitions before the timer runs out!
         </Text>
 
         {/* Timer Bar */}
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Feather
-              name="clock"
-              size={16}
-              color={timeLeft > 20 ? (isDark ? "#a1a1aa" : "#64748b") : "#ef4444"}
-            />
+            <Feather name="clock" size={16} color={timeLeft > 20 ? "#64748b" : "#ef4444"} />
             <Text
-              className={`font-bold ml-1.5 ${timeLeft > 20 ? "text-slate-600 dark:text-zinc-350" : "text-rose-500"}`}
+              className={`font-bold ml-1.5 ${timeLeft > 20 ? "text-slate-600" : "text-rose-500"}`}
             >
               {timeLeft}s remaining
             </Text>
           </View>
-          <Text className="text-slate-500 dark:text-zinc-400 font-semibold text-xs">
+          <Text className="text-slate-500 font-semibold text-xs">
             {matchedPairsCount}/{totalPairs} Matched
           </Text>
         </View>
-        <View className="w-full h-3 bg-slate-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+        <View className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
           <View
             className={`h-full rounded-full transition-all duration-300 ${progressColor}`}
             style={{ width: `${progressPercentage}%` }}
@@ -248,7 +187,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
       <View className="flex-row justify-between" style={{ gap: 16 }}>
         {/* Vocabulary Column */}
         <View className="flex-1" style={{ gap: 12 }}>
-          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1">
+          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">
             Verbs
           </Text>
           {leftItems.map((word) => {
@@ -256,20 +195,18 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
             const isSelected = selectedLeft === word;
             const isWrong = wrongLeft === word;
 
-            let bgStyle = "bg-white border-slate-200 dark:bg-[#1E1F2A] dark:border-slate-800";
-            let textStyle = "text-slate-900 dark:text-white";
+            let bgStyle = "bg-white border-slate-200";
+            let textStyle = "text-slate-900";
 
             if (isMatched) {
-              bgStyle =
-                "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40 opacity-60";
-              textStyle = "text-emerald-700 dark:text-emerald-500 line-through";
+              bgStyle = "bg-emerald-50 border-emerald-200 opacity-60";
+              textStyle = "text-emerald-700 line-through";
             } else if (isWrong) {
-              bgStyle = "bg-rose-100 border-rose-400 dark:bg-rose-950/30 dark:border-rose-800/80";
-              textStyle = "text-rose-700 dark:text-rose-400";
+              bgStyle = "bg-rose-100 border-rose-400";
+              textStyle = "text-rose-700";
             } else if (isSelected) {
-              bgStyle =
-                "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100 dark:bg-blue-950/30 dark:border-blue-500";
-              textStyle = "text-blue-900 dark:text-blue-200";
+              bgStyle = "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100";
+              textStyle = "text-blue-900";
             }
 
             return (
@@ -280,7 +217,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-4 rounded-2xl border-2 min-h-[72px] items-center justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
                   }),
                 }}
               >
@@ -297,7 +234,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
 
         {/* Definitions Column */}
         <View className="flex-[1.5]" style={{ gap: 12 }}>
-          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 dark:text-blue-400 mb-1">
+          <Text className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">
             Definitions
           </Text>
           {rightItemsShuffled.map((definition) => {
@@ -305,20 +242,18 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
             const isSelected = selectedRight === definition;
             const isWrong = wrongRight === definition;
 
-            let bgStyle = "bg-white border-slate-200 dark:bg-[#1E1F2A] dark:border-slate-800";
-            let textStyle = "text-slate-900 dark:text-white";
+            let bgStyle = "bg-white border-slate-200";
+            let textStyle = "text-slate-900";
 
             if (isMatched) {
-              bgStyle =
-                "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40 opacity-60";
-              textStyle = "text-emerald-700 dark:text-emerald-500 line-through font-normal";
+              bgStyle = "bg-emerald-50 border-emerald-200 opacity-60";
+              textStyle = "text-emerald-700 line-through font-normal";
             } else if (isWrong) {
-              bgStyle = "bg-rose-100 border-rose-400 dark:bg-rose-950/30 dark:border-rose-800/80";
-              textStyle = "text-rose-700 dark:text-rose-400";
+              bgStyle = "bg-rose-100 border-rose-400";
+              textStyle = "text-rose-700";
             } else if (isSelected) {
-              bgStyle =
-                "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100 dark:bg-blue-950/30 dark:border-blue-500";
-              textStyle = "text-blue-900 dark:text-blue-200";
+              bgStyle = "bg-blue-50 border-blue-500 shadow-sm shadow-blue-100";
+              textStyle = "text-blue-900";
             }
 
             return (
@@ -329,7 +264,7 @@ export function SpeedMatchingGame({ questions, onComplete }: SpeedMatchingGamePr
                 className={`p-3 rounded-2xl border-2 min-h-[72px] justify-center ${bgStyle}`}
                 style={{
                   ...Platform.select({
-                    web: { cursor: isMatched ? "default" : "pointer" } as any,
+                    web: { cursor: isMatched ? "default" : "pointer" } as Record<string, unknown>,
                   }),
                 }}
               >

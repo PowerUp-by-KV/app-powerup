@@ -1,9 +1,10 @@
 import React from "react";
-import { Pressable, ActivityIndicator, StyleSheet, Alert } from "react-native";
+import { Pressable, ActivityIndicator, StyleSheet } from "react-native";
 import { Text } from "@/components/Themed";
 import { Feather } from "@expo/vector-icons";
 import { useEnhanceBuiltResumeDetailMutation } from "@/services/resume-builder-api";
 import { ApiErrorHandler } from "@/services/error-handler";
+import { showAlert } from "@/utils/alert";
 
 interface EnhanceButtonProps {
   sectionName: string;
@@ -39,7 +40,7 @@ export function EnhanceButton({
     } catch (error) {
       console.error("AI enhancement failure:", error);
       const parsedError = ApiErrorHandler.parseError(error, "update");
-      Alert.alert(
+      showAlert(
         "Enhancement Error",
         parsedError.userMessage || "Failed to enhance text. Please try again later.",
       );

@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   ActivityIndicator,
-  Alert,
   Linking,
   ScrollView,
   TouchableOpacity,
@@ -22,6 +21,7 @@ import {
 import { Feather, MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
+import { showAlert } from "@/utils/alert";
 
 interface ResumeExportViewProps {
   onBack: () => void;
@@ -64,7 +64,7 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
       const err = error as Record<string, unknown>;
       const errorData = err?.data as Record<string, unknown> | undefined;
       const errorDetail = errorData?.detail || errorData?.message || JSON.stringify(err);
-      Alert.alert("Export Failed", `Failed to generate your resume. Details: ${errorDetail}`);
+      showAlert("Export Failed", `Failed to generate your resume. Details: ${errorDetail}`);
       return null;
     } finally {
       setIsProcessing(false);
@@ -106,14 +106,14 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
             attachments: [uri],
           });
         } else {
-          Alert.alert(
+          showAlert(
             "Mail Not Available",
             "Your device doesn't have a mail client configured. Try using the Native Share button instead.",
           );
         }
       } catch (error) {
         console.error("Error emailing:", error);
-        Alert.alert("Error", "Failed to download and email the resume.");
+        showAlert("Error", "Failed to download and email the resume.");
       } finally {
         setIsProcessing(false);
       }
@@ -137,11 +137,11 @@ export function ResumeExportView({ onBack, useAutoEnhance }: ResumeExportViewPro
             UTI: "com.adobe.pdf",
           });
         } else {
-          Alert.alert("Sharing not available", "Sharing is not available on this device.");
+          showAlert("Sharing not available", "Sharing is not available on this device.");
         }
       } catch (error) {
         console.error("Error sharing:", error);
-        Alert.alert("Error", "Failed to download and share the resume.");
+        showAlert("Error", "Failed to download and share the resume.");
       } finally {
         setIsProcessing(false);
       }

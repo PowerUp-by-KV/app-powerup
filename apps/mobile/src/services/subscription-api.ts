@@ -1,11 +1,16 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
+
+export type PlanTier = "free" | "pro" | "premium";
 
 export interface SubscriptionPlan {
   id: string;
   code: string;
   name: string;
   duration_days: number;
+  /** In paise, not rupees: 49900 renders as ₹499. */
   price_inr: number;
+  tier: PlanTier;
   savings_label: string | null;
   is_popular: boolean;
   is_best_value: boolean;
@@ -26,13 +31,38 @@ export interface UserSubscription {
 
 export interface CheckoutRequest {
   plan_id: string;
-  payment_method?: string; // e.g. 'stripe', 'razorpay', 'mock'
+  /** Razorpay is the only provider with a backend; the API rejects anything else. */
+  payment_method?: "razorpay";
 }
 
 export interface CheckoutResponse {
   subscription_id: string;
   status: string;
   payment_url?: string | null;
+  order_id?: string | null;
+  /** In paise. */
+  amount?: number | null;
+  currency?: string | null;
+  /** Publishable key id for the Checkout SDK. Never the secret. */
+  razorpay_key_id?: string | null;
+}
+
+export interface VerifyPaymentRequest {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+/**
+ * Shape actually returned by GET /subscription/current and POST /subscription/verify.
+ * Both wrap the subscription in { active, tier, subscription } — the `tier` here is what
+ * drives feature gating (usePlanTier). Previously these endpoints were mis-typed as the
+ * inner subscription object, so nothing read `tier` and every user looked free-tier.
+ */
+export interface CurrentSubscription {
+  active: boolean;
+  tier: PlanTier;
+  subscription: UserSubscription | null;
 }
 
 export const subscriptionApi = api.injectEndpoints({
@@ -45,7 +75,7 @@ export const subscriptionApi = api.injectEndpoints({
       providesTags: ["Subscription"],
     }),
 
-    getCurrentSubscription: builder.query<UserSubscription | null, void>({
+    getCurrentSubscription: builder.query<CurrentSubscription, void>({
       query: () => "/v1/subscription/current",
       providesTags: ["Subscription"],
     }),
@@ -67,9 +97,10 @@ export const subscriptionApi = api.injectEndpoints({
       invalidatesTags: ["Subscription"],
     }),
 
-    simulatePaymentWebhook: builder.mutation<any, { provider_ref: string; status: string }>({
+    // Confirms a Razorpay Checkout callback server-side and activates the subscription.
+    verifyPayment: builder.mutation<CurrentSubscription, VerifyPaymentRequest>({
       query: (data) => ({
-        url: "/v1/webhooks/payment",
+        url: "/v1/subscription/verify",
         method: "POST",
         body: data,
       }),
@@ -83,5 +114,5 @@ export const {
   useGetCurrentSubscriptionQuery,
   useCheckoutMutation,
   useCancelSubscriptionMutation,
-  useSimulatePaymentWebhookMutation,
+  useVerifyPaymentMutation,
 } = subscriptionApi;

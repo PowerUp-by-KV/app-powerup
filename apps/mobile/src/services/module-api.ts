@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type {
   Activity,
   ActivityQuestion,
@@ -112,8 +113,40 @@ export interface ProgressionRead {
   unlocked_modules: ProgressionModuleRead[];
 }
 
+export interface ActivityResultDetail {
+  activity_id: string;
+  activity_name: string;
+  evaluation_status: string | null;
+  passed: boolean;
+  score: number | null;
+  feedback: string | null;
+  score_breakdown: Record<string, any> | null;
+  xp_earned: number;
+  response_id: string | null;
+  skill_type: string | null;
+  activity_type: string | null;
+}
+
+export interface DailyResultsResponse {
+  day_id: string;
+  all_evaluations_completed: boolean;
+  all_activities_passed: boolean;
+  failed_count: number;
+  pending_count: number;
+  total_day_xp: number;
+  current_total_xp: number;
+  activities: ActivityResultDetail[];
+}
+
+export interface AdvanceDayResponse {
+  advanced: boolean;
+  new_day: number;
+  xp_bonus: number;
+  new_total_xp: number;
+}
+
 export const moduleApi = api.injectEndpoints({
-  overrideExisting: false,
+  overrideExisting: true,
   endpoints: (builder) => ({
     getPersonalizedPath: builder.query<PersonalizedPathResponse, void>({
       query: () => "/v1/learning-path/personalized",
@@ -142,6 +175,24 @@ export const moduleApi = api.injectEndpoints({
 
     getModuleDays: builder.query<ModuleDay[], string>({
       query: (moduleId) => `/v1/modules/${moduleId}/days`,
+      providesTags: ["Modules"],
+    }),
+
+    // One request for the whole learning path. Fetching each module's days separately meant
+    // a round trip per module (12+ on My Learning) every time the screen regained focus.
+    getModuleDaysBulk: builder.query<Record<string, ModuleDay[]>, string[]>({
+      query: (moduleIds) => ({
+        // Send repeated params (module_ids=a&module_ids=b), which is what FastAPI's list[…]
+        // query expects. The default array serialization is comma-joined, which the API
+        // rejected with 422 — collapsing the whole My Learning path to locked placeholders.
+        url:
+          "/v1/modules/days/bulk" +
+          (moduleIds.length
+            ? `?${moduleIds.map((id) => `module_ids=${encodeURIComponent(id)}`).join("&")}`
+            : ""),
+      }),
+      transformResponse: (response: { days_by_module: Record<string, ModuleDay[]> }) =>
+        response.days_by_module,
       providesTags: ["Modules"],
     }),
 
@@ -222,7 +273,7 @@ export const moduleApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
 
     getDayProgress: builder.query<DayProgressResponse, string>({
@@ -240,7 +291,7 @@ export const moduleApi = api.injectEndpoints({
         url: `/v1/modules/${moduleId}/check`,
         method: "POST",
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
 
     advanceCefr: builder.mutation<AdvanceCefrResponse, string>({
@@ -248,7 +299,20 @@ export const moduleApi = api.injectEndpoints({
         url: `/v1/modules/${moduleId}/advance-cefr`,
         method: "POST",
       }),
-      invalidatesTags: ["Modules"],
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
+    }),
+
+    getDayResults: builder.query<DailyResultsResponse, string>({
+      query: (dayId) => `/v1/modules/days/${dayId}/results`,
+      providesTags: ["Modules"],
+    }),
+
+    advanceDay: builder.mutation<AdvanceDayResponse, string>({
+      query: (dayId) => ({
+        url: `/v1/modules/days/${dayId}/advance`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Modules", "Auth", "Leaderboard"],
     }),
   }),
 });
@@ -262,6 +326,7 @@ export const {
   useGetModuleVariantsQuery,
   useGetModuleDaysQuery,
   useLazyGetModuleDaysQuery,
+  useLazyGetModuleDaysBulkQuery,
   useGetDayActivitiesQuery,
   useGetActivityQuestionsQuery,
   useSubmitReadingAnswerMutation,
@@ -274,4 +339,7 @@ export const {
   useGetModuleEngagementQuery,
   useEvaluateModuleCheckMutation,
   useAdvanceCefrMutation,
+  useGetDayResultsQuery,
+  useLazyGetDayResultsQuery,
+  useAdvanceDayMutation,
 } = moduleApi;

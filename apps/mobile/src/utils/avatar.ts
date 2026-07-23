@@ -20,19 +20,12 @@ export function getAvatarUri(
     const data = avatarId.replace("c2d?", "").split("-");
     if (data.length === 6) {
       const [s, hc, h, e, m, g] = data as [string, string, string, string, string, string];
-      const params = new URLSearchParams();
-      params.append("skinColor", s);
-      params.append("hairColor", hc);
-      params.append("hair", h.startsWith("s") ? h.replace("s", "short") : h.replace("l", "long"));
-      params.append("eyes", `variant${e}`);
-      params.append("mouth", `variant${m}`);
+      let params = `skinColor=${s}&hairColor=${hc}&hair=${h.startsWith("s") ? h.replace("s", "short") : h.replace("l", "long")}&eyes=variant${e}&mouth=variant${m}`;
       if (g !== "x") {
-        params.append("glasses", `variant${g}`);
-        params.append("glassesProbability", "100");
+        params += `&glasses=variant${g}&glassesProbability=100`;
       }
-      params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
-      params.append("seed", "user_custom");
-      return `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
+      params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
+      return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
     }
   }
 
@@ -41,7 +34,6 @@ export function getAvatarUri(
     const data = avatarId.replace("c2d!", "").split("-");
     if (data.length === 6) {
       const [s, hc, h, e, m, g] = data as [string, string, string, string, string, string];
-      const params = new URLSearchParams();
 
       const SKIN_COLORS = [
         "f8d9ce",
@@ -68,23 +60,19 @@ export function getAvatarUri(
         "a3a89e",
       ];
 
-      params.append("skinColor", SKIN_COLORS[parseInt(s, 36)] || "f1c27d");
-      params.append("hairColor", HAIR_COLORS[parseInt(hc, 36)] || "090806");
-      params.append(
-        "hair",
-        h.startsWith("s")
-          ? `short${h.replace("s", "").padStart(2, "0")}`
-          : `long${h.replace("l", "").padStart(2, "0")}`,
-      );
-      params.append("eyes", `variant${e.padStart(2, "0")}`);
-      params.append("mouth", `variant${m.padStart(2, "0")}`);
+      const sColor = SKIN_COLORS[parseInt(s, 36)] || "f1c27d";
+      const hColor = HAIR_COLORS[parseInt(hc, 36)] || "090806";
+      const hairStyle = h.startsWith("s")
+        ? `short${h.replace("s", "").padStart(2, "0")}`
+        : `long${h.replace("l", "").padStart(2, "0")}`;
+
+      let params = `skinColor=${sColor}&hairColor=${hColor}&hair=${hairStyle}&eyes=variant${e.padStart(2, "0")}&mouth=variant${m.padStart(2, "0")}`;
+
       if (g !== "x") {
-        params.append("glasses", `variant${g.padStart(2, "0")}`);
-        params.append("glassesProbability", "100");
+        params += `&glasses=variant${g.padStart(2, "0")}&glassesProbability=100`;
       }
-      params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
-      params.append("seed", "user_custom");
-      return `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
+      params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
+      return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
     }
   }
 

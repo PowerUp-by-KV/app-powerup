@@ -4,7 +4,6 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Alert,
   Text,
   Dimensions,
   Platform,
@@ -18,7 +17,8 @@ import * as SecureStore from "expo-secure-store";
 import { WizardHeader } from "../components/WizardHeader";
 import { useUploadResumeMutation } from "@/services/resume-api";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
-import { ResumeSkeletonLoader } from "@/features/resume/components/ResumeSkeletonLoader";
+import { AnalysisLoadingStep } from "@/features/resume-buddy/components/AnalysisLoadingStep";
+import { showAlert } from "@/utils/alert";
 
 interface GooglePickerBuilder {
   addView: (view: unknown) => GooglePickerBuilder;
@@ -90,6 +90,14 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
   } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStage, setUploadStage] = useState(0);
+  const stageTimerRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web") return;
@@ -140,7 +148,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
           "API Key Required:\nPlease configure EXPO_PUBLIC_GOOGLE_DEVELOPER_KEY in your .env file to enable the Google Picker.",
         );
       } else {
-        Alert.alert(
+        showAlert(
           "API Key Required",
           "Please configure EXPO_PUBLIC_GOOGLE_DEVELOPER_KEY in your .env file to enable the Google Picker.",
         );
@@ -157,7 +165,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
           "Google API loading: Google SDK is still loading. Please try again in a few seconds.",
         );
       } else {
-        Alert.alert(
+        showAlert(
           "Google API loading",
           "Google SDK is still loading. Please try again in a few seconds.",
         );
@@ -225,14 +233,14 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
             if (Platform.OS === "web") {
               alert(`Success: Selected ${fileName || ""}`);
             } else {
-              Alert.alert("Success", `Selected: ${fileName || ""}`);
+              showAlert("Success", `Selected: ${fileName || ""}`);
             }
           } catch (err) {
             setUploading(false);
             if (Platform.OS === "web") {
               alert("Error: Failed to retrieve the file from Google Drive.");
             } else {
-              Alert.alert("Error", "Failed to retrieve the file from Google Drive.");
+              showAlert("Error", "Failed to retrieve the file from Google Drive.");
             }
             console.error(err);
           }
@@ -252,7 +260,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
           "Dropbox App Key Required:\nPlease configure EXPO_PUBLIC_DROPBOX_APP_KEY in your .env file to enable the Dropbox Chooser.",
         );
       } else {
-        Alert.alert(
+        showAlert(
           "Dropbox App Key Required",
           "Please configure EXPO_PUBLIC_DROPBOX_APP_KEY in your .env file to enable the Dropbox Chooser.",
         );
@@ -265,7 +273,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
       if (Platform.OS === "web") {
         alert("Dropbox SDK is loading: Please try again in a few seconds.");
       } else {
-        Alert.alert("Dropbox SDK is loading", "Please try again in a few seconds.");
+        showAlert("Dropbox SDK is loading", "Please try again in a few seconds.");
       }
       return;
     }
@@ -294,14 +302,14 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
             if (Platform.OS === "web") {
               alert(`Success: Selected ${name}`);
             } else {
-              Alert.alert("Success", `Selected: ${name}`);
+              showAlert("Success", `Selected: ${name}`);
             }
           } catch (err) {
             setUploading(false);
             if (Platform.OS === "web") {
               alert("Error: Failed to download the file from Dropbox.");
             } else {
-              Alert.alert("Error", "Failed to download the file from Dropbox.");
+              showAlert("Error", "Failed to download the file from Dropbox.");
             }
             console.error(err);
           }
@@ -342,7 +350,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
             "Invalid File Type:\nPlease select a valid resume document (PDF, DOC, DOCX, TXT, RTF, or HTML).",
           );
         } else {
-          Alert.alert(
+          showAlert(
             "Invalid File Type",
             "Please select a valid resume document (PDF, DOC, DOCX, TXT, RTF, or HTML).",
           );
@@ -356,7 +364,7 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
         type: file.mimeType || "application/pdf",
       });
     } catch {
-      Alert.alert("Error", "Failed to pick document. Please try again.");
+      showAlert("Error", "Failed to pick document. Please try again.");
     }
   };
 
@@ -378,12 +386,18 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
 
   const handleContinue = async () => {
     if (!selectedFile) {
-      Alert.alert("No File Selected", "Please select a resume file first.");
+      showAlert("No File Selected", "Please select a resume file first.");
       return;
     }
 
     try {
       setIsSubmitting(true);
+      setUploadStage(0);
+      // Advance stages every 4 s — stalls at 3 until upload resolves, then jumps to done
+      stageTimerRef.current = setInterval(() => {
+        setUploadStage((prev) => (prev < 3 ? prev + 1 : prev));
+      }, 4000);
+
       const uploadData = new FormData();
       if (Platform.OS === "web") {
         const fileResponse = await fetch(selectedFile.uri);
@@ -411,21 +425,21 @@ export function Step0UploadResume({ onNext, onBack }: Step0UploadResumeProps) {
         }
       }
 
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
+      setUploadStage(5); // mark all stages done before navigating
       setIsSubmitting(false);
       onNext();
     } catch (error) {
+      if (stageTimerRef.current) clearInterval(stageTimerRef.current);
       setIsSubmitting(false);
-      Alert.alert("Upload Failed", "There was an error uploading your resume. Please try again.");
+      setUploadStage(0);
+      showAlert("Upload Failed", "There was an error uploading your resume. Please try again.");
       console.error("Upload error:", error);
     }
   };
 
   if (isSubmitting) {
-    return (
-      <View style={[styles.container, { backgroundColor: isDark ? "#0f172a" : "#fafafa" }]}>
-        <ResumeSkeletonLoader text="Uploading Resume..." />
-      </View>
-    );
+    return <AnalysisLoadingStep activeStage={uploadStage} />;
   }
 
   return (

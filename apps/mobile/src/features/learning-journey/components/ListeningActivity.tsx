@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps, @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -38,7 +38,6 @@ const WAVEFORM_BARS = [
 export function ListeningActivity({ questions, onComplete }: ListeningActivityProps) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-
   const passage =
     questions.find((q) => q.question_type === "passage" && !!q.audio_url) ||
     questions.find((q) => !!q.audio_url);
@@ -183,8 +182,8 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   if (!audioUrl) {
     return (
-      <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-[#151620]">
-        <Text className="text-slate-500 dark:text-zinc-400 text-center">
+      <View className="flex-1 items-center justify-center p-6">
+        <Text className="text-slate-500 dark:text-zinc-500 text-center">
           Audio not available for this activity yet.
         </Text>
       </View>
@@ -195,7 +194,10 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
 
   return (
     <ScrollView
-      style={[{ flex: 1 }, Platform.OS === "web" && ({ userSelect: "none" } as any)]}
+      style={[
+        { flex: 1 },
+        Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
+      ]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
       <View
@@ -204,18 +206,18 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
           marginTop: 24,
           padding: 20,
           borderRadius: 24,
-          backgroundColor: isDark ? "#1E1F2A" : "#f8fafc",
+          backgroundColor: isDark ? "#1e1f2a" : "#f8fafc",
           borderWidth: 1,
           borderColor: isDark ? "#2d2d3a" : "#e2e8f0",
           alignItems: "center",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.2 : 0.05,
+          shadowOpacity: 0.05,
           shadowRadius: 2,
           elevation: 1,
         }}
       >
-        <Text style={{ fontSize: 12, color: isDark ? "#94a3b8" : "#64748b", marginBottom: 12 }}>
+        <Text style={{ fontSize: 12, color: isDark ? "#a1a1aa" : "#64748b", marginBottom: 12 }}>
           {isPlaying ? "Playing..." : hasPlayed ? "Playback completed" : "Tap to start"}
         </Text>
         <Pressable
@@ -228,9 +230,9 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               borderRadius: 36,
               overflow: "hidden",
               ...(Platform.OS === "web"
-                ? ({ cursor: hasPlayed ? "default" : "pointer" } as any)
+                ? ({ cursor: hasPlayed ? "default" : "pointer" } as Record<string, unknown>)
                 : {}),
-            } as any
+            } as Record<string, unknown>
           }
         >
           {({ pressed }) => (
@@ -239,7 +241,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
                 flex: 1,
                 backgroundColor: hasPlayed
                   ? isDark
-                    ? "#3f3f46"
+                    ? "#2d2d3a"
                     : "#cbd5e1"
                   : pressed
                     ? "#2563eb"
@@ -251,7 +253,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : hasPlayed ? (
-                <Feather name="check" size={32} color={isDark ? "#a1a1aa" : "#475569"} />
+                <Feather name="check" size={32} color={isDark ? "#818cf8" : "#475569"} />
               ) : (
                 <Feather name={isPlaying ? "pause" : "play"} size={32} color="#fff" />
               )}
@@ -280,7 +282,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as any) : {}),
+              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -307,7 +309,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
           <Text
             style={{
               fontSize: 13,
-              color: isDark ? "#e2e8f0" : "#475569",
+              color: isDark ? "#cbd5e1" : "#475569",
               fontWeight: "600",
               marginTop: 4,
             }}
@@ -329,10 +331,37 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
       </View>
 
       {hasPlayed ? (
-        <McqActivity questions={mcqs} onComplete={onComplete} isNested={true} />
+        mcqs.length > 0 ? (
+          <McqActivity questions={mcqs} onComplete={onComplete} isNested={true} />
+        ) : (
+          <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
+            <Pressable
+              onPress={() => onComplete({ passed: true, score: 100 })}
+              style={{
+                borderRadius: 10,
+                ...(Platform.OS === "web"
+                  ? ({ cursor: "pointer" } as Record<string, unknown>)
+                  : {}),
+              }}
+            >
+              {({ pressed }) => (
+                <View
+                  style={{
+                    backgroundColor: pressed ? "#2563eb" : "#3b82f6",
+                    paddingVertical: 14,
+                    borderRadius: 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        )
       ) : (
         <View className="items-center justify-center py-12 px-6">
-          <Text className="text-slate-500 dark:text-zinc-400 text-center">
+          <Text className="text-slate-500 dark:text-zinc-500 text-center">
             Listen to the audio completely — questions will appear after the audio finishes playing
             once.
           </Text>
