@@ -165,7 +165,6 @@ type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalMessage;
 const AnimatedOrb = React.memo(function AnimatedOrb() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const floatAnim = useRef(new Animated.Value(0)).current;
-  const { isDark } = useThemeToggle();
 
   React.useEffect(() => {
     const pulse = Animated.loop(
@@ -206,33 +205,16 @@ const AnimatedOrb = React.memo(function AnimatedOrb() {
 
   return (
     <View style={s.orbWrapper}>
-      {Platform.OS === "web" ? (
-        <Animated.View
-          style={{ transform: [{ scale: pulseAnim }, { translateY: floatAnim }] }}
-          {...{ className: isDark ? "mix-blend-screen" : "mix-blend-multiply" }}
-        >
-          <img
-            src={Asset.fromModule(AI_ORB_IMAGE).uri}
-            style={{
-              width: 190,
-              height: 190,
-              objectFit: "contain",
-              filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
-            }}
-          />
-        </Animated.View>
-      ) : (
-        <Animated.Image
-          source={AI_ORB_IMAGE}
-          style={[
-            s.orbImage,
-            {
-              transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
-            },
-          ]}
-          resizeMode="contain"
-        />
-      )}
+      <Animated.Image
+        source={AI_ORB_IMAGE}
+        style={[
+          s.orbImage,
+          {
+            transform: [{ scale: pulseAnim }, { translateY: floatAnim }],
+          },
+        ]}
+        resizeMode="contain"
+      />
     </View>
   );
 });
