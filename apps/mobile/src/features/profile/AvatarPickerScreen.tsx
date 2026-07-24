@@ -64,13 +64,15 @@ export function AvatarPickerScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="flex-1 bg-white"
+      className="flex-1 bg-white dark:bg-slate-900"
     >
       <View className="flex-row items-center px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
-          <Feather name="chevron-left" size={22} color="#0f172a" />
+          <Feather name="chevron-left" size={22} className="text-slate-900 dark:text-slate-50" />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-slate-900">Select Your Avatar</Text>
+        <Text className="flex-1 text-center font-bold text-slate-900 dark:text-slate-50">
+          Select Your Avatar
+        </Text>
         <View className="w-9" />
       </View>
 
@@ -84,23 +86,27 @@ export function AvatarPickerScreen() {
         }}
         showsVerticalScrollIndicator={true}
       >
-        <View className="w-28 h-28 rounded-full bg-slate-200 items-center justify-center overflow-hidden mb-2 border-2 border-slate-100 shadow-sm">
+        <View className="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-800 items-center justify-center overflow-hidden mb-2 border-2 border-slate-100 dark:border-slate-700 shadow-sm">
           <Image source={{ uri: selectedAvatarUrl }} className="w-full h-full" />
         </View>
-        <Text className="text-slate-900 font-bold mb-4">{profile?.name ?? "—"}</Text>
+        <Text className="text-slate-900 dark:text-slate-50 font-bold mb-4">
+          {profile?.name ?? "—"}
+        </Text>
 
         {/* Custom 2D Avatar Banner Prompt */}
         <Pressable
           onPress={() => router.push("/profile/custom-avatar" as never)}
-          className="w-full max-w-xs bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex-row items-center justify-between mb-6 active:opacity-90"
+          className="w-full max-w-xs bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-800/50 rounded-2xl p-4 flex-row items-center justify-between mb-6 active:opacity-90"
         >
           <View className="flex-1 mr-3">
-            <Text className="text-emerald-900 font-bold text-sm">🎨 Custom 2D Avatar</Text>
-            <Text className="text-emerald-600 text-xs mt-1">
+            <Text className="text-emerald-900 dark:text-emerald-400 font-bold text-sm">
+              🎨 Custom 2D Avatar
+            </Text>
+            <Text className="text-emerald-600 dark:text-emerald-500/80 text-xs mt-1">
               Design your own vector avatar with custom hair, eyes, and style!
             </Text>
           </View>
-          <View className="w-8 h-8 rounded-full bg-emerald-600 items-center justify-center">
+          <View className="w-8 h-8 rounded-full bg-emerald-600 dark:bg-emerald-700 items-center justify-center">
             <Feather name="arrow-right" size={16} color="#fff" />
           </View>
         </Pressable>
@@ -130,7 +136,7 @@ export function AvatarPickerScreen() {
                     className="relative"
                   >
                     <View
-                      className="w-16 h-16 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-100"
+                      className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 items-center justify-center overflow-hidden border dark:border-slate-700"
                       style={{
                         borderWidth: isSel ? 3 : 1,
                         borderColor: isSel ? "#0f172a" : "transparent",
@@ -140,12 +146,12 @@ export function AvatarPickerScreen() {
                       <Image source={{ uri: imageUrl }} className="w-full h-full" />
                     </View>
                     {a.locked && (
-                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-slate-900 items-center justify-center">
+                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-slate-900 dark:bg-slate-700 items-center justify-center">
                         <Feather name="lock" size={10} color="#fff" />
                       </View>
                     )}
                     {isSel && (
-                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-emerald-500 items-center justify-center">
+                      <View className="absolute right-0 bottom-0 w-6 h-6 rounded-full bg-emerald-500 dark:bg-emerald-600 items-center justify-center">
                         <Feather name="check" size={12} color="#fff" />
                       </View>
                     )}
@@ -160,7 +166,7 @@ export function AvatarPickerScreen() {
           <Pressable
             onPress={handleSave}
             disabled={isSaving}
-            className={`mt-8 px-8 py-3 rounded-full ${isSaving ? "bg-slate-300" : "bg-slate-900"}`}
+            className={`mt-8 px-8 py-3 rounded-full ${isSaving ? "bg-slate-300 dark:bg-slate-700" : "bg-slate-900 dark:bg-indigo-600"}`}
           >
             <Text className="text-white font-bold">{isSaving ? "Saving..." : "Save"}</Text>
           </Pressable>

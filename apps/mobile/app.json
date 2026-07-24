@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "PowerUp",
-    "slug": "powerup",
-    "version": "1.0.1",
+    "slug": "memora",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "powerup",
@@ -65,14 +65,14 @@
     "experiments": {
       "typedRoutes": true
     },
-    "owner": "deepakdev6055",
+    "owner": "komalvardhanlolugu-team",
     "updates": {
-      "url": "https://u.expo.dev/8e258e6f-4c10-4829-8d03-57983507bed1"
+      "url": "https://u.expo.dev/ee1797f2-ebb5-42a5-9caf-21a4201b3662"
     },
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "8e258e6f-4c10-4829-8d03-57983507bed1"
+        "projectId": "ee1797f2-ebb5-42a5-9caf-21a4201b3662"
       }
     },
     "runtimeVersion": {

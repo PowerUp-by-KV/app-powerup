@@ -500,7 +500,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
               recordedDuration={currentLocalDuration}
               onRetake={handleRetake}
               onSubmit={handleNext}
-              submitButtonText={isLastQuestion ? "Check Answers" : "Next Question"}
+              submitButtonText={isLastQuestion ? "Next Section" : "Next Question"}
               isSubmitting={isSubmitting || (isLastQuestion && isAnyUploading)}
             />
           ) : (
@@ -535,12 +535,12 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
               source={require("../../../assets/mascot/Dino Loading.json")}
               autoPlay
               loop
-              style={{ width: 40, height: 40 }}
+              style={{ width: 140, height: 140 }}
             />
-            <Text className="text-slate-800 dark:text-white font-bold text-base mt-2">
+            <Text className="text-slate-800 dark:text-white font-bold text-lg mt-4 text-center">
               Submitting Answers…
             </Text>
-            <Text className="text-slate-500 dark:text-slate-400 text-xs mt-1.5 text-center">
+            <Text className="text-slate-500 dark:text-slate-400 text-sm mt-2 text-center px-4">
               Please wait, do not close the app
             </Text>
           </View>

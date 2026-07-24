@@ -107,6 +107,8 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
       try {
         const formData = new FormData();
         formData.append("domain", domain);
+        formData.append("target_role", domain);
+        formData.append("targetRole", domain);
         if (file) {
           formData.append("file", {
             uri: file.uri,
@@ -116,20 +118,25 @@ export function useResumeBuddyAnalysis(): UseResumeBuddyAnalysis {
         }
         const res = await analyzeResume(formData).unwrap();
         jobId = res.job_id;
-      } catch (err: any) {
+      } catch (err) {
         if (!isMountedRef.current) return;
         let errMsg = "Could not start the analysis. Please check your connection and try again.";
 
-        if (err?.data?.detail) {
-          if (Array.isArray(err.data.detail) && err.data.detail.length > 0) {
-            const firstErr = err.data.detail[0];
+        const errorData = err as
+          | { data?: { detail?: unknown; message?: string } }
+          | null
+          | undefined;
+        if (errorData?.data?.detail) {
+          const detail = errorData.data.detail;
+          if (Array.isArray(detail) && detail.length > 0) {
+            const firstErr = detail[0] as { msg?: string } | null | undefined;
             // Clean up pydantic's "Value error, " prefix if present
-            errMsg = firstErr.msg?.replace(/^Value error, /, "") || errMsg;
-          } else if (typeof err.data.detail === "string") {
-            errMsg = err.data.detail;
+            errMsg = firstErr?.msg?.replace(/^Value error, /, "") || errMsg;
+          } else if (typeof detail === "string") {
+            errMsg = detail;
           }
-        } else if (err?.data?.message) {
-          errMsg = err.data.message;
+        } else if (errorData?.data?.message) {
+          errMsg = errorData.data.message;
         }
 
         setError(errMsg);

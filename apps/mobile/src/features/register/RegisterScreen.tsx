@@ -92,12 +92,14 @@ export function RegisterScreen() {
       errs.email = "Enter a valid email address (e.g. you@example.com).";
     }
 
-    if (phone.trim() && !PHONE_RE.test(phone.replace(/\s/g, ""))) {
-      errs.phone = "Phone must be exactly 10 digits.";
+    if (!phone.trim()) {
+      errs.phone = "Please enter your mobile number.";
+    } else if (!PHONE_RE.test(phone.replace(/\s/g, ""))) {
+      errs.phone = "Please enter a valid 10-digit mobile number.";
     }
 
     if (!password) {
-      errs.password = "Password is required.";
+      errs.password = "Please enter a password to secure your account.";
     } else if (password.length < 8) {
       errs.password = "Password must be at least 8 characters.";
     } else if (strength.score < 2) {

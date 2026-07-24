@@ -106,20 +106,13 @@ export function CustomAvatarScreen() {
 
   // Construct URL
   const buildPreviewUrl = () => {
-    const params = new URLSearchParams();
-    params.append("skinColor", skinColor);
-    params.append("hairColor", hairColor);
-    params.append("hair", hair);
-    params.append("eyes", eyes);
-    params.append("mouth", mouth);
+    let params = `skinColor=${skinColor}&hairColor=${hairColor}&hair=${hair}&eyes=${eyes}&mouth=${mouth}`;
     if (glasses !== "none") {
-      params.append("glasses", glasses);
-      params.append("glassesProbability", "100");
+      params += `&glasses=${glasses}&glassesProbability=100`;
     }
     // Hardcode background to match adventurer preset style
-    params.append("backgroundColor", "b6e3f4,c0aede,d1d4f9");
-    params.append("seed", "user_custom");
-    return `https://api.dicebear.com/7.x/adventurer/png?${params.toString()}`;
+    params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
+    return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
   };
 
   const previewUrl = buildPreviewUrl();
@@ -212,7 +205,7 @@ export function CustomAvatarScreen() {
           <Pressable
             key={opt}
             onPress={() => setter(opt)}
-            className="w-20 h-20 rounded-xl bg-slate-100 items-center justify-center border-2 overflow-hidden"
+            className="w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-700 items-center justify-center border-2 overflow-hidden"
             style={{
               borderColor: isSelected ? (isDark ? "#6366f1" : "#4f46e5") : "transparent",
               ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, string>) : {}),
@@ -220,7 +213,7 @@ export function CustomAvatarScreen() {
           >
             {opt === "none" && categoryKey !== "glasses" ? (
               <Text
-                className={`font-medium text-xs ${isSelected ? "text-indigo-600 font-bold" : "text-slate-600"}`}
+                className={`font-medium text-xs ${isSelected ? "text-indigo-600 dark:text-indigo-400 font-bold" : "text-slate-600 dark:text-slate-300"}`}
               >
                 None
               </Text>
@@ -228,8 +221,8 @@ export function CustomAvatarScreen() {
               <Image source={{ uri: optUrl }} className="w-full h-full" resizeMode="contain" />
             )}
             {opt === "none" && categoryKey === "glasses" && (
-              <View className="absolute inset-0 bg-white/60 items-center justify-center">
-                <Text className="font-bold text-xs text-slate-800">None</Text>
+              <View className="absolute inset-0 bg-white/60 dark:bg-black/60 items-center justify-center">
+                <Text className="font-bold text-xs text-slate-800 dark:text-slate-200">None</Text>
               </View>
             )}
           </Pressable>
@@ -245,17 +238,24 @@ export function CustomAvatarScreen() {
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
       }}
-      className="bg-slate-50"
+      className="bg-slate-50 dark:bg-slate-900"
     >
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 bg-white border-b border-slate-100">
+      <View className="flex-row items-center px-4 py-3 bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
         <Pressable
           onPress={() => safeBack()}
-          className="w-10 h-10 items-center justify-center rounded-full bg-slate-50"
+          className="w-10 h-10 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-700"
         >
-          <Feather name="x" size={20} color="#0f172a" />
+          <Feather
+            name="x"
+            size={20}
+            color={Platform.OS === "web" ? "#0f172a" : undefined}
+            className="text-slate-900 dark:text-slate-50"
+          />
         </Pressable>
-        <Text className="flex-1 text-center font-bold text-lg text-slate-900">Custom Avatar</Text>
+        <Text className="flex-1 text-center font-bold text-lg text-slate-900 dark:text-slate-50">
+          Custom Avatar
+        </Text>
         <Pressable
           onPress={handleSave}
           disabled={isSaving}
@@ -272,14 +272,14 @@ export function CustomAvatarScreen() {
       </View>
 
       {/* Avatar Preview */}
-      <View className="items-center justify-center py-6 bg-white shadow-sm z-10">
-        <View className="w-40 h-40 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100">
+      <View className="items-center justify-center py-6 bg-white dark:bg-slate-800 shadow-sm z-10">
+        <View className="w-40 h-40 rounded-full border-4 border-white dark:border-slate-700 shadow-md overflow-hidden bg-slate-100 dark:bg-slate-900">
           <Image source={{ uri: previewUrl }} className="w-full h-full" />
         </View>
       </View>
 
       {/* Category Tabs */}
-      <View className="bg-white border-b border-slate-200">
+      <View className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -296,10 +296,10 @@ export function CustomAvatarScreen() {
             <Pressable
               key={cat.id}
               onPress={() => setActiveCategory(cat.id as Category)}
-              className={`py-4 px-5 border-b-2 ${activeCategory === cat.id ? "border-indigo-600" : "border-transparent"}`}
+              className={`py-4 px-5 border-b-2 ${activeCategory === cat.id ? "border-indigo-600 dark:border-indigo-400" : "border-transparent"}`}
             >
               <Text
-                className={`font-bold ${activeCategory === cat.id ? "text-indigo-600" : "text-slate-500"}`}
+                className={`font-bold ${activeCategory === cat.id ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500 dark:text-slate-400"}`}
               >
                 {cat.label}
               </Text>

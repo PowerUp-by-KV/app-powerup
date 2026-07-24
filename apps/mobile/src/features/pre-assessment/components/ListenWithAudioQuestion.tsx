@@ -38,6 +38,17 @@ export function ListenWithAudioQuestion({
         </Text>
       </View>
 
+      {question.question || (question as any).prompt || question.text ? (
+        <View className="bg-white dark:bg-[#1E1F2A] p-4 rounded-xl border border-gray-200 dark:border-slate-800 mb-4 shadow-sm">
+          <Text className="text-sm text-gray-500 dark:text-gray-400 font-semibold mb-1">
+            Prompt / Question:
+          </Text>
+          <Text className="text-base text-gray-800 dark:text-white leading-relaxed">
+            {question.question || (question as any).prompt || question.text}
+          </Text>
+        </View>
+      ) : null}
+
       <View className="bg-gray-100 dark:bg-[#1E1F2A] border border-transparent dark:border-slate-800 p-4 rounded-lg mb-3 flex-row justify-between items-center">
         <View>
           <Text className="text-sm text-gray-600 dark:text-gray-400 mb-1">

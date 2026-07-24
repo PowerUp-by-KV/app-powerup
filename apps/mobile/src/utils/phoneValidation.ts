@@ -47,8 +47,8 @@ export function validatePhoneDigits(
   if (!cleaned) {
     return { isValid: false, message: "Phone number is required" };
   }
-  if (cleaned.length < expected - 1 || cleaned.length > expected + 1) {
-    return { isValid: false, message: `Expected approx ${expected} digits for ${code}` };
+  if (cleaned.length !== expected) {
+    return { isValid: false, message: `Expected exactly ${expected} digits for ${code}` };
   }
   return { isValid: true, message: "Valid phone number format" };
 }
