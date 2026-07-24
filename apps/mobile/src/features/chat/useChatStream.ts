@@ -6,7 +6,7 @@ import EventSource, {
   type TimeoutEvent,
 } from "react-native-sse";
 import { getAuthSession } from "@/services/auth-storage";
-import { API_BASE_URL } from "@/services/api";
+import { API_BASE_URL, refreshAccessToken } from "@/services/api";
 import { chatApi } from "@/services/chat-api";
 import { useAppDispatch } from "@/store/hooks";
 
@@ -93,6 +93,123 @@ export function useChatStream(): UseChatStreamReturn {
     setAssistantMessageId(null);
   }, [closeConnection]);
 
+  // Helper to open the SSE connection with a given token
+  const openSSEConnection = useCallback(
+    (threadId: string, token: string, body: string, hasRetriedRef: { current: boolean }) => {
+      const url = `${API_BASE_URL}/v1/chat/threads/${threadId}/messages/stream`;
+
+      const es = new EventSource(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body,
+        pollingInterval: 0, // One-shot, no auto-reconnect
+      });
+
+      eventSourceRef.current = es;
+
+      es.addEventListener("message", (event: MessageEvent) => {
+        if (!event.data) return;
+
+        let data: SSEPayload;
+        try {
+          data = JSON.parse(event.data) as SSEPayload;
+        } catch {
+          return; // Ignore non-JSON frames (keep-alive, etc.)
+        }
+
+        if (data.event === "start") {
+          setUserMessageId(data.user_message_id);
+        } else if (data.event === "chunk") {
+          setStreamingContent((prev) => prev + data.content);
+        } else if (data.event === "done") {
+          setAssistantMessageId(data.assistant_message_id);
+          setIsStreaming(false);
+          closeConnection();
+
+          // Invalidate RTK Query cache so getChatMessages refetches
+          dispatch(chatApi.util.invalidateTags([{ type: "Chat", id: threadId }, "Chat"]));
+        } else if (data.event === "error") {
+          // If credentials error and haven't retried yet, try refreshing token
+          const detail = data.detail || "";
+          const isCredentialsError =
+            detail.toLowerCase().includes("credential") ||
+            detail.toLowerCase().includes("authenticated") ||
+            detail.toLowerCase().includes("unauthorized");
+
+          if (isCredentialsError && !hasRetriedRef.current) {
+            hasRetriedRef.current = true;
+            closeConnection();
+            closedRef.current = false;
+            setStreamingContent("");
+            // Attempt token refresh and retry
+            refreshAccessToken().then((newToken) => {
+              if (newToken) {
+                openSSEConnection(threadId, newToken, body, hasRetriedRef);
+              } else {
+                setStreamError("Session expired. Please log in again.");
+                setIsStreaming(false);
+              }
+            });
+            return;
+          }
+
+          setStreamError(
+            isCredentialsError ? "Session expired. Please log in again." : data.detail,
+          );
+          setIsStreaming(false);
+          closeConnection();
+        }
+      });
+
+      es.addEventListener("error", (event: ErrorEvent | TimeoutEvent | ExceptionEvent) => {
+        if (closedRef.current) return;
+        const message =
+          "message" in event && typeof event.message === "string"
+            ? event.message
+            : "Connection error. Please try again.";
+        console.error("[useChatStream] SSE connection error:", message);
+
+        const isCredentialsError =
+          message.toLowerCase().includes("credential") ||
+          message.toLowerCase().includes("authenticated") ||
+          message.toLowerCase().includes("unauthorized") ||
+          message.includes("401");
+
+        if (isCredentialsError) {
+          if (!hasRetriedRef.current) {
+            hasRetriedRef.current = true;
+            closeConnection();
+            closedRef.current = false;
+            setStreamingContent("");
+            refreshAccessToken().then((newToken) => {
+              if (newToken) {
+                openSSEConnection(threadId, newToken, body, hasRetriedRef);
+              } else {
+                setStreamError("Session expired. Please log in again.");
+                setIsStreaming(false);
+              }
+            });
+            return;
+          } else {
+            setStreamError("Session expired. Please log in again.");
+            setIsStreaming(false);
+            closeConnection();
+            return;
+          }
+        }
+
+        setStreamError(message);
+        setIsStreaming(false);
+        closeConnection();
+      });
+    },
+    [dispatch, closeConnection],
+  );
+
   const sendStreamMessage = useCallback(
     async (threadId: string, content: string, quickActionId?: string) => {
       // Reset state for the new stream
@@ -106,78 +223,35 @@ export function useChatStream(): UseChatStreamReturn {
 
       try {
         const session = await getAuthSession();
-        const token = session?.access_token;
+        let token = session?.access_token;
+
+        // If no token, attempt a refresh before giving up
         if (!token) {
-          setStreamError("Not authenticated. Please log in again.");
-          setIsStreaming(false);
-          return;
+          const refreshedToken = await refreshAccessToken();
+          if (refreshedToken) {
+            token = refreshedToken;
+          } else {
+            setStreamError("Not authenticated. Please log in again.");
+            setIsStreaming(false);
+            return;
+          }
         }
 
-        const url = `${API_BASE_URL}/v1/chat/threads/${threadId}/messages/stream`;
-        const body: Record<string, string | undefined> = { content };
+        const bodyObj: Record<string, string | undefined> = { content };
         if (quickActionId) {
-          body.quick_action_id = quickActionId;
+          bodyObj.quick_action_id = quickActionId;
         }
+        const body = JSON.stringify(bodyObj);
+        const hasRetriedRef = { current: false };
 
-        const es = new EventSource(url, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-          },
-          body: JSON.stringify(body),
-          pollingInterval: 0, // One-shot, no auto-reconnect
-        });
-
-        eventSourceRef.current = es;
-
-        es.addEventListener("message", (event: MessageEvent) => {
-          if (!event.data) return;
-
-          let data: SSEPayload;
-          try {
-            data = JSON.parse(event.data) as SSEPayload;
-          } catch {
-            return; // Ignore non-JSON frames (keep-alive, etc.)
-          }
-
-          if (data.event === "start") {
-            setUserMessageId(data.user_message_id);
-          } else if (data.event === "chunk") {
-            setStreamingContent((prev) => prev + data.content);
-          } else if (data.event === "done") {
-            setAssistantMessageId(data.assistant_message_id);
-            setIsStreaming(false);
-            closeConnection();
-
-            // Invalidate RTK Query cache so getChatMessages refetches
-            dispatch(chatApi.util.invalidateTags([{ type: "Chat", id: threadId }, "Chat"]));
-          } else if (data.event === "error") {
-            setStreamError(data.detail);
-            setIsStreaming(false);
-            closeConnection();
-          }
-        });
-
-        es.addEventListener("error", (event: ErrorEvent | TimeoutEvent | ExceptionEvent) => {
-          if (closedRef.current) return;
-          const message =
-            "message" in event && typeof event.message === "string"
-              ? event.message
-              : "Connection error. Please try again.";
-          console.error("[useChatStream] SSE connection error:", message);
-          setStreamError(message);
-          setIsStreaming(false);
-          closeConnection();
-        });
+        openSSEConnection(threadId, token, body, hasRetriedRef);
       } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to start streaming.";
         setStreamError(message);
         setIsStreaming(false);
       }
     },
-    [dispatch, closeConnection],
+    [dispatch, closeConnection, openSSEConnection],
   );
 
   return {
