@@ -7,7 +7,7 @@ import {
   useSavePipelineSessionMutation,
 } from "@/services/interview-playground-api";
 import { getAuthSession } from "@/services/auth-storage";
-import type { EvaluationResult, InterviewStatus, TranscriptTurn } from "../types";
+import type { EvaluationResult, InterviewMode, InterviewStatus, TranscriptTurn } from "../types";
 
 interface UsePipelineInterviewReturn {
   status: InterviewStatus;
@@ -24,7 +24,9 @@ interface UsePipelineInterviewReturn {
   stopRecording: () => Promise<void>;
 }
 
-export function usePipelineInterview(): UsePipelineInterviewReturn {
+export function usePipelineInterview(
+  mode: InterviewMode = "playground",
+): UsePipelineInterviewReturn {
   const [status, setStatus] = useState<InterviewStatus>("idle");
   const [transcript, setTranscript] = useState<TranscriptTurn[]>([]);
   const [isSpeaking, setIsSpeaking] = useState({ user: false, ai: false });
@@ -232,7 +234,7 @@ export function usePipelineInterview(): UsePipelineInterviewReturn {
 
     let backendData;
     try {
-      backendData = await startPipelineMutation().unwrap();
+      backendData = await startPipelineMutation({ mode }).unwrap();
     } catch {
       handleError("Could not start the interview. Please try again.");
       return null;

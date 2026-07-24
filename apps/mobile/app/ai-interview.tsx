@@ -105,8 +105,8 @@ function BuddyHeader({
 
       <View style={styles.expectCard}>
         <Text style={styles.expectTitle}>What to expect</Text>
-        <CheckRow label="6–8 questions across Communication & Behavioral skills" />
-        <CheckRow label="Formal AI interviewer — no hints or coaching during session" />
+        <CheckRow label="Questions tailored specifically to your uploaded résumé, projects & tech stack" />
+        <CheckRow label="Formal AI interviewer — deep-dives into your named projects and claimed skills" />
         <CheckRow label="Full score breakdown with grade (A–F) at the end" />
         <CheckRow label="Strengths and improvement areas tailored to your answers" />
       </View>
@@ -140,7 +140,7 @@ function WebRTCBuddyScreen() {
   const handleStart = useCallback(async () => {
     const sid = await startInterview();
     if (sid) {
-      router.push({ pathname: "/interview-room", params: { session_id: sid } });
+      router.push({ pathname: "/interview-room", params: { session_id: sid, mode: "buddy" } });
     }
   }, [startInterview]);
 
@@ -320,6 +320,7 @@ function WebRTCBuddyScreen() {
 // ---------------------------------------------------------------------------
 function PipelineBuddyScreen() {
   const insets = useSafeAreaInsets();
+  const goBack = useSafeBack("/");
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
 
   const hasResume = !!resume && resume.parse_status === "completed";
@@ -345,7 +346,7 @@ function PipelineBuddyScreen() {
     return (
       <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <ScrollView contentContainerStyle={styles.content}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={goBack} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color="#475569" />
           </Pressable>
           <Text style={styles.title}>Interview Buddy</Text>
@@ -367,7 +368,7 @@ function PipelineBuddyScreen() {
   return (
     <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={goBack} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color="#475569" />
         </Pressable>
 
@@ -403,15 +404,10 @@ function PipelineBuddyScreen() {
 // ---------------------------------------------------------------------------
 export default function InterviewBuddyScreen() {
   const tier = usePlanTier();
+  const goBack = useSafeBack("/");
 
   if (tier === "free") {
-    return (
-      <PaywallScreen
-        requiredTier="pro"
-        featureName="Interview Buddy"
-        onBack={() => router.back()}
-      />
-    );
+    return <PaywallScreen requiredTier="pro" featureName="Interview Buddy" onBack={goBack} />;
   }
 
   if (tier === "pro") {

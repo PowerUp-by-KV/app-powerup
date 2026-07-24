@@ -501,7 +501,7 @@ export function LearningJourneyScreen() {
   const navigation = useNavigation();
   const gate = useLearningJourneyGate();
   const insets = useSafeAreaInsets();
-  const { isDark, toggleTheme } = useThemeToggle();
+  const { isDark } = useThemeToggle();
 
   const {
     data: profile,
@@ -1054,16 +1054,6 @@ export function LearningJourneyScreen() {
           </Text>
         </View>
         <View className="flex-row items-center" style={{ gap: 12 }}>
-          <Pressable
-            onPress={() => toggleTheme()}
-            className="w-10 h-10 rounded-full bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 items-center justify-center active:opacity-80 shadow-sm"
-          >
-            <Feather
-              name={isDark ? "sun" : "moon"}
-              size={20}
-              color={isDark ? "#fbbf24" : "#475569"}
-            />
-          </Pressable>
           <Pressable
             onPress={() => router.push("/profile" as never)}
             className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 border border-slate-100 dark:border-slate-800 items-center justify-center overflow-hidden active:opacity-80"

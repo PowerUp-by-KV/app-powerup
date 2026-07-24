@@ -34,7 +34,7 @@ export function LeaderboardScreen() {
   const { data, isLoading } = useGetLeaderboardQuery({ period });
   const [friendsOpen, setFriendsOpen] = useState(false);
   const insets = useSafeAreaInsets();
-  const { isDark, toggleTheme } = useThemeToggle();
+  const { isDark } = useThemeToggle();
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
@@ -185,18 +185,6 @@ export function LeaderboardScreen() {
             </Text>
           </View>
           <View className="flex-row items-center" style={{ gap: 12 }}>
-            <Pressable
-              onPress={toggleTheme}
-              className={`w-10 h-10 rounded-full items-center justify-center ${
-                isDark ? "bg-slate-700" : "bg-slate-200"
-              }`}
-            >
-              <Feather
-                name={isDark ? "sun" : "moon"}
-                size={18}
-                color={isDark ? "#f8fafc" : "#1e293b"}
-              />
-            </Pressable>
             <Pressable
               onPress={() => router.push("/profile" as never)}
               className={`w-12 h-12 rounded-full items-center justify-center overflow-hidden active:opacity-80 ${

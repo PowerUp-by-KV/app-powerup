@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { Platform, Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
-import { Feather } from "@expo/vector-icons";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -46,7 +45,7 @@ const PROGRESSION_WAVES = [
 
 export function HomeScreen() {
   const router = useRouter();
-  const { isDark, toggleTheme } = useThemeToggle();
+  const { isDark } = useThemeToggle();
   const { data: profile, isLoading: isProfileLoading } = useGetProfileQuery();
   const gate = useLearningJourneyGate();
   const { data: resumeStatus, isLoading: isResumeStatusLoading } = useGetResumeStatusQuery();
@@ -281,18 +280,6 @@ export function HomeScreen() {
             </Text>
           </View>
           <View className="flex-row items-center" style={{ gap: 12 }}>
-            <Pressable
-              onPress={() => toggleTheme()}
-              className={`w-10 h-10 rounded-full items-center justify-center ${
-                isDark ? "bg-[#16161c] border border-slate-800" : "bg-slate-100"
-              }`}
-            >
-              <Feather
-                name={isDark ? "sun" : "moon"}
-                size={18}
-                color={isDark ? "#f8fafc" : "#1e293b"}
-              />
-            </Pressable>
             <Pressable
               onPress={() => router.push("/profile" as never)}
               className="w-12 h-12 rounded-full bg-white dark:bg-[#16161c] border border-indigo-100 dark:border-slate-800 items-center justify-center shadow-sm shadow-indigo-100 dark:shadow-none active:scale-95"

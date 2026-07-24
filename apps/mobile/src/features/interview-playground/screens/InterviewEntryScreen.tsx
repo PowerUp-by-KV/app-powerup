@@ -49,11 +49,9 @@ function WebRTCEntry() {
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "playground",
   });
-  const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
   const { startInterview, status, errorMessage } = useWebRTCInterview();
 
   const isStarting = status === "starting" || status === "connecting";
-  const hasResume = !!resume && resume.parse_status === "completed";
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack("/");
@@ -85,7 +83,7 @@ function WebRTCEntry() {
         <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Playground</Text>
       </View>
       <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
-        Practice your interview with an AI interviewer
+        Freeform practice ground with scenario-based & behavioral questions
       </Text>
 
       {status !== "idle" && status !== "done" && (
@@ -96,28 +94,15 @@ function WebRTCEntry() {
 
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-      {!hasResume && !isLoadingResume && (
-        <View style={[styles.warningBox, isDark && { backgroundColor: "#431407" }]}>
-          <Text style={[styles.warningText, isDark && { color: "#FDBA74" }]}>
-            Upload your resume first so we can tailor the interview to your profile.
-          </Text>
-          <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
-            <Text style={[styles.resumeLinkText, isDark && { color: "#818CF8" }]}>
-              Go to Resume
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
       <Pressable
-        style={[styles.startButton, (!hasResume || isStarting) && styles.startButtonDisabled]}
+        style={[styles.startButton, isStarting && styles.startButtonDisabled]}
         onPress={handleStart}
-        disabled={!hasResume || isStarting}
+        disabled={isStarting}
       >
         {isStarting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.startButtonText}>Start Interview</Text>
+          <Text style={styles.startButtonText}>Start Practice Session</Text>
         )}
       </Pressable>
 

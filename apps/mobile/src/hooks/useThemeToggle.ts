@@ -54,7 +54,7 @@ export function useThemeToggle() {
       }
     };
     loadTheme();
-  }, [colorScheme, setColorScheme]);
+  }, [setColorScheme]);
 
   const toggleTheme = useCallback(() => {
     const nextIsDark = !isDark;

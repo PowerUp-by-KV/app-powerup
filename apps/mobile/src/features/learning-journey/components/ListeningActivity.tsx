@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  GestureResponderEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -50,7 +49,6 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
   const [loading, setLoading] = useState(false);
   const [position, setPosition] = useState<number | null>(null);
   const [duration, setDuration] = useState<number | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
 
   // 4 Animated values looping at different rates to create a rich audio equalizer look
   const anims = [
@@ -155,21 +153,6 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     }
   };
 
-  const handleSeek = async (event: GestureResponderEvent) => {
-    if (!soundRef.current || duration === null || loading) return;
-    const { locationX } = event.nativeEvent;
-    if (containerWidth > 0) {
-      const clickPercent = Math.max(0, Math.min(1, locationX / containerWidth));
-      const targetMillis = clickPercent * duration;
-      setPosition(targetMillis);
-      try {
-        await soundRef.current.setPositionAsync(targetMillis);
-      } catch (err) {
-        console.warn("Seeking failed:", err);
-      }
-    }
-  };
-
   const onStatus = (status: AVPlaybackStatus) => {
     if (!status.isLoaded) return;
     setPosition(status.positionMillis);
@@ -261,9 +244,8 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
           )}
         </Pressable>
 
-        {/* Dynamic, Seekable Waveform Visualizer */}
+        {/* Dynamic Waveform Visualizer (Non-Seekable) */}
         <View
-          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
           style={{
             width: 280, // Extended width (~7cm on phone screens)
             height: 60,
@@ -272,17 +254,15 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
             justifyContent: "center",
             alignSelf: "center",
           }}
+          pointerEvents="none"
         >
-          <Pressable
-            onPress={handleSeek}
-            disabled={loading || !soundRef.current}
+          <View
             style={{
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "space-between",
               height: "100%",
               width: "100%",
-              ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
             }}
           >
             {WAVEFORM_BARS.map((baseHeight, index) => {
@@ -302,7 +282,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
                 />
               );
             })}
-          </Pressable>
+          </View>
         </View>
 
         {position !== null || duration !== null ? (

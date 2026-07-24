@@ -10,6 +10,7 @@ import { ConnectionBadge } from "../components/ConnectionBadge";
 import { TranscriptPanel } from "../components/TranscriptPanel";
 import { AvatarStage } from "../components/AvatarStage";
 import { showAlert } from "@/utils/alert";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 interface PipelineInterviewRoomScreenProps {
   mode?: "buddy" | "playground";
@@ -20,6 +21,7 @@ export function PipelineInterviewRoomScreen({
 }: PipelineInterviewRoomScreenProps) {
   const insets = useSafeAreaInsets();
   const startedRef = useRef(false);
+  const goBack = useSafeBack("/");
 
   const {
     status,
@@ -33,7 +35,7 @@ export function PipelineInterviewRoomScreen({
     endInterview,
     startRecording,
     stopRecording,
-  } = usePipelineInterview();
+  } = usePipelineInterview(mode);
 
   // Start interview on mount (once)
   useEffect(() => {
@@ -51,14 +53,9 @@ export function PipelineInterviewRoomScreen({
       });
     } else if (status === "error") {
       const msg = errorMessage ?? "An error occurred.";
-      if (Platform.OS === "web") {
-        if (typeof window !== "undefined") window.alert(`Interview Error: ${msg}`);
-        router.back();
-      } else {
-        showAlert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
-      }
+      showAlert("Interview Error", msg, [{ text: "OK", onPress: () => goBack() }]);
     }
-  }, [status, sessionId, mode, errorMessage]);
+  }, [status, sessionId, mode, errorMessage, goBack]);
 
   const handleEnd = useCallback(async () => {
     const runEnd = async () => {

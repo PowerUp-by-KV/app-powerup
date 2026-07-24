@@ -439,7 +439,7 @@ export function MedalsScreen() {
 
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 96 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
         {isLoading ? (
@@ -484,16 +484,11 @@ export function MedalsScreen() {
                   {row.map((b) => (
                     <View
                       key={b.id}
-                      style={[
-                        styles.badgeCardPressable,
-                        {
-                          width: "30%",
-                          maxWidth: "30%",
-                          height: 115,
-                          marginBottom: 0,
-                          paddingHorizontal: 0,
-                        },
-                      ]}
+                      style={{
+                        width: "33.33%",
+                        alignItems: "center",
+                        paddingHorizontal: 4,
+                      }}
                     >
                       <Pressable
                         onPress={() => setSelectedBadge(b)}
@@ -501,7 +496,6 @@ export function MedalsScreen() {
                           {
                             alignItems: "center",
                             width: "100%",
-                            height: "100%",
                             justifyContent: "flex-start",
                           },
                           { transform: [{ scale: pressed ? 0.95 : 1 }] },
@@ -540,26 +534,37 @@ export function MedalsScreen() {
                           )}
                         </View>
 
-                        {/* Badge Label */}
-                        <Text
-                          numberOfLines={2}
-                          style={[
-                            styles.badgeCardTitle,
-                            {
-                              width: "100%",
-                              paddingHorizontal: 2,
-                              color: b.unlocked
-                                ? isDark
-                                  ? "#ffffff"
-                                  : "#1B1F35"
-                                : isDark
-                                  ? "#8B93A8"
-                                  : "#A0A7B8",
-                            },
-                          ]}
+                        {/* Badge Label Container */}
+                        <View
+                          style={{
+                            height: 34,
+                            maxWidth: 88,
+                            width: "100%",
+                            justifyContent: "flex-start",
+                            alignItems: "center",
+                            marginTop: 6,
+                          }}
                         >
-                          {b.title}
-                        </Text>
+                          <Text
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                            style={[
+                              styles.badgeCardTitle,
+                              {
+                                color: b.unlocked
+                                  ? isDark
+                                    ? "#ffffff"
+                                    : "#1B1F35"
+                                  : isDark
+                                    ? "#8B93A8"
+                                    : "#A0A7B8",
+                              },
+                            ]}
+                          >
+                            {b.title}
+                          </Text>
+                        </View>
                       </Pressable>
                     </View>
                   ))}
@@ -568,16 +573,10 @@ export function MedalsScreen() {
                     Array.from({ length: 3 - row.length }).map((_, i) => (
                       <View
                         key={`empty-${i}`}
-                        style={[
-                          styles.badgeCardPressable,
-                          {
-                            width: "30%",
-                            maxWidth: "30%",
-                            height: 115,
-                            marginBottom: 0,
-                            paddingHorizontal: 0,
-                          },
-                        ]}
+                        style={{
+                          width: "33.33%",
+                          paddingHorizontal: 4,
+                        }}
                       />
                     ))}
                 </View>
@@ -707,26 +706,26 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   badgeCardPressable: {
-    width: "33.3%",
+    width: "33.33%",
     alignItems: "center",
-    marginBottom: 24,
-    paddingHorizontal: 8,
+    marginBottom: 0,
+    paddingHorizontal: 4,
   },
   badgeCircleShell: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2.5,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
     position: "relative",
   },
   badgeEmoji: {
-    fontSize: 32,
+    fontSize: 30,
   },
   lockOverlayCircle: {
     position: "absolute",
@@ -747,9 +746,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   badgeCardTitle: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: "700",
-    marginTop: 8,
     textAlign: "center",
     width: "100%",
     lineHeight: 14,

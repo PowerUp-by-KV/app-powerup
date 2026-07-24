@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "rea
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
@@ -14,6 +15,8 @@ export function AvatarPickerScreen() {
   const safeBack = useSafeBack();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const { data: profile } = useGetProfileQuery();
   const { data: avatars = [], isLoading } = useGetAvatarsQuery();
   const [patch, { isLoading: isSaving }] = usePatchProfileMutation();
@@ -63,7 +66,7 @@ export function AvatarPickerScreen() {
       }}
       className="flex-1 bg-white"
     >
-      <View className="flex-row items-center px-4 py-3">
+      <View className="flex-row items-center px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} color="#0f172a" />
         </Pressable>
@@ -130,7 +133,7 @@ export function AvatarPickerScreen() {
                       className="w-16 h-16 rounded-full bg-slate-200 items-center justify-center overflow-hidden border border-slate-100"
                       style={{
                         borderWidth: isSel ? 3 : 1,
-                        borderColor: isSel ? "#0f172a" : "#f1f5f9",
+                        borderColor: isSel ? "#0f172a" : "transparent",
                         opacity: a.locked ? 0.4 : 1,
                       }}
                     >

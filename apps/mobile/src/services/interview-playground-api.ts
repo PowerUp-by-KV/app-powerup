@@ -61,10 +61,14 @@ export const interviewPlaygroundApi = api.injectEndpoints({
     }),
 
     // Pipeline (pro)
-    startPipelineInterview: builder.mutation<PipelineStartResponse, void>({
-      query: () => ({
+    startPipelineInterview: builder.mutation<
+      PipelineStartResponse,
+      { mode?: "buddy" | "playground" } | void
+    >({
+      query: (arg) => ({
         url: "/v1/interview/pipeline/start",
         method: "POST",
+        body: { mode: arg?.mode ?? "playground" },
       }),
     }),
 

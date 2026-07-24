@@ -1,6 +1,6 @@
 import "../global.css";
 import { useEffect, useState } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
 import { Provider } from "react-redux";
 import { store } from "@/store";
 import { useFonts } from "expo-font";
@@ -36,7 +36,7 @@ const ALLOWED_BEFORE_ONBOARDING = [
   "profile",
 ];
 
-function RouteGuard({ children }: { children: React.ReactNode }) {
+function InnerRouteGuard() {
   const router = useRouter();
   const segments = useSegments();
   const currentRoute = segments[0] as string | undefined;
@@ -214,7 +214,13 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
     cachedOnboardingComplete,
   ]);
 
-  return <>{children}</>;
+  return null;
+}
+
+function RouteGuard() {
+  const rootNavigationState = useRootNavigationState();
+  if (!rootNavigationState?.key) return null;
+  return <InnerRouteGuard />;
 }
 
 export default function AuthLayout() {
@@ -286,36 +292,35 @@ export default function AuthLayout() {
 
   return (
     <Provider store={store}>
-      <RouteGuard>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          gestureEnabled: true,
+        }}
+        initialRouteName="splash"
+      >
+        <Stack.Screen name="splash" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="otp" />
+        <Stack.Screen name="success" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="read" />
+        <Stack.Screen name="speak-read" />
+        <Stack.Screen name="listen-audio" />
+        <Stack.Screen name="speak" />
+        <Stack.Screen name="grammar" />
+        <Stack.Screen name="listen" />
+        <Stack.Screen name="results" />
+        <Stack.Screen
+          name="chat"
+          options={{
+            presentation: "transparentModal",
+            animation: "fade",
           }}
-          initialRouteName="splash"
-        >
-          <Stack.Screen name="splash" />
-          <Stack.Screen name="login" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="otp" />
-          <Stack.Screen name="success" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="read" />
-          <Stack.Screen name="speak-read" />
-          <Stack.Screen name="listen-audio" />
-          <Stack.Screen name="speak" />
-          <Stack.Screen name="grammar" />
-          <Stack.Screen name="listen" />
-          <Stack.Screen name="results" />
-          <Stack.Screen
-            name="chat"
-            options={{
-              presentation: "transparentModal",
-              animation: "fade",
-            }}
-          />
-        </Stack>
-      </RouteGuard>
+        />
+      </Stack>
+      <RouteGuard />
       {/* Renders showAlert() dialogs on web, where React Native's Alert is a no-op. */}
       <AlertHost />
     </Provider>
