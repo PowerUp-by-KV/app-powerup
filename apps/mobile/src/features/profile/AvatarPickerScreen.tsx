@@ -3,7 +3,6 @@ import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from "rea
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useColorScheme } from "nativewind";
 import { useSafeBack } from "@/hooks/useSafeBack";
 
 import { useGetProfileQuery, usePatchProfileMutation } from "@/services/auth-api";
@@ -15,8 +14,6 @@ export function AvatarPickerScreen() {
   const safeBack = useSafeBack();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { data: profile } = useGetProfileQuery();
   const { data: avatars = [], isLoading } = useGetAvatarsQuery();
   const [patch, { isLoading: isSaving }] = usePatchProfileMutation();

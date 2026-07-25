@@ -17,7 +17,7 @@ export function ResumeSkeletonLoader({ text = "Analysing Resume..." }: ResumeSke
         style={[
           styles.skeletonPaper,
           { backgroundColor: isDark ? "#1e293b" : "white" },
-          Platform.OS === "web" ? ({ filter: "blur(4px)" } as unknown as React.CSSProperties) : {},
+          Platform.OS === "web" ? ({ filter: "blur(4px)" } as never) : {},
         ]}
       >
         {/* Left sidebar block */}
