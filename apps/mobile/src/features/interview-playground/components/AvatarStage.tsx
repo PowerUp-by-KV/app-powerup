@@ -4,6 +4,8 @@ import LottieView from "lottie-react-native";
 
 import { VoiceWaveform } from "./VoiceWaveform";
 
+import { useColorScheme } from "nativewind";
+
 interface AvatarStageProps {
   aiSpeaking: boolean;
   userSpeaking: boolean;
@@ -15,6 +17,8 @@ interface AvatarStageProps {
 // and a soft glow ring pulses while the interviewer is speaking, so the screen
 // feels alive and it's obvious whose turn it is.
 export function AvatarStage({ aiSpeaking, userSpeaking, subtitle }: AvatarStageProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const glow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -50,8 +54,15 @@ export function AvatarStage({ aiSpeaking, userSpeaking, subtitle }: AvatarStageP
   return (
     <View style={styles.container}>
       <View style={styles.avatarWrap}>
-        <Animated.View style={[styles.glow, glowStyle]} />
-        <View style={styles.avatarCircle}>
+        <Animated.View
+          style={[styles.glow, glowStyle, !isDark && { backgroundColor: "#818CF8" }]}
+        />
+        <View
+          style={[
+            styles.avatarCircle,
+            !isDark && { backgroundColor: "#EEF2FF", borderColor: "#C7D2FE" },
+          ]}
+        >
           <LottieView
             source={require("../../../../assets/mascot/Cute Robot Flying Cartoon.json")}
             autoPlay
@@ -62,21 +73,32 @@ export function AvatarStage({ aiSpeaking, userSpeaking, subtitle }: AvatarStageP
         </View>
       </View>
 
-      <Text style={styles.name}>AI Interviewer</Text>
+      <Text style={[styles.name, !isDark && { color: "#0F172A" }]}>AI Interviewer</Text>
       {subtitle ? (
-        <Text style={styles.subtitle} numberOfLines={1}>
+        <Text style={[styles.subtitle, !isDark && { color: "#64748B" }]} numberOfLines={1}>
           {subtitle}
         </Text>
       ) : null}
-      <Text style={styles.statusLine}>
+      <Text style={[styles.statusLine, !isDark && { color: "#4F46E5" }]}>
         {aiSpeaking ? "Speaking…" : userSpeaking ? "Listening…" : "Ready when you are"}
       </Text>
 
-      <View style={styles.userRow}>
-        <View style={[styles.micDot, userSpeaking && styles.micDotActive]} />
-        <Text style={styles.userLabel}>You</Text>
+      <View
+        style={[
+          styles.userRow,
+          !isDark && { backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0" },
+        ]}
+      >
+        <View
+          style={[
+            styles.micDot,
+            !isDark && !userSpeaking && { backgroundColor: "#94A3B8" },
+            userSpeaking && styles.micDotActive,
+          ]}
+        />
+        <Text style={[styles.userLabel, !isDark && { color: "#334155" }]}>You</Text>
         <View style={styles.waveWrap}>
-          <VoiceWaveform isSpeaking={userSpeaking} color="#38BDF8" />
+          <VoiceWaveform isSpeaking={userSpeaking} color={isDark ? "#38BDF8" : "#0284C7"} />
         </View>
       </View>
     </View>

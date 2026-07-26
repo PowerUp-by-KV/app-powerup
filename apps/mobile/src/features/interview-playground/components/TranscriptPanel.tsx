@@ -12,7 +12,11 @@ const ROLE_LABELS: Record<TranscriptTurn["role"], string> = {
   candidate: "You",
 };
 
+import { useColorScheme } from "nativewind";
+
 export function TranscriptPanel({ turns }: TranscriptPanelProps) {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -22,7 +26,9 @@ export function TranscriptPanel({ turns }: TranscriptPanelProps) {
   if (turns.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyText}>The conversation will appear here…</Text>
+        <Text style={[styles.emptyText, !isDark && { color: "#64748B" }]}>
+          The conversation will appear here…
+        </Text>
       </View>
     );
   }
@@ -33,11 +39,46 @@ export function TranscriptPanel({ turns }: TranscriptPanelProps) {
         const isAI = turn.role === "interviewer";
         return (
           <View key={index} style={[styles.row, isAI ? styles.rowLeft : styles.rowRight]}>
-            <Text style={[styles.speaker, isAI ? styles.speakerAI : styles.speakerUser]}>
+            <Text
+              style={[
+                styles.speaker,
+                isAI
+                  ? isDark
+                    ? styles.speakerAI
+                    : { color: "#4F46E5" }
+                  : isDark
+                    ? styles.speakerUser
+                    : { color: "#0284C7" },
+              ]}
+            >
               {ROLE_LABELS[turn.role]}
             </Text>
-            <View style={[styles.bubble, isAI ? styles.bubbleAI : styles.bubbleUser]}>
-              <Text style={[styles.text, isAI ? styles.textAI : styles.textUser]}>{turn.text}</Text>
+            <View
+              style={[
+                styles.bubble,
+                isAI
+                  ? isDark
+                    ? styles.bubbleAI
+                    : { backgroundColor: "#EEF2FF", borderTopLeftRadius: 4 }
+                  : isDark
+                    ? styles.bubbleUser
+                    : { backgroundColor: "#E0F2FE", borderTopRightRadius: 4 },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.text,
+                  isAI
+                    ? isDark
+                      ? styles.textAI
+                      : { color: "#1E1B4B" }
+                    : isDark
+                      ? styles.textUser
+                      : { color: "#0C4A6E" },
+                ]}
+              >
+                {turn.text}
+              </Text>
             </View>
           </View>
         );

@@ -232,7 +232,7 @@ export default function OnboardingScreen() {
       // Include skipped file questions as empty strings, but omit uploaded files (handled earlier)
       const answersPayload = flattenedQuestions
         .map((q) => {
-          const answerValue = formData[q.question_key];
+          const answerValue = (formData as Record<string, any>)[q.question_key];
 
           let answer_text: any; // Allow null
           if (
@@ -350,7 +350,7 @@ export default function OnboardingScreen() {
     }
 
     if (isFileQuestion) {
-      const fileUri = formData[question.question_key];
+      const fileUri = (formData as Record<string, any>)[question.question_key];
       if (!fileUri) {
         showAlert("Required", "Please select a resume to upload.");
         return;
@@ -359,10 +359,11 @@ export default function OnboardingScreen() {
       if (!resumeUploaded) {
         setIsUploading(true);
         try {
-          const fileName = (formData[`${question.question_key}Name`] || "resume.pdf") as string;
+          const fileName = ((formData as Record<string, any>)[`${question.question_key}Name`] ||
+            "resume.pdf") as string;
           const fd = new FormData();
 
-          const fileType = (formData[`${question.question_key}Type`] ||
+          const fileType = ((formData as Record<string, any>)[`${question.question_key}Type`] ||
             "application/pdf") as string;
           if (Platform.OS === "web") {
             const r = await fetch(fileUri);

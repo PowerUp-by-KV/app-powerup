@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { usePatchProfileMutation, useGetProfileQuery } from "@/services/auth-api";
 import { showAlert } from "@/utils/alert";
@@ -57,6 +58,8 @@ type Category = "skinColor" | "hairColor" | "hair" | "eyes" | "mouth" | "glasses
 export function CustomAvatarScreen() {
   const safeBack = useSafeBack();
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
   const [patch, { isLoading: isSaving }] = usePatchProfileMutation();
   const { data: profile } = useGetProfileQuery();
 
@@ -160,7 +163,13 @@ export function CustomAvatarScreen() {
             style={{
               backgroundColor: `#${opt}`,
               borderWidth: isSelected ? 4 : 2,
-              borderColor: isSelected ? "#4f46e5" : "#e2e8f0",
+              borderColor: isSelected
+                ? isDark
+                  ? "#6366f1"
+                  : "#4f46e5"
+                : isDark
+                  ? "#27272a"
+                  : "#e2e8f0",
               ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, string>) : {}),
             }}
           >
@@ -205,7 +214,7 @@ export function CustomAvatarScreen() {
             onPress={() => setter(opt)}
             className="w-20 h-20 rounded-xl bg-slate-100 dark:bg-slate-700 items-center justify-center border-2 overflow-hidden"
             style={{
-              borderColor: isSelected ? "#4f46e5" : "transparent",
+              borderColor: isSelected ? (isDark ? "#6366f1" : "#4f46e5") : "transparent",
               ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, string>) : {}),
             }}
           >
@@ -257,7 +266,9 @@ export function CustomAvatarScreen() {
         <Pressable
           onPress={handleSave}
           disabled={isSaving}
-          className={`px-4 py-2 rounded-full ${isSaving ? "bg-indigo-300" : "bg-indigo-600"}`}
+          className={`px-4 py-2 rounded-full ${
+            isSaving ? "bg-indigo-300 dark:bg-indigo-900/40" : "bg-indigo-600 dark:bg-indigo-500"
+          }`}
         >
           {isSaving ? (
             <ActivityIndicator size="small" color="#fff" />
