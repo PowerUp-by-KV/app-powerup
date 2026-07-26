@@ -12,12 +12,9 @@ export function useSafeBack(fallback = "/(tabs)") {
 
   return useCallback(() => {
     try {
-      if (typeof router.canGoBack === "function" && router.canGoBack()) {
-        router.back();
-        return;
-      }
-      const state = navigation?.getState();
-      if (state && (state.index > 0 || (state.routes && state.routes.length > 1))) {
+      const canBack =
+        navigation?.canGoBack?.() ?? (typeof router.canGoBack === "function" && router.canGoBack());
+      if (canBack) {
         navigation.goBack();
         return;
       }

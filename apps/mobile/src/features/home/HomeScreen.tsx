@@ -347,7 +347,10 @@ export function HomeScreen() {
                     ? "Upgrade to Pro to unlock"
                     : "Try, learn and improve — No pressure",
                 locked: tier === "free",
-                onPress: () => router.push("/interview-playground" as never),
+                onPress: () =>
+                  tier === "free"
+                    ? router.push("/subscription" as never)
+                    : router.push("/interview-playground" as never),
               },
               {
                 title: "Interview Buddy",
@@ -356,7 +359,10 @@ export function HomeScreen() {
                     ? "Upgrade to Pro to unlock"
                     : "Practice with a buddy before it counts",
                 locked: tier === "free",
-                onPress: () => router.push("/ai-interview" as never),
+                onPress: () =>
+                  tier === "free"
+                    ? router.push("/subscription" as never)
+                    : router.push("/ai-interview" as never),
               },
             ]}
           />

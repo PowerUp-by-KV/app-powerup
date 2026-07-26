@@ -85,6 +85,9 @@ export function PipelineInterviewRoomScreen({
       <StatusBar style="light" />
 
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+        <Pressable onPress={goBack} style={styles.backBtn}>
+          <Feather name="arrow-left" size={20} color="#F1F5F9" />
+        </Pressable>
         <Text style={styles.roleName} numberOfLines={1}>
           {derivedRole ?? "AI Interview"}
         </Text>
@@ -94,7 +97,7 @@ export function PipelineInterviewRoomScreen({
       {(isConnecting || status === "live") && (
         <AvatarStage
           aiSpeaking={isSpeaking.ai}
-          userSpeaking={isSpeaking.user}
+          userSpeaking={isSpeaking.user || isRecording}
           subtitle={derivedRole ?? undefined}
         />
       )}
@@ -121,28 +124,9 @@ export function PipelineInterviewRoomScreen({
 
       {status === "live" && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
-          <View style={styles.recordRow}>
-            <Pressable
-              style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
-              onPressIn={startRecording}
-              onPressOut={stopRecording}
-            >
-              <Feather
-                name={isRecording ? "mic" : "mic-off"}
-                size={24}
-                color={isRecording ? "#fff" : "#4F46E5"}
-              />
-              <Text style={[styles.recordBtnText, isRecording && styles.recordBtnTextActive]}>
-                {isRecording ? "Recording…" : "Hold to speak"}
-              </Text>
-            </Pressable>
-
-            <Pressable style={styles.endButton} onPress={handleEnd}>
-              <Text style={styles.endButtonText}>End</Text>
-            </Pressable>
-          </View>
-
-          {isSpeaking.ai && <Text style={styles.aiSpeakingHint}>AI is speaking…</Text>}
+          <Pressable style={styles.endButtonFull} onPress={handleEnd}>
+            <Text style={styles.endButtonText}>End Interview</Text>
+          </Pressable>
         </View>
       )}
     </View>
@@ -159,6 +143,10 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#1E293B",
+  },
+  backBtn: {
+    paddingRight: 12,
+    paddingVertical: 4,
   },
   roleName: {
     color: "#F1F5F9",
@@ -180,46 +168,14 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: "#1E293B",
-    gap: 8,
   },
-  recordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  recordBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#1E293B",
-    borderRadius: 14,
-    paddingVertical: 16,
-    borderWidth: 2,
-    borderColor: "#4F46E5",
-  },
-  recordBtnActive: {
-    backgroundColor: "#4F46E5",
-    borderColor: "#4F46E5",
-  },
-  recordBtnText: {
-    color: "#4F46E5",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  recordBtnTextActive: { color: "#fff" },
-  endButton: {
+  endButtonFull: {
     backgroundColor: "#DC2626",
     borderRadius: 14,
     paddingVertical: 16,
-    paddingHorizontal: 20,
     alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
   },
-  endButtonText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  aiSpeakingHint: {
-    color: "#818CF8",
-    fontSize: 12,
-    textAlign: "center",
-  },
+  endButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

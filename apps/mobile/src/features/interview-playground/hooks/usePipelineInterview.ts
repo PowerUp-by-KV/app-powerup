@@ -107,10 +107,85 @@ export function usePipelineInterview(
     }
   }, []);
 
+  const autoRecordTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const flushAutoRecording = useCallback(async () => {
+    if (autoRecordTimerRef.current) {
+      clearTimeout(autoRecordTimerRef.current);
+      autoRecordTimerRef.current = null;
+    }
+    if (!recordingRef.current) return;
+
+    try {
+      const rec = recordingRef.current;
+      recordingRef.current = null;
+      await rec.stopAndUnloadAsync();
+      const uri = rec.getURI();
+
+      if (isMountedRef.current) {
+        setIsRecording(false);
+        setIsSpeaking({ user: false, ai: false });
+      }
+
+      if (uri && wsRef.current && statusRef.current === "live") {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+        if (base64.length > 50) {
+          const binaryStr = atob(base64);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          wsRef.current.send(bytes.buffer);
+          wsRef.current.send(JSON.stringify({ event: "audio_end" }));
+        }
+      }
+    } catch {
+      setIsRecording(false);
+    }
+  }, []);
+
+  const startAutoRecording = useCallback(async () => {
+    if (!wsRef.current || statusRef.current !== "live") return;
+    if (recordingRef.current) return;
+
+    try {
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      await recording.startAsync();
+      recordingRef.current = recording;
+
+      if (isMountedRef.current) {
+        setIsRecording(true);
+        setIsSpeaking({ user: true, ai: false });
+      }
+
+      if (autoRecordTimerRef.current) clearTimeout(autoRecordTimerRef.current);
+      autoRecordTimerRef.current = setTimeout(() => {
+        void flushAutoRecording().then(() => {
+          if (statusRef.current === "live" && isMountedRef.current) {
+            setTimeout(() => {
+              void startAutoRecording();
+            }, 300);
+          }
+        });
+      }, 4000);
+    } catch {
+      // non-fatal
+    }
+  }, [flushAutoRecording]);
+
   const attachWebSocketListeners = useCallback(
     (ws: WebSocket) => {
       ws.onopen = () => {
-        if (isMountedRef.current) safeSetStatus("live");
+        if (isMountedRef.current) {
+          safeSetStatus("live");
+          setTimeout(() => {
+            void startAutoRecording();
+          }, 400);
+        }
       };
 
       ws.onclose = () => {
@@ -137,12 +212,20 @@ export function usePipelineInterview(
             case "speech_start":
               if (isMountedRef.current) setIsSpeaking({ user: false, ai: true });
               aiAudioBufferRef.current = [];
+              if (recordingRef.current) {
+                void flushAutoRecording();
+              }
               break;
 
             case "speech_done":
               if (isMountedRef.current) setIsSpeaking({ user: false, ai: false });
               await playAiAudio(aiAudioBufferRef.current);
               aiAudioBufferRef.current = [];
+              if (statusRef.current === "live" && isMountedRef.current) {
+                setTimeout(() => {
+                  void startAutoRecording();
+                }, 500);
+              }
               break;
 
             case "text_delta": {
@@ -215,12 +298,18 @@ export function usePipelineInterview(
         }
       };
     },
-    [handleError, playAiAudio, safeSetStatus],
+    [handleError, playAiAudio, safeSetStatus, startAutoRecording, flushAutoRecording],
   );
 
   const startInterview = useCallback(async (): Promise<string | null> => {
     const currentStatus = statusRef.current;
-    if (currentStatus !== "idle" && currentStatus !== "error") return sessionIdRef.current;
+    if (
+      currentStatus === "live" ||
+      currentStatus === "connecting" ||
+      currentStatus === "starting"
+    ) {
+      return sessionIdRef.current;
+    }
 
     safeSetStatus("starting");
     setTranscript([]);
@@ -240,10 +329,12 @@ export function usePipelineInterview(
       return null;
     }
 
-    setSessionId(backendData.session_id);
-    sessionIdRef.current = backendData.session_id;
-    setDerivedRole(backendData.derived_role);
-    derivedRoleRef.current = backendData.derived_role;
+    const sid = backendData.session_id || (backendData as any).coach_session_id;
+    const role = backendData.derived_role || "Interview Coach";
+    setSessionId(sid);
+    sessionIdRef.current = sid;
+    setDerivedRole(role);
+    derivedRoleRef.current = role;
     safeSetStatus("connecting");
 
     const { status: permStatus } = await Audio.requestPermissionsAsync();
