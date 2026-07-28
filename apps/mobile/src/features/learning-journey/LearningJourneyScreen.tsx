@@ -729,7 +729,6 @@ export function LearningJourneyScreen() {
   }, [trialCompletedActivities]);
 
   const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
-
   // Prerequisites flag (Free Content & Trial Content must be 100% completed)
   const isPrerequisitesMet = isFreeCompleted && isTrialCompleted;
 
