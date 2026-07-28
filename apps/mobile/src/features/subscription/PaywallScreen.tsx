@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
+import { useSafeBack } from "@/hooks/useSafeBack";
 
 interface PaywallScreenProps {
   requiredTier?: "pro" | "premium";
@@ -31,6 +33,10 @@ const PREMIUM_BENEFITS = [
 
 export function PaywallScreen({ requiredTier = "pro", featureName, onBack }: PaywallScreenProps) {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const safeBack = useSafeBack("/");
+
   const benefits = requiredTier === "premium" ? PREMIUM_BENEFITS : PRO_BENEFITS;
   const tierLabel = TIER_LABELS[requiredTier] ?? "Pro";
 
@@ -38,45 +44,74 @@ export function PaywallScreen({ requiredTier = "pro", featureName, onBack }: Pay
     if (onBack) {
       onBack();
     } else {
-      router.back();
+      safeBack();
     }
   };
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        isDark && { backgroundColor: "#0F1020" },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.content}>
         <Pressable onPress={handleBack} style={styles.backBtn}>
-          <Feather name="arrow-left" size={22} color="#475569" />
+          <Feather name="arrow-left" size={22} color={isDark ? "#CBD5E1" : "#475569"} />
         </Pressable>
 
-        <View style={styles.iconCircle}>
-          <Feather name="lock" size={32} color="#4F46E5" />
+        <View
+          style={[
+            styles.iconCircle,
+            isDark && { backgroundColor: "#232540", borderColor: "rgba(113,116,246,0.2)" },
+          ]}
+        >
+          <Feather name="lock" size={32} color={isDark ? "#818CF8" : "#4F46E5"} />
         </View>
 
-        <Text style={styles.title}>
+        <Text style={[styles.title, isDark && { color: "#ffffff" }]}>
           {featureName ? `${featureName} requires ${tierLabel}` : `${tierLabel} Required`}
         </Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
           Upgrade your plan to unlock this feature and get access to everything {tierLabel} has to
           offer.
         </Text>
 
-        <View style={styles.benefitsCard}>
-          <Text style={styles.benefitsTitle}>{tierLabel} includes:</Text>
+        <View
+          style={[
+            styles.benefitsCard,
+            isDark && {
+              backgroundColor: "#1A1B31",
+              borderColor: "rgba(113,116,246,0.15)",
+            },
+          ]}
+        >
+          <Text style={[styles.benefitsTitle, isDark && { color: "#ffffff" }]}>
+            {tierLabel} includes:
+          </Text>
           {benefits.map((b) => (
             <View key={b} style={styles.benefitRow}>
-              <Feather name="check-circle" size={16} color="#4F46E5" style={styles.checkIcon} />
-              <Text style={styles.benefitText}>{b}</Text>
+              <Feather
+                name="check-circle"
+                size={16}
+                color={isDark ? "#818CF8" : "#4F46E5"}
+                style={styles.checkIcon}
+              />
+              <Text style={[styles.benefitText, isDark && { color: "#CBD5E1" }]}>{b}</Text>
             </View>
           ))}
         </View>
 
-        <Pressable style={styles.ctaBtn} onPress={() => router.push("/subscription" as never)}>
+        <Pressable
+          style={[styles.ctaBtn, isDark && { backgroundColor: "#7174F6" }]}
+          onPress={() => router.push("/subscription" as never)}
+        >
           <Text style={styles.ctaBtnText}>View Plans</Text>
         </Pressable>
 
         <Pressable onPress={handleBack} style={styles.cancelBtn}>
-          <Text style={styles.cancelBtnText}>Maybe later</Text>
+          <Text style={[styles.cancelBtnText, isDark && { color: "#8B93A8" }]}>Maybe later</Text>
         </Pressable>
       </ScrollView>
     </View>

@@ -6,6 +6,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
@@ -32,6 +34,7 @@ export function ModuleScreen() {
     module_id?: string;
     day_number?: string;
     retake_activity_id?: string;
+    restart?: string;
   }>();
   const dayId = params.day_id ?? "";
   const moduleId = params.module_id ?? "";
@@ -67,13 +70,55 @@ export function ModuleScreen() {
           return;
         }
       }
-      const incomplete = activities.filter((act) => !act.passed);
-      setActivitiesToPlay(incomplete.length > 0 ? incomplete : activities);
-      const passedCount = activities.filter((act) => act.passed).length;
-      setInitialPassedCount(passedCount);
-      setHasInitializedList(true);
+
+      const initList = async () => {
+        let savedCompletedIds: string[] = [];
+        if (dayId) {
+          try {
+            const raw = await AsyncStorage.getItem(`@retake_progress_${dayId}`);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                savedCompletedIds = parsed;
+              }
+            }
+          } catch (e) {
+            console.warn("Failed to load retake progress", e);
+          }
+        }
+
+        if (params.restart === "true" && dayId) {
+          await AsyncStorage.removeItem(`@retake_progress_${dayId}`).catch(() => {});
+          savedCompletedIds = [];
+        }
+
+        const dbIncomplete = activities.filter((act) => !act.passed);
+
+        if (dbIncomplete.length > 0) {
+          const remaining = dbIncomplete.filter((act) => !savedCompletedIds.includes(act.id));
+          setActivitiesToPlay(remaining.length > 0 ? remaining : dbIncomplete);
+        } else {
+          // Retaking a day where all activities are marked passed in DB:
+          // Filter out activities that were ALREADY completed during this retake session
+          const remainingToRetake = activities.filter((act) => !savedCompletedIds.includes(act.id));
+          if (remainingToRetake.length > 0) {
+            setActivitiesToPlay(remainingToRetake);
+          } else {
+            if (dayId) {
+              await AsyncStorage.removeItem(`@retake_progress_${dayId}`).catch(() => {});
+            }
+            setActivitiesToPlay(activities);
+          }
+        }
+
+        const passedCount = activities.filter((act) => act.passed).length;
+        setInitialPassedCount(passedCount);
+        setHasInitializedList(true);
+      };
+
+      initList();
     }
-  }, [activities, hasInitializedList, params.retake_activity_id]);
+  }, [activities, hasInitializedList, params.retake_activity_id, params.restart, dayId]);
 
   const [activityIdx, setActivityIdx] = useState(0);
 
@@ -124,6 +169,20 @@ export function ModuleScreen() {
         }).unwrap();
       }
 
+      // Save retake progress so exiting and returning continues to the next activity
+      if (dayId && currentActivity.id) {
+        try {
+          const raw = await AsyncStorage.getItem(`@retake_progress_${dayId}`);
+          const existing: string[] = raw ? JSON.parse(raw) : [];
+          if (!existing.includes(currentActivity.id)) {
+            const updated = [...existing, currentActivity.id];
+            await AsyncStorage.setItem(`@retake_progress_${dayId}`, JSON.stringify(updated));
+          }
+        } catch (err) {
+          console.warn("Failed to save retake progress", err);
+        }
+      }
+
       const earned =
         moduleEngagement?.xp_earned != null && initialModuleXpRef.current != null
           ? Math.max(0, moduleEngagement.xp_earned - initialModuleXpRef.current)
@@ -132,6 +191,9 @@ export function ModuleScreen() {
       if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
+        if (dayId) {
+          await AsyncStorage.removeItem(`@retake_progress_${dayId}`).catch(() => {});
+        }
         router.replace({
           pathname: "/learning-journey/day-complete" as never,
           params: {
@@ -143,7 +205,20 @@ export function ModuleScreen() {
         });
       }
     } catch {
-      // Soft-fail: still advance the local UX so the user isn't stuck.
+      // Save retake progress even on soft-fail so UX advances consistently
+      if (dayId && currentActivity.id) {
+        try {
+          const raw = await AsyncStorage.getItem(`@retake_progress_${dayId}`);
+          const existing: string[] = raw ? JSON.parse(raw) : [];
+          if (!existing.includes(currentActivity.id)) {
+            const updated = [...existing, currentActivity.id];
+            await AsyncStorage.setItem(`@retake_progress_${dayId}`, JSON.stringify(updated));
+          }
+        } catch (err) {
+          console.warn("Failed to save retake progress", err);
+        }
+      }
+
       const earned =
         moduleEngagement?.xp_earned != null && initialModuleXpRef.current != null
           ? Math.max(0, moduleEngagement.xp_earned - initialModuleXpRef.current)
@@ -152,6 +227,9 @@ export function ModuleScreen() {
       if (activityIdx + 1 < activitiesToPlay.length) {
         setActivityIdx(activityIdx + 1);
       } else {
+        if (dayId) {
+          await AsyncStorage.removeItem(`@retake_progress_${dayId}`).catch(() => {});
+        }
         router.replace({
           pathname: "/learning-journey/day-complete" as never,
           params: {

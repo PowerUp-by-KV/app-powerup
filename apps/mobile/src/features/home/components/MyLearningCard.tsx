@@ -1,7 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather, Ionicons, FontAwesome5, SimpleLineIcons } from "@expo/vector-icons";
 import { useColorScheme } from "nativewind";
 
 interface MyLearningCardProps {
@@ -30,51 +29,57 @@ function StatTileSkeleton() {
   );
 }
 
-function StatTile({
-  value,
-  label,
-  iconName,
-  iconType,
-  iconColor,
-}: {
-  value: string | number;
-  label: string;
-  iconName: string;
-  iconType: "feather" | "ionicons" | "fontawesome5" | "simplelineicons";
-  iconColor: string;
-}) {
+function StatTile({ value, label }: { value: string | number; label: string }) {
   return (
-    <View className="flex-1 items-center justify-center p-3.5 bg-slate-50 dark:bg-[#1a1924] border border-slate-200 dark:border-[#2b2a3a] rounded-2xl mx-1 shadow-sm shadow-slate-200/50 dark:shadow-none">
-      <View className="mb-2">
-        {iconType === "fontawesome5" ? (
-          <FontAwesome5
-            name={iconName as React.ComponentProps<typeof FontAwesome5>["name"]}
-            size={22}
-            color={iconColor}
-          />
-        ) : iconType === "ionicons" ? (
-          <Ionicons
-            name={iconName as React.ComponentProps<typeof Ionicons>["name"]}
-            size={22}
-            color={iconColor}
-          />
-        ) : iconType === "simplelineicons" ? (
-          <SimpleLineIcons
-            name={iconName as React.ComponentProps<typeof SimpleLineIcons>["name"]}
-            size={22}
-            color={iconColor}
-          />
-        ) : (
-          <Feather
-            name={iconName as React.ComponentProps<typeof Feather>["name"]}
-            size={22}
-            color={iconColor}
-          />
-        )}
-      </View>
-      <Text className="text-slate-900 dark:text-white font-extrabold text-sm text-center">
-        {value} {label}
-      </Text>
+    <View className="flex-1 mx-1 overflow-hidden rounded-[20px] shadow-sm shadow-indigo-300/30">
+      <LinearGradient
+        colors={["#5479f7", "#3257e8"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{
+          paddingVertical: 14,
+          paddingHorizontal: 4,
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: 20,
+          position: "relative",
+        }}
+      >
+        {/* Glossy light shine overlay */}
+        <View
+          style={{
+            position: "absolute",
+            top: -18,
+            left: -18,
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: "rgba(255, 255, 255, 0.22)",
+          }}
+        />
+        <Text
+          style={{
+            color: "#ffffff",
+            fontSize: 26,
+            fontWeight: "900",
+            textAlign: "center",
+            lineHeight: 30,
+          }}
+        >
+          {value}
+        </Text>
+        <Text
+          style={{
+            color: "rgba(255, 255, 255, 0.95)",
+            fontSize: 11,
+            fontWeight: "700",
+            textAlign: "center",
+            marginTop: 2,
+          }}
+        >
+          {label}
+        </Text>
+      </LinearGradient>
     </View>
   );
 }
@@ -118,36 +123,18 @@ export function MyLearningCard({
       ) : (
         <>
           <View className="flex-row -mx-1 mb-5">
-            <StatTile
-              value={streakCount}
-              label="Streaks"
-              iconType="simplelineicons"
-              iconName="fire"
-              iconColor="#3b82f6"
-            />
-            <StatTile
-              value={badgesCount}
-              label="Badges"
-              iconType="feather"
-              iconName="award"
-              iconColor="#a78bfa"
-            />
-            <StatTile
-              value={xpPoints}
-              label="XP Points"
-              iconType="feather"
-              iconName="zap"
-              iconColor="#fbbf24"
-            />
+            <StatTile value={streakCount} label="Streaks" />
+            <StatTile value={xpPoints} label="Xp points" />
+            <StatTile value={badgesCount} label="Badges" />
           </View>
 
           <View className="mb-5">
             <View className="flex-row justify-between mb-2">
               <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
                 {daysCompleted}
-                {totalDays != null ? ` / ${totalDays}` : ""} days
+                {totalDays != null ? ` / ${totalDays}` : ""} modules
               </Text>
-              <Text className="text-slate-300 dark:text-slate-500 text-xs font-semibold">
+              <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
                 {pct}%
               </Text>
             </View>

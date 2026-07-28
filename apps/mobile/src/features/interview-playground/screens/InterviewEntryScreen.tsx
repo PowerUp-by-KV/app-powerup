@@ -49,11 +49,9 @@ function WebRTCEntry() {
   const { data: sessions, isLoading: isLoadingSessions } = useListInterviewSessionsQuery({
     mode: "playground",
   });
-  const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
   const { startInterview, status, errorMessage } = useWebRTCInterview();
 
   const isStarting = status === "starting" || status === "connecting";
-  const hasResume = !!resume && resume.parse_status === "completed";
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack("/");
@@ -85,7 +83,7 @@ function WebRTCEntry() {
         <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Playground</Text>
       </View>
       <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
-        Practice your interview with an AI interviewer
+        Freeform practice ground with scenario-based & behavioral questions
       </Text>
 
       {status !== "idle" && status !== "done" && (
@@ -96,28 +94,15 @@ function WebRTCEntry() {
 
       {errorMessage && <Text style={styles.errorText}>{errorMessage}</Text>}
 
-      {!hasResume && !isLoadingResume && (
-        <View style={[styles.warningBox, isDark && { backgroundColor: "#431407" }]}>
-          <Text style={[styles.warningText, isDark && { color: "#FDBA74" }]}>
-            Upload your resume first so we can tailor the interview to your profile.
-          </Text>
-          <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
-            <Text style={[styles.resumeLinkText, isDark && { color: "#818CF8" }]}>
-              Go to Resume
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
       <Pressable
-        style={[styles.startButton, (!hasResume || isStarting) && styles.startButtonDisabled]}
+        style={[styles.startButton, isStarting && styles.startButtonDisabled]}
         onPress={handleStart}
-        disabled={!hasResume || isStarting}
+        disabled={isStarting}
       >
         {isStarting ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.startButtonText}>Start Interview</Text>
+          <Text style={styles.startButtonText}>Start Practice Session</Text>
         )}
       </Pressable>
 
@@ -149,6 +134,9 @@ function WebRTCEntry() {
 
 function PipelineEntry() {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const goBack = useSafeBack("/");
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
 
   const hasResume = !!resume && resume.parse_status === "completed";
@@ -161,19 +149,50 @@ function PipelineEntry() {
   }, []);
 
   return (
-    <View style={[styles.safe, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View
+      style={[
+        styles.safe,
+        { paddingTop: insets.top, paddingBottom: insets.bottom },
+        isDark && { backgroundColor: "#0F172A" },
+      ]}
+    >
       <ScrollView contentContainerStyle={styles.listContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Interview Playground</Text>
-          <Text style={styles.subtitle}>Practice your interview with an AI interviewer</Text>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Pressable
+              onPress={goBack}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
+              }}
+            >
+              <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
+            </Pressable>
+            <Text style={[styles.title, isDark && { color: "#F8FAFC" }]}>Interview Playground</Text>
+          </View>
+          <Text style={[styles.subtitle, isDark && { color: "#94A3B8" }]}>
+            Practice your interview with an AI interviewer
+          </Text>
 
           {!hasResume && !isLoadingResume && (
-            <View style={styles.warningBox}>
-              <Text style={styles.warningText}>
+            <View
+              style={[
+                styles.warningBox,
+                isDark && { backgroundColor: "#1E293B", borderColor: "#334155" },
+              ]}
+            >
+              <Text style={[styles.warningText, isDark && { color: "#FDE68A" }]}>
                 Upload your resume first so we can tailor the interview to your profile.
               </Text>
               <Pressable onPress={() => router.push("/resume")} style={styles.resumeLink}>
-                <Text style={styles.resumeLinkText}>Go to Resume</Text>
+                <Text style={[styles.resumeLinkText, isDark && { color: "#818CF8" }]}>
+                  Go to Resume
+                </Text>
               </Pressable>
             </View>
           )}
@@ -193,22 +212,16 @@ function PipelineEntry() {
 
 export function InterviewEntryScreen() {
   const tier = usePlanTier();
+  const goBack = useSafeBack("/");
 
   if (tier === "free") {
-    return (
-      <PaywallScreen
-        requiredTier="pro"
-        featureName="Interview Playground"
-        onBack={() => router.back()}
-      />
-    );
+    return <PaywallScreen requiredTier="pro" featureName="Interview Playground" onBack={goBack} />;
   }
 
   if (tier === "pro") {
     return <PipelineEntry />;
   }
 
-  // premium
   return <WebRTCEntry />;
 }
 

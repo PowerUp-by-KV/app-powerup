@@ -24,7 +24,7 @@ export const interviewPlaygroundApi = api.injectEndpoints({
       { mode?: "buddy" | "playground" } | void
     >({
       query: (arg) => ({
-        url: "/v1/interview/webrtc/start",
+        url: arg?.mode === "buddy" ? "/v1/coach/webrtc/start" : "/v1/interview/webrtc/start",
         method: "POST",
         body: { mode: arg?.mode ?? "playground" },
       }),
@@ -48,9 +48,11 @@ export const interviewPlaygroundApi = api.injectEndpoints({
     >({
       query: (arg) => {
         const mode = arg?.mode;
-        return mode
-          ? `/v1/interview/webrtc/sessions?mode=${mode}`
-          : "/v1/interview/webrtc/sessions";
+        return mode === "buddy"
+          ? "/v1/coach/webrtc/sessions"
+          : mode === "playground"
+            ? "/v1/interview/webrtc/sessions?mode=playground"
+            : "/v1/interview/webrtc/sessions";
       },
       providesTags: ["InterviewPlayground"],
     }),
@@ -61,10 +63,14 @@ export const interviewPlaygroundApi = api.injectEndpoints({
     }),
 
     // Pipeline (pro)
-    startPipelineInterview: builder.mutation<PipelineStartResponse, void>({
-      query: () => ({
-        url: "/v1/interview/pipeline/start",
+    startPipelineInterview: builder.mutation<
+      PipelineStartResponse,
+      { mode?: "buddy" | "playground" } | void
+    >({
+      query: (arg) => ({
+        url: arg?.mode === "buddy" ? "/v1/coach/pipeline/start" : "/v1/interview/pipeline/start",
         method: "POST",
+        body: { mode: arg?.mode ?? "playground" },
       }),
     }),
 
@@ -73,7 +79,7 @@ export const interviewPlaygroundApi = api.injectEndpoints({
       { sessionId: string; body: SaveSessionBody }
     >({
       query: ({ sessionId, body }) => ({
-        url: `/v1/interview/pipeline/sessions/${sessionId}/save`,
+        url: `/v1/coach/pipeline/sessions/${sessionId}/complete`,
         method: "POST",
         body,
       }),
@@ -81,12 +87,12 @@ export const interviewPlaygroundApi = api.injectEndpoints({
     }),
 
     listPipelineSessions: builder.query<InterviewSessionSummary[], void>({
-      query: () => "/v1/interview/pipeline/sessions",
+      query: () => "/v1/coach/pipeline/sessions",
       providesTags: ["InterviewPlayground"],
     }),
 
     getPipelineSession: builder.query<InterviewSessionDetail, string>({
-      query: (sessionId) => `/v1/interview/pipeline/sessions/${sessionId}`,
+      query: (sessionId) => `/v1/coach/pipeline/sessions/${sessionId}`,
       providesTags: ["InterviewPlayground"],
     }),
   }),

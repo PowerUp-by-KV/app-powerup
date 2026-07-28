@@ -231,7 +231,7 @@ export function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isTablet = width >= 768;
-  const { isDark, toggleTheme } = useThemeToggle();
+  const { isDark } = useThemeToggle();
 
   const { data: skillsData, isLoading: skillsLoading } = useGetSkillsQuery();
   const [cardWidth, setCardWidth] = useState(0);
@@ -341,20 +341,6 @@ export function AchievementsScreen() {
           </Text>
         </View>
         <View className="flex-row items-center" style={{ gap: 12 }}>
-          <Pressable
-            onPress={() => toggleTheme()}
-            className={`w-10 h-10 rounded-full items-center justify-center ${
-              isDark
-                ? "bg-[#232540] border border-[rgba(113,116,246,0.15)]"
-                : "bg-[#F8F8FF] border border-[#ECEEF8]"
-            }`}
-          >
-            <Feather
-              name={isDark ? "sun" : "moon"}
-              size={18}
-              color={isDark ? "#f8fafc" : "#1e293b"}
-            />
-          </Pressable>
           <Pressable
             onPress={() => router.push("/profile" as never)}
             className="w-12 h-12 rounded-full items-center justify-center overflow-hidden border active:opacity-80"
