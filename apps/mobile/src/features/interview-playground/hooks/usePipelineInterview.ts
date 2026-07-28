@@ -330,7 +330,9 @@ export function usePipelineInterview(
     }
 
     const sid =
-      backendData.session_id || (backendData as { coach_session_id?: string }).coach_session_id;
+      backendData.session_id ||
+      (backendData as { coach_session_id?: string }).coach_session_id ||
+      null;
     const role = backendData.derived_role || "Interview Coach";
     setSessionId(sid);
     sessionIdRef.current = sid;
