@@ -33,8 +33,6 @@ export function PipelineInterviewRoomScreen({
     isRecording,
     startInterview,
     endInterview,
-    startRecording,
-    stopRecording,
   } = usePipelineInterview(mode);
 
   // Start interview on mount (once)

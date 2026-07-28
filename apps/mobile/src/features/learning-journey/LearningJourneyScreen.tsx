@@ -729,7 +729,9 @@ export function LearningJourneyScreen() {
   }, [trialCompletedActivities]);
 
   const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
-  const isDailyPathUnlocked = isFreeCompleted && isTrialCompleted && gate.canEnter;
+
+  // Prerequisites flag (Free Content & Trial Content must be 100% completed)
+  const isPrerequisitesMet = isFreeCompleted && isTrialCompleted;
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
@@ -829,50 +831,33 @@ export function LearningJourneyScreen() {
     }
   };
 
-  const handleDayTap = async (item: {
-    isLocked: boolean;
-    isCompleted: boolean;
-    globalDayNumber: number;
-    dayObj?: CombinedModuleDay;
-  }) => {
-    if (item.isLocked && !item.isCompleted) {
-      if (!isPrerequisitesMet) {
-        Alert.alert(
-          "Stage Locked 🔒",
-          `Please complete Free Content and Trial Content to unlock and resume Day ${item.globalDayNumber}!`,
-        );
-      } else {
-        Alert.alert(
-          "Stage Locked 🔒",
-          `Please complete your Diagnostic Assessment to unlock Day ${item.globalDayNumber}!`,
-        );
+  const handleDayTap = useCallback(
+    async (item: {
+      isLocked: boolean;
+      isCompleted: boolean;
+      globalDayNumber: number;
+      dayObj?: CombinedModuleDay;
+    }) => {
+      if (item.isLocked && !item.isCompleted) {
+        if (!isPrerequisitesMet) {
+          Alert.alert(
+            "Stage Locked 🔒",
+            `Please complete Free Content and Trial Content to unlock and resume Day ${item.globalDayNumber}!`,
+          );
+        } else {
+          Alert.alert(
+            "Stage Locked 🔒",
+            `Please complete your Diagnostic Assessment to unlock Day ${item.globalDayNumber}!`,
+          );
+        }
+        return;
       }
-      return;
-    }
-    if (!item.dayObj?.id) {
-      Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
-      return;
-    }
+      if (!item.dayObj?.id) {
+        Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+        return;
+      }
 
-    if (item.isCompleted) {
-      router.push({
-        pathname: "/learning-journey/day-complete" as never,
-        params: {
-          day_id: item.dayObj.id,
-          module_id: item.dayObj.module_id,
-          day_number: String(item.globalDayNumber),
-          xp_earned: "0",
-        },
-      });
-      return;
-    }
-
-    try {
-      // 1. Check local storage first
-      const localCompleted = await AsyncStorage.getItem(
-        `day_first_run_completed_${item.dayObj.id}`,
-      );
-      if (localCompleted === "true") {
+      if (item.isCompleted) {
         router.push({
           pathname: "/learning-journey/day-complete" as never,
           params: {
@@ -885,33 +870,60 @@ export function LearningJourneyScreen() {
         return;
       }
 
-      // 2. Fetch and check results status
-      const results = await triggerGetDayResults(item.dayObj.id).unwrap();
-      const totalActivitiesCount = results?.activities?.length ?? 0;
-      const attemptedActivitiesCount = (results?.activities ?? []).filter(
-        (act) =>
-          act.score !== null ||
-          act.evaluation_status === "COMPLETED" ||
-          act.evaluation_status === "FAILED" ||
-          act.passed,
-      ).length;
+      try {
+        // 1. Check local storage first
+        const localCompleted = await AsyncStorage.getItem(
+          `day_first_run_completed_${item.dayObj.id}`,
+        );
+        if (localCompleted === "true") {
+          router.push({
+            pathname: "/learning-journey/day-complete" as never,
+            params: {
+              day_id: item.dayObj.id,
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+              xp_earned: "0",
+            },
+          });
+          return;
+        }
 
-      const isDayFullyPlayed =
-        totalActivitiesCount > 0 && attemptedActivitiesCount === totalActivitiesCount;
+        // 2. Fetch and check results status
+        const results = await triggerGetDayResults(item.dayObj.id).unwrap();
+        const totalActivitiesCount = results?.activities?.length ?? 0;
+        const attemptedActivitiesCount = (results?.activities ?? []).filter(
+          (act) =>
+            act.score !== null ||
+            act.evaluation_status === "COMPLETED" ||
+            act.evaluation_status === "FAILED" ||
+            act.passed,
+        ).length;
 
-      if (isDayFullyPlayed) {
-        // Save flag in AsyncStorage
-        await AsyncStorage.setItem(`day_first_run_completed_${item.dayObj.id}`, "true");
-        router.push({
-          pathname: "/learning-journey/day-complete" as never,
-          params: {
-            day_id: item.dayObj.id,
-            module_id: item.dayObj.module_id,
-            day_number: String(item.globalDayNumber),
-            xp_earned: "0",
-          },
-        });
-      } else {
+        const isDayFullyPlayed =
+          totalActivitiesCount > 0 && attemptedActivitiesCount === totalActivitiesCount;
+
+        if (isDayFullyPlayed) {
+          // Save flag in AsyncStorage
+          await AsyncStorage.setItem(`day_first_run_completed_${item.dayObj.id}`, "true");
+          router.push({
+            pathname: "/learning-journey/day-complete" as never,
+            params: {
+              day_id: item.dayObj.id,
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+              xp_earned: "0",
+            },
+          });
+        } else {
+          router.push({
+            pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+            params: {
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+            },
+          });
+        }
+      } catch {
         router.push({
           pathname: `/learning-journey/module/${item.dayObj.id}` as never,
           params: {
@@ -920,16 +932,9 @@ export function LearningJourneyScreen() {
           },
         });
       }
-    } catch {
-      router.push({
-        pathname: `/learning-journey/module/${item.dayObj.id}` as never,
-        params: {
-          module_id: item.dayObj.module_id,
-          day_number: String(item.globalDayNumber),
-        },
-      });
-    }
-  };
+    },
+    [isPrerequisitesMet, router, triggerGetDayResults],
+  );
 
   const handleFreeContentPress = useCallback(async () => {
     if (!freeModule?.id) {
@@ -1123,9 +1128,6 @@ export function LearningJourneyScreen() {
     : Math.round((completedSections.length / 6) * 100);
   const diagLessonsCompleted = isDiagnosticComplete ? 6 : completedSections.length;
   const diagXp = isDiagnosticComplete ? 150 : completedSections.length * 25;
-
-  // Prerequisites flag (Free Content & Trial Content must be 100% completed)
-  const isPrerequisitesMet = isFreeCompleted && isTrialCompleted;
 
   // Topics for days 1 to 12
   const STATIC_DAY_TOPICS = [
