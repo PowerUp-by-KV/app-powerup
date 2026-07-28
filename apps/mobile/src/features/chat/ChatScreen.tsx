@@ -2,12 +2,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Animated,
+  Clipboard,
   FlatList,
   Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -93,6 +95,59 @@ function shouldShowTimestamp(curr: string, prev?: string): boolean {
   } catch {
     return true;
   }
+}
+
+// ─── Lightweight Markdown Renderer ──────────────────────────────────
+// Parses **bold**, *italic*, and \n into React Native <Text> elements.
+// Avoids adding a heavy markdown library dependency.
+function renderMarkdown(text: string, baseStyle: object): React.ReactNode[] {
+  const result: React.ReactNode[] = [];
+  // Split by newlines first
+  const lines = text.split("\n");
+  lines.forEach((line, lineIdx) => {
+    if (lineIdx > 0) {
+      result.push(<Text key={`br-${lineIdx}`}>{"\n"}</Text>);
+    }
+
+    // Regex matches balanced or unbalanced bold/italic.
+    // Group 1: "**text**", "**text*", "**text", "*text*", or "*text"
+    const parts = line.split(/(\*\*[^*]+(?:\*\*|\*|$)|\*[^*]+(?:\*|$))/);
+
+    parts.forEach((part, partIdx) => {
+      const key = `${lineIdx}-${partIdx}`;
+      if (!part) return;
+
+      if (part.startsWith("**")) {
+        // Bold text
+        let inner = part.substring(2);
+        if (inner.endsWith("**")) inner = inner.slice(0, -2);
+        else if (inner.endsWith("*")) inner = inner.slice(0, -1);
+
+        result.push(
+          <Text key={key} style={[baseStyle, { fontWeight: "700" }]}>
+            {inner}
+          </Text>,
+        );
+      } else if (part.startsWith("*")) {
+        // Italic text
+        let inner = part.substring(1);
+        if (inner.endsWith("*")) inner = inner.slice(0, -1);
+
+        result.push(
+          <Text key={key} style={[baseStyle, { fontStyle: "italic" }]}>
+            {inner}
+          </Text>,
+        );
+      } else {
+        result.push(
+          <Text key={key} style={baseStyle}>
+            {part}
+          </Text>,
+        );
+      }
+    });
+  });
+  return result;
 }
 
 // ─── Optimistic local message ───────────────────────────────────────
@@ -232,6 +287,7 @@ interface MessageBubbleProps {
   avatarUri: string;
   isBookmarked: boolean;
   onToggleBookmark: (id: string) => void;
+  onMoreOptions: (content: string) => void;
   isDark: boolean;
 }
 
@@ -241,6 +297,7 @@ const MessageBubble = React.memo(function MessageBubble({
   avatarUri,
   isBookmarked,
   onToggleBookmark,
+  onMoreOptions,
   isDark,
 }: MessageBubbleProps) {
   const isUser = item.role === "user";
@@ -284,14 +341,26 @@ const MessageBubble = React.memo(function MessageBubble({
           )}
           <View style={s.aiContentCol}>
             <View style={[s.aiBubble, { backgroundColor: isDark ? "#D4F57A" : C.aiBubble }]}>
-              <Text style={[s.aiBubbleText, { color: C.aiBubbleText }]}>{item.content}</Text>
+              <Text style={[s.aiBubbleText, { color: C.aiBubbleText }]}>
+                {item.content.length > 0
+                  ? renderMarkdown(item.content, {
+                      fontSize: 15,
+                      color: C.aiBubbleText,
+                      lineHeight: 21,
+                    })
+                  : ""}
+                {(item as any).isStreamingTemp && item.content.length > 0 && (
+                  <Text style={{ color: "rgba(0,0,0,0.3)" }}>▍</Text>
+                )}
+                {(item as any).isStreamingTemp && item.content.length === 0 && <TypingDots />}
+              </Text>
             </View>
             {!("isLocal" in item && item.isLocal) && (
               <View style={s.aiActions}>
                 <Pressable
                   onPress={() => onToggleBookmark(item.id)}
                   style={[s.aiActionBtn, { backgroundColor: isDark ? "#1E293B" : C.cardBg }]}
-                  hitSlop={4}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Feather
                     name="bookmark"
@@ -302,8 +371,9 @@ const MessageBubble = React.memo(function MessageBubble({
                   />
                 </Pressable>
                 <Pressable
+                  onPress={() => onMoreOptions(item.content)}
                   style={[s.aiActionBtn, { backgroundColor: isDark ? "#1E293B" : C.cardBg }]}
-                  hitSlop={4}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Feather
                     name="more-horizontal"
@@ -361,6 +431,7 @@ export function ChatScreen() {
   const [createThread] = useCreateChatThreadMutation();
   const [toggleBookmark] = useToggleBookmarkMutation();
   const listRef = useRef<FlatList<ChatMessage>>(null);
+  const textInputRef = useRef<TextInput>(null);
 
   // ── SSE streaming hook (POST /api/v1/chat/threads/{id}/messages/stream) ──
   const {
@@ -389,8 +460,23 @@ export function ChatScreen() {
       return true;
     });
 
-    return [...apiMsgs, ...uniqueLocal];
-  }, [messages, localMessages]);
+    const msgs = [...apiMsgs, ...uniqueLocal];
+
+    // Push a temporary message for the currently streaming response
+    if (isStreaming) {
+      msgs.push({
+        id: "streaming-temp",
+        content: streamingContent,
+        role: "assistant",
+        created_at: new Date().toISOString(),
+        isLocal: true,
+        // Using a special property that we can check in renderMessage
+        isStreamingTemp: true,
+      } as any);
+    }
+
+    return msgs;
+  }, [messages, localMessages, isStreaming, streamingContent]);
 
   // ── Send message via SSE stream ──
   const handleSend = useCallback(async () => {
@@ -465,6 +551,15 @@ export function ChatScreen() {
   // ── Quick action handler ──
   const handleQuickAction = useCallback(
     async (id: string, label: string, promptTemplate: string) => {
+      // If the template contains placeholders like {content}, let the user fill it out
+      if (promptTemplate && /\{.*?\}/.test(promptTemplate)) {
+        setInput(promptTemplate);
+        setTimeout(() => {
+          textInputRef.current?.focus();
+        }, 100);
+        return;
+      }
+
       const content = promptTemplate || label;
       if (sendLockRef.current || isStreaming || creating) return;
 
@@ -595,6 +690,39 @@ export function ChatScreen() {
   // ═══════════════════════════════════════════════════════════════════
   // RENDER: Single message bubble (uses memoized MessageBubble component)
   // ═══════════════════════════════════════════════════════════════════
+  // ── More options handler (three-dot menu) ──
+  const handleMoreOptions = useCallback((content: string) => {
+    try {
+      showAlert("Message Options", undefined, [
+        {
+          text: "Copy",
+          onPress: () => {
+            try {
+              if (typeof Clipboard !== "undefined" && Clipboard.setString) {
+                Clipboard.setString(content);
+              }
+            } catch (e) {
+              console.log("Copy failed", e);
+            }
+          },
+        },
+        {
+          text: "Share",
+          onPress: async () => {
+            try {
+              await Share.share({ message: content });
+            } catch {
+              // Share cancelled or failed silently
+            }
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    } catch (err) {
+      console.log("Options menu failed", err);
+    }
+  }, []);
+
   const renderMessage = useCallback(
     ({ item, index }: { item: DisplayMessage; index: number }) => {
       const prevMsg = index > 0 ? displayMessages[index - 1] : undefined;
@@ -611,11 +739,12 @@ export function ChatScreen() {
           avatarUri={avatarUri}
           isBookmarked={isBookmarked}
           onToggleBookmark={handleToggleBookmark}
+          onMoreOptions={handleMoreOptions}
           isDark={isDark}
         />
       );
     },
-    [displayMessages, avatarUri, handleToggleBookmark, localBookmarks, isDark],
+    [displayMessages, avatarUri, handleToggleBookmark, handleMoreOptions, localBookmarks, isDark],
   );
 
   // ═══════════════════════════════════════════════════════════════════
@@ -646,33 +775,65 @@ export function ChatScreen() {
           style={s.inputPlusBtn}
           hitSlop={8}
           disabled={busy || sendLockRef.current}
-          onPress={() =>
-            showAlert("Attach Media", "Choose an option", [
-              {
-                text: "Camera",
-                onPress: async () => {
-                  await ImagePicker.launchCameraAsync({ mediaTypes: "images" });
+          onPress={() => {
+            try {
+              showAlert("Attach Media", "Choose an option", [
+                {
+                  text: "Camera",
+                  onPress: async () => {
+                    try {
+                      const result = await ImagePicker.launchCameraAsync({
+                        mediaTypes: "images" as any,
+                      });
+                      if (!result.canceled && result.assets && result.assets[0]) {
+                        const fname = result.assets[0].fileName || "photo.jpg";
+                        setInput((prev) => (prev ? prev + "\n" : "") + `[Attached: ${fname}]`);
+                      }
+                    } catch (e) {
+                      console.log(e);
+                    }
+                  },
                 },
-              },
-              {
-                text: "Photo Library",
-                onPress: async () => {
-                  await ImagePicker.launchImageLibraryAsync({ mediaTypes: "images" });
+                {
+                  text: "Photo Library",
+                  onPress: async () => {
+                    try {
+                      const result = await ImagePicker.launchImageLibraryAsync({
+                        mediaTypes: "images" as any,
+                      });
+                      if (!result.canceled && result.assets && result.assets[0]) {
+                        const fname = result.assets[0].fileName || "image.jpg";
+                        setInput((prev) => (prev ? prev + "\n" : "") + `[Attached: ${fname}]`);
+                      }
+                    } catch (e) {
+                      console.log(e);
+                    }
+                  },
                 },
-              },
-              {
-                text: "Document",
-                onPress: async () => {
-                  await DocumentPicker.getDocumentAsync({});
+                {
+                  text: "Document",
+                  onPress: async () => {
+                    try {
+                      const result = await DocumentPicker.getDocumentAsync({});
+                      if (!result.canceled && result.assets && result.assets[0]) {
+                        const fname = result.assets[0].name || "document.pdf";
+                        setInput((prev) => (prev ? prev + "\n" : "") + `[Attached: ${fname}]`);
+                      }
+                    } catch (e) {
+                      console.log(e);
+                    }
+                  },
                 },
-              },
-              { text: "Cancel", style: "cancel" },
-            ])
-          }
+                { text: "Cancel", style: "cancel" },
+              ]);
+            } catch (e) {
+              console.log(e);
+            }
+          }}
         >
           <View
             style={{
-              backgroundColor: "#ffffff",
+              backgroundColor: isDark ? "#1E293B" : "#ffffff",
               width: 36,
               height: 36,
               borderRadius: 18,
@@ -688,6 +849,7 @@ export function ChatScreen() {
           </View>
         </Pressable>
         <TextInput
+          ref={textInputRef}
           value={input}
           onChangeText={handleInputChange}
           placeholder="Ask me anything..."
@@ -1008,7 +1170,9 @@ export function ChatScreen() {
                   keyExtractor={(m: ChatMessage) => m.id}
                   contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
                   onContentSizeChange={() => {
-                    listRef.current?.scrollToEnd({ animated: false });
+                    setTimeout(() => {
+                      listRef.current?.scrollToEnd({ animated: true });
+                    }, 100);
                   }}
                   initialNumToRender={15}
                   maxToRenderPerBatch={10}
@@ -1021,42 +1185,6 @@ export function ChatScreen() {
                     ) : null
                   }
                   renderItem={renderMessage}
-                  ListFooterComponent={
-                    isStreaming ? (
-                      <View style={{ marginTop: 4 }}>
-                        <View style={s.aiRow}>
-                          {Platform.OS === "web" ? (
-                            <img
-                              src={Asset.fromModule(AI_ORB_IMAGE).uri}
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 16,
-                                marginRight: 8,
-                                marginTop: 4,
-                                objectFit: "contain",
-                                filter: isDark ? "invert(1) hue-rotate(180deg)" : "none",
-                                mixBlendMode: isDark ? "screen" : "multiply",
-                              }}
-                            />
-                          ) : (
-                            <Image source={AI_ORB_IMAGE} style={s.aiAvatarImg} />
-                          )}
-                          <View style={s.aiContentCol}>
-                            <View style={s.aiBubble}>
-                              <Text style={s.aiBubbleText}>
-                                {streamingContent.length > 0 ? streamingContent : ""}
-                                {streamingContent.length > 0 && (
-                                  <Text style={{ color: "rgba(0,0,0,0.3)" }}>▍</Text>
-                                )}
-                                {streamingContent.length === 0 && <TypingDots />}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    ) : null
-                  }
                 />
               </View>
 

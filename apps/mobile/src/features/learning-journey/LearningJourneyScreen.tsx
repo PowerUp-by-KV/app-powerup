@@ -501,7 +501,7 @@ export function LearningJourneyScreen() {
   const navigation = useNavigation();
   const gate = useLearningJourneyGate();
   const insets = useSafeAreaInsets();
-  const { isDark, toggleTheme } = useThemeToggle();
+  const { isDark } = useThemeToggle();
 
   const {
     data: profile,
@@ -565,9 +565,7 @@ export function LearningJourneyScreen() {
     isError: pathError,
     isFetching: pathFetching,
     refetch: refetchPath,
-  } = useGetModulesQuery(undefined, {
-    skip: !gate.canEnter,
-  });
+  } = useGetModulesQuery();
 
   const personalizedPath = useMemo(() => {
     if (!modulesData) return null;
@@ -580,6 +578,16 @@ export function LearningJourneyScreen() {
         is_unlocked: true,
       })),
     };
+  }, [modulesData]);
+
+  const freeModule = useMemo(() => {
+    if (!modulesData) return null;
+    return modulesData.find((m) => m.order_index === -1 || m.title?.toLowerCase().includes("free"));
+  }, [modulesData]);
+
+  const trialModule = useMemo(() => {
+    if (!modulesData) return null;
+    return modulesData.find((m) => m.order_index === 0 || m.title?.toLowerCase().includes("trial"));
   }, [modulesData]);
 
   const {
@@ -636,22 +644,93 @@ export function LearningJourneyScreen() {
   );
 
   useEffect(() => {
-    if (gate.canEnter) {
-      fetchAllDays(false);
-    }
-  }, [fetchAllDays, gate.canEnter]);
+    fetchAllDays(false);
+  }, [fetchAllDays]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
       refetchProfile();
+      refetchPath();
       if (gate.canEnter) {
-        refetchPath();
         refetchProgression();
-        fetchAllDays(true);
       }
+      fetchAllDays(true);
     });
     return unsubscribe;
   }, [navigation, refetchProfile, refetchPath, refetchProgression, fetchAllDays, gate.canEnter]);
+
+  const freeDays = useMemo(() => {
+    if (!freeModule?.id) return [];
+    return moduleDaysData[freeModule.id] || [];
+  }, [freeModule?.id, moduleDaysData]);
+
+  const freeTotalActivities = useMemo(() => {
+    return freeDays.reduce((acc, d) => acc + (d.total_activities || 0), 0);
+  }, [freeDays]);
+
+  const freeCompletedActivities = useMemo(() => {
+    return freeDays.reduce((acc, d) => acc + (d.completed_activities || 0), 0);
+  }, [freeDays]);
+
+  const isFreeCompleted = useMemo(() => {
+    if (!freeDays.length) return false;
+    return (
+      freeDays.every((d) => d.is_completed) ||
+      (freeTotalActivities > 0 && freeCompletedActivities >= freeTotalActivities)
+    );
+  }, [freeDays, freeTotalActivities, freeCompletedActivities]);
+
+  const freeProgressPct = useMemo(() => {
+    if (isFreeCompleted) return 100;
+    if (freeTotalActivities > 0) {
+      return Math.min(100, Math.round((freeCompletedActivities / freeTotalActivities) * 100));
+    }
+    return 0;
+  }, [isFreeCompleted, freeTotalActivities, freeCompletedActivities]);
+
+  const freeXp = useMemo(() => {
+    return freeCompletedActivities * 10;
+  }, [freeCompletedActivities]);
+
+  const isTrialUnlocked = isFreeCompleted;
+
+  const trialDays = useMemo(() => {
+    if (!trialModule?.id) return [];
+    return moduleDaysData[trialModule.id] || [];
+  }, [trialModule?.id, moduleDaysData]);
+
+  const trialTotalActivities = useMemo(() => {
+    return trialDays.reduce((acc, d) => acc + (d.total_activities || 0), 0);
+  }, [trialDays]);
+
+  const trialCompletedActivities = useMemo(() => {
+    return trialDays.reduce((acc, d) => acc + (d.completed_activities || 0), 0);
+  }, [trialDays]);
+
+  const isTrialCompleted = useMemo(() => {
+    if (!isTrialUnlocked || !trialDays.length) return false;
+    return (
+      trialDays.every((d) => d.is_completed) ||
+      (trialTotalActivities > 0 && trialCompletedActivities >= trialTotalActivities)
+    );
+  }, [isTrialUnlocked, trialDays, trialTotalActivities, trialCompletedActivities]);
+
+  const trialProgressPct = useMemo(() => {
+    if (isTrialCompleted) return 100;
+    if (!isTrialUnlocked) return 0;
+    if (trialTotalActivities > 0) {
+      return Math.min(100, Math.round((trialCompletedActivities / trialTotalActivities) * 100));
+    }
+    return 0;
+  }, [isTrialCompleted, isTrialUnlocked, trialTotalActivities, trialCompletedActivities]);
+
+  const trialXp = useMemo(() => {
+    return trialCompletedActivities * 10;
+  }, [trialCompletedActivities]);
+
+  const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
+  // Prerequisites flag (Free Content & Trial Content must be 100% completed)
+  const isPrerequisitesMet = isFreeCompleted && isTrialCompleted;
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
@@ -729,6 +808,13 @@ export function LearningJourneyScreen() {
   }, [refetchPath, refetchProgression, fetchAllDays, gate.canEnter]);
 
   const handleStartOrResumeAssessment = async () => {
+    if (!isAssessmentUnlocked) {
+      Alert.alert(
+        "Stage Locked 🔒",
+        "Please complete your Free Content and Trial Content activities first to unlock your Diagnostic Assessment!",
+      );
+      return;
+    }
     setIsStartingSession(true);
     try {
       const session = await startSession().unwrap();
@@ -744,43 +830,33 @@ export function LearningJourneyScreen() {
     }
   };
 
-  const handleDayTap = async (item: {
-    isLocked: boolean;
-    isCompleted: boolean;
-    globalDayNumber: number;
-    dayObj?: CombinedModuleDay;
-  }) => {
-    if (item.isLocked) {
-      Alert.alert(
-        "Locked Day",
-        "Please complete your Diagnostic Assessment to unlock your personalized learning path!",
-      );
-      return;
-    }
-    if (!item.dayObj?.id) {
-      Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
-      return;
-    }
+  const handleDayTap = useCallback(
+    async (item: {
+      isLocked: boolean;
+      isCompleted: boolean;
+      globalDayNumber: number;
+      dayObj?: CombinedModuleDay;
+    }) => {
+      if (item.isLocked && !item.isCompleted) {
+        if (!isPrerequisitesMet) {
+          Alert.alert(
+            "Stage Locked 🔒",
+            `Please complete Free Content and Trial Content to unlock and resume Day ${item.globalDayNumber}!`,
+          );
+        } else {
+          Alert.alert(
+            "Stage Locked 🔒",
+            `Please complete your Diagnostic Assessment to unlock Day ${item.globalDayNumber}!`,
+          );
+        }
+        return;
+      }
+      if (!item.dayObj?.id) {
+        Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+        return;
+      }
 
-    if (item.isCompleted) {
-      router.push({
-        pathname: "/learning-journey/day-complete" as never,
-        params: {
-          day_id: item.dayObj.id,
-          module_id: item.dayObj.module_id,
-          day_number: String(item.globalDayNumber),
-          xp_earned: "0",
-        },
-      });
-      return;
-    }
-
-    try {
-      // 1. Check local storage first
-      const localCompleted = await AsyncStorage.getItem(
-        `day_first_run_completed_${item.dayObj.id}`,
-      );
-      if (localCompleted === "true") {
+      if (item.isCompleted) {
         router.push({
           pathname: "/learning-journey/day-complete" as never,
           params: {
@@ -793,33 +869,60 @@ export function LearningJourneyScreen() {
         return;
       }
 
-      // 2. Fetch and check results status
-      const results = await triggerGetDayResults(item.dayObj.id).unwrap();
-      const totalActivitiesCount = results?.activities?.length ?? 0;
-      const attemptedActivitiesCount = (results?.activities ?? []).filter(
-        (act) =>
-          act.score !== null ||
-          act.evaluation_status === "COMPLETED" ||
-          act.evaluation_status === "FAILED" ||
-          act.passed,
-      ).length;
+      try {
+        // 1. Check local storage first
+        const localCompleted = await AsyncStorage.getItem(
+          `day_first_run_completed_${item.dayObj.id}`,
+        );
+        if (localCompleted === "true") {
+          router.push({
+            pathname: "/learning-journey/day-complete" as never,
+            params: {
+              day_id: item.dayObj.id,
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+              xp_earned: "0",
+            },
+          });
+          return;
+        }
 
-      const isDayFullyPlayed =
-        totalActivitiesCount > 0 && attemptedActivitiesCount === totalActivitiesCount;
+        // 2. Fetch and check results status
+        const results = await triggerGetDayResults(item.dayObj.id).unwrap();
+        const totalActivitiesCount = results?.activities?.length ?? 0;
+        const attemptedActivitiesCount = (results?.activities ?? []).filter(
+          (act) =>
+            act.score !== null ||
+            act.evaluation_status === "COMPLETED" ||
+            act.evaluation_status === "FAILED" ||
+            act.passed,
+        ).length;
 
-      if (isDayFullyPlayed) {
-        // Save flag in AsyncStorage
-        await AsyncStorage.setItem(`day_first_run_completed_${item.dayObj.id}`, "true");
-        router.push({
-          pathname: "/learning-journey/day-complete" as never,
-          params: {
-            day_id: item.dayObj.id,
-            module_id: item.dayObj.module_id,
-            day_number: String(item.globalDayNumber),
-            xp_earned: "0",
-          },
-        });
-      } else {
+        const isDayFullyPlayed =
+          totalActivitiesCount > 0 && attemptedActivitiesCount === totalActivitiesCount;
+
+        if (isDayFullyPlayed) {
+          // Save flag in AsyncStorage
+          await AsyncStorage.setItem(`day_first_run_completed_${item.dayObj.id}`, "true");
+          router.push({
+            pathname: "/learning-journey/day-complete" as never,
+            params: {
+              day_id: item.dayObj.id,
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+              xp_earned: "0",
+            },
+          });
+        } else {
+          router.push({
+            pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+            params: {
+              module_id: item.dayObj.module_id,
+              day_number: String(item.globalDayNumber),
+            },
+          });
+        }
+      } catch {
         router.push({
           pathname: `/learning-journey/module/${item.dayObj.id}` as never,
           params: {
@@ -828,16 +931,76 @@ export function LearningJourneyScreen() {
           },
         });
       }
-    } catch {
+    },
+    [isPrerequisitesMet, router, triggerGetDayResults],
+  );
+
+  const handleFreeContentPress = useCallback(async () => {
+    if (!freeModule?.id) {
+      Alert.alert("Free Content", "Free content module is loading. Please try refreshing.");
+      return;
+    }
+    const days = moduleDaysData[freeModule.id];
+    const firstDay = days?.[0];
+    if (firstDay) {
+      handleDayTap({
+        isLocked: false,
+        isCompleted: firstDay.is_completed,
+        globalDayNumber: firstDay.day_number || 1,
+        dayObj: {
+          ...firstDay,
+          module_no: freeModule.order_index,
+          module_title: freeModule.title,
+          module_id: freeModule.id,
+        },
+      });
+    } else {
       router.push({
-        pathname: `/learning-journey/module/${item.dayObj.id}` as never,
+        pathname: `/learning-journey/module/${freeModule.id}` as never,
         params: {
-          module_id: item.dayObj.module_id,
-          day_number: String(item.globalDayNumber),
+          module_id: freeModule.id,
+          day_number: "-1",
         },
       });
     }
-  };
+  }, [freeModule, moduleDaysData, handleDayTap, router]);
+
+  const handleTrialContentPress = useCallback(async () => {
+    if (!isTrialUnlocked) {
+      Alert.alert(
+        "Stage Locked 🔒",
+        "Please complete your Free Content activities first to unlock Trial Content!",
+      );
+      return;
+    }
+    if (!trialModule?.id) {
+      Alert.alert("Trial Content", "Trial content module is loading. Please try refreshing.");
+      return;
+    }
+    const days = moduleDaysData[trialModule.id];
+    const firstDay = days?.[0];
+    if (firstDay) {
+      handleDayTap({
+        isLocked: false,
+        isCompleted: firstDay.is_completed,
+        globalDayNumber: firstDay.day_number || 0,
+        dayObj: {
+          ...firstDay,
+          module_no: trialModule.order_index,
+          module_title: trialModule.title,
+          module_id: trialModule.id,
+        },
+      });
+    } else {
+      router.push({
+        pathname: `/learning-journey/module/${trialModule.id}` as never,
+        params: {
+          module_id: trialModule.id,
+          day_number: "0",
+        },
+      });
+    }
+  }, [isTrialUnlocked, trialModule, moduleDaysData, handleDayTap, router]);
   const isPathLoading =
     gate.canEnter &&
     (pathFetching ||
@@ -956,6 +1119,7 @@ export function LearningJourneyScreen() {
 
   // Diagnostic Assessment complete flag
   const isDiagnosticComplete = isPreAssessmentDone;
+  const isDiagnosticLocked = !isDiagnosticComplete && !isAssessmentUnlocked;
 
   // Calculate dynamic Diagnostic Assessment details
   const diagProgress = isDiagnosticComplete
@@ -985,21 +1149,26 @@ export function LearningJourneyScreen() {
   let globalDayIdx = 1;
   for (const dayObj of allDaysList) {
     const idx = globalDayIdx - 1;
+    const isCompleted = !!dayObj?.is_completed;
     const isLocked =
-      !isDiagnosticComplete || (firstIncompleteIndex !== -1 && idx > firstIncompleteIndex);
-    const isCompleted = isDiagnosticComplete && !!dayObj?.is_completed && !isLocked;
+      !isCompleted &&
+      (!isPrerequisitesMet ||
+        !isDiagnosticComplete ||
+        (firstIncompleteIndex !== -1 && idx > firstIncompleteIndex));
     const isInProgress =
-      isDiagnosticComplete && firstIncompleteIndex !== -1 && idx === firstIncompleteIndex;
+      !isCompleted && !isLocked && firstIncompleteIndex !== -1 && idx === firstIncompleteIndex;
 
     const topic = dayObj?.topic || STATIC_DAY_TOPICS[dayObj.day_number - 1] || "Daily Activities";
     const hours = dayObj?.duration_hours ?? 0.25;
     const minutes = Math.max(1, Math.round(hours * 60));
 
     const title = `Day ${globalDayIdx}: ${topic}`;
-    const subtitle = isLocked
-      ? "Complete previous stages to unlock"
-      : isCompleted
-        ? `Done · ${minutes} min`
+    const subtitle = isCompleted
+      ? `Done · ${minutes} min`
+      : isLocked
+        ? !isPrerequisitesMet
+          ? "Complete Free & Trial Content to unlock"
+          : "Complete previous stages to unlock"
         : `Tap to start · ~${minutes} min`;
 
     dayItems.push({
@@ -1055,16 +1224,6 @@ export function LearningJourneyScreen() {
         </View>
         <View className="flex-row items-center" style={{ gap: 12 }}>
           <Pressable
-            onPress={() => toggleTheme()}
-            className="w-10 h-10 rounded-full bg-white dark:bg-[#1E1F2A] border border-slate-200 dark:border-slate-800 items-center justify-center active:opacity-80 shadow-sm"
-          >
-            <Feather
-              name={isDark ? "sun" : "moon"}
-              size={20}
-              color={isDark ? "#fbbf24" : "#475569"}
-            />
-          </Pressable>
-          <Pressable
             onPress={() => router.push("/profile" as never)}
             className="w-12 h-12 rounded-full bg-slate-200 dark:bg-zinc-800 border border-slate-100 dark:border-slate-800 items-center justify-center overflow-hidden active:opacity-80"
           >
@@ -1103,9 +1262,7 @@ export function LearningJourneyScreen() {
         >
           {/* Item 1: Free Content */}
           <Pressable
-            onPress={() =>
-              Alert.alert("Free Content", "This free module is completed! Continue down your path.")
-            }
+            onPress={handleFreeContentPress}
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
             <View style={timelineStyles.stageRow}>
@@ -1117,13 +1274,22 @@ export function LearningJourneyScreen() {
                   left: 17,
                   width: 3,
                   bottom: -32,
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: isFreeCompleted ? "#3b82f6" : "#cbd5e1",
                   zIndex: 1,
                 }}
               />
               <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
-                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                  <Feather name="check" size={16} color="white" />
+                <View
+                  style={[
+                    timelineStyles.stageIconCircle,
+                    isFreeCompleted
+                      ? timelineStyles.stageCircleCompleted
+                      : freeCompletedActivities > 0
+                        ? timelineStyles.stageCircleInProgress
+                        : timelineStyles.stageCircleUpcoming,
+                  ]}
+                >
+                  <Feather name={isFreeCompleted ? "check" : "play"} size={16} color="white" />
                 </View>
               </View>
               <View style={timelineStyles.stageContent}>
@@ -1133,38 +1299,71 @@ export function LearningJourneyScreen() {
                   >
                     Free Content
                   </Text>
-                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                  <View
+                    style={[
+                      timelineStyles.statusBadge,
+                      isFreeCompleted
+                        ? timelineStyles.badgeCompleted
+                        : freeCompletedActivities > 0
+                          ? timelineStyles.badgeInProgress
+                          : timelineStyles.badgeUpcoming,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        timelineStyles.badgeText,
+                        {
+                          color: isFreeCompleted
+                            ? "#15803d"
+                            : freeCompletedActivities > 0
+                              ? "#b45309"
+                              : "#4f46e5",
+                        },
+                      ]}
+                    >
+                      {isFreeCompleted
+                        ? "Completed"
+                        : freeCompletedActivities > 0
+                          ? "In Progress"
+                          : "Start"}
+                    </Text>
                   </View>
                 </View>
-                <Text style={timelineStyles.stageSubtitle}>The Fundamentals of Communication</Text>
+                <Text style={timelineStyles.stageSubtitle}>
+                  {freeModule?.title ?? "The Fundamentals of Communication"}
+                </Text>
 
                 <View style={timelineStyles.progressBarBg}>
                   <LinearGradient
-                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                    colors={
+                      isFreeCompleted
+                        ? ["#84cc16", "#22c55e"]
+                        : isDark
+                          ? ["#ffffff", "#ffffff"]
+                          : ["#3b82f6", "#60a5fa"]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                    style={[timelineStyles.progressBarFill, { width: `${freeProgressPct}%` }]}
                   />
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>8 lessons completed</Text>
-                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                  <Text style={timelineStyles.progressLabelText}>
+                    {freeTotalActivities > 0
+                      ? `${freeCompletedActivities}/${freeTotalActivities} lessons completed`
+                      : `${freeProgressPct}% completed`}
+                  </Text>
+                  <Text style={timelineStyles.progressLabelPercent}>{freeProgressPct}%</Text>
                 </View>
-                <Text style={timelineStyles.xpText}>350 XP earned</Text>
+                <Text style={timelineStyles.xpText}>{freeXp} XP earned</Text>
               </View>
             </View>
           </Pressable>
 
           {/* Item 2: Trial Content */}
           <Pressable
-            onPress={() =>
-              Alert.alert(
-                "Trial Content",
-                "This trial module is completed! Continue down your path.",
-              )
-            }
+            onPress={handleTrialContentPress}
             style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
           >
             <View style={timelineStyles.stageRow}>
@@ -1176,42 +1375,111 @@ export function LearningJourneyScreen() {
                   left: 17,
                   width: 3,
                   bottom: -32,
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: isTrialCompleted ? "#3b82f6" : "#cbd5e1",
                   zIndex: 1,
                 }}
               />
               <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
-                <View style={[timelineStyles.stageIconCircle, timelineStyles.stageCircleCompleted]}>
-                  <Feather name="check" size={16} color="white" />
+                <View
+                  style={[
+                    timelineStyles.stageIconCircle,
+                    isTrialCompleted
+                      ? timelineStyles.stageCircleCompleted
+                      : !isTrialUnlocked
+                        ? timelineStyles.stageCircleLocked
+                        : trialCompletedActivities > 0
+                          ? timelineStyles.stageCircleInProgress
+                          : timelineStyles.stageCircleLocked,
+                  ]}
+                >
+                  <Feather
+                    name={!isTrialUnlocked ? "lock" : isTrialCompleted ? "check" : "play"}
+                    size={16}
+                    color="white"
+                  />
                 </View>
               </View>
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
                   <Text
-                    className={`flex-1 text-lg font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}
+                    className={`flex-1 text-lg font-bold ${
+                      !isTrialUnlocked
+                        ? isDark
+                          ? "text-slate-500"
+                          : "text-slate-400"
+                        : isDark
+                          ? "text-slate-200"
+                          : "text-slate-800"
+                    }`}
                   >
                     Trial Content
                   </Text>
-                  <View style={[timelineStyles.statusBadge, timelineStyles.badgeCompleted]}>
-                    <Text style={[timelineStyles.badgeText, { color: "#15803d" }]}>Completed</Text>
+                  <View
+                    style={[
+                      timelineStyles.statusBadge,
+                      !isTrialUnlocked
+                        ? timelineStyles.badgeLocked
+                        : isTrialCompleted
+                          ? timelineStyles.badgeCompleted
+                          : trialCompletedActivities > 0
+                            ? timelineStyles.badgeInProgress
+                            : timelineStyles.badgeLocked,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        timelineStyles.badgeText,
+                        {
+                          color: !isTrialUnlocked
+                            ? "#4f46e5"
+                            : isTrialCompleted
+                              ? "#15803d"
+                              : trialCompletedActivities > 0
+                                ? "#b45309"
+                                : "#4f46e5",
+                        },
+                      ]}
+                    >
+                      {!isTrialUnlocked
+                        ? "Locked"
+                        : isTrialCompleted
+                          ? "Completed"
+                          : trialCompletedActivities > 0
+                            ? "In Progress"
+                            : "Start"}
+                    </Text>
                   </View>
                 </View>
-                <Text style={timelineStyles.stageSubtitle}>Behaviour in Workplace</Text>
+                <Text style={timelineStyles.stageSubtitle}>
+                  {trialModule?.title ?? "Behaviour in Workplace"}
+                </Text>
 
                 <View style={timelineStyles.progressBarBg}>
                   <LinearGradient
-                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
+                    colors={
+                      isTrialCompleted
+                        ? ["#84cc16", "#22c55e"]
+                        : isDark
+                          ? ["#ffffff", "#ffffff"]
+                          : ["#3b82f6", "#60a5fa"]
+                    }
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[timelineStyles.progressBarFill, { width: "100%" }]}
+                    style={[timelineStyles.progressBarFill, { width: `${trialProgressPct}%` }]}
                   />
                 </View>
 
                 <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>7 lessons completed</Text>
-                  <Text style={timelineStyles.progressLabelPercent}>100%</Text>
+                  <Text style={timelineStyles.progressLabelText}>
+                    {!isTrialUnlocked
+                      ? "Complete Free Content to unlock"
+                      : trialTotalActivities > 0
+                        ? `${trialCompletedActivities}/${trialTotalActivities} lessons completed`
+                        : `${trialProgressPct}% completed`}
+                  </Text>
+                  <Text style={timelineStyles.progressLabelPercent}>{trialProgressPct}%</Text>
                 </View>
-                <Text style={timelineStyles.xpText}>250 XP earned</Text>
+                <Text style={timelineStyles.xpText}>{trialXp} XP earned</Text>
               </View>
             </View>
           </Pressable>
@@ -1235,7 +1503,7 @@ export function LearningJourneyScreen() {
                   left: 17,
                   width: 3,
                   bottom: -32,
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: isDiagnosticComplete ? "#3b82f6" : "#cbd5e1",
                   zIndex: 1,
                 }}
               />
@@ -1245,16 +1513,30 @@ export function LearningJourneyScreen() {
                     timelineStyles.stageIconCircle,
                     isDiagnosticComplete
                       ? timelineStyles.stageCircleCompleted
-                      : timelineStyles.stageCircleInProgress,
+                      : isDiagnosticLocked
+                        ? timelineStyles.stageCircleLocked
+                        : timelineStyles.stageCircleInProgress,
                   ]}
                 >
-                  <Feather name={isDiagnosticComplete ? "check" : "play"} size={16} color="white" />
+                  <Feather
+                    name={isDiagnosticComplete ? "check" : isDiagnosticLocked ? "lock" : "play"}
+                    size={16}
+                    color="white"
+                  />
                 </View>
               </View>
               <View style={timelineStyles.stageContent}>
                 <View style={timelineStyles.stageHeaderRow}>
                   <Text
-                    className={`flex-1 text-lg font-bold ${isDark ? "text-slate-200" : "text-slate-800"}`}
+                    className={`flex-1 text-lg font-bold ${
+                      isDiagnosticLocked
+                        ? isDark
+                          ? "text-slate-500"
+                          : "text-slate-400"
+                        : isDark
+                          ? "text-slate-200"
+                          : "text-slate-800"
+                    }`}
                   >
                     Diagnostic Assessment
                   </Text>
@@ -1263,18 +1545,28 @@ export function LearningJourneyScreen() {
                       timelineStyles.statusBadge,
                       isDiagnosticComplete
                         ? timelineStyles.badgeCompleted
-                        : timelineStyles.badgeInProgress,
+                        : isDiagnosticLocked
+                          ? timelineStyles.badgeLocked
+                          : timelineStyles.badgeInProgress,
                     ]}
                   >
                     <Text
                       style={[
                         timelineStyles.badgeText,
-                        { color: isDiagnosticComplete ? "#15803d" : "#a16207" },
+                        {
+                          color: isDiagnosticComplete
+                            ? "#15803d"
+                            : isDiagnosticLocked
+                              ? "#4f46e5"
+                              : "#b45309",
+                        },
                       ]}
                     >
                       {isDiagnosticComplete
                         ? `Level ${resultsToPass?.cefr_level ?? resultsToPass?.cefr_range ?? profile?.cefr_range ?? "Assessed"}`
-                        : "In Progress"}
+                        : isDiagnosticLocked
+                          ? "Locked"
+                          : "In Progress"}
                     </Text>
                   </View>
                 </View>
@@ -1394,7 +1686,7 @@ export function LearningJourneyScreen() {
                       </Text>
                       {item.isLocked && (
                         <View style={[timelineStyles.statusBadge, timelineStyles.badgeLocked]}>
-                          <Text style={[timelineStyles.badgeText, { color: "#6366f1" }]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#4f46e5" }]}>
                             Locked
                           </Text>
                         </View>
@@ -1408,7 +1700,7 @@ export function LearningJourneyScreen() {
                       )}
                       {item.isInProgress && (
                         <View style={[timelineStyles.statusBadge, timelineStyles.badgeInProgress]}>
-                          <Text style={[timelineStyles.badgeText, { color: "#a16207" }]}>
+                          <Text style={[timelineStyles.badgeText, { color: "#b45309" }]}>
                             In Progress
                           </Text>
                         </View>
@@ -1542,6 +1834,9 @@ const timelineStyles = StyleSheet.create({
   stageCircleLocked: {
     backgroundColor: "#e2e5f5",
   },
+  stageCircleUpcoming: {
+    backgroundColor: "#94a3b8",
+  },
   stageContent: {
     flex: 1,
   },
@@ -1552,23 +1847,25 @@ const timelineStyles = StyleSheet.create({
     width: "100%",
   },
   statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 5,
+    paddingHorizontal: 14,
+    borderRadius: 9999,
   },
   badgeCompleted: {
     backgroundColor: "#dcfce7",
   },
   badgeInProgress: {
-    backgroundColor: "#fef9c3",
+    backgroundColor: "#fef3c7",
   },
   badgeLocked: {
     backgroundColor: "#e0e7ff",
   },
+  badgeUpcoming: {
+    backgroundColor: "#e0e7ff",
+  },
   badgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "700",
-    color: "#ffffff",
   },
   stageSubtitle: {
     fontSize: 13,

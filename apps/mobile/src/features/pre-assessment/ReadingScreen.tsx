@@ -287,11 +287,11 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
       >
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View className="px-4 pt-4">
+          <View className="px-4 pt-4 pb-6 flex-1">
             <AssessmentHeader
               sectionName="Section A"
               skillName="Reading Skills"
@@ -341,34 +341,34 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
               )}
             </View>
           </View>
-        </ScrollView>
 
-        {/* Docked Action Button Container */}
-        <View
-          style={{
-            paddingHorizontal: 20,
-            paddingBottom: Platform.OS === "ios" ? 10 : 20,
-            paddingTop: 12,
-          }}
-          className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#151620]"
-        >
-          <TouchableOpacity
-            className={`w-full py-4 rounded-2xl items-center shadow-md ${
-              isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
-            }`}
-            onPress={handleNext}
-            disabled={isSubmitting}
-            activeOpacity={0.8}
+          {/* Docked Action Button Container */}
+          <View
+            style={{
+              paddingHorizontal: 20,
+              paddingBottom: Platform.OS === "ios" ? 10 : 20,
+              paddingTop: 12,
+            }}
+            className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#151620] mt-auto"
           >
-            {isSubmitting ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text className="text-white font-bold text-base">
-                {isLastQuestion ? "Next Section" : "Next Question"}
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              className={`w-full py-4 rounded-2xl items-center shadow-md ${
+                isSubmitting ? "bg-slate-400" : "bg-blue-500 active:bg-blue-600"
+              }`}
+              onPress={handleNext}
+              disabled={isSubmitting}
+              activeOpacity={0.8}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-base">
+                  {isLastQuestion ? "Next Section" : "Next Question"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Full-screen lock overlay — blocks all interaction during submission */}

@@ -63,7 +63,7 @@ export function AvatarPickerScreen() {
       }}
       className="flex-1 bg-white dark:bg-slate-900"
     >
-      <View className="flex-row items-center px-4 py-3">
+      <View className="flex-row items-center px-4 py-3 border-b border-slate-100 dark:border-zinc-800">
         <Pressable onPress={() => safeBack()} className="w-9 h-9 items-center justify-center">
           <Feather name="chevron-left" size={22} className="text-slate-900 dark:text-slate-50" />
         </Pressable>

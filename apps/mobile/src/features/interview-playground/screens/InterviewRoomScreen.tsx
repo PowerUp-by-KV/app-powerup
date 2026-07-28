@@ -20,6 +20,8 @@ import { AvatarStage } from "../components/AvatarStage";
 import { useWebRTCInterview } from "../hooks/useWebRTCInterview";
 import { showAlert } from "@/utils/alert";
 
+import { useColorScheme } from "nativewind";
+
 interface InterviewRoomScreenProps {
   sessionId: string | undefined;
   mode?: "buddy" | "playground";
@@ -27,13 +29,16 @@ interface InterviewRoomScreenProps {
 
 export function InterviewRoomScreen({ sessionId, mode = "playground" }: InterviewRoomScreenProps) {
   const insets = useSafeAreaInsets();
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   const [status, setLocalStatus] = useState<InterviewStatus>(activeSession.status);
   const [transcript, setLocalTranscript] = useState<TranscriptTurn[]>(activeSession.transcript);
   const [isSpeaking, setLocalSpeaking] = useState(activeSession.isSpeaking);
   const [isEnding, setIsEnding] = useState(false);
   const goBack = useSafeBack("/");
 
-  const { endInterview } = useWebRTCInterview();
+  const { endInterview } = useWebRTCInterview(mode);
 
   useEffect(() => {
     const unsubStatus = onStatusChange((s) => setLocalStatus(s));
@@ -52,9 +57,9 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
       router.replace({ pathname: "/interview-results", params: { session_id: sessionId, mode } });
     } else if (status === "error") {
       const msg = activeSession.errorMessage ?? "An error occurred.";
-      showAlert("Interview Error", msg, [{ text: "OK", onPress: () => router.back() }]);
+      showAlert("Interview Error", msg, [{ text: "OK", onPress: () => goBack() }]);
     }
-  }, [status, sessionId, mode]);
+  }, [status, sessionId, mode, goBack]);
 
   // Safety net: if the user leaves the room without ending (back gesture,
   // navigating away), tear down the WebRTC connection and stop the mic so we
@@ -86,25 +91,31 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
   const isBusy = status === "saving" || isEnding;
 
   return (
-    <View style={styles.safe}>
-      <StatusBar style="light" />
+    <View style={[styles.safe, !isDark && { backgroundColor: "#F8FAFC" }]}>
+      <StatusBar style={isDark ? "light" : "dark"} />
 
-      <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
+      <View
+        style={[
+          styles.topBar,
+          { paddingTop: insets.top + 8 },
+          !isDark && { backgroundColor: "#FFFFFF", borderBottomColor: "#E2E8F0" },
+        ]}
+      >
         <Pressable
           onPress={goBack}
           style={{
             width: 40,
             height: 40,
             borderRadius: 20,
-            backgroundColor: "rgba(255,255,255,0.05)",
+            backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)",
             alignItems: "center",
             justifyContent: "center",
             marginRight: 12,
           }}
         >
-          <Ionicons name="arrow-back" size={20} color="#fff" />
+          <Ionicons name="arrow-back" size={20} color={isDark ? "#fff" : "#0F172A"} />
         </Pressable>
-        <Text style={styles.roleName} numberOfLines={1}>
+        <Text style={[styles.roleName, !isDark && { color: "#0F172A" }]} numberOfLines={1}>
           {activeSession.derivedRole ?? "AI Interview"}
         </Text>
         <ConnectionBadge status={status} />
@@ -120,26 +131,36 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
 
       {isConnecting && (
         <View style={styles.centerFill}>
-          <ActivityIndicator size="large" color="#818CF8" />
-          <Text style={styles.centerText}>Preparing your interview…</Text>
+          <ActivityIndicator size="large" color={isDark ? "#818CF8" : "#4F46E5"} />
+          <Text style={[styles.centerText, !isDark && { color: "#64748B" }]}>
+            Preparing your interview…
+          </Text>
         </View>
       )}
 
       {status === "live" && (
-        <View style={styles.transcriptContainer}>
+        <View style={[styles.transcriptContainer, !isDark && { backgroundColor: "#F8FAFC" }]}>
           <TranscriptPanel turns={transcript} />
         </View>
       )}
 
       {isBusy && (
         <View style={styles.centerFill}>
-          <ActivityIndicator size="large" color="#818CF8" />
-          <Text style={styles.centerText}>Saving and evaluating…</Text>
+          <ActivityIndicator size="large" color={isDark ? "#818CF8" : "#4F46E5"} />
+          <Text style={[styles.centerText, !isDark && { color: "#64748B" }]}>
+            Saving and evaluating…
+          </Text>
         </View>
       )}
 
       {status === "live" && (
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
+        <View
+          style={[
+            styles.bottomBar,
+            { paddingBottom: insets.bottom + 16 },
+            !isDark && { backgroundColor: "#FFFFFF", borderTopColor: "#E2E8F0" },
+          ]}
+        >
           <Pressable
             style={[styles.endButton, isEnding && styles.endButtonDisabled]}
             onPress={handleEnd}

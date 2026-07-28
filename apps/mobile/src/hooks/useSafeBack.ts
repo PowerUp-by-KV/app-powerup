@@ -1,11 +1,10 @@
 import { useCallback } from "react";
 import { useRouter, useNavigation } from "expo-router";
-import { Platform } from "react-native";
 
 /**
- * router.back() throws "GO_BACK was not handled" when there's no navigation
- * stack to pop (deep link, page reload). This wraps it: try back, otherwise
- * navigate to the supplied fallback (defaults to the Home tab).
+ * Safe back navigation helper.
+ * Prevents "The action GO_BACK was not handled by any navigator" console warnings
+ * when there is no navigation stack to pop (deep links, direct page reloads).
  */
 export function useSafeBack(fallback = "/(tabs)") {
   const router = useRouter();
@@ -13,22 +12,13 @@ export function useSafeBack(fallback = "/(tabs)") {
 
   return useCallback(() => {
     try {
-      const state = navigation?.getState();
-      // On Web, react-navigation's integration with browser history makes canGoBack()
-      // return true even if the current stack navigator has no screens to pop.
-      // Checking state.index > 0 ensures we only pop if there is actual stack history.
-      const hasHistory = Platform.OS === "web" ? (state ? state.index > 0 : false) : true;
-
-      if (
-        navigation &&
-        typeof navigation.canGoBack === "function" &&
-        navigation.canGoBack() &&
-        hasHistory
-      ) {
+      const canBack =
+        navigation?.canGoBack?.() ?? (typeof router.canGoBack === "function" && router.canGoBack());
+      if (canBack) {
         navigation.goBack();
-      } else {
-        router.replace(fallback as never);
+        return;
       }
+      router.replace(fallback as never);
     } catch {
       router.replace(fallback as never);
     }

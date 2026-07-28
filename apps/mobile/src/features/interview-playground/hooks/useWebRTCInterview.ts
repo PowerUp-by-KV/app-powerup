@@ -288,7 +288,11 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
   );
 
   const startInterview = useCallback(async (): Promise<string | null> => {
-    if (activeSession.status !== "idle" && activeSession.status !== "error") {
+    if (
+      activeSession.status === "live" ||
+      activeSession.status === "connecting" ||
+      activeSession.status === "starting"
+    ) {
       return activeSession.sessionId;
     }
 
@@ -369,16 +373,23 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
+      const token =
+        backendData.ephemeral_token || (backendData as { realtime_token?: string }).realtime_token;
       const sdpResponse = await fetch(backendData.webrtc_sdp_url, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${backendData.ephemeral_token}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/sdp",
         },
         body: offer.sdp,
       });
 
       if (!sdpResponse.ok) {
+        if (sdpResponse.status === 401) {
+          throw new Error(
+            "OpenAI Realtime authentication failed (401). Please check that a valid OPENAI_API_KEY is configured in the backend server.",
+          );
+        }
         throw new Error(`OpenAI SDP exchange failed: ${sdpResponse.status}`);
       }
 
