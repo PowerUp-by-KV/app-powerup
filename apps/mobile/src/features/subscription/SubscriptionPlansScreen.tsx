@@ -100,7 +100,7 @@ export function SubscriptionPlansScreen() {
   };
 
   const formattedExpiry = activeSub?.expires_at
-    ? new Date(activeSub.expires_at).toLocaleDateString(undefined, {
+    ? new Date(activeSub.expires_at as string | number).toLocaleDateString(undefined, {
         year: "numeric",
         month: "long",
         day: "numeric",

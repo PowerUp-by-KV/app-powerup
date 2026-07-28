@@ -106,13 +106,20 @@ export function CustomAvatarScreen() {
 
   // Construct URL
   const buildPreviewUrl = () => {
-    let params = `skinColor=${skinColor}&hairColor=${hairColor}&hair=${hair}&eyes=${eyes}&mouth=${mouth}`;
+    const params = new URLSearchParams({
+      skinColor,
+      hairColor,
+      hair,
+      eyes,
+      mouth,
+      backgroundColor: "b6e3f4,c0aede,d1d4f9",
+      seed: "user_custom",
+    });
     if (glasses !== "none") {
-      params += `&glasses=${glasses}&glassesProbability=100`;
+      params.append("glasses", glasses);
+      params.append("glassesProbability", "100");
     }
-    // Hardcode background to match adventurer preset style
-    params += `&backgroundColor=b6e3f4,c0aede,d1d4f9&seed=user_custom`;
-    return `https://api.dicebear.com/7.x/adventurer/png?${params}`;
+    return "https://api.dicebear.com/7.x/adventurer/png?" + params.toString();
   };
 
   const previewUrl = buildPreviewUrl();

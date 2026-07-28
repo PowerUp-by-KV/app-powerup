@@ -38,13 +38,17 @@ export function ListenWithAudioQuestion({
         </Text>
       </View>
 
-      {question.question || (question as any).prompt || question.text ? (
+      {question.question ||
+      (question as unknown as Record<string, unknown>).prompt ||
+      question.text ? (
         <View className="bg-white dark:bg-[#1E1F2A] p-4 rounded-xl border border-gray-200 dark:border-slate-800 mb-4 shadow-sm">
           <Text className="text-sm text-gray-500 dark:text-gray-400 font-semibold mb-1">
             Prompt / Question:
           </Text>
           <Text className="text-base text-gray-800 dark:text-white leading-relaxed">
-            {question.question || (question as any).prompt || question.text}
+            {(question.question as React.ReactNode) ||
+              ((question as unknown as Record<string, unknown>).prompt as React.ReactNode) ||
+              (question.text as React.ReactNode)}
           </Text>
         </View>
       ) : null}
