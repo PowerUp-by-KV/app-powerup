@@ -729,7 +729,6 @@ export function LearningJourneyScreen() {
   }, [trialCompletedActivities]);
 
   const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
-  const isDailyPathUnlocked = isFreeCompleted && isTrialCompleted && gate.canEnter;
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};

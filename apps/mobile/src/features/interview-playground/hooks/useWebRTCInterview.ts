@@ -373,7 +373,8 @@ export function useWebRTCInterview(mode: InterviewMode = "playground"): UseWebRT
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const token = backendData.ephemeral_token || (backendData as any).realtime_token;
+      const token =
+        backendData.ephemeral_token || (backendData as { realtime_token?: string }).realtime_token;
       const sdpResponse = await fetch(backendData.webrtc_sdp_url, {
         method: "POST",
         headers: {
