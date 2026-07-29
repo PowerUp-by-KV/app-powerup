@@ -55,7 +55,7 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
           setActualDuration(Math.round(status.durationMillis / 1000));
         }
         await tempSound.unloadAsync().catch(() => {});
-      } catch (e) {
+      } catch {
         // ignore
       }
     };
@@ -65,7 +65,6 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {

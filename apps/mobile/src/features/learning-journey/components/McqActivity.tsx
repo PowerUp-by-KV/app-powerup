@@ -150,12 +150,6 @@ export function McqActivity({
   const [correctCount, setCorrectCount] = useState(0);
   const [lastCorrect, setLastCorrect] = useState(false);
   const [lastCorrectAnswer, setLastCorrectAnswer] = useState("");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [scoreView] = useState<{
-    score: number;
-    passed: boolean;
-    totalCorrect: number;
-  } | null>(null);
 
   const current = mcqs[idx]!;
 
@@ -272,100 +266,6 @@ export function McqActivity({
     const score = Math.round((totalCorrect / mcqs.length) * 100);
     onComplete({ passed: score >= 70, score });
   };
-
-  if (scoreView) {
-    const ScoreWrapper = isNested ? View : ScrollView;
-    const scoreWrapperProps = isNested
-      ? { style: { padding: 24, paddingBottom: 120 } }
-      : {
-          style: [
-            { flex: 1 },
-            Platform.OS === "web" && ({ userSelect: "none" } as Record<string, unknown>),
-          ],
-          contentContainerStyle: { padding: 24, paddingBottom: 120 },
-        };
-
-    const scoreColor = scoreView.passed
-      ? isDark
-        ? "#22c55e"
-        : "#15803d"
-      : isDark
-        ? "#ef4444"
-        : "#b91c1c";
-
-    return (
-      <ScoreWrapper {...scoreWrapperProps}>
-        <View style={{ alignItems: "center", marginVertical: 32 }}>
-          <View
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: 40,
-              backgroundColor: scoreView.passed
-                ? isDark
-                  ? "#14532d"
-                  : "#dcfce7"
-                : isDark
-                  ? "#7f1d1d"
-                  : "#fee2e2",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 20,
-            }}
-          >
-            <Feather
-              name={scoreView.passed ? "check-circle" : "alert-circle"}
-              size={40}
-              color={scoreColor}
-            />
-          </View>
-          <Text className="text-slate-500 dark:text-zinc-400 text-xs uppercase tracking-wider font-bold mb-1">
-            Activity Score
-          </Text>
-          <Text
-            style={{
-              fontSize: 64,
-              fontWeight: "900",
-              color: scoreColor,
-              lineHeight: 72,
-            }}
-          >
-            {scoreView.score}%
-          </Text>
-          <Text className="text-slate-900 dark:text-slate-100 text-xl font-bold mt-4 text-center">
-            {scoreView.passed ? "Nicely done!" : "Keep practicing!"}
-          </Text>
-          <Text className="text-slate-500 dark:text-zinc-400 text-sm mt-2 text-center">
-            {scoreView.passed
-              ? `You answered ${scoreView.totalCorrect} of ${mcqs.length} questions correctly.`
-              : `You got ${scoreView.totalCorrect} of ${mcqs.length} questions correct. You need 70% to pass.`}
-          </Text>
-        </View>
-
-        <Pressable
-          onPress={() => onComplete({ passed: scoreView.passed, score: scoreView.score })}
-          style={{
-            marginTop: 24,
-            borderRadius: 10,
-            ...(Platform.OS === "web" ? ({ cursor: "pointer" } as Record<string, unknown>) : {}),
-          }}
-        >
-          {({ pressed }) => (
-            <View
-              style={{
-                backgroundColor: pressed ? "#2563eb" : "#3b82f6",
-                paddingVertical: 14,
-                borderRadius: 10,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Continue</Text>
-            </View>
-          )}
-        </Pressable>
-      </ScoreWrapper>
-    );
-  }
 
   const ContentWrapper = isNested ? View : ScrollView;
   const wrapperStyle = { padding: 24, paddingBottom: 120 };
