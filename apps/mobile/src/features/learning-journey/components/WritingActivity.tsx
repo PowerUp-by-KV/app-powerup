@@ -140,7 +140,7 @@ export function WritingActivity({
               <Text
                 style={{
                   color:
-                    submitting || text.trim().length === 0
+                    text.trim().length === 0
                       ? isDark
                         ? "#71717A" // Readable grey on dark button background
                         : "#A0AEC0" // Readable grey on light button background

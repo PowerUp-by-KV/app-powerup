@@ -157,9 +157,10 @@ interface LocalMessage {
   role: "user" | "assistant";
   created_at: string;
   isLocal: true;
+  isStreamingTemp?: boolean;
 }
 
-type DisplayMessage = (ChatMessage & { isLocal?: false }) | LocalMessage;
+type DisplayMessage = (ChatMessage & { isLocal?: false; isStreamingTemp?: boolean }) | LocalMessage;
 
 // ─── Animated Orb for Screen 1 (uses the user's orb image) ──────────
 const AnimatedOrb = React.memo(function AnimatedOrb() {
@@ -349,10 +350,10 @@ const MessageBubble = React.memo(function MessageBubble({
                       lineHeight: 21,
                     })
                   : ""}
-                {(item as any).isStreamingTemp && item.content.length > 0 && (
+                {item.isStreamingTemp && item.content.length > 0 && (
                   <Text style={{ color: "rgba(0,0,0,0.3)" }}>▍</Text>
                 )}
-                {(item as any).isStreamingTemp && item.content.length === 0 && <TypingDots />}
+                {item.isStreamingTemp && item.content.length === 0 && <TypingDots />}
               </Text>
             </View>
             {!("isLocal" in item && item.isLocal) && (
@@ -472,7 +473,7 @@ export function ChatScreen() {
         isLocal: true,
         // Using a special property that we can check in renderMessage
         isStreamingTemp: true,
-      } as any);
+      } as DisplayMessage);
     }
 
     return msgs;
@@ -783,7 +784,7 @@ export function ChatScreen() {
                   onPress: async () => {
                     try {
                       const result = await ImagePicker.launchCameraAsync({
-                        mediaTypes: "images" as any,
+                        mediaTypes: ["images"],
                       });
                       if (!result.canceled && result.assets && result.assets[0]) {
                         const fname = result.assets[0].fileName || "photo.jpg";
@@ -799,7 +800,7 @@ export function ChatScreen() {
                   onPress: async () => {
                     try {
                       const result = await ImagePicker.launchImageLibraryAsync({
-                        mediaTypes: "images" as any,
+                        mediaTypes: ["images"],
                       });
                       if (!result.canceled && result.assets && result.assets[0]) {
                         const fname = result.assets[0].fileName || "image.jpg";

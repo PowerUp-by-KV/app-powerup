@@ -33,6 +33,8 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
 
   // Reset player when audioUrl changes
   useEffect(() => {
+    let isMounted = true;
+
     if (sound) {
       sound.unloadAsync().catch(() => {});
       setSound(null);
@@ -41,6 +43,29 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     setCurrentTime(0);
     setActualDuration(duration ?? 30);
     setHasPlayed(false);
+
+    const fetchMetadata = async () => {
+      if (!resolvedAudioUrl) return;
+      try {
+        const { sound: tempSound, status } = await Audio.Sound.createAsync(
+          { uri: resolvedAudioUrl },
+          { shouldPlay: false },
+        );
+        if (isMounted && status.isLoaded && status.durationMillis) {
+          setActualDuration(Math.round(status.durationMillis / 1000));
+        }
+        await tempSound.unloadAsync().catch(() => {});
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    fetchMetadata();
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {

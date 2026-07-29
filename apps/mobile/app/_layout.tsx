@@ -123,7 +123,7 @@ function InnerRouteGuard() {
     if (userId) {
       if (isOnboardingFetching) {
         setHasStartedFetching(true);
-      } else if (hasStartedFetching && !isOnboardingFetching) {
+      } else if (hasStartedFetching) {
         setNetworkCheckComplete(true);
       }
     }
