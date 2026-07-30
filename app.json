@@ -1,3 +1,12 @@
 {
-  "expo": {}
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "ccf1c5d5-a299-4d6d-8d76-902e23433a3a"
+      }
+    },
+    "android": {
+      "package": "com.rathishr.apppowerup"
+    }
+  }
 }
