@@ -6,7 +6,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // In-memory cache to make tab-switching and loads instantaneous
 let cachedTheme: "light" | "dark" | null = null;
 let isLoadInitiated = false;
-let isApplyingTheme = false;
 
 export function useThemeToggle() {
   const { colorScheme, setColorScheme } = useColorScheme();

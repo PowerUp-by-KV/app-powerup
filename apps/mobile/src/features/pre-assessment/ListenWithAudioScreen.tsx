@@ -105,7 +105,7 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const [hasStartedRecording, setHasStartedRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recording, setRecording] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState(45); // Default 45s
+
   const [uploadingQuestions, setUploadingQuestions] = useState<Record<string, boolean>>({});
   const isAnyUploading = Object.values(uploadingQuestions).some(Boolean);
   // Tracks in-flight upload promises per question so handleFinish can await
@@ -132,7 +132,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
   const maxDuration = getListeningDuration();
   useEffect(() => {
     if (currentQuestion) {
-      setTimeLeft(maxDuration + 10);
       setRecordingDuration(0);
       setIsRecording(false);
       setRecording(null);
@@ -143,28 +142,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
-
-  // Main countdown timer
-  useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording || !isRecording)
-      return;
-
-    if (timeLeft <= 0) {
-      const processTimerExpiry = async () => {
-        if (isRecording) {
-          await stopRecording();
-        }
-      };
-      processTimerExpiry();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
 
   // Auto-stop recording if maxDuration is reached
   useEffect(() => {
@@ -442,7 +419,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
 
     // Reset state synchronously to prevent race conditions on last question
     setHasStartedRecording(false);
-    setTimeLeft(maxDuration + 10);
     setRecordingDuration(0);
     setIsRecording(false);
     setRecording(null);
@@ -484,7 +460,6 @@ export function ListenWithAudioScreen({ sessionId: propSessionId }: ListenWithAu
             question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
-            timeLeft={timeLeft}
           />
 
           <AudioPlayer
