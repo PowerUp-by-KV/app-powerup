@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -78,33 +78,7 @@ export function ReadingScreen({ sessionId: propSessionId }: ReadingScreenProps) 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isFinished, setIsFinished] = useState(false);
 
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes total
-  const [isRunning, setIsRunning] = useState(false);
-
-  useEffect(() => {
-    if (sectionData) {
-      setIsRunning(true);
-    }
-  }, [sectionData]);
-
-  useEffect(() => {
-    if (!isRunning || isSubmitting || isFinished) return;
-
-    if (timeLeft <= 0) {
-      if (isLastQuestion) {
-        handleFinish();
-      } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-      }
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isRunning, timeLeft, isLastQuestion, isSubmitting, isFinished]);
+  // Timer logic removed
 
   if (isError) {
     return (

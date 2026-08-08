@@ -29,6 +29,8 @@ import {
   savePreAssessmentResults,
   getPreAssessmentResults,
   setPreAssessmentCompletedInSession,
+  getAssessmentElapsedTime,
+  clearAssessmentElapsedTime,
 } from "@/services/auth-storage";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
@@ -56,16 +58,25 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
   const [timeTaken, setTimeTaken] = useState<string | null>(null);
 
   useEffect(() => {
-    getAssessmentStartTime().then((startTime) => {
-      if (startTime) {
-        const elapsed = Date.now() - startTime;
-        setTimeTaken(formatDuration(elapsed));
+    getAssessmentElapsedTime().then((elapsedSeconds) => {
+      if (elapsedSeconds > 0) {
+        setTimeTaken(formatDuration(elapsedSeconds * 1000));
+        clearAssessmentElapsedTime();
         clearAssessmentStartTime();
       } else {
-        // Fallback: check if we have a saved pre-assessment result with a saved timeTaken
-        getPreAssessmentResults().then((saved) => {
-          if (saved && saved.timeTaken) {
-            setTimeTaken(saved.timeTaken);
+        // Fallback to old behavior
+        getAssessmentStartTime().then((startTime) => {
+          if (startTime) {
+            const elapsed = Date.now() - startTime;
+            setTimeTaken(formatDuration(elapsed));
+            clearAssessmentStartTime();
+          } else {
+            // Fallback to saved
+            getPreAssessmentResults().then((saved) => {
+              if (saved && saved.timeTaken) {
+                setTimeTaken(saved.timeTaken);
+              }
+            });
           }
         });
       }

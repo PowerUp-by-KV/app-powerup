@@ -230,9 +230,9 @@ export function LoginScreen() {
                         ),
                       );
                     }}
-                    disabled={isLoading || !googleRequest}
+                    disabled={isLoading}
                     className={`flex-1 py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl flex-row items-center justify-center shadow-sm ${
-                      isLoading || !googleRequest ? "opacity-50" : ""
+                      isLoading ? "opacity-50" : ""
                     }`}
                     activeOpacity={0.7}
                   >

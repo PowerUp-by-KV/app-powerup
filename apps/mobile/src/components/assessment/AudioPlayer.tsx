@@ -33,6 +33,8 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
 
   // Reset player when audioUrl changes
   useEffect(() => {
+    let isMounted = true;
+
     if (sound) {
       sound.unloadAsync().catch(() => {});
       setSound(null);
@@ -41,6 +43,28 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
     setCurrentTime(0);
     setActualDuration(duration ?? 30);
     setHasPlayed(false);
+
+    const fetchMetadata = async () => {
+      if (!resolvedAudioUrl) return;
+      try {
+        const { sound: tempSound, status } = await Audio.Sound.createAsync(
+          { uri: resolvedAudioUrl },
+          { shouldPlay: false },
+        );
+        if (isMounted && status.isLoaded && status.durationMillis) {
+          setActualDuration(Math.round(status.durationMillis / 1000));
+        }
+        await tempSound.unloadAsync().catch(() => {});
+      } catch {
+        // ignore
+      }
+    };
+
+    fetchMetadata();
+
+    return () => {
+      isMounted = false;
+    };
   }, [resolvedAudioUrl, duration]);
 
   const onPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
@@ -80,6 +104,14 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
         allowsRecordingIOS: false,
       });
 
+      if (sound) {
+        await sound.playAsync();
+        setIsPlaying(true);
+        setIsLoading(false);
+        onPlayStart?.();
+        return;
+      }
+
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: resolvedAudioUrl },
         { shouldPlay: true },
@@ -99,11 +131,8 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
   const handlePause = async () => {
     setIsPlaying(false);
     if (sound) {
-      await sound.stopAsync().catch(() => {});
-      await sound.unloadAsync().catch(() => {});
-      setSound(null);
+      await sound.pauseAsync().catch(() => {});
     }
-    setCurrentTime(0);
   };
 
   // Fallback simulation timer if no resolvedAudioUrl
@@ -142,7 +171,11 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
         ) : hasPlayed ? (
           <Feather name="check" size={22} color="#475569" />
         ) : (
-          <Feather name={isPlaying ? "square" : "volume-2"} size={22} color="white" />
+          <Feather
+            name={isPlaying ? "pause" : currentTime > 0 ? "play" : "volume-2"}
+            size={22}
+            color="white"
+          />
         )}
       </TouchableOpacity>
 
@@ -154,10 +187,12 @@ export function AudioPlayer({ audioUrl, duration = 30, onPlayStart, onPlayEnd }:
               ? "Playing..."
               : hasPlayed
                 ? "Playback completed"
-                : "Play audio"}
+                : currentTime > 0
+                  ? "Paused"
+                  : "Play audio"}
         </Text>
         <Text className="text-slate-400 font-semibold text-xs">
-          Duration: {actualDuration}s {isPlaying ? `(${currentTime}s)` : ""}
+          Duration: {actualDuration}s {isPlaying || currentTime > 0 ? `(${currentTime}s)` : ""}
         </Text>
       </View>
     </View>

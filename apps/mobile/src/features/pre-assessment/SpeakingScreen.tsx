@@ -102,7 +102,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   const [hasStartedRecording, setHasStartedRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [recording, setRecording] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState(0);
+
   const [uploadingQuestions, setUploadingQuestions] = useState<Record<string, boolean>>({});
   const isAnyUploading = Object.values(uploadingQuestions).some(Boolean);
 
@@ -118,8 +118,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
   // Initialize and reset timer for each question
   useEffect(() => {
     if (currentQuestion) {
-      // Add a small buffer for preparation
-      setTimeLeft(maxDuration + 5);
+      // setTimeLeft(maxDuration + 5);
       setRecordingDuration(0);
       setIsRecording(false);
       setRecording(null);
@@ -129,27 +128,7 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
-  // Main countdown timer
-  useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished || !hasStartedRecording || !isRecording)
-      return;
-
-    if (timeLeft <= 0) {
-      const processTimerExpiry = async () => {
-        if (isRecording) {
-          await stopRecording();
-        }
-      };
-      processTimerExpiry();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, isRecording, isSubmitting, isFinished, hasStartedRecording]);
+  // Timer logic removed
 
   // Auto-stop recording if maxDuration is reached (double safety)
   useEffect(() => {
@@ -187,7 +166,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
       setRecordingDuration(0);
       if (!hasStartedRecording) {
         setHasStartedRecording(true);
-        setTimeLeft(maxDuration + 5);
       }
     } catch (err) {
       showAlert("Failed to start recording", (err as Error).message);
@@ -407,7 +385,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
 
     // Reset state synchronously to prevent race conditions on last question
     setHasStartedRecording(false);
-    setTimeLeft(maxDuration + 5);
     setRecordingDuration(0);
     setIsRecording(false);
     setRecording(null);
@@ -448,7 +425,6 @@ export function SpeakingScreen({ sessionId: propSessionId }: SpeakingScreenProps
             question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
-            timeLeft={timeLeft}
           />
 
           {currentLocalUri ? (
