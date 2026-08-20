@@ -108,10 +108,6 @@ export function ResumeUploadStep() {
     }
   };
 
-  const handleSkip = async () => {
-    await goToAssessment();
-  };
-
   // Success overlay
   if (uploadSuccess) {
     return (
@@ -206,11 +202,6 @@ export function ResumeUploadStep() {
             ) : (
               <Text className="text-white font-bold">Continue</Text>
             )}
-          </Pressable>
-          <Pressable onPress={handleSkip} disabled={isStarting} className="items-center py-2">
-            <Text className="text-slate-500 font-semibold">
-              {isStarting ? "Starting assessment..." : "Skip for now"}
-            </Text>
           </Pressable>
         </View>
       </View>

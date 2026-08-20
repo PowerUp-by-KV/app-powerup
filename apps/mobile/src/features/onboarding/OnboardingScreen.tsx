@@ -437,21 +437,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  const handleSkip = async () => {
-    if (!question) return;
-
-    dispatch(updateField({ field: question.question_key as any, value: "null" }));
-    if (question.input_type === "file") {
-      setResumeUploaded(false);
-    }
-
-    if (stepNumber < flattenedQuestions.length) {
-      dispatch(nextStep());
-    } else {
-      await submitFinalAnswers();
-    }
-  };
-
   const handleBack = () => {
     if (stepNumber > 1) {
       dispatch(prevStep());
@@ -610,15 +595,6 @@ export default function OnboardingScreen() {
             </Text>
           )}
         </TouchableOpacity>
-
-        {/* Secondary Navigation Actions */}
-        {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-5 py-2">
-            <Text className="text-sm font-bold text-slate-400 hover:text-slate-500 transition-colors">
-              Skip for now
-            </Text>
-          </TouchableOpacity>
-        ) : null}
       </ScrollView>
     </View>
   );
