@@ -628,6 +628,21 @@ function CelebrationModal({
 }) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+  const lower = (dayNumber || "").toLowerCase();
+  const isFree = lower.includes("free") || dayNumber === "-1";
+  const isTrial = lower.includes("trial") || dayNumber === "-2";
+
+  const modalTitle = isFree
+    ? "Free Content Completed!"
+    : isTrial
+      ? "Trial Content Completed!"
+      : "Day Completed!";
+
+  const modalSubtitle = isFree
+    ? "Fantastic job! You have successfully completed all activities for Free Content and unlocked your completion bonus!"
+    : isTrial
+      ? "Fantastic job! You have successfully completed all activities for Trial Content and unlocked your completion bonus!"
+      : `Fantastic job! You have successfully completed all activities for Day ${dayNumber} and unlocked your completion bonus!`;
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
@@ -647,11 +662,10 @@ function CelebrationModal({
               style={{ width: 180, height: 180 }}
             />
             <Text style={[styles.celebrationTitle, isDark && { color: "#ffffff" }]}>
-              Day Completed!
+              {modalTitle}
             </Text>
             <Text style={[styles.celebrationSubtitle, isDark && { color: "#a1a1aa" }]}>
-              Fantastic job! You have successfully completed all activities for Day {dayNumber} and
-              unlocked your completion bonus!
+              {modalSubtitle}
             </Text>
 
             <View
@@ -847,6 +861,28 @@ export default function DailyResultsScreen() {
   const allPassed = results.all_activities_passed;
   const canAdvance = allCompleted && allPassed;
 
+  const lowerDay = (dayNumber || "").toLowerCase();
+  const isFreeContent = lowerDay.includes("free") || dayNumber === "-1";
+  const isTrialContent = lowerDay.includes("trial") || dayNumber === "-2";
+
+  const pageHeaderTitle = isFreeContent
+    ? "Free Content Results"
+    : isTrialContent
+      ? "Trial Content Results"
+      : `Day ${dayNumber} Results`;
+
+  const xpSummaryTitle = isFreeContent
+    ? "Free Content Summary"
+    : isTrialContent
+      ? "Trial Content Summary"
+      : "Day Summary";
+
+  const advanceCtaText = isFreeContent
+    ? "Continue To Trial Content (+50 XP Bonus) 🚀"
+    : isTrialContent
+      ? "Continue To Diagnostic Assessment (+50 XP Bonus) 🚀"
+      : "Continue To Next Day (+50 XP Bonus) 🚀";
+
   return (
     <View
       style={[
@@ -861,9 +897,7 @@ export default function DailyResultsScreen() {
         <Pressable onPress={goHome} style={styles.headerBack}>
           <Feather name="chevron-left" size={24} color={isDark ? "#ffffff" : "#0f172a"} />
         </Pressable>
-        <Text style={[styles.headerTitle, isDark && { color: "#ffffff" }]}>
-          Day {dayNumber} Results
-        </Text>
+        <Text style={[styles.headerTitle, isDark && { color: "#ffffff" }]}>{pageHeaderTitle}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -872,7 +906,7 @@ export default function DailyResultsScreen() {
         <View
           style={[styles.xpCard, isDark && { backgroundColor: "#1e1f2a", borderColor: "#27272a" }]}
         >
-          <Text style={[styles.xpCardTitle, isDark && { color: "#a1a1aa" }]}>Day Summary</Text>
+          <Text style={[styles.xpCardTitle, isDark && { color: "#a1a1aa" }]}>{xpSummaryTitle}</Text>
           <View style={styles.xpRow}>
             <LinearGradient
               colors={isDark ? ["#1e1f2a", "#1e1f2a"] : ["#4f46e5", "#3b82f6"]}
@@ -1188,9 +1222,7 @@ export default function DailyResultsScreen() {
                 {advancing ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.primaryButtonText}>
-                    Continue To Next Day (+50 XP Bonus) 🚀
-                  </Text>
+                  <Text style={styles.primaryButtonText}>{advanceCtaText}</Text>
                 )}
               </LinearGradient>
             )}

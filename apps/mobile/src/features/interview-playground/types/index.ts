@@ -13,6 +13,7 @@ export interface TranscriptTurn {
   role: TranscriptRole;
   text: string;
   timestamp: string;
+  question_id?: string;
 }
 
 export type InterviewMode = "buddy" | "playground";
@@ -26,6 +27,12 @@ export interface StartInterviewResponse {
   model: string;
   expires_at: string;
   mode: InterviewMode;
+  questions: QuestionRef[];
+}
+
+export interface QuestionRef {
+  question_id: string;
+  question_text: string;
 }
 
 export interface CommunicationScores {
@@ -68,7 +75,8 @@ export interface EvaluationResult {
   star_analysis: StarAnalysis;
   summary: string;
   strengths: string[];
-  improvements: string[];
+  improvement_areas: string[];
+  improvements?: string[];
 }
 
 export interface SaveSessionBody {

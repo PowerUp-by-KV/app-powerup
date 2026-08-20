@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import type { ActivityQuestion } from "@powerup/shared";
 
 import { resolveApiAssetUrl } from "@/services/api";
 import { McqActivity, McqActivityResult } from "./McqActivity";
+import { extractImageUrl } from "@/utils/image-utils";
 
 interface ListeningActivityProps {
   /** First question with `audio_url` becomes the passage; remaining are MCQs. */
@@ -42,6 +44,7 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
     questions.find((q) => !!q.audio_url);
   const mcqs = questions.filter((q) => q !== passage);
   const audioUrl = resolveApiAssetUrl(passage?.audio_url);
+  const passageImageUrl = extractImageUrl(passage);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -183,6 +186,28 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
       ]}
       contentContainerStyle={{ paddingBottom: 60 }}
     >
+      {passageImageUrl ? (
+        <View
+          style={{
+            marginHorizontal: 24,
+            marginTop: 20,
+            borderRadius: 16,
+            overflow: "hidden",
+            backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+            borderWidth: 1,
+            borderColor: isDark ? "#334155" : "#e2e8f0",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            source={{ uri: passageImageUrl }}
+            style={{ width: "100%", height: 220 }}
+            resizeMode="contain"
+          />
+        </View>
+      ) : null}
+
       <View
         style={{
           marginHorizontal: 24,

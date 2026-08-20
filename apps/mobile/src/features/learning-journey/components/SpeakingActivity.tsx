@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Animated,
   GestureResponderEvent,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -17,6 +18,7 @@ import { useColorScheme } from "nativewind";
 import type { Activity, ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitSpeakingAnswerMutation } from "@/services/module-api";
+import { extractImageUrl } from "@/utils/image-utils";
 
 export interface SpeakingActivityResult {
   passed: boolean;
@@ -43,6 +45,7 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
   const isDark = colorScheme === "dark";
   const speakingQuestion = questions.find((q) => q.question_type === "speaking") || questions[0];
   const prompt = speakingQuestion;
+  const imageUrl = extractImageUrl(prompt, activity);
 
   const questionText =
     typeof prompt?.question_text === "object" && prompt?.question_text !== null
@@ -52,24 +55,61 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
         )
       : (prompt?.question_text ?? "");
 
-  const isReadAloud = questionText.toLowerCase().includes("read");
-
   const textToRead = (() => {
-    if (!isReadAloud) return "";
-
+    // 1. Try activity.content
     const val = activity?.content;
     if (val && typeof val === "object") {
-      if (val.text) return String(val.text).trim();
-      if (val.name) return String(val.name).trim();
-      return "";
+      const obj = val as Record<string, unknown>;
+      if (obj.text) return String(obj.text).trim();
+      if (obj.dialogue) return String(obj.dialogue).trim();
+      if (obj.prompt) return String(obj.prompt).trim();
+      if (obj.passage) return String(obj.passage).trim();
+      if (obj.name) return String(obj.name).trim();
     } else if (val) {
       const str = String(val).trim();
-      if (str !== "{}" && str !== "[]") return str;
+      if (str !== "{}" && str !== "[]") {
+        try {
+          const parsed = JSON.parse(str);
+          if (parsed && typeof parsed === "object") {
+            const pObj = parsed as Record<string, unknown>;
+            if (pObj.text) return String(pObj.text).trim();
+            if (pObj.dialogue) return String(pObj.dialogue).trim();
+            if (pObj.prompt) return String(pObj.prompt).trim();
+            if (pObj.passage) return String(pObj.passage).trim();
+          }
+        } catch {
+          return str;
+        }
+      }
     }
 
+    // 2. Try prompt.correct_answer
     if (prompt?.correct_answer) {
-      return String(prompt.correct_answer).trim();
+      const ca = String(prompt.correct_answer).trim();
+      if (ca && ca !== "{}" && ca !== "[]") return ca;
     }
+
+    // 3. Try prompt.options
+    if (Array.isArray(prompt?.options) && prompt.options.length > 0) {
+      const optStr = prompt.options
+        .map((o) => (typeof o === "string" ? o : JSON.stringify(o)))
+        .join("\n")
+        .trim();
+      if (optStr && optStr !== "{}" && optStr !== "[]") return optStr;
+    }
+
+    // 4. Try prompt.explanation
+    if ((prompt as any)?.explanation) {
+      const exp = String((prompt as any).explanation).trim();
+      if (exp && exp !== "{}" && exp !== "[]") return exp;
+    }
+
+    // 5. Try activity.description
+    if ((activity as any)?.description) {
+      const desc = String((activity as any).description).trim();
+      if (desc && !desc.toLowerCase().includes("record your spoken")) return desc;
+    }
+
     return "";
   })();
 
@@ -375,10 +415,32 @@ export function SpeakingActivity({ activity, questions, onComplete }: SpeakingAc
         {prompt?.question_text ?? ""}
       </Text>
 
-      {isReadAloud && cleanedTextToRead ? (
+      {imageUrl ? (
+        <View
+          style={{
+            width: "100%",
+            borderRadius: 16,
+            overflow: "hidden",
+            marginBottom: 20,
+            backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+            borderWidth: 1,
+            borderColor: isDark ? "#334155" : "#e2e8f0",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Image
+            source={{ uri: imageUrl }}
+            style={{ width: "100%", height: 240 }}
+            resizeMode="contain"
+          />
+        </View>
+      ) : null}
+
+      {cleanedTextToRead ? (
         <View className="bg-slate-50 dark:bg-[#1E1F2A] border border-slate-200/60 dark:border-slate-800 rounded-2xl p-5 mb-5 shadow-sm">
           <Text className="text-xs uppercase tracking-wider text-slate-400 dark:text-zinc-500 font-bold mb-2">
-            Text to read
+            {questionText.toLowerCase().includes("read") ? "Text to read" : "Prompt / Dialogue"}
           </Text>
           <Text className="text-slate-800 dark:text-zinc-100 text-base leading-7 font-semibold">
             "{cleanedTextToRead}"

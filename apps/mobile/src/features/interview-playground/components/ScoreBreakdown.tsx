@@ -123,6 +123,12 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
   const communication = evaluation.communication ?? EMPTY_COMMUNICATION;
   const behavioral = evaluation.behavioral ?? EMPTY_BEHAVIORAL;
   const star_analysis = evaluation.star_analysis ?? EMPTY_STAR;
+  const strengths = Array.isArray(evaluation?.strengths) ? evaluation.strengths : [];
+  const improvements = Array.isArray(evaluation?.improvements)
+    ? evaluation.improvements
+    : Array.isArray(evaluation?.improvement_areas)
+      ? evaluation.improvement_areas
+      : [];
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -209,10 +215,10 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
       </View>
 
       {/* Strengths */}
-      {evaluation.strengths.length > 0 && (
+      {strengths.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>Strengths</Text>
-          {evaluation.strengths.map((s, i) => (
+          {strengths.map((s, i) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletGreen}>+</Text>
               <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>
@@ -222,12 +228,12 @@ export function ScoreBreakdown({ evaluation }: ScoreBreakdownProps) {
       )}
 
       {/* Areas to improve */}
-      {evaluation.improvements.length > 0 && (
+      {improvements.length > 0 && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, isDark && { color: "#F8FAFC" }]}>
             Areas to Improve
           </Text>
-          {evaluation.improvements.map((s, i) => (
+          {improvements.map((s: string, i: number) => (
             <View key={i} style={styles.listRow}>
               <Text style={styles.bulletAmber}>→</Text>
               <Text style={[styles.bodyText, isDark && { color: "#CBD5E1" }]}>{s}</Text>

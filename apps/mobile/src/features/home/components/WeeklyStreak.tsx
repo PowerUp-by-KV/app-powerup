@@ -1,5 +1,6 @@
 import { Text, View } from "react-native";
 import { SimpleLineIcons } from "@expo/vector-icons";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 
 interface WeeklyStreakProps {
   // Optional bool[7] starting Monday. Falls back to a single-day fill at today's index.
@@ -10,32 +11,74 @@ interface WeeklyStreakProps {
 const LABELS = ["M", "T", "W", "T", "F", "S", "S"];
 
 export function WeeklyStreak({ days, fallbackTodayIndex }: WeeklyStreakProps) {
+  const { isDark } = useThemeToggle();
   const today = fallbackTodayIndex ?? mondayIndexFromDate(new Date());
   const filled = days ?? Array.from({ length: 7 }, (_, i) => i <= today);
 
   return (
-    <View className="bg-white dark:bg-[#16161c] border border-slate-100 dark:border-slate-800/80 rounded-[24px] p-5 mb-4 shadow-sm shadow-slate-100 dark:shadow-none">
-      <Text className="text-slate-900 dark:text-white text-base font-bold mb-4 text-center">
+    <View
+      style={{
+        backgroundColor: isDark ? "#16161c" : "#ffffff",
+        borderWidth: 1,
+        borderColor: isDark ? "rgba(255, 255, 255, 0.08)" : "#f1f5f9",
+        borderRadius: 24,
+        padding: 20,
+        marginBottom: 16,
+      }}
+    >
+      <Text
+        style={{
+          color: isDark ? "#ffffff" : "#0f172a",
+          fontSize: 16,
+          fontWeight: "700",
+          marginBottom: 16,
+          textAlign: "center",
+        }}
+      >
         Weekly Streak
       </Text>
-      <View className="flex-row justify-between px-1">
+      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4 }}>
         {LABELS.map((label, i) => {
           const active = filled[i];
+
           return (
-            <View key={i} className="items-center">
+            <View key={i} style={{ alignItems: "center" }}>
               {active ? (
                 <View
-                  className="w-10 h-10 rounded-full items-center justify-center mb-1.5"
                   style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
                     backgroundColor: "#3b82f6",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 6,
                   }}
                 >
                   <SimpleLineIcons name="fire" size={20} color="#ffffff" />
                 </View>
               ) : (
-                <View className="w-10 h-10 rounded-full bg-[#e2f9cc] dark:bg-[#1d1d26] border border-transparent dark:border-[#2b2b38] items-center justify-center mb-1.5" />
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: isDark ? "#1d1d26" : "#e2f9cc",
+                    borderWidth: isDark ? 1 : 0,
+                    borderColor: isDark ? "#2b2b38" : "transparent",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginBottom: 6,
+                  }}
+                />
               )}
-              <Text className="text-slate-400 dark:text-slate-500 text-xs font-semibold">
+              <Text
+                style={{
+                  color: isDark ? "#64748b" : "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: "600",
+                }}
+              >
                 {label}
               </Text>
             </View>

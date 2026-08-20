@@ -34,6 +34,9 @@ export interface Activity {
   score: number | null;
   passed: boolean;
   content?: Record<string, unknown>;
+  image_url?: string | null;
+  media_urls?: Record<string, any> | string[] | null;
+  metadata?: Record<string, any> | null;
 }
 
 export interface ActivityQuestion {
@@ -48,8 +51,16 @@ export interface ActivityQuestion {
   cefr_level: string;
   order_index: number;
   is_placeholder: boolean;
-  content?: { left_items?: string[]; right_items?: string[] } | null;
-  evaluation?: { matches?: Record<string, string> } | null;
+  content?: {
+    left_items?: string[];
+    right_items?: string[];
+    image_url?: string;
+    [key: string]: any;
+  } | null;
+  evaluation?: { matches?: Record<string, string>; [key: string]: any } | null;
+  image_url?: string | null;
+  media_urls?: Record<string, any> | string[] | null;
+  metadata?: Record<string, any> | null;
 }
 
 export interface ActivitySubmitResponse {

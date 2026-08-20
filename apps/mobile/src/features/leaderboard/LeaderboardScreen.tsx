@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FlatList, Pressable, Text, View, Image } from "react-native";
+import React, { useMemo, useState } from "react";
+import { FlatList, Pressable, Text, View, Image, ScrollView } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -11,17 +11,19 @@ import {
   useGetLeaderboardQuery,
   type LeaderboardPeriod,
   type LeaderboardEntry,
+  type LeaderboardScope,
 } from "@/services/social-api";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { getAvatarUri } from "@/utils/avatar";
 
 import { FriendsModal } from "./components/FriendsModal";
+import { LeaderboardFilterModal, FilterState } from "./components/LeaderboardFilterModal";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
+import { SafeFlatListProps } from "@/types";
 
 const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
-import { SafeFlatListProps } from "@/types";
 
 const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
   SafeFlatListProps<LeaderboardEntry>
@@ -31,18 +33,80 @@ export function LeaderboardScreen() {
   const router = useRouter();
   const { data: profile } = useGetProfileQuery();
   const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
-  const { data, isLoading } = useGetLeaderboardQuery({ period });
+  const [filterState, setFilterState] = useState<FilterState>({
+    scope: "global",
+    college: undefined,
+    region: undefined,
+  });
+  const [filterModalOpen, setFilterModalOpen] = useState(false);
   const [friendsOpen, setFriendsOpen] = useState(false);
+
+  const queryParams = useMemo(() => {
+    const isFriends = filterState.scope === "friends";
+    const isCollegeScope = filterState.scope === "college";
+    const isRegionScope = filterState.scope === "region";
+
+    return {
+      period,
+      scope: (isFriends ? "friends" : "global") as LeaderboardScope,
+      college: isFriends
+        ? undefined
+        : isCollegeScope
+          ? filterState.college || profile?.nickname || undefined
+          : filterState.college,
+      region: isFriends
+        ? undefined
+        : isRegionScope
+          ? filterState.region || profile?.country || undefined
+          : filterState.region,
+    };
+  }, [period, filterState, profile]);
+
+  const { data: rawData, isLoading } = useGetLeaderboardQuery(queryParams);
+
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
+
+  // Process data returned from backend filtering endpoint
+  const processedData = useMemo(() => {
+    if (!rawData) return null;
+
+    const list = (rawData.list || []).map((entry, idx) => ({
+      ...entry,
+      rank: entry.rank || idx + 1,
+      is_you: entry.is_you || entry.user_id === profile?.id,
+    }));
+
+    const rawTop3 = rawData.top3 && rawData.top3.length > 0 ? rawData.top3 : list.slice(0, 3);
+    const top3 = rawTop3.map((entry, idx) => ({
+      ...entry,
+      rank: entry.rank || idx + 1,
+      is_you: entry.is_you || entry.user_id === profile?.id,
+    }));
+
+    const yourEntry = list.find((e) => e.is_you);
+    const yourRank = yourEntry ? yourEntry.rank : rawData.your_rank;
+    const betterThanCount = yourEntry
+      ? Math.max(0, list.length - yourRank)
+      : rawData.better_than_count;
+
+    return {
+      period: rawData.period,
+      your_rank: yourRank,
+      your_points: yourEntry?.points ?? rawData.your_points,
+      better_than_count: betterThanCount,
+      top3,
+      list,
+    };
+  }, [rawData, profile]);
 
   if (isLoading) {
     return <GamifiedMascotLoader title="Loading Leaderboard..." />;
   }
 
-  const firstPlace = data?.top3.find((x) => x.rank === 1);
-  const secondPlace = data?.top3.find((x) => x.rank === 2);
-  const thirdPlace = data?.top3.find((x) => x.rank === 3);
+  const firstPlace = processedData?.top3.find((x) => x.rank === 1);
+  const secondPlace = processedData?.top3.find((x) => x.rank === 2);
+  const thirdPlace = processedData?.top3.find((x) => x.rank === 3);
 
   const renderPodiumItem = (e: typeof firstPlace, position: "left" | "middle" | "right") => {
     if (!e) return <View style={{ width: 90 }} />;
@@ -161,12 +225,16 @@ export function LeaderboardScreen() {
     );
   };
 
+  const isFilterActive =
+    filterState.scope !== "global" || filterState.college || filterState.region;
+
   return (
     <View
       style={{ flex: 1, paddingTop: insets.top }}
       className={isDark ? "bg-[#06070f]" : "bg-white"}
     >
       <View style={{ flex: 1, width: "100%", position: "relative" }}>
+        {/* Header */}
         <View
           style={{
             paddingHorizontal: 20,
@@ -201,9 +269,9 @@ export function LeaderboardScreen() {
           </View>
         </View>
 
-        {/* Tab Selector */}
+        {/* Tab Selector (Weekly, Monthly, Yearly) */}
         <View
-          className="flex-row rounded-full p-1 mx-5 mb-5"
+          className="flex-row rounded-full p-1 mx-5"
           style={{
             gap: 4,
             marginTop: 16,
@@ -241,6 +309,164 @@ export function LeaderboardScreen() {
           })}
         </View>
 
+        {/* Scope / Filter Bar */}
+        <View className="px-5 mt-3 mb-2 flex-row items-center">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+            {/* Filter Modal Button */}
+            <Pressable
+              onPress={() => setFilterModalOpen(true)}
+              className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                isFilterActive
+                  ? "bg-purple-600 border-purple-600"
+                  : isDark
+                    ? "bg-slate-800 border-slate-700"
+                    : "bg-slate-100 border-slate-200"
+              }`}
+            >
+              <Feather
+                name="sliders"
+                size={14}
+                color={isFilterActive ? "#ffffff" : isDark ? "#a7f3d0" : "#059669"}
+              />
+              <Text
+                className={`text-xs font-bold ml-1.5 ${
+                  isFilterActive ? "text-white" : isDark ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                Filters
+              </Text>
+            </Pressable>
+
+            {/* Global Chip */}
+            <Pressable
+              onPress={() =>
+                setFilterState({ scope: "global", college: undefined, region: undefined })
+              }
+              className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                filterState.scope === "global"
+                  ? isDark
+                    ? "bg-purple-900/60 border-purple-500"
+                    : "bg-purple-100 border-purple-400"
+                  : isDark
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  filterState.scope === "global"
+                    ? isDark
+                      ? "text-purple-300"
+                      : "text-purple-900"
+                    : isDark
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                }`}
+              >
+                🌐 Global
+              </Text>
+            </Pressable>
+
+            {/* College / Org Chip */}
+            <Pressable
+              onPress={() => {
+                const targetCollege = filterState.college || profile?.nickname || undefined;
+                setFilterState({ scope: "college", college: targetCollege, region: undefined });
+                if (!targetCollege) {
+                  setFilterModalOpen(true);
+                }
+              }}
+              className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                filterState.scope === "college"
+                  ? isDark
+                    ? "bg-purple-900/60 border-purple-500"
+                    : "bg-purple-100 border-purple-400"
+                  : isDark
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  filterState.scope === "college"
+                    ? isDark
+                      ? "text-purple-300"
+                      : "text-purple-900"
+                    : isDark
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                }`}
+              >
+                🎓 {filterState.college ? filterState.college : "College / Org"}
+              </Text>
+            </Pressable>
+
+            {/* Region Chip */}
+            <Pressable
+              onPress={() => {
+                const targetRegion = filterState.region || profile?.country || undefined;
+                setFilterState({ scope: "region", college: undefined, region: targetRegion });
+                if (!targetRegion) {
+                  setFilterModalOpen(true);
+                }
+              }}
+              className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                filterState.scope === "region"
+                  ? isDark
+                    ? "bg-emerald-900/60 border-emerald-500"
+                    : "bg-emerald-100 border-emerald-400"
+                  : isDark
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  filterState.scope === "region"
+                    ? isDark
+                      ? "text-emerald-300"
+                      : "text-emerald-900"
+                    : isDark
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                }`}
+              >
+                📍 {filterState.region ? filterState.region : "Region"}
+              </Text>
+            </Pressable>
+
+            {/* Friends Chip */}
+            <Pressable
+              onPress={() =>
+                setFilterState({ scope: "friends", college: undefined, region: undefined })
+              }
+              className={`flex-row items-center px-3 py-1.5 rounded-full border mr-2 ${
+                filterState.scope === "friends"
+                  ? isDark
+                    ? "bg-purple-900/60 border-purple-500"
+                    : "bg-purple-100 border-purple-400"
+                  : isDark
+                    ? "bg-slate-900 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
+              <Text
+                className={`text-xs font-bold ${
+                  filterState.scope === "friends"
+                    ? isDark
+                      ? "text-purple-300"
+                      : "text-purple-900"
+                    : isDark
+                      ? "text-slate-400"
+                      : "text-slate-600"
+                }`}
+              >
+                👥 Friends
+              </Text>
+            </Pressable>
+          </ScrollView>
+        </View>
+
         <LeaderboardFlatList
           ListHeaderComponent={
             <View className="px-5 pb-4">
@@ -273,18 +499,18 @@ export function LeaderboardScreen() {
                 >
                   <Text className="text-slate-800 text-3xl font-black mr-4">
                     #
-                    {data?.your_rank === 1
+                    {processedData?.your_rank === 1
                       ? "1st"
-                      : data?.your_rank === 2
+                      : processedData?.your_rank === 2
                         ? "2nd"
-                        : data?.your_rank === 3
+                        : processedData?.your_rank === 3
                           ? "3rd"
-                          : `${data?.your_rank ?? 0}th`}
+                          : `${processedData?.your_rank ?? 0}th`}
                   </Text>
                   <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
                     <Text className="text-slate-500 text-xs font-bold">You Are Doing Better</Text>
                     <Text className="text-slate-400 text-xs font-semibold mt-0.5">
-                      Than {data?.better_than_count ?? 0} Players!!
+                      Than {processedData?.better_than_count ?? 0} Players!!
                     </Text>
                   </View>
                 </View>
@@ -307,7 +533,7 @@ export function LeaderboardScreen() {
               </LinearGradient>
 
               {/* Podium section */}
-              {data && data.top3.length > 0 && (
+              {processedData && processedData.top3.length > 0 && (
                 <View className="flex-row justify-center items-end mb-6 pt-5" style={{ gap: 12 }}>
                   {renderPodiumItem(secondPlace, "left")}
                   {renderPodiumItem(firstPlace, "middle")}
@@ -316,7 +542,41 @@ export function LeaderboardScreen() {
               )}
             </View>
           }
-          data={data?.list ?? []}
+          ListEmptyComponent={
+            <View className="items-center justify-center py-12 px-6">
+              <View
+                className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${
+                  isDark ? "bg-slate-800" : "bg-slate-100"
+                }`}
+              >
+                <Feather name="filter" size={28} color={isDark ? "#94a3b8" : "#64748b"} />
+              </View>
+              <Text
+                className={`text-base font-bold text-center mb-1 ${
+                  isDark ? "text-slate-200" : "text-slate-800"
+                }`}
+              >
+                No Rankings Found
+              </Text>
+              <Text
+                className={`text-xs text-center mb-5 ${
+                  isDark ? "text-slate-400" : "text-slate-500"
+                }`}
+              >
+                No players match your selected filter criteria. Try changing or clearing your
+                filters.
+              </Text>
+              <Pressable
+                onPress={() =>
+                  setFilterState({ scope: "global", college: undefined, region: undefined })
+                }
+                className="px-5 py-2.5 rounded-full bg-purple-600 active:opacity-90"
+              >
+                <Text className="text-white text-xs font-bold">Reset Filters</Text>
+              </Pressable>
+            </View>
+          }
+          data={processedData?.list ?? []}
           keyExtractor={(item: LeaderboardEntry) => item.user_id}
           contentContainerStyle={{
             paddingHorizontal: 20,
@@ -368,15 +628,39 @@ export function LeaderboardScreen() {
                   >
                     {item.is_you ? `${item.name} (You)` : item.name}
                   </Text>
-                  <Text className="text-slate-400 text-xs font-bold mt-0.5">
-                    {item.rank === 1
-                      ? "1st Rank"
-                      : item.rank === 2
-                        ? "2nd Rank"
-                        : item.rank === 3
-                          ? "3rd Rank"
-                          : `${item.rank}th rank`}
-                  </Text>
+                  <View className="flex-row items-center flex-wrap gap-1 mt-0.5">
+                    <Text className="text-slate-400 text-xs font-bold">
+                      {item.rank === 1
+                        ? "1st Rank"
+                        : item.rank === 2
+                          ? "2nd Rank"
+                          : item.rank === 3
+                            ? "3rd Rank"
+                            : `${item.rank}th rank`}
+                    </Text>
+                    {item.college && (
+                      <View
+                        className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-purple-950/60" : "bg-purple-100/70"}`}
+                      >
+                        <Text
+                          className={`text-[10px] font-semibold ${isDark ? "text-purple-300" : "text-purple-700"}`}
+                        >
+                          🎓 {item.college}
+                        </Text>
+                      </View>
+                    )}
+                    {item.region && (
+                      <View
+                        className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-emerald-950/60" : "bg-emerald-100/70"}`}
+                      >
+                        <Text
+                          className={`text-[10px] font-semibold ${isDark ? "text-emerald-300" : "text-emerald-700"}`}
+                        >
+                          📍 {item.region}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
               </View>
               <Text className="text-slate-500 font-extrabold text-xs">{item.points} xp</Text>
@@ -406,6 +690,15 @@ export function LeaderboardScreen() {
         </Pressable>
 
         <FriendsModal visible={friendsOpen} onClose={() => setFriendsOpen(false)} />
+
+        <LeaderboardFilterModal
+          visible={filterModalOpen}
+          onClose={() => setFilterModalOpen(false)}
+          currentFilter={filterState}
+          onApply={(newFilter) => setFilterState(newFilter)}
+          userCollege={profile?.nickname}
+          userCountry={profile?.country}
+        />
       </View>
     </View>
   );
