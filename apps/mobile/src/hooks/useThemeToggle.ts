@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { Platform } from "react-native";
 import { useColorScheme } from "nativewind";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -58,28 +58,29 @@ export function useThemeToggle() {
     const nextIsDark = !isDark;
     const nextTheme: "light" | "dark" = nextIsDark ? "dark" : "light";
 
-    // Update local cache and state instantly
-    cachedTheme = nextTheme;
+    // Immediately update NativeWind scheme
     setColorScheme(nextTheme);
 
-    // Perform the disk write in the background without blocking the UI rendering thread
-    if (Platform.OS === "web") {
-      try {
-        window.localStorage?.setItem("settings_dark_mode", String(nextIsDark));
-        if (typeof document !== "undefined") {
-          if (nextIsDark) {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
-        }
-      } catch (err) {
-        console.warn("Failed to save theme setting", err);
+    // Immediately update Web DOM class if on web
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      if (nextIsDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
       }
-    } else {
-      AsyncStorage.setItem("settings_dark_mode", String(nextIsDark)).catch((err) => {
-        console.warn("Failed to save theme setting", err);
-      });
+    }
+
+    // Persist setting in background
+    try {
+      if (Platform.OS === "web" && typeof window !== "undefined") {
+        window.localStorage?.setItem("settings_dark_mode", String(nextIsDark));
+      } else {
+        AsyncStorage.setItem("settings_dark_mode", String(nextIsDark)).catch((err) => {
+          console.warn("Failed to save dark mode setting", err);
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to save dark mode setting", err);
     }
   }, [isDark, setColorScheme]);
 

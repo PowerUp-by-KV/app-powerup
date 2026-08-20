@@ -38,7 +38,7 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
   const [isEnding, setIsEnding] = useState(false);
   const goBack = useSafeBack("/");
 
-  const { endInterview } = useWebRTCInterview(mode);
+  const { endInterview, toggleMic, isMicActive } = useWebRTCInterview(mode);
 
   useEffect(() => {
     const unsubStatus = onStatusChange((s) => setLocalStatus(s));
@@ -64,6 +64,8 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
   // Safety net: if the user leaves the room without ending (back gesture,
   // navigating away), tear down the WebRTC connection and stop the mic so we
   // don't leak the peer connection or leave the microphone recording.
+  // This does NOT save the transcript or run evaluation — only the explicit
+  // "End Interview" button does that (via handleEnd -> endInterview).
   useEffect(() => {
     return () => {
       if (activeSession.status === "live" || activeSession.status === "connecting") {
@@ -87,6 +89,9 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
     ]);
   }, [endInterview, isEnding]);
 
+  // Back navigation is separate from ending the interview — it does not
+  // save or evaluate. Only the "End Interview" button (top bar or bottom
+  // bar) triggers handleEnd/endInterview.
   const isConnecting = status === "connecting" || status === "starting";
   const isBusy = status === "saving" || isEnding;
 
@@ -119,6 +124,15 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
           {activeSession.derivedRole ?? "AI Interview"}
         </Text>
         <ConnectionBadge status={status} />
+        {status === "live" && (
+          <Pressable onPress={handleEnd} disabled={isEnding} style={styles.topEndBtn} hitSlop={8}>
+            <Ionicons
+              name="close-circle"
+              size={24}
+              color={isEnding ? (isDark ? "#7F1D1D" : "#FCA5A5") : isDark ? "#F87171" : "#DC2626"}
+            />
+          </Pressable>
+        )}
       </View>
 
       {(isConnecting || status === "live") && (
@@ -162,6 +176,14 @@ export function InterviewRoomScreen({ sessionId, mode = "playground" }: Intervie
           ]}
         >
           <Pressable
+            onPress={toggleMic}
+            style={[styles.micButton, isMicActive && styles.micButtonActive]}
+          >
+            <Ionicons name={isMicActive ? "mic" : "mic-outline"} size={22} color="#fff" />
+            <Text style={styles.micButtonText}>{isMicActive ? "Tap to Stop" : "Tap to Speak"}</Text>
+          </Pressable>
+
+          <Pressable
             style={[styles.endButton, isEnding && styles.endButtonDisabled]}
             onPress={handleEnd}
             disabled={isEnding}
@@ -187,6 +209,11 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: "#1E293B",
+  },
+  topEndBtn: {
+    marginLeft: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   roleName: {
     color: "#F1F5F9",
@@ -225,6 +252,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#7F1D1D",
   },
   endButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  micButton: {
+    backgroundColor: "#4F46E5",
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 10,
+  },
+  micButtonActive: {
+    backgroundColor: "#059669",
+  },
+  micButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",

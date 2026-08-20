@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { Image, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { useColorScheme } from "nativewind";
 import { Feather } from "@expo/vector-icons";
 import type { Activity, ActivityQuestion } from "@powerup/shared";
 
 import { AnswerResultSheet } from "./AnswerResultSheet";
 import { SpeedMatchingGame } from "./SpeedMatchingGame";
+import { extractImageUrl } from "@/utils/image-utils";
 
 export interface McqActivityResult {
   /** Whether the user passed the activity overall (≥ 70% correct). */
@@ -152,6 +153,7 @@ export function McqActivity({
   const [lastCorrectAnswer, setLastCorrectAnswer] = useState("");
 
   const current = mcqs[idx]!;
+  const currentImageUrl = extractImageUrl(current, activity);
 
   const parsedQuestion = useMemo(() => {
     const rawText = current?.question_text ?? "";
@@ -385,6 +387,28 @@ export function McqActivity({
               parsedQuestion.questionPrompt.slice(1)}
           </Text>
         )}
+
+        {currentImageUrl ? (
+          <View
+            style={{
+              width: "100%",
+              borderRadius: 16,
+              overflow: "hidden",
+              marginBottom: 20,
+              backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+              borderWidth: 1,
+              borderColor: isDark ? "#334155" : "#e2e8f0",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Image
+              source={{ uri: currentImageUrl }}
+              style={{ width: "100%", height: 220 }}
+              resizeMode="contain"
+            />
+          </View>
+        ) : null}
 
         {options.map((opt, i) => {
           const isSelected = selected === opt.id;

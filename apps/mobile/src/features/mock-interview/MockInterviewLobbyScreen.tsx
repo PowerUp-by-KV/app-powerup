@@ -7,6 +7,7 @@ import { useColorScheme } from "nativewind";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useAppDispatch } from "@/store/hooks";
 import { setSession } from "@/store/slices/mock-interview.slice";
+import { useGetProfileQuery } from "@/services/auth-api";
 import {
   useStartInterviewMutation,
   useGetPastAttemptsQuery,
@@ -142,6 +143,7 @@ export function MockInterviewLobbyScreen() {
   } = useGetPastAttemptsQuery();
 
   const [startInterview, { isLoading: isStarting }] = useStartInterviewMutation();
+  const { data: profile } = useGetProfileQuery();
 
   // ── Tap on existing attempt: resume if in-progress, view result if done ───
   const handleAttemptPress = useCallback(
@@ -168,7 +170,7 @@ export function MockInterviewLobbyScreen() {
   const handleStartNew = useCallback(async () => {
     try {
       const result = await startInterview({
-        cefr_level: "B1-B2",
+        cefr_level: profile?.cefr_range || "B1-B2",
         domain: "IT",
         total_questions: 8,
       }).unwrap();
@@ -185,9 +187,9 @@ export function MockInterviewLobbyScreen() {
     } catch {
       // TODO: wire up toast utility once available in the project
     }
-  }, [startInterview, dispatch, router]);
+  }, [startInterview, dispatch, router, profile]);
 
-  const attempts = attemptsData?.attempts ?? [];
+  const attempts = attemptsData ?? [];
   // Treat stubbed-endpoint errors as empty list silently
   const showEmptyState = attemptsError || (!isLoadingAttempts && attempts.length === 0);
 

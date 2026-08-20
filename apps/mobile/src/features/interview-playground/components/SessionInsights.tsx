@@ -8,25 +8,43 @@ interface SessionInsightsProps {
 }
 
 /**
- * Low-pressure recap for Interview Playground (practice mode).
- * Deliberately shows NO grade and NO rubric score bars — just a plain-language
- * summary of how the session went, plus encouraging key points and advice.
+ * Recap for Interview Playground (practice mode). Previously deliberately
+ * omitted score/grade for a low-pressure feel; now shows a compact score
+ * badge (final_score/grade) above the summary, while keeping the detailed
+ * rubric bars (ScoreBreakdown's territory) out of this view.
  */
 export function SessionInsights({ evaluation }: SessionInsightsProps) {
   const summary = evaluation.summary?.trim();
   const strengths = evaluation.strengths ?? [];
-  const improvements = evaluation.improvements ?? [];
+  const improvements = evaluation.improvement_areas ?? [];
   const starTip = evaluation.star_analysis?.feedback?.trim();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+
+  const hasScore = typeof evaluation.final_score === "number";
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       <View style={[styles.headerCard, isDark && { backgroundColor: "#1E293B" }]}>
         <Text style={styles.headerEmoji}>💬</Text>
         <Text style={[styles.headerTitle, isDark && { color: "#F8FAFC" }]}>Practice Recap</Text>
+        {hasScore && (
+          <View style={styles.scoreRow}>
+            <Text style={[styles.scoreValue, isDark && { color: "#A5B4FC" }]}>
+              {evaluation.final_score}
+              <Text style={styles.scoreOutOf}>/100</Text>
+            </Text>
+            {!!evaluation.grade && (
+              <View style={[styles.gradeChip, isDark && { backgroundColor: "#312E81" }]}>
+                <Text style={[styles.gradeChipText, isDark && { color: "#A5B4FC" }]}>
+                  {evaluation.grade}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
         <Text style={[styles.headerSub, isDark && { color: "#94A3B8" }]}>
-          No scores here — just a quick look at how this session went and what to try next time.
+          A quick look at how this session went and what to try next time.
         </Text>
       </View>
 
@@ -99,6 +117,17 @@ const styles = StyleSheet.create({
   headerEmoji: { fontSize: 36 },
   headerTitle: { fontSize: 20, fontWeight: "800", color: "#1E293B" },
   headerSub: { fontSize: 13, color: "#64748B", textAlign: "center", lineHeight: 19 },
+
+  scoreRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
+  scoreValue: { fontSize: 28, fontWeight: "800", color: "#4F46E5" },
+  scoreOutOf: { fontSize: 14, fontWeight: "600", color: "#818CF8" },
+  gradeChip: {
+    backgroundColor: "#E0E7FF",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  gradeChipText: { fontSize: 13, fontWeight: "700", color: "#4F46E5" },
 
   section: { gap: 8 },
   sectionTitle: { fontSize: 15, fontWeight: "700", color: "#1E293B" },

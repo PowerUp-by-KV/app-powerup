@@ -190,6 +190,7 @@ export const api = createApi({
     "Avatars",
     "PracticeHistory",
     "InterviewPlayground",
+    "MockInterview",
   ] as const,
   endpoints: () => ({}),
 });

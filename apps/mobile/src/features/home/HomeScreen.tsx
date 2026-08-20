@@ -345,7 +345,9 @@ export function HomeScreen() {
                 subtitle:
                   tier === "free"
                     ? "Upgrade to Pro to unlock"
-                    : "Try, learn and improve — No pressure",
+                    : tier === "premium"
+                      ? "Real-time OpenAI Voice Practice"
+                      : "Pipeline Voice Practice — Scenario-based",
                 locked: tier === "free",
                 onPress: () =>
                   tier === "free"
@@ -357,7 +359,9 @@ export function HomeScreen() {
                 subtitle:
                   tier === "free"
                     ? "Upgrade to Pro to unlock"
-                    : "Practice with a buddy before it counts",
+                    : tier === "premium"
+                      ? "Real-time OpenAI Technical Interview"
+                      : "Pipeline Technical Practice",
                 locked: tier === "free",
                 onPress: () =>
                   tier === "free"

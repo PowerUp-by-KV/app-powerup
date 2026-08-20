@@ -5,7 +5,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { useSafeBack } from "@/hooks/useSafeBack";
-import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
+import {
+  useListInterviewSessionsQuery,
+  useListPipelineSessionsQuery,
+} from "@/services/interview-playground-api";
 import { useGetProfileResumeQuery } from "@/services/resume-api";
 import { usePlanTier } from "@/hooks/usePlanTier";
 import type { InterviewSessionSummary } from "../types";
@@ -25,6 +28,13 @@ function SessionItem({ item }: { item: InterviewSessionSummary }) {
     });
   };
 
+  const hasScore = item.final_score !== null && item.final_score !== undefined;
+  const rawDate = item.started_at || (item as unknown as { created_at?: string }).created_at;
+  const displayDate =
+    rawDate && !isNaN(new Date(rawDate).getTime())
+      ? new Date(rawDate).toLocaleDateString()
+      : new Date().toLocaleDateString();
+
   return (
     <Pressable
       style={[styles.sessionCard, isDark && { backgroundColor: "#1E293B", shadowOpacity: 0.2 }]}
@@ -34,9 +44,28 @@ function SessionItem({ item }: { item: InterviewSessionSummary }) {
         <Text style={[styles.sessionRole, isDark && { color: "#F8FAFC" }]} numberOfLines={1}>
           {item.derived_role || "Practice Session"}
         </Text>
+        {item.grade ? (
+          <View style={[styles.gradeBadge, isDark && { backgroundColor: "#312E81" }]}>
+            <Text style={[styles.gradeText, isDark && { color: "#A5B4FC" }]}>
+              Grade {item.grade}
+            </Text>
+          </View>
+        ) : null}
       </View>
       <View style={styles.sessionMeta}>
-        <Text style={styles.sessionDate}>{new Date(item.started_at).toLocaleDateString()}</Text>
+        <View style={styles.metaLeft}>
+          <Text style={styles.sessionDate}>{displayDate}</Text>
+          {hasScore && (
+            <Text
+              style={[
+                styles.sessionScoreBadge,
+                isDark && { backgroundColor: "#1E1B4B", color: "#A5B4FC" },
+              ]}
+            >
+              Score: {Math.round(item.final_score!)}/100
+            </Text>
+          )}
+        </View>
         <Text style={styles.sessionRecapHint}>View recap →</Text>
       </View>
     </Pressable>
@@ -138,6 +167,9 @@ function PipelineEntry() {
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack("/");
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
+  const { data: sessions, isLoading: isLoadingSessions } = useListPipelineSessionsQuery({
+    mode: "playground",
+  });
 
   const hasResume = !!resume && resume.parse_status === "completed";
 
@@ -204,7 +236,16 @@ function PipelineEntry() {
           >
             <Text style={styles.startButtonText}>Start Interview</Text>
           </Pressable>
+
+          {(sessions?.length ?? 0) > 0 && (
+            <Text style={[styles.historyTitle, isDark && { color: "#F8FAFC" }]}>Past Sessions</Text>
+          )}
         </View>
+
+        {isLoadingSessions && <ActivityIndicator style={styles.loader} />}
+        {(sessions ?? []).map((item) => (
+          <SessionItem key={item.session_id} item={item} />
+        ))}
       </ScrollView>
     </View>
   );
@@ -218,11 +259,11 @@ export function InterviewEntryScreen() {
     return <PaywallScreen requiredTier="pro" featureName="Interview Playground" onBack={goBack} />;
   }
 
-  if (tier === "pro") {
-    return <PipelineEntry />;
+  if (tier === "premium") {
+    return <WebRTCEntry />;
   }
 
-  return <WebRTCEntry />;
+  return <PipelineEntry />;
 }
 
 const styles = StyleSheet.create({
@@ -323,6 +364,31 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 4,
+  },
+  gradeBadge: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  gradeText: {
+    color: "#4F46E5",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  metaLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sessionScoreBadge: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#4F46E5",
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   sessionDate: {
     fontSize: 12,

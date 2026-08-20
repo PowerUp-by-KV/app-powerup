@@ -1,6 +1,7 @@
 import { api } from "./api";
 
 export type LeaderboardPeriod = "weekly" | "monthly" | "yearly";
+export type LeaderboardScope = "global" | "college" | "region" | "friends";
 
 export interface LeaderboardEntry {
   user_id: string;
@@ -9,6 +10,15 @@ export interface LeaderboardEntry {
   avatar: string | null;
   rank: number;
   is_you: boolean;
+  college?: string;
+  region?: string;
+}
+
+export interface GetLeaderboardParams {
+  period: LeaderboardPeriod;
+  scope?: LeaderboardScope;
+  college?: string;
+  region?: string;
 }
 
 export interface LeaderboardResponse {
@@ -45,12 +55,22 @@ export interface SearchResult {
 export const socialApi = api.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    getLeaderboard: builder.query<
-      LeaderboardResponse,
-      { period: LeaderboardPeriod; scope?: "global" | "friends" }
-    >({
-      query: ({ period, scope }) =>
-        `/v1/leaderboard?period=${period}${scope ? `&scope=${scope}` : ""}`,
+    getLeaderboard: builder.query<LeaderboardResponse, GetLeaderboardParams>({
+      query: ({ period, scope, college, region }) => {
+        const params = new URLSearchParams({ period });
+
+        // Backend FastAPI endpoint expects scope to be 'global' or 'friends'
+        const validScope = scope === "friends" ? "friends" : "global";
+        params.append("scope", validScope);
+
+        if (college && college.trim()) {
+          params.append("college", college.trim());
+        }
+        if (region && region.trim()) {
+          params.append("region", region.trim());
+        }
+        return `/v1/leaderboard?${params.toString()}`;
+      },
       providesTags: ["Leaderboard"],
     }),
     listFriends: builder.query<FriendRow[], void>({
