@@ -118,6 +118,7 @@ const mockInterviewApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["MockInterview"],
     }),
 
     // ── 2. Fetch next question ─────────────────────────────────────────────
@@ -126,6 +127,7 @@ const mockInterviewApi = api.injectEndpoints({
     // Question screen via onQueryStarted.
     getNextQuestion: builder.query<NextQuestionResponse, string>({
       query: (sessionId) => `/v1/mock-interview/${sessionId}/next`,
+      providesTags: (result, error, sessionId) => [{ type: "MockInterview", id: sessionId }],
       async onQueryStarted(_sessionId, { dispatch, queryFulfilled }) {
         try {
           const { data } = await queryFulfilled;
@@ -177,6 +179,7 @@ const mockInterviewApi = api.injectEndpoints({
         }
         return { data: result.data as SubmitAnswerResponse };
       },
+      invalidatesTags: (result, error, { sessionId }) => [{ type: "MockInterview", id: sessionId }],
       // After a successful submission, store the feedback in Redux so the
       // Feedback screen can read it without an extra network call.
       async onQueryStarted(arg, { dispatch, queryFulfilled, getState }) {
@@ -216,12 +219,13 @@ const mockInterviewApi = api.injectEndpoints({
     // ── 4. Get final results ───────────────────────────────────────────────
     getInterviewResults: builder.query<GetInterviewResultsResponse, string>({
       query: (sessionId) => `/v1/mock-interview/${sessionId}/results`,
+      providesTags: (result, error, sessionId) => [{ type: "MockInterview", id: sessionId }],
     }),
 
-    // ── 5. Get past attempts (STUBBED — endpoint not in v1 docs) ──────────
-    // TODO: Update URL + response shape once Ilakiya adds the endpoint.
-    getPastAttempts: builder.query<GetAttemptsResponse, void>({
-      query: () => "/v1/mock-interview/attempts",
+    // ── 5. Get past attempts ──────────────────────────
+    getPastAttempts: builder.query<InterviewAttempt[], void>({
+      query: () => "/v1/mock-interview/history",
+      providesTags: ["MockInterview"],
     }),
   }),
 });

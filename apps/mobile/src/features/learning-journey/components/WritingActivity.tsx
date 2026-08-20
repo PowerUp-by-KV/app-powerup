@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -14,6 +15,7 @@ import { useColorScheme } from "nativewind";
 import type { ActivityQuestion } from "@powerup/shared";
 
 import { useSubmitWritingAnswerMutation } from "@/services/module-api";
+import { extractImageUrl } from "@/utils/image-utils";
 
 export interface WritingActivityResult {
   passed: boolean;
@@ -34,6 +36,7 @@ export function WritingActivity({
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const prompt = questions[0];
+  const imageUrl = extractImageUrl(prompt);
   const [text, setText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +81,28 @@ export function WritingActivity({
         <Text className="text-base text-gray-800 dark:text-white leading-relaxed mb-4">
           {prompt?.question_text ?? ""}
         </Text>
+
+        {imageUrl ? (
+          <View
+            style={{
+              width: "100%",
+              borderRadius: 16,
+              overflow: "hidden",
+              marginBottom: 20,
+              backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+              borderWidth: 1,
+              borderColor: isDark ? "#334155" : "#e2e8f0",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Image
+              source={{ uri: imageUrl }}
+              style={{ width: "100%", height: 240 }}
+              resizeMode="contain"
+            />
+          </View>
+        ) : null}
 
         <TextInput
           multiline

@@ -581,13 +581,29 @@ export function LearningJourneyScreen() {
   }, [modulesData]);
 
   const freeModule = useMemo(() => {
-    if (!modulesData) return null;
-    return modulesData.find((m) => m.order_index === -1 || m.title?.toLowerCase().includes("free"));
+    if (!modulesData?.length) return null;
+    return (
+      modulesData.find(
+        (m) =>
+          m.order_index === -1 ||
+          (m as any).module_no === -1 ||
+          m.title?.toLowerCase().includes("free") ||
+          m.id === "7f9de118-f807-474d-9dfd-08b0a09b740f",
+      ) || null
+    );
   }, [modulesData]);
 
   const trialModule = useMemo(() => {
-    if (!modulesData) return null;
-    return modulesData.find((m) => m.order_index === 0 || m.title?.toLowerCase().includes("trial"));
+    if (!modulesData?.length) return null;
+    return (
+      modulesData.find(
+        (m) =>
+          m.order_index === 0 ||
+          (m as any).module_no === 0 ||
+          m.title?.toLowerCase().includes("trial") ||
+          m.id === "b7d78cff-0952-4a8d-9326-52a3bcb98206",
+      ) || null
+    );
   }, [modulesData]);
 
   const {
@@ -688,10 +704,6 @@ export function LearningJourneyScreen() {
     return 0;
   }, [isFreeCompleted, freeTotalActivities, freeCompletedActivities]);
 
-  const freeXp = useMemo(() => {
-    return freeCompletedActivities * 10;
-  }, [freeCompletedActivities]);
-
   const isTrialUnlocked = isFreeCompleted;
 
   const trialDays = useMemo(() => {
@@ -723,10 +735,6 @@ export function LearningJourneyScreen() {
     }
     return 0;
   }, [isTrialCompleted, isTrialUnlocked, trialTotalActivities, trialCompletedActivities]);
-
-  const trialXp = useMemo(() => {
-    return trialCompletedActivities * 10;
-  }, [trialCompletedActivities]);
 
   const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
   // Prerequisites flag (Free Content & Trial Content must be 100% completed)
@@ -836,7 +844,10 @@ export function LearningJourneyScreen() {
       isCompleted: boolean;
       globalDayNumber: number;
       dayObj?: CombinedModuleDay;
+      overrideDayLabel?: string;
     }) => {
+      const dayLabel = item.overrideDayLabel || String(item.globalDayNumber);
+
       if (item.isLocked && !item.isCompleted) {
         if (!isPrerequisitesMet) {
           Alert.alert(
@@ -862,7 +873,7 @@ export function LearningJourneyScreen() {
           params: {
             day_id: item.dayObj.id,
             module_id: item.dayObj.module_id,
-            day_number: String(item.globalDayNumber),
+            day_number: dayLabel,
             xp_earned: "0",
           },
         });
@@ -880,7 +891,7 @@ export function LearningJourneyScreen() {
             params: {
               day_id: item.dayObj.id,
               module_id: item.dayObj.module_id,
-              day_number: String(item.globalDayNumber),
+              day_number: dayLabel,
               xp_earned: "0",
             },
           });
@@ -909,7 +920,7 @@ export function LearningJourneyScreen() {
             params: {
               day_id: item.dayObj.id,
               module_id: item.dayObj.module_id,
-              day_number: String(item.globalDayNumber),
+              day_number: dayLabel,
               xp_earned: "0",
             },
           });
@@ -918,7 +929,7 @@ export function LearningJourneyScreen() {
             pathname: `/learning-journey/module/${item.dayObj.id}` as never,
             params: {
               module_id: item.dayObj.module_id,
-              day_number: String(item.globalDayNumber),
+              day_number: dayLabel,
             },
           });
         }
@@ -927,7 +938,7 @@ export function LearningJourneyScreen() {
           pathname: `/learning-journey/module/${item.dayObj.id}` as never,
           params: {
             module_id: item.dayObj.module_id,
-            day_number: String(item.globalDayNumber),
+            day_number: dayLabel,
           },
         });
       }
@@ -936,34 +947,65 @@ export function LearningJourneyScreen() {
   );
 
   const handleFreeContentPress = useCallback(async () => {
-    if (!freeModule?.id) {
-      Alert.alert("Free Content", "Free content module is loading. Please try refreshing.");
+    let targetModule = freeModule;
+    if (!targetModule?.id && modulesData?.length) {
+      targetModule =
+        modulesData.find(
+          (m) =>
+            m.order_index === -1 ||
+            (m as any).module_no === -1 ||
+            m.title?.toLowerCase().includes("free") ||
+            m.id === "7f9de118-f807-474d-9dfd-08b0a09b740f",
+        ) || null;
+    }
+
+    if (!targetModule?.id) {
+      refetchPath();
+      Alert.alert("Free Content", "Loading free content... Please try again in a moment.");
       return;
     }
-    const days = moduleDaysData[freeModule.id];
+
+    let days = moduleDaysData[targetModule.id];
+    if (!days || !days.length) {
+      try {
+        days = await triggerGetModuleDays(targetModule.id, true).unwrap();
+      } catch (err) {
+        console.warn("Failed to fetch days for freeModule:", err);
+      }
+    }
+
     const firstDay = days?.[0];
     if (firstDay) {
       handleDayTap({
         isLocked: false,
         isCompleted: firstDay.is_completed,
         globalDayNumber: firstDay.day_number || 1,
+        overrideDayLabel: "Free Content",
         dayObj: {
           ...firstDay,
-          module_no: freeModule.order_index,
-          module_title: freeModule.title,
-          module_id: freeModule.id,
+          module_no: targetModule.order_index,
+          module_title: targetModule.title,
+          module_id: targetModule.id,
         },
       });
     } else {
       router.push({
-        pathname: `/learning-journey/module/${freeModule.id}` as never,
+        pathname: `/learning-journey/module/${targetModule.id}` as never,
         params: {
-          module_id: freeModule.id,
-          day_number: "-1",
+          module_id: targetModule.id,
+          day_number: "Free Content",
         },
       });
     }
-  }, [freeModule, moduleDaysData, handleDayTap, router]);
+  }, [
+    freeModule,
+    modulesData,
+    moduleDaysData,
+    handleDayTap,
+    router,
+    refetchPath,
+    triggerGetModuleDays,
+  ]);
 
   const handleTrialContentPress = useCallback(async () => {
     if (!isTrialUnlocked) {
@@ -973,34 +1015,67 @@ export function LearningJourneyScreen() {
       );
       return;
     }
-    if (!trialModule?.id) {
-      Alert.alert("Trial Content", "Trial content module is loading. Please try refreshing.");
+
+    let targetModule = trialModule;
+    if (!targetModule?.id && modulesData?.length) {
+      targetModule =
+        modulesData.find(
+          (m) =>
+            m.order_index === 0 ||
+            (m as any).module_no === 0 ||
+            m.title?.toLowerCase().includes("trial") ||
+            m.id === "b7d78cff-0952-4a8d-9326-52a3bcb98206",
+        ) || null;
+    }
+
+    if (!targetModule?.id) {
+      refetchPath();
+      Alert.alert("Trial Content", "Loading trial content... Please try again in a moment.");
       return;
     }
-    const days = moduleDaysData[trialModule.id];
+
+    let days = moduleDaysData[targetModule.id];
+    if (!days || !days.length) {
+      try {
+        days = await triggerGetModuleDays(targetModule.id, true).unwrap();
+      } catch (err) {
+        console.warn("Failed to fetch days for trialModule:", err);
+      }
+    }
+
     const firstDay = days?.[0];
     if (firstDay) {
       handleDayTap({
         isLocked: false,
         isCompleted: firstDay.is_completed,
         globalDayNumber: firstDay.day_number || 0,
+        overrideDayLabel: "Trial Content",
         dayObj: {
           ...firstDay,
-          module_no: trialModule.order_index,
-          module_title: trialModule.title,
-          module_id: trialModule.id,
+          module_no: targetModule.order_index,
+          module_title: targetModule.title,
+          module_id: targetModule.id,
         },
       });
     } else {
       router.push({
-        pathname: `/learning-journey/module/${trialModule.id}` as never,
+        pathname: `/learning-journey/module/${targetModule.id}` as never,
         params: {
-          module_id: trialModule.id,
-          day_number: "0",
+          module_id: targetModule.id,
+          day_number: "Trial Content",
         },
       });
     }
-  }, [isTrialUnlocked, trialModule, moduleDaysData, handleDayTap, router]);
+  }, [
+    isTrialUnlocked,
+    trialModule,
+    modulesData,
+    moduleDaysData,
+    handleDayTap,
+    router,
+    refetchPath,
+    triggerGetModuleDays,
+  ]);
   const isPathLoading =
     gate.canEnter &&
     (pathFetching ||
@@ -1126,7 +1201,6 @@ export function LearningJourneyScreen() {
     ? 100
     : Math.round((completedSections.length / 6) * 100);
   const diagLessonsCompleted = isDiagnosticComplete ? 6 : completedSections.length;
-  const diagXp = isDiagnosticComplete ? 150 : completedSections.length * 25;
 
   // Topics for days 1 to 12
   const STATIC_DAY_TOPICS = [
@@ -1352,7 +1426,6 @@ export function LearningJourneyScreen() {
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>{freeProgressPct}%</Text>
                 </View>
-                <Text style={timelineStyles.xpText}>{freeXp} XP earned</Text>
               </View>
             </View>
           </Pressable>
@@ -1471,7 +1544,6 @@ export function LearningJourneyScreen() {
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>{trialProgressPct}%</Text>
                 </View>
-                <Text style={timelineStyles.xpText}>{trialXp} XP earned</Text>
               </View>
             </View>
           </Pressable>
@@ -1584,24 +1656,7 @@ export function LearningJourneyScreen() {
                   </Text>
                   <Text style={timelineStyles.progressLabelPercent}>{diagProgress}%</Text>
                 </View>
-                <Text style={timelineStyles.xpText}>
-                  {isStartingSession
-                    ? "Launching..."
-                    : isDiagnosticComplete
-                      ? "150 XP earned"
-                      : `${diagXp} XP earned`}
-                </Text>
-
-                {/* Continue learning CTA button inside active card */}
-                {!isDiagnosticComplete && (
-                  <Pressable
-                    onPress={handleStartOrResumeAssessment}
-                    disabled={isStartingSession}
-                    style={timelineStyles.continueButton}
-                  >
-                    <Text style={timelineStyles.continueButtonText}>Continue learning</Text>
-                  </Pressable>
-                )}
+                {isStartingSession && <Text style={timelineStyles.xpText}>Launching...</Text>}
               </View>
             </View>
           </Pressable>

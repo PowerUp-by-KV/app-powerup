@@ -13,6 +13,7 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSafeBack } from "@/hooks/useSafeBack";
+import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { useColorScheme } from "nativewind";
 
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
@@ -90,26 +91,18 @@ export function ProfileScreen() {
     return count;
   }, [moduleDaysData]);
 
-  const { colorScheme, setColorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  const { isDark, toggleTheme: handleToggleDarkMode } = useThemeToggle();
 
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        let storedDarkMode: string | null = null;
         let storedNotifications: string | null = null;
         if (Platform.OS === "web") {
           if (typeof window !== "undefined") {
-            storedDarkMode = window.localStorage.getItem("settings_dark_mode");
             storedNotifications = window.localStorage.getItem("settings_notifications");
           }
         } else {
-          storedDarkMode = await SecureStore.getItemAsync("settings_dark_mode");
           storedNotifications = await SecureStore.getItemAsync("settings_notifications");
-        }
-        if (storedDarkMode !== null) {
-          const darkVal = storedDarkMode === "true";
-          setColorScheme(darkVal ? "dark" : "light");
         }
         if (storedNotifications !== null) setNotificationsEnabled(storedNotifications === "true");
       } catch (error) {
@@ -117,25 +110,7 @@ export function ProfileScreen() {
       }
     };
     loadSettings();
-  }, [setColorScheme]);
-
-  const handleToggleDarkMode = async (value: boolean) => {
-    setColorScheme(value ? "dark" : "light");
-    try {
-      if (Platform.OS === "web") {
-        window.localStorage?.setItem("settings_dark_mode", String(value));
-        if (typeof document !== "undefined") {
-          if (value) {
-            document.documentElement.classList.add("dark");
-          } else {
-            document.documentElement.classList.remove("dark");
-          }
-        }
-      } else {
-        await SecureStore.setItemAsync("settings_dark_mode", String(value));
-      }
-    } catch {}
-  };
+  }, []);
 
   const handleToggleNotifications = async (value: boolean) => {
     setNotificationsEnabled(value);

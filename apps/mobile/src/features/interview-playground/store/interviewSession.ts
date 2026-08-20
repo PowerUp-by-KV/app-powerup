@@ -51,6 +51,21 @@ export function appendTranscriptTurn(turn: TranscriptTurn): void {
   listeners.transcript.forEach((fn) => fn(activeSession.transcript));
 }
 
+// Updates the text of the LAST transcript turn in place (used for streaming
+// transcript extensions, where the Realtime API sends progressively fuller
+// versions of the same utterance rather than one final chunk). Reassigns
+// `activeSession.transcript` to a new array (with a new object for the last
+// turn) so listeners relying on referential identity — e.g. React's
+// setLocalTranscript([...turns]) — actually re-render.
+export function updateLastTranscriptTurn(text: string): void {
+  const lastTurn = activeSession.transcript[activeSession.transcript.length - 1];
+  if (!lastTurn) return;
+  const updated = [...activeSession.transcript];
+  updated[updated.length - 1] = { ...lastTurn, text };
+  activeSession.transcript = updated;
+  listeners.transcript.forEach((fn) => fn(activeSession.transcript));
+}
+
 export function setSpeaking(speaking: { user: boolean; ai: boolean }): void {
   activeSession.isSpeaking = speaking;
   listeners.speaking.forEach((fn) => fn(speaking));

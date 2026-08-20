@@ -33,6 +33,8 @@ export function PipelineInterviewRoomScreen({
     isRecording,
     startInterview,
     endInterview,
+    startRecording,
+    stopRecording,
   } = usePipelineInterview(mode);
 
   // Start interview on mount (once)
@@ -75,8 +77,26 @@ export function PipelineInterviewRoomScreen({
     ]);
   }, [endInterview]);
 
+  // Push-to-talk: tap to start speaking, tap again to send. Disabled
+  // while the AI is talking so a barge-in recording never gets sent.
+  const handleMicPress = useCallback(async () => {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      if (isSpeaking.ai) return;
+      await startRecording();
+    }
+  }, [isRecording, isSpeaking.ai, startRecording, stopRecording]);
+
   const isConnecting = status === "connecting" || status === "starting";
   const isBusy = status === "saving";
+  const micDisabled = isSpeaking.ai;
+
+  const micLabel = isRecording
+    ? "Tap to send"
+    : isSpeaking.ai
+      ? "Alex is speaking…"
+      : "Tap to speak";
 
   return (
     <View style={styles.safe}>
@@ -95,7 +115,7 @@ export function PipelineInterviewRoomScreen({
       {(isConnecting || status === "live") && (
         <AvatarStage
           aiSpeaking={isSpeaking.ai}
-          userSpeaking={isSpeaking.user || isRecording}
+          userSpeaking={isRecording}
           subtitle={derivedRole ?? undefined}
         />
       )}
@@ -122,6 +142,18 @@ export function PipelineInterviewRoomScreen({
 
       {status === "live" && (
         <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
+          <Text style={styles.micLabel}>{micLabel}</Text>
+          <Pressable
+            style={[
+              styles.micButton,
+              isRecording && styles.micButtonRecording,
+              micDisabled && styles.micButtonDisabled,
+            ]}
+            onPress={handleMicPress}
+            disabled={micDisabled}
+          >
+            <Feather name={isRecording ? "square" : "mic"} size={28} color="#fff" />
+          </Pressable>
           <Pressable style={styles.endButtonFull} onPress={handleEnd}>
             <Text style={styles.endButtonText}>End Interview</Text>
           </Pressable>
@@ -166,14 +198,42 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     borderTopWidth: 1,
     borderTopColor: "#1E293B",
+    alignItems: "center",
+    gap: 12,
+  },
+  micLabel: {
+    color: "#94A3B8",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  micButton: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#4F46E5",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#4F46E5",
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  micButtonRecording: {
+    backgroundColor: "#DC2626",
+    shadowColor: "#DC2626",
+  },
+  micButtonDisabled: {
+    backgroundColor: "#334155",
+    shadowOpacity: 0,
   },
   endButtonFull: {
-    backgroundColor: "#DC2626",
+    backgroundColor: "transparent",
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
   },
-  endButtonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  endButtonText: { color: "#DC2626", fontSize: 14, fontWeight: "700" },
 });

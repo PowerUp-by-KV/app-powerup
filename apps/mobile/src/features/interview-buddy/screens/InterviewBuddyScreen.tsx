@@ -10,7 +10,10 @@ import { useSafeBack } from "@/hooks/useSafeBack";
 const ROUTE_RESUME = "/resume" as Href;
 
 import { useGetProfileResumeQuery } from "@/services/resume-api";
-import { useListInterviewSessionsQuery } from "@/services/interview-playground-api";
+import {
+  useListInterviewSessionsQuery,
+  useListPipelineSessionsQuery,
+} from "@/services/interview-playground-api";
 import { useWebRTCInterview } from "@/features/interview-playground/hooks/useWebRTCInterview";
 import { ConnectionBadge } from "@/features/interview-playground/components/ConnectionBadge";
 import { PaywallScreen } from "@/features/subscription/PaywallScreen";
@@ -18,6 +21,13 @@ import { usePlanTier } from "@/hooks/usePlanTier";
 import type { InterviewSessionSummary } from "@/features/interview-playground/types";
 
 function SessionCard({ item, isDark }: { item: InterviewSessionSummary; isDark: boolean }) {
+  const hasScore = item.final_score !== null && item.final_score !== undefined;
+  const rawDate = item.started_at || (item as unknown as { created_at?: string }).created_at;
+  const displayDate =
+    rawDate && !isNaN(new Date(rawDate).getTime())
+      ? new Date(rawDate).toLocaleDateString()
+      : new Date().toLocaleDateString();
+
   return (
     <Pressable
       style={[styles.sessionCard, isDark && { backgroundColor: "#1E293B", borderColor: "#334155" }]}
@@ -34,14 +44,18 @@ function SessionCard({ item, isDark }: { item: InterviewSessionSummary; isDark: 
         </Text>
         {item.grade && (
           <View style={[styles.gradeBadge, isDark && { backgroundColor: "#312E81" }]}>
-            <Text style={[styles.gradeText, isDark && { color: "#A5B4FC" }]}>{item.grade}</Text>
+            <Text style={[styles.gradeText, isDark && { color: "#A5B4FC" }]}>
+              Grade {item.grade}
+            </Text>
           </View>
         )}
       </View>
       <View style={styles.sessionMeta}>
-        <Text style={styles.sessionDate}>{new Date(item.started_at).toLocaleDateString()}</Text>
-        {item.final_score !== null && (
-          <Text style={styles.sessionScore}>{item.final_score}/100</Text>
+        <Text style={styles.sessionDate}>{displayDate}</Text>
+        {hasScore && (
+          <Text style={[styles.sessionScore, isDark && { color: "#818CF8" }]}>
+            Score: {Math.round(item.final_score!)}/100
+          </Text>
         )}
       </View>
     </Pressable>
@@ -286,6 +300,9 @@ function PipelineBuddyScreen() {
   const isDark = colorScheme === "dark";
   const goBack = useSafeBack("/");
   const { data: resume, isLoading: isLoadingResume } = useGetProfileResumeQuery();
+  const { data: sessions, isLoading: isLoadingSessions } = useListPipelineSessionsQuery({
+    mode: "buddy",
+  });
 
   const hasResume = !!resume && resume.parse_status === "completed";
   const candidateName = resume?.full_name ?? null;
@@ -385,6 +402,16 @@ function PipelineBuddyScreen() {
         <Text style={[styles.hint, isDark && { color: "#94A3B8" }]}>
           Hands-free audio active. Microphone required.
         </Text>
+
+        {(sessions?.length ?? 0) > 0 && (
+          <View style={styles.historySection}>
+            <Text style={[styles.historyTitle, isDark && { color: "#F8FAFC" }]}>Past Sessions</Text>
+            {isLoadingSessions && <ActivityIndicator style={{ marginTop: 12 }} />}
+            {(sessions ?? []).map((item) => (
+              <SessionCard key={item.session_id} item={item} isDark={isDark} />
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -398,11 +425,11 @@ export function InterviewBuddyScreen() {
     return <PaywallScreen requiredTier="pro" featureName="Interview Buddy" onBack={goBack} />;
   }
 
-  if (tier === "pro") {
-    return <PipelineBuddyScreen />;
+  if (tier === "premium") {
+    return <WebRTCBuddyScreen />;
   }
 
-  return <WebRTCBuddyScreen />;
+  return <PipelineBuddyScreen />;
 }
 
 const styles = StyleSheet.create({
