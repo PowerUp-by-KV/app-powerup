@@ -19,6 +19,7 @@ import {
 import { AlertHost } from "@/components/AlertHost";
 import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
+import { useGetCurrentSubscriptionQuery } from "@/services/subscription-api";
 import { useAppDispatch } from "@/store/hooks";
 import { setTier, type Tier } from "@/store/slices/subscription.slice";
 
@@ -73,6 +74,20 @@ function InnerRouteGuard() {
   const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
+
+  // Login does not return a tier, so the stored session has none and the app would
+  // assume "free" on any route reached outside the (tabs) group — a deep link, a
+  // notification tap, or a browser refresh on a gated screen showed paying users a
+  // paywall. (tabs)/_layout already hydrates the tier this way; doing it here in the
+  // root guard covers every route instead of just the tab screens.
+  const { data: currentSub } = useGetCurrentSubscriptionQuery(undefined, {
+    skip: !userId,
+  });
+
+  useEffect(() => {
+    if (currentSub?.tier) dispatch(setTier(currentSub.tier));
+  }, [currentSub, dispatch]);
+
   const [cachedOnboardingComplete, setCachedOnboardingComplete] = useState<boolean | null>(null);
 
   useEffect(() => {
