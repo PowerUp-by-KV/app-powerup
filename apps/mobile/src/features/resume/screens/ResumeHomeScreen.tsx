@@ -249,7 +249,7 @@ export function ResumeHomeScreen() {
     } catch (error: unknown) {
       const apiError = error as ApiRequestError;
 
-      let errorMessage = "Failed to upload resume. Please try again.";
+      let errorMessage: string;
 
       if (apiError.status === 400) {
         errorMessage =
@@ -504,11 +504,9 @@ export function ResumeHomeScreen() {
                 <Text style={styles.fileSize}>{formatFileSize(selectedFile.size)}</Text>
               </View>
             </View>
-            {!uploading && (
-              <Pressable onPress={() => setSelectedFile(null)}>
-                <MaterialIcons name="close" size={24} color="#6b7280" />
-              </Pressable>
-            )}
+            <Pressable onPress={() => setSelectedFile(null)}>
+              <MaterialIcons name="close" size={24} color="#6b7280" />
+            </Pressable>
           </View>
         )}
 

@@ -1333,15 +1333,11 @@ export function LearningJourneyScreen() {
                   {freeModule?.title ?? "The Fundamentals of Communication"}
                 </Text>
 
-                <View style={timelineStyles.progressBarBg}>
+                <View
+                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#2d2d3a" }]}
+                >
                   <LinearGradient
-                    colors={
-                      isFreeCompleted
-                        ? ["#84cc16", "#22c55e"]
-                        : isDark
-                          ? ["#ffffff", "#ffffff"]
-                          : ["#3b82f6", "#60a5fa"]
-                    }
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[timelineStyles.progressBarFill, { width: `${freeProgressPct}%` }]}
@@ -1454,15 +1450,11 @@ export function LearningJourneyScreen() {
                   {trialModule?.title ?? "Behaviour in Workplace"}
                 </Text>
 
-                <View style={timelineStyles.progressBarBg}>
+                <View
+                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#2d2d3a" }]}
+                >
                   <LinearGradient
-                    colors={
-                      isTrialCompleted
-                        ? ["#84cc16", "#22c55e"]
-                        : isDark
-                          ? ["#ffffff", "#ffffff"]
-                          : ["#3b82f6", "#60a5fa"]
-                    }
+                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[timelineStyles.progressBarFill, { width: `${trialProgressPct}%` }]}
@@ -1572,7 +1564,9 @@ export function LearningJourneyScreen() {
                 </View>
                 <Text style={timelineStyles.stageSubtitle}>Assessing your skills</Text>
 
-                <View style={timelineStyles.progressBarBg}>
+                <View
+                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#2d2d3a" }]}
+                >
                   <LinearGradient
                     colors={["#3b82f6", "#22c55e", "#84cc16"]}
                     start={{ x: 0, y: 0 }}
@@ -1732,7 +1726,12 @@ export function LearningJourneyScreen() {
 
                         return (
                           <>
-                            <View style={timelineStyles.progressBarBg}>
+                            <View
+                              style={[
+                                timelineStyles.progressBarBg,
+                                isDark && { backgroundColor: "#2d2d3a" },
+                              ]}
+                            >
                               <LinearGradient
                                 colors={["#3b82f6", "#22c55e", "#84cc16"]}
                                 start={{ x: 0, y: 0 }}

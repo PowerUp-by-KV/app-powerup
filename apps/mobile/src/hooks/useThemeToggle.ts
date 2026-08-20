@@ -6,24 +6,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // In-memory cache to make tab-switching and loads instantaneous
 let cachedTheme: "light" | "dark" | null = null;
 let isLoadInitiated = false;
-let isApplyingTheme = false;
 
 export function useThemeToggle() {
   const { colorScheme, setColorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
   useEffect(() => {
-    // If already cached in memory, apply it if it doesn't match and not currently applying
-    if (cachedTheme !== null) {
-      if (colorScheme !== cachedTheme && !isApplyingTheme) {
-        isApplyingTheme = true;
-        setColorScheme(cachedTheme);
-        setTimeout(() => {
-          isApplyingTheme = false;
-        }, 50);
-      }
-      return;
-    }
+    if (cachedTheme !== null) return;
 
     // Prevent multiple concurrent reads
     if (isLoadInitiated) return;
@@ -42,12 +31,8 @@ export function useThemeToggle() {
           const targetTheme: "light" | "dark" = storedDarkMode === "true" ? "dark" : "light";
           cachedTheme = targetTheme;
 
-          if (colorScheme !== targetTheme && !isApplyingTheme) {
-            isApplyingTheme = true;
+          if (colorScheme !== targetTheme) {
             setColorScheme(targetTheme);
-            setTimeout(() => {
-              isApplyingTheme = false;
-            }, 50);
           }
 
           if (Platform.OS === "web" && typeof document !== "undefined") {
@@ -57,11 +42,15 @@ export function useThemeToggle() {
               document.documentElement.classList.remove("dark");
             }
           }
+        } else {
+          cachedTheme = colorScheme === "dark" ? "dark" : "light";
         }
       } catch (err) {
         console.warn("Failed to load theme settings", err);
+        cachedTheme = "light";
       }
     };
+
     loadTheme();
   }, [colorScheme, setColorScheme]);
 

@@ -64,6 +64,54 @@ jobs:
       - name: Expo export (preflight bundle)
         run: cd apps/mobile && pnpm exec expo export --platform android --output-dir /tmp/expo-export-preflight
 
+      # Same preflight for iOS. This only exercises the JS/Metro path — it will NOT
+      # catch native compile breaks (see the ios-build job for that) — but it is fast
+      # and catches iOS-only import/resolution problems.
+      - name: Expo export (preflight bundle, iOS)
+        run: cd apps/mobile && pnpm exec expo export --platform ios --output-dir /tmp/expo-export-preflight-ios
+
+  # Compiles the native iOS project. This exists because CI only ever built Android,
+  # so the iOS build broke (expo-av importing ExpoModulesCore/EXEventEmitter.h, removed
+  # in SDK 55) and stayed broken unnoticed — nothing in the pipeline ever compiled it.
+  # `pod install` succeeds on that failure, so only a real xcodebuild catches it.
+  ios-build:
+    name: iOS build (simulator)
+    runs-on: macos-latest
+    needs: quality
+    # Gated like the Android EAS job rather than run per-commit: a macOS runner is
+    # slow and metered, and the risk it guards against lands at merge time.
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/qa') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'qa') ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prebuild iOS project
+        run: cd apps/mobile && CI=1 pnpm exec expo prebuild --platform ios
+
+      - name: Build for simulator
+        run: |
+          cd apps/mobile/ios
+          xcodebuild build \
+            -workspace PowerUp.xcworkspace \
+            -scheme PowerUp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+
   eas-build-android:
     name: EAS Build (Android preview APK)
     runs-on: ubuntu-latest

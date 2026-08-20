@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -71,38 +71,17 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
-  const [timeLeft, setTimeLeft] = useState(60); // Default 60s for story comprehension
-
   const maxDuration = (currentQuestion as any)?.recording_time_seconds || 60;
 
-  // Reset timer on question change
+  // Reset state on question change
   useEffect(() => {
     if (currentQuestion) {
-      setTimeLeft(maxDuration + 15);
       setHasAudioFinished(false);
       scrollViewRef.current?.scrollTo({ y: 0, animated: true });
     }
   }, [currentQuestionIndex, currentQuestion, maxDuration]);
 
-  // Main countdown timer
-  useEffect(() => {
-    if (!currentQuestion || isSubmitting || isFinished || !hasAudioFinished) return;
-
-    if (timeLeft <= 0) {
-      if (isLastQuestion) {
-        handleFinish();
-      } else {
-        setCurrentQuestionIndex((prev) => prev + 1);
-      }
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, isLastQuestion, isSubmitting, isFinished]);
+  // Timer logic removed
 
   const selectAnswer = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -268,7 +247,6 @@ export function ListeningScreen({ sessionId: propSessionId }: ListeningScreenPro
             question={currentQuestion as any}
             questionIndex={currentQuestionIndex}
             totalQuestions={questions.length}
-            timeLeft={timeLeft}
           />
 
           <AudioPlayer

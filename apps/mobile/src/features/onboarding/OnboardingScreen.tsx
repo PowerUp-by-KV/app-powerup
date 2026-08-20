@@ -178,7 +178,7 @@ export default function OnboardingScreen() {
     return <LoaderScreen />;
   }
 
-  if (!question && !isFetching) {
+  if (!question) {
     return (
       <View
         style={{
