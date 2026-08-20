@@ -11,7 +11,7 @@ import { useGetProfileQuery } from "@/services/auth-api";
 import { getAvatarUri } from "@/utils/avatar";
 import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import {
-  useLazyGetModuleDaysQuery,
+  useLazyGetModuleDaysBulkQuery,
   useGetDayProgressQuery,
   useGetModulesQuery,
 } from "@/services/module-api";
@@ -69,37 +69,36 @@ export function HomeScreen() {
     };
   }, [modulesData]);
 
-  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [triggerGetModuleDaysBulk] = useLazyGetModuleDaysBulkQuery();
   const [moduleDaysData, setModuleDaysData] = React.useState<Record<string, ModuleDay[]>>({});
 
   React.useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
 
+    // One request instead of one per module — the per-module version fired a request
+    // for every module in the path, which queued against itself on slower connections.
     const fetchAllDays = async () => {
+      const moduleIds = personalizedPath.modules.map((m) => m.id);
       try {
-        const promises = personalizedPath.modules.map(async (m) => {
-          try {
-            const data = await triggerGetModuleDays(m.id).unwrap();
-            return { moduleId: m.id, days: data };
-          } catch (e) {
-            console.warn(`Failed to fetch days for module ${m.module_no}:`, e);
-            return { moduleId: m.id, days: [] };
-          }
-        });
-        const results = await Promise.all(promises);
+        const daysByModule = await triggerGetModuleDaysBulk(moduleIds).unwrap();
 
         const newData: Record<string, ModuleDay[]> = {};
-        for (const res of results) {
-          newData[res.moduleId] = res.days;
+        for (const id of moduleIds) {
+          newData[id] = daysByModule[id] ?? [];
         }
         setModuleDaysData(newData);
       } catch (err) {
         console.error("Error fetching all days:", err);
+        const empty: Record<string, ModuleDay[]> = {};
+        for (const id of moduleIds) {
+          empty[id] = [];
+        }
+        setModuleDaysData(empty);
       }
     };
 
     fetchAllDays();
-  }, [personalizedPath, triggerGetModuleDays]);
+  }, [personalizedPath, triggerGetModuleDaysBulk]);
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     if (!personalizedPath?.modules?.length) return [];

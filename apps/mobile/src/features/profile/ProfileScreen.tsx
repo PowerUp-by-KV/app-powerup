@@ -23,7 +23,7 @@ import * as SecureStore from "expo-secure-store";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
-import { useGetModulesQuery, useLazyGetModuleDaysQuery } from "@/services/module-api";
+import { useGetModulesQuery, useLazyGetModuleDaysBulkQuery } from "@/services/module-api";
 import { useLogout } from "@/utils/auth";
 import { getAvatarUri } from "@/utils/avatar";
 import type { ModuleDay } from "@powerup/shared";
@@ -39,7 +39,7 @@ export function ProfileScreen() {
   const { data: profile, isLoading } = useGetProfileQuery();
 
   const { data: modulesData } = useGetModulesQuery();
-  const [triggerGetModuleDays] = useLazyGetModuleDaysQuery();
+  const [triggerGetModuleDaysBulk] = useLazyGetModuleDaysBulkQuery();
   const [moduleDaysData, setModuleDaysData] = useState<Record<string, ModuleDay[]>>({});
 
   const personalizedPath = useMemo(() => {
@@ -58,30 +58,31 @@ export function ProfileScreen() {
   useEffect(() => {
     if (!personalizedPath?.modules?.length) return;
     let active = true;
+    // One request instead of one per module (see LearningJourneyScreen for measurements).
     const fetchAllDays = async () => {
+      const moduleIds = personalizedPath.modules.map((m) => m.id);
       try {
-        const promises = personalizedPath.modules.map(async (m) => {
-          try {
-            const data = await triggerGetModuleDays(m.id).unwrap();
-            return { moduleId: m.id, days: data };
-          } catch {
-            return { moduleId: m.id, days: [] };
-          }
-        });
-        const results = await Promise.all(promises);
+        const daysByModule = await triggerGetModuleDaysBulk(moduleIds).unwrap();
         if (!active) return;
         const newData: Record<string, ModuleDay[]> = {};
-        for (const res of results) {
-          newData[res.moduleId] = res.days;
+        for (const id of moduleIds) {
+          newData[id] = daysByModule[id] ?? [];
         }
         setModuleDaysData(newData);
-      } catch {}
+      } catch {
+        if (!active) return;
+        const empty: Record<string, ModuleDay[]> = {};
+        for (const id of moduleIds) {
+          empty[id] = [];
+        }
+        setModuleDaysData(empty);
+      }
     };
     fetchAllDays();
     return () => {
       active = false;
     };
-  }, [personalizedPath, triggerGetModuleDays]);
+  }, [personalizedPath, triggerGetModuleDaysBulk]);
 
   const daysCompletedCount = useMemo(() => {
     let count = 0;
