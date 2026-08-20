@@ -48,11 +48,6 @@ export function LoginScreen() {
   const { request: googleRequest, promptAsync: promptGoogle } = useGoogleAuth();
   const prefetchOnboarding = onboardingApi.usePrefetch("getGroupedQuestions");
 
-  // Prefetch onboarding questions in the background during the authentication handshake
-  React.useEffect(() => {
-    prefetchOnboarding();
-  }, [prefetchOnboarding]);
-
   const persistAuthAndNavigate = async (auth: AuthResponse, loginEmail: string) => {
     try {
       await saveAuthSession(auth);
