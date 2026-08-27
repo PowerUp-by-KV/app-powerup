@@ -7,12 +7,14 @@
 import React, { useCallback } from "react";
 import {
   View,
+  FlatList,
   ScrollView,
   ActivityIndicator,
   Pressable,
   RefreshControl,
   StyleSheet,
 } from "react-native";
+import type { PracticeSession } from "@/services/interview-api";
 import { Text } from "@/components/Themed";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -79,30 +81,24 @@ export function InterviewHistoryScreen() {
 
   // List view
   return (
-    <ScrollView
+    <FlatList
       style={styles.scrollContainer}
       contentContainerStyle={styles.contentContainer}
       refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Practice History</Text>
-        <Text style={styles.headerSubtitle}>
-          {sessions.length} {sessions.length === 1 ? "session" : "sessions"} recorded
-        </Text>
-      </View>
-
-      {/* Session List */}
-      <View style={styles.listContainer}>
-        {sessions.map((session) => (
-          <SessionCard
-            key={session.session_id}
-            session={session}
-            onPress={() => handleViewSession(session.session_id)}
-          />
-        ))}
-      </View>
-    </ScrollView>
+      data={sessions}
+      keyExtractor={(session) => session.session_id}
+      renderItem={({ item }: { item: PracticeSession }) => (
+        <SessionCard session={item} onPress={() => handleViewSession(item.session_id)} />
+      )}
+      ListHeaderComponent={
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Practice History</Text>
+          <Text style={styles.headerSubtitle}>
+            {sessions.length} {sessions.length === 1 ? "session" : "sessions"} recorded
+          </Text>
+        </View>
+      }
+    />
   );
 }
 
@@ -171,8 +167,5 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: 14,
     color: "#64748b",
-  },
-  listContainer: {
-    gap: 0,
   },
 });
