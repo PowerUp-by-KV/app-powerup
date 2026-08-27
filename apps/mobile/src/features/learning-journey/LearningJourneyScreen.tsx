@@ -108,7 +108,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
 
   const actualCefr = results?.cefr_level ?? results?.cefr_range ?? cefrRange ?? null;
 
-  // Only show real data — do NOT generate mock/derived scores if assessment is not completed.
+  // Only show real data - do NOT generate mock/derived scores if assessment is not completed.
   // The assessment is considered completed only when cefr_range is set on the profile.
   const isAssessmentComplete = !!actualCefr;
 
@@ -120,7 +120,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
 
   if (!visible) return null;
 
-  // If assessment not yet completed — show a friendly "not completed" state
+  // If assessment not yet completed - show a friendly "not completed" state
   if (!isAssessmentComplete) {
     return (
       <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
@@ -172,7 +172,7 @@ function PreAssessmentModal({ visible, onClose, cefrRange, results }: PreAssessm
     );
   }
 
-  // If assessment is completed but real results are not loaded yet — show a loading spinner
+  // If assessment is completed but real results are not loaded yet - show a loading spinner
   if (isAssessmentComplete && !hasRealResults) {
     return (
       <Animated.View style={[scoreStyles.modalOverlay, { opacity: opacityAnim }]}>
@@ -663,8 +663,21 @@ export function LearningJourneyScreen() {
     fetchAllDays(false);
   }, [fetchAllDays]);
 
+  // Tab focus fires on every switch back to this screen. Without a debounce this
+  // re-issues profile/path/progression refetches plus a cache-bypassing fetch per
+  // module (fetchAllDays(true)) on every single switch - harmless with one user,
+  // but it multiplies backend load across a large concurrent user base for data
+  // that rarely changes minute to minute. Cache (fetchAllDays(false)) still covers
+  // genuinely stale data via the mount effect above.
+  const lastFocusRefetchAt = useRef(0);
+  const FOCUS_REFETCH_MIN_INTERVAL_MS = 30_000;
+
   useEffect(() => {
     const unsubscribe = navigation.addListener("focus", () => {
+      const now = Date.now();
+      if (now - lastFocusRefetchAt.current < FOCUS_REFETCH_MIN_INTERVAL_MS) return;
+      lastFocusRefetchAt.current = now;
+
       refetchProfile();
       refetchPath();
       if (gate.canEnter) {
