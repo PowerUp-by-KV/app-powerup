@@ -57,7 +57,7 @@
       [
         "@config-plugins/react-native-webrtc",
         {
-          "cameraPermission": "PowerUp uses the camera for video interview practice.",
+          "cameraPermission": "PowerUp uses the camera for photo uploads in chat and resume building.",
           "microphonePermission": "PowerUp uses the microphone for your voice interview with the AI interviewer."
         }
       ]
