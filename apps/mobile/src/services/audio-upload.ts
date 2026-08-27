@@ -77,7 +77,10 @@ export async function uploadAudioFile(
   };
 
   let lastError: unknown;
-  let retries = 5;
+  // Capped at 3 (was 5): under a slow/overloaded backend, 5 sequential retries on
+  // a multipart audio blob keep a connection open far longer than a user will
+  // wait, multiplying load exactly when the backend is already struggling.
+  let retries = 3;
   let delay = 1000;
 
   while (retries > 0) {
