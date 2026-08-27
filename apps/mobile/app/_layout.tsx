@@ -70,13 +70,13 @@ function InnerRouteGuard() {
   }, [currentRoute, dispatch]);
 
   // Stale while a navigation has changed the route but its session read has not
-  // resolved yet — redirect logic must wait for this to become true.
+  // resolved yet - redirect logic must wait for this to become true.
   const isLocalReady = readyForRoute === currentRoute;
 
   const userId = session?.user?.id;
 
   // Login does not return a tier, so the stored session has none and the app would
-  // assume "free" on any route reached outside the (tabs) group — a deep link, a
+  // assume "free" on any route reached outside the (tabs) group - a deep link, a
   // notification tap, or a browser refresh on a gated screen showed paying users a
   // paywall. (tabs)/_layout already hydrates the tier this way; doing it here in the
   // root guard covers every route instead of just the tab screens.
@@ -111,6 +111,10 @@ function InnerRouteGuard() {
   const skipQuery =
     !userId || cachedOnboardingComplete === true || cachedOnboardingComplete === null;
 
+  // Drives a retry poll once the query below has errored - see pollingInterval.
+  // Starts false so the first attempt fires once, not on a timer.
+  const [onboardingQueryErrored, setOnboardingQueryErrored] = useState(false);
+
   const {
     data: onboardingStatus,
     isLoading: isOnboardingLoading,
@@ -120,7 +124,15 @@ function InnerRouteGuard() {
   } = useGetOnboardingStatusQuery(userId ?? "", {
     skip: skipQuery,
     refetchOnMountOrArgChange: true,
+    // Self-heal a transient network/5xx failure (e.g. a cold-starting backend)
+    // instead of leaving the user stuck on the splash screen forever - see the
+    // isOnboardingError network-error branch below, which has no other retry path.
+    pollingInterval: onboardingQueryErrored ? 5000 : 0,
   });
+
+  useEffect(() => {
+    setOnboardingQueryErrored(isOnboardingError);
+  }, [isOnboardingError]);
 
   useEffect(() => {
     if (onboardingStatus?.answers_present && userId) {
@@ -288,7 +300,7 @@ export default function AuthLayout() {
         console.warn("Failed to load session on mount:", err);
       })
       .finally(() => {
-        // Always mark as checked even if SecureStore throws — prevents
+        // Always mark as checked even if SecureStore throws - prevents
         // the app being permanently stuck on the splash screen.
         setAuthChecked(true);
       });
@@ -302,7 +314,7 @@ export default function AuthLayout() {
   }, [fontsLoaded, fontError, authChecked]);
 
   if ((!fontsLoaded && !fontError) || !authChecked) {
-    return null; // Splash is still visible — no black frame.
+    return null; // Splash is still visible - no black frame.
   }
 
   return (
