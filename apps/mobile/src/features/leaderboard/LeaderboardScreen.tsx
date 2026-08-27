@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import { FlatList, Pressable, Text, View, ScrollView } from "react-native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -29,6 +29,109 @@ const PERIODS: LeaderboardPeriod[] = ["weekly", "monthly", "yearly"];
 const LeaderboardFlatList = FlatList as unknown as React.ComponentType<
   SafeFlatListProps<LeaderboardEntry>
 >;
+
+interface LeaderboardRowProps {
+  item: LeaderboardEntry;
+  isDark: boolean;
+  currentUserId?: string | null;
+  currentUserAvatarId?: string | null;
+}
+
+// Memoized so a row only re-renders when its own item/theme changes, not on every
+// parent re-render (filter changes, refetches, etc.) - the old inline renderItem
+// closure recreated this whole tree on every FlatList render pass.
+const LeaderboardRow = memo(function LeaderboardRow({
+  item,
+  isDark,
+  currentUserId,
+  currentUserAvatarId,
+}: LeaderboardRowProps) {
+  return (
+    <View
+      className={`border rounded-3xl p-4 mb-3 shadow-xs ${
+        isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"
+      }`}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <View
+        className="pr-3"
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          flexGrow: 1,
+          flexShrink: 1,
+          flexBasis: "auto",
+        }}
+      >
+        <View
+          className={`w-10 h-10 rounded-full mr-3 overflow-hidden justify-center items-center border ${
+            isDark ? "bg-slate-800 border-slate-700/50" : "bg-slate-100 border-slate-200/50"
+          }`}
+        >
+          <Image
+            source={{
+              uri: getAvatarUri(
+                (item.is_you || item.user_id === currentUserId) && currentUserAvatarId
+                  ? currentUserAvatarId
+                  : item.avatar,
+                item.user_id,
+              ),
+            }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            style={{ width: "100%", height: "100%" }}
+          />
+        </View>
+        <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
+          <Text
+            className={`font-extrabold text-sm ${isDark ? "text-slate-100" : "text-slate-800"}`}
+            numberOfLines={1}
+          >
+            {item.is_you ? `${item.name} (You)` : item.name}
+          </Text>
+          <View className="flex-row items-center flex-wrap gap-1 mt-0.5">
+            <Text className="text-slate-400 text-xs font-bold">
+              {item.rank === 1
+                ? "1st Rank"
+                : item.rank === 2
+                  ? "2nd Rank"
+                  : item.rank === 3
+                    ? "3rd Rank"
+                    : `${item.rank}th rank`}
+            </Text>
+            {item.college && (
+              <View
+                className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-purple-950/60" : "bg-purple-100/70"}`}
+              >
+                <Text
+                  className={`text-[10px] font-semibold ${isDark ? "text-purple-300" : "text-purple-700"}`}
+                >
+                  🎓 {item.college}
+                </Text>
+              </View>
+            )}
+            {item.region && (
+              <View
+                className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-emerald-950/60" : "bg-emerald-100/70"}`}
+              >
+                <Text
+                  className={`text-[10px] font-semibold ${isDark ? "text-emerald-300" : "text-emerald-700"}`}
+                >
+                  📍 {item.region}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+      <Text className="text-slate-500 font-extrabold text-xs">{item.points} xp</Text>
+    </View>
+  );
+});
 
 export function LeaderboardScreen() {
   const router = useRouter();
@@ -67,6 +170,18 @@ export function LeaderboardScreen() {
 
   const insets = useSafeAreaInsets();
   const { isDark } = useThemeToggle();
+
+  const renderLeaderboardRow = useCallback(
+    ({ item }: { item: LeaderboardEntry }) => (
+      <LeaderboardRow
+        item={item}
+        isDark={isDark}
+        currentUserId={profile?.id}
+        currentUserAvatarId={profile?.avatar_id}
+      />
+    ),
+    [isDark, profile?.id, profile?.avatar_id],
+  );
 
   // Process data returned from backend filtering endpoint
   const processedData = useMemo(() => {
@@ -587,91 +702,7 @@ export function LeaderboardScreen() {
             paddingHorizontal: 20,
             paddingBottom: 140 + Math.max(0, insets.bottom),
           }}
-          renderItem={({ item }: { item: LeaderboardEntry }) => (
-            <View
-              className={`border rounded-3xl p-4 mb-3 shadow-xs ${
-                isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-100"
-              }`}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <View
-                className="pr-3"
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  flexGrow: 1,
-                  flexShrink: 1,
-                  flexBasis: "auto",
-                }}
-              >
-                <View
-                  className={`w-10 h-10 rounded-full mr-3 overflow-hidden justify-center items-center border ${
-                    isDark ? "bg-slate-800 border-slate-700/50" : "bg-slate-100 border-slate-200/50"
-                  }`}
-                >
-                  <Image
-                    source={{
-                      uri: getAvatarUri(
-                        (item.is_you || item.user_id === profile?.id) && profile?.avatar_id
-                          ? profile.avatar_id
-                          : item.avatar,
-                        item.user_id,
-                      ),
-                    }}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    style={{ width: "100%", height: "100%" }}
-                  />
-                </View>
-                <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
-                  <Text
-                    className={`font-extrabold text-sm ${isDark ? "text-slate-100" : "text-slate-800"}`}
-                    numberOfLines={1}
-                  >
-                    {item.is_you ? `${item.name} (You)` : item.name}
-                  </Text>
-                  <View className="flex-row items-center flex-wrap gap-1 mt-0.5">
-                    <Text className="text-slate-400 text-xs font-bold">
-                      {item.rank === 1
-                        ? "1st Rank"
-                        : item.rank === 2
-                          ? "2nd Rank"
-                          : item.rank === 3
-                            ? "3rd Rank"
-                            : `${item.rank}th rank`}
-                    </Text>
-                    {item.college && (
-                      <View
-                        className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-purple-950/60" : "bg-purple-100/70"}`}
-                      >
-                        <Text
-                          className={`text-[10px] font-semibold ${isDark ? "text-purple-300" : "text-purple-700"}`}
-                        >
-                          🎓 {item.college}
-                        </Text>
-                      </View>
-                    )}
-                    {item.region && (
-                      <View
-                        className={`px-1.5 py-0.5 rounded-md ${isDark ? "bg-emerald-950/60" : "bg-emerald-100/70"}`}
-                      >
-                        <Text
-                          className={`text-[10px] font-semibold ${isDark ? "text-emerald-300" : "text-emerald-700"}`}
-                        >
-                          📍 {item.region}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </View>
-              <Text className="text-slate-500 font-extrabold text-xs">{item.points} xp</Text>
-            </View>
-          )}
+          renderItem={renderLeaderboardRow}
         />
 
         {/* FAB with lime-green gradient */}
