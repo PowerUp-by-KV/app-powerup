@@ -37,6 +37,9 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# zipped source snapshots (bypass code review / secret scanning)
+*.zip
+
 # generated native folders
 /ios
 /android
