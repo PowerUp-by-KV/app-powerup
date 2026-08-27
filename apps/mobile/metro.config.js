@@ -7,6 +7,15 @@ const monorepoRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
+// Strip console.log/info/debug from production bundles (Metro only minifies
+// release builds, so this has no effect on `expo start` dev sessions).
+// warn/error survive so real errors still surface in crash reports.
+config.transformer.minifierConfig = {
+  compress: {
+    drop_console: ["log", "info", "debug"],
+  },
+};
+
 // Watch all files in the monorepo
 config.watchFolders = [monorepoRoot];
 
