@@ -2,14 +2,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
-// NOTE: Client-side password gate. This is a low-trust web-only barrier — the
+// NOTE: Client-side password gate. This is a low-trust web-only barrier - the
 // real authorization must be enforced server-side on every admin endpoint.
-// The variable is intentionally non-EXPO_PUBLIC: it is read at runtime on web
-// where `process.env` is substituted at build time, and is required to be
-// supplied via the build environment. Missing config throws immediately so the
-// app never silently falls back to an empty/default password.
+// ADMIN_PANEL_PASSWORD must never be an EXPO_PUBLIC_* var: those get inlined
+// into the client bundle at build time, which would ship the password in
+// plaintext to anyone who opens the web build's source. Missing config throws
+// immediately so the app never silently falls back to an empty/default
+// password. This file is a .web.tsx route, so Metro excludes it from the
+// native bundle entirely - it never ships in the Android/iOS app.
 const getAdminPassword = (): string => {
-  const value = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  const value = process.env.ADMIN_PANEL_PASSWORD;
   if (!value) {
     throw new Error("ADMIN_PANEL_PASSWORD is not configured. Set it in the build environment.");
   }
@@ -34,9 +36,9 @@ interface ContentVersion {
 
 /**
  * Web-only internal admin panel.
- * - On native (iOS/Android) it short-circuits to a "web only" notice.
- * - Auth is a single hardcoded password from EXPO_PUBLIC_ADMIN_PASSWORD.
- * - Session lives in localStorage; mobile bundle never renders this route.
+ * - .web.tsx extension excludes this route from the native bundle entirely.
+ * - Auth is a single hardcoded password from ADMIN_PANEL_PASSWORD.
+ * - Session lives in localStorage.
  */
 export default function AdminPowerupPage() {
   const [authed, setAuthed] = useState(false);
@@ -51,16 +53,7 @@ export default function AdminPowerupPage() {
     }
   }, []);
 
-  if (Platform.OS !== "web") {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ fontSize: 16, color: "#475569", textAlign: "center" }}>
-          The admin panel is only available on the web build.
-        </Text>
-      </View>
-    );
-  }
-  const adminPassword = process.env.ADMIN_PANEL_PASSWORD || process.env.EXPO_PUBLIC_ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PANEL_PASSWORD;
   if (!adminPassword) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -79,8 +72,8 @@ export default function AdminPowerupPage() {
             Admin panel not configured
           </Text>
           <Text style={{ fontSize: 14, color: "#7c2d12", lineHeight: 22 }}>
-            <Text style={{ fontFamily: "monospace" }}>EXPO_PUBLIC_ADMIN_PANEL_PASSWORD</Text> is not
-            set in your environment.{"\n\n"}Add it to{" "}
+            <Text style={{ fontFamily: "monospace" }}>ADMIN_PANEL_PASSWORD</Text> is not set in your
+            environment.{"\n\n"}Add it to{" "}
             <Text style={{ fontFamily: "monospace" }}>apps/mobile/.env</Text> and restart the dev
             server with <Text style={{ fontFamily: "monospace" }}>pnpm start:clean</Text>.
           </Text>
