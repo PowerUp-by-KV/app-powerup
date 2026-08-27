@@ -15,10 +15,12 @@ import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
 
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 
 import { getApiErrorMessage } from "@/utils/error-message";
+import { PRIVACY_POLICY_URL } from "@/constants";
 import {
   saveAuthSession,
   clearProfileCompletedInSession,
@@ -525,7 +527,13 @@ export function RegisterScreen() {
                   {agreedToTerms && <Feather name="check" size={14} color="white" />}
                 </View>
                 <Text className="text-slate-600 dark:text-slate-300 text-xs font-medium flex-1">
-                  I agree to the Terms of Service and Privacy Policy
+                  I agree to the Terms of Service and{" "}
+                  <Text
+                    className="text-[#3b82f6] font-semibold"
+                    onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+                  >
+                    Privacy Policy
+                  </Text>
                 </Text>
               </TouchableOpacity>
               {!!errors.terms && (

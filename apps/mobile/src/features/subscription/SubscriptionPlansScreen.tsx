@@ -4,11 +4,13 @@ import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { usePlanTier } from "@/hooks/usePlanTier";
 import { useGetSubscriptionPlansQuery } from "@/services/profile-api";
 import { useGetCurrentSubscriptionQuery } from "@/services/subscription-api";
+import { PRIVACY_POLICY_URL } from "@/constants";
 
 interface PlanItem {
   id: string;
@@ -409,8 +411,14 @@ export function SubscriptionPlansScreen() {
         )}
 
         <Text className="text-slate-400 text-[11px] text-center px-10 leading-4">
-          By subscribing, you agree to our Terms of Service and Privacy Policy. Cancel anytime from
-          your account settings.
+          By subscribing, you agree to our Terms of Service and{" "}
+          <Text
+            className="text-blue-400 font-semibold"
+            onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+          >
+            Privacy Policy
+          </Text>
+          . Cancel anytime from your account settings.
         </Text>
       </ScrollView>
     </View>

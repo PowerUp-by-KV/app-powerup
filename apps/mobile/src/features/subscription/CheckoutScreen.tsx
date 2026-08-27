@@ -4,11 +4,13 @@ import { Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import * as WebBrowser from "expo-web-browser";
 import { useSafeBack } from "@/hooks/useSafeBack";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { getApiErrorMessage } from "@/utils/error-message";
 import { useAppDispatch } from "@/store/hooks";
 import { setTier } from "@/store/slices/subscription.slice";
+import { PRIVACY_POLICY_URL } from "@/constants";
 
 import {
   useCheckoutMutation,
@@ -60,7 +62,7 @@ export function CheckoutScreen() {
     setError(null);
 
     // Set the moment Razorpay confirms the charge. Past this point the user's money is
-    // gone, so a later failure must never tell them to "try again" — that invites a
+    // gone, so a later failure must never tell them to "try again" - that invites a
     // double charge.
     let charged: RazorpaySuccess | null = null;
 
@@ -82,7 +84,7 @@ export function CheckoutScreen() {
       });
       setIsPaying(false);
 
-      // Only the server may activate a subscription — a client-side "success" callback
+      // Only the server may activate a subscription - a client-side "success" callback
       // proves nothing until the signature is verified against the key secret. Verification
       // is idempotent, so a transient failure is worth retrying before we give up.
       const verified = await retry(3, () =>
@@ -111,7 +113,7 @@ export function CheckoutScreen() {
         // Charged, but we couldn't confirm it. Razorpay's webhook is the backstop and will
         // still activate the subscription, so the one thing we must not do is invite a retry.
         setError(
-          `Your payment went through, but we couldn't confirm it just yet. Do not pay again — ` +
+          `Your payment went through, but we couldn't confirm it just yet. Do not pay again - ` +
             `your subscription will activate shortly. If it doesn't, contact support with ` +
             `payment ID ${charged.razorpay_payment_id}.`,
         );
@@ -242,8 +244,14 @@ export function CheckoutScreen() {
         </Pressable>
 
         <Text className="text-slate-400 text-[11px] text-center mt-6 px-4 leading-4">
-          By subscribing, you agree to our Terms of Service and Privacy Policy. Cancel anytime from
-          your account settings.
+          By subscribing, you agree to our Terms of Service and{" "}
+          <Text
+            className="text-blue-400 font-semibold"
+            onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+          >
+            Privacy Policy
+          </Text>
+          . Cancel anytime from your account settings.
         </Text>
       </ScrollView>
     </View>

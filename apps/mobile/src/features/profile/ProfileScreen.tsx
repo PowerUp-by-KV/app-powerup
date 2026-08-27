@@ -20,6 +20,8 @@ import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Path, Circle, Mask } from "react-native-svg";
 import * as SecureStore from "expo-secure-store";
+import * as WebBrowser from "expo-web-browser";
+import { PRIVACY_POLICY_URL } from "@/constants";
 
 import { useGetProfileQuery } from "@/services/auth-api";
 import { useGetStreakCalendarQuery } from "@/services/profile-api";
@@ -453,7 +455,7 @@ export function ProfileScreen() {
               </View>
             </View>
 
-            {/* Streak chip — single line, right-anchored */}
+            {/* Streak chip - single line, right-anchored */}
             <View style={{ flexDirection: "row", justifyContent: "flex-end", marginBottom: 28 }}>
               <View
                 style={{
@@ -478,7 +480,7 @@ export function ProfileScreen() {
               </View>
             </View>
 
-            {/* SVG arc — the curve that transitions hero → body */}
+            {/* SVG arc - the curve that transitions hero → body */}
             <Svg
               width="100%"
               height={28}
@@ -492,7 +494,7 @@ export function ProfileScreen() {
 
           {/* ── BODY ── */}
           <View style={{ flex: 1, backgroundColor: isDark ? "#0F1020" : "#f0f2ff" }}>
-            {/* ── STAT CARDS — 2×2 grid matching reference design ── */}
+            {/* ── STAT CARDS - 2×2 grid matching reference design ── */}
             <View className="flex-1 flex-row items-center gap-2 py-2.5 px-1">
               <StatCard
                 icon={<Feather name="zap" size={22} color="#fff" />}
@@ -631,7 +633,11 @@ export function ProfileScreen() {
                   }}
                 >
                   <SettingsRow icon="info" label="About us" onPress={() => {}} />
-                  <SettingsRow icon="shield" label="Privacy & security" onPress={() => {}} />
+                  <SettingsRow
+                    icon="shield"
+                    label="Privacy & security"
+                    onPress={() => WebBrowser.openBrowserAsync(PRIVACY_POLICY_URL)}
+                  />
                   <SettingsRow
                     icon="log-out"
                     label="Log out"
@@ -1145,7 +1151,7 @@ function SettingsRow({
   return inner;
 }
 
-// ── Stat card — blue square icon + bold number + label (2×2 grid) ──
+// ── Stat card - blue square icon + bold number + label (2×2 grid) ──
 function StatCard({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
