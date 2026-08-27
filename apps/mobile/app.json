@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "powerup",
     "userInterfaceStyle": "automatic",
-
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gowthamcoder.apppowerup",
@@ -60,7 +59,8 @@
           "cameraPermission": "PowerUp uses the camera for photo uploads in chat and resume building.",
           "microphonePermission": "PowerUp uses the microphone for your voice interview with the AI interviewer."
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

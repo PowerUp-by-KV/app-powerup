@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { FlatList, Pressable, Text, View, Image, ScrollView } from "react-native";
+import { FlatList, Pressable, Text, View, ScrollView } from "react-native";
+import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import LottieView from "lottie-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -173,7 +174,9 @@ export function LeaderboardScreen() {
                   e.user_id,
                 ),
               }}
-              style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              style={{ width: "100%", height: "100%" }}
             />
           </LinearGradient>
         </View>
@@ -263,7 +266,9 @@ export function LeaderboardScreen() {
                 source={{
                   uri: getAvatarUri(profile?.avatar_id, profile?.id),
                 }}
-                style={{ width: "100%", height: "100%", resizeMode: "cover" }}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+                style={{ width: "100%", height: "100%" }}
               />
             </Pressable>
           </View>
@@ -617,8 +622,9 @@ export function LeaderboardScreen() {
                         item.user_id,
                       ),
                     }}
-                    className="w-full h-full"
-                    style={{ resizeMode: "cover" }}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    style={{ width: "100%", height: "100%" }}
                   />
                 </View>
                 <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: "auto" }}>
