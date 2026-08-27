@@ -19,7 +19,7 @@ export default function TabLayout() {
   const isDark = colorScheme === "dark";
 
   // The plan tier gates Convo Coach etc. Login never returns a tier, so without this the
-  // app assumes "free" forever — a paid user stays locked out of what they bought. Fetch the
+  // app assumes "free" forever - a paid user stays locked out of what they bought. Fetch the
   // real subscription once we know we're authenticated and set the tier from it. It provides
   // the "Subscription" cache tag, so verifying a new payment auto-refetches and re-unlocks.
   const { data: currentSub } = useGetCurrentSubscriptionQuery(undefined, {
@@ -42,7 +42,7 @@ export default function TabLayout() {
   }, [router]);
 
   // Only block render if we've confirmed the user is NOT authenticated.
-  // While isAuthed is null (check still in flight) we render the tabs —
+  // While isAuthed is null (check still in flight) we render the tabs -
   // the root RouteGuard has already verified auth before mounting this layout.
   if (isAuthed === false) return null;
 
@@ -112,7 +112,6 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="two" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ href: null }} />
       <Tabs.Screen name="profile/avatar" options={{ href: null }} />
       <Tabs.Screen name="profile/custom-avatar" options={{ href: null }} />
