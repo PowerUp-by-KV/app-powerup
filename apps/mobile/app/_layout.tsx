@@ -17,6 +17,7 @@ import {
   Inter_800ExtraBold,
 } from "@expo-google-fonts/inter";
 import { AlertHost } from "@/components/AlertHost";
+import { RootErrorBoundary } from "@/components/RootErrorBoundary";
 import { getAuthSession, StoredSession, clearAuthSession } from "@/services/auth-storage";
 import { useGetOnboardingStatusQuery } from "@/services/onboarding-api";
 import { useGetCurrentSubscriptionQuery } from "@/services/subscription-api";
@@ -318,38 +319,40 @@ export default function AuthLayout() {
   }
 
   return (
-    <Provider store={store}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          gestureEnabled: true,
-        }}
-        initialRouteName="splash"
-      >
-        <Stack.Screen name="splash" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="otp" />
-        <Stack.Screen name="success" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="read" />
-        <Stack.Screen name="speak-read" />
-        <Stack.Screen name="listen-audio" />
-        <Stack.Screen name="speak" />
-        <Stack.Screen name="grammar" />
-        <Stack.Screen name="listen" />
-        <Stack.Screen name="results" />
-        <Stack.Screen
-          name="chat"
-          options={{
-            presentation: "transparentModal",
-            animation: "fade",
+    <RootErrorBoundary>
+      <Provider store={store}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
           }}
-        />
-      </Stack>
-      <RouteGuard />
-      {/* Renders showAlert() dialogs on web, where React Native's Alert is a no-op. */}
-      <AlertHost />
-    </Provider>
+          initialRouteName="splash"
+        >
+          <Stack.Screen name="splash" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="otp" />
+          <Stack.Screen name="success" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="read" />
+          <Stack.Screen name="speak-read" />
+          <Stack.Screen name="listen-audio" />
+          <Stack.Screen name="speak" />
+          <Stack.Screen name="grammar" />
+          <Stack.Screen name="listen" />
+          <Stack.Screen name="results" />
+          <Stack.Screen
+            name="chat"
+            options={{
+              presentation: "transparentModal",
+              animation: "fade",
+            }}
+          />
+        </Stack>
+        <RouteGuard />
+        {/* Renders showAlert() dialogs on web, where React Native's Alert is a no-op. */}
+        <AlertHost />
+      </Provider>
+    </RootErrorBoundary>
   );
 }
