@@ -28,17 +28,3 @@ export function getErrorStatus(error: unknown): number | undefined {
   const status = (error as ApiErrorShape)?.status;
   return typeof status === "number" ? status : undefined;
 }
-
-/**
- * True when the API refused the request because the account's email isn't verified.
- *
- * The backend gates several routers behind require_verified_email, which 403s with
- * `{"detail": {"code": "email_not_verified", ...}}`. Without this check the app rendered
- * that as "Server Connection Lost — ensure the backend service is running", sending users
- * to retry forever against a server that was working fine.
- */
-export function isEmailNotVerifiedError(error: unknown): boolean {
-  if (getErrorStatus(error) !== 403) return false;
-  const detail = (error as ApiErrorShape)?.data?.detail as { code?: string } | undefined;
-  return detail?.code === "email_not_verified";
-}

@@ -70,8 +70,6 @@ export interface ActivitySubmitResponse {
   feedback?: string;
 }
 
-export type AppEnvironment = "development" | "staging" | "production";
-
 // ── Resume Studio Types ──────────────────────────────────────────────────
 
 export interface Contact {
@@ -138,12 +136,6 @@ export interface ResumeState {
   error: string | null;
 }
 
-export interface ResumeUploadResponse {
-  success: boolean;
-  data?: ResumeParsedData;
-  error?: string;
-}
-
 // ── Resume Constants ──────────────────────────────────────────────────────
 
 export const RESUME_STEPS = {
@@ -163,8 +155,6 @@ export const STEP_LABELS = {
 } as const;
 
 // ── Additional Shared Helpers & Constants ─────────────────────────────────
-
-export const APP_NAME = "PowerUp";
 
 export function formatDate(date: Date): string {
   return date.toISOString().split("T")[0] ?? "";

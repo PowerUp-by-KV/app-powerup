@@ -2,8 +2,6 @@
 import { StyleProp, ViewStyle, FlatList } from "react-native";
 import React from "react";
 
-export type { AppEnvironment } from "@powerup/shared";
-
 export interface SafeFlatListProps<T> {
   data: T[] | readonly T[] | null | undefined;
   keyExtractor: (item: T, index: number) => string;

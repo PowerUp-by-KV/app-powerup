@@ -119,22 +119,3 @@ export function getAvatarUri(
   // 5. Fallback for custom or legacy adventurer seeds (e.g. 'adventurer1')
   return `https://api.dicebear.com/7.x/adventurer/png?seed=${avatarId}&backgroundColor=b6e3f4,c0aede,d1d4f9`;
 }
-
-/**
- * Returns the GLB URL for a given avatar ID if it's a Ready Player Me or Avaturn avatar.
- * Otherwise returns null.
- */
-export function getAvatarGlbUrl(avatarId: string | null | undefined): string | null {
-  if (!avatarId) return null;
-
-  if (avatarId.startsWith("rpm_")) {
-    const rpmId = avatarId.replace("rpm_", "");
-    return `https://models.readyplayer.me/${rpmId}.glb`;
-  }
-
-  if (avatarId.startsWith("avaturn_")) {
-    return avatarId.replace("avaturn_", "");
-  }
-
-  return null;
-}
