@@ -3,6 +3,7 @@ import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from "@reduxjs/toolk
 import { Platform } from "react-native";
 import { router } from "expo-router";
 import { getAuthSession, saveAuthSession, clearAuthSession } from "./auth-storage";
+import { API_TIMEOUT } from "@/constants";
 
 const rawBaseUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 const fallbackDevBaseUrl = __DEV__ ? "http://localhost:8000/api" : undefined;
@@ -36,11 +37,11 @@ if (!BASE_URL) {
 }
 
 // Every endpoint already prefixes its own `v1/`. Including the version here yields
-// /api/v1/v1/... — every request 404s, and because nothing surfaces that, the app just
+// /api/v1/v1/... - every request 404s, and because nothing surfaces that, the app just
 // looks broken. Fail loudly at startup instead of silently at every call site.
 if (/\/v\d+$/.test(BASE_URL)) {
   throw new Error(
-    `EXPO_PUBLIC_API_URL must not include the API version — got "${BASE_URL}". ` +
+    `EXPO_PUBLIC_API_URL must not include the API version - got "${BASE_URL}". ` +
       `Endpoint paths already add "v1/". Use "${BASE_URL.replace(/\/v\d+$/, "")}" instead.`,
   );
 }
@@ -64,11 +65,14 @@ export async function refreshAccessToken(): Promise<string | null> {
   try {
     const currentSession = await getAuthSession();
     if (currentSession?.refresh_token) {
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), API_TIMEOUT);
       const refreshResp = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh_token: currentSession.refresh_token }),
-      });
+        signal: timeoutController.signal,
+      }).finally(() => clearTimeout(timeoutId));
       if (refreshResp.ok) {
         const refreshed = await refreshResp.json();
         const newAccessToken = refreshed.access_token;
@@ -88,6 +92,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
+  timeout: API_TIMEOUT,
   prepareHeaders: async (headers) => {
     try {
       headers.set("X-Tunnel-Skip-AntiPhishing-Page", "true");
@@ -106,7 +111,7 @@ let isRedirectingToLogin = false;
 
 // Wipe the session and send the user to /login. Only call this for a genuine
 // auth failure (the refresh token is invalid/expired), never for a transient
-// network/5xx/timeout error — otherwise a flaky or cold-starting backend would
+// network/5xx/timeout error - otherwise a flaky or cold-starting backend would
 // log users out and bounce them back to login right after a successful sign-in.
 async function forceLogout(): Promise<void> {
   await clearAuthSession();
@@ -152,7 +157,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
       } else {
         // Refresh failed. Only log out if the refresh token was genuinely
         // rejected (401/403). For transient failures (network error, timeout,
-        // 5xx — e.g. a cold-starting backend) keep the session and let the
+        // 5xx - e.g. a cold-starting backend) keep the session and let the
         // request be retried; otherwise we'd bounce a just-logged-in user out.
         const refreshStatus = refreshResult.error?.status;
         if (refreshStatus === 401 || refreshStatus === 403) {
@@ -161,7 +166,7 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
       }
     } else {
       // The access token was rejected (401) and there is no refresh token to
-      // recover with — the session can't be salvaged, so log out.
+      // recover with - the session can't be salvaged, so log out.
       await forceLogout();
     }
   }
