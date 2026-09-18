@@ -12,7 +12,7 @@
         "simulator": true
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
+        "EXPO_PUBLIC_API_URL": "https://api-powerup-gyfqd5anfjh5a2ar.southindia-01.azurewebsites.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "717357215116-b9glt56fnrhhhvetk7mqspo86krldvnk.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "717357215116-l9dsncs7lj301ecuf0tgdkralvh01h2s.apps.googleusercontent.com",
         "EXPO_USE_PNPM": "1"
@@ -27,7 +27,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
+        "EXPO_PUBLIC_API_URL": "https://api-powerup-gyfqd5anfjh5a2ar.southindia-01.azurewebsites.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "717357215116-b9glt56fnrhhhvetk7mqspo86krldvnk.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "717357215116-l9dsncs7lj301ecuf0tgdkralvh01h2s.apps.googleusercontent.com",
         "EXPO_USE_PNPM": "1"
@@ -38,7 +38,7 @@
       "autoIncrement": true,
       "node": "22.18.0",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://api-powerup.techwithdeepak.org/api",
+        "EXPO_PUBLIC_API_URL": "https://api-powerup-gyfqd5anfjh5a2ar.southindia-01.azurewebsites.net/api",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "717357215116-b9glt56fnrhhhvetk7mqspo86krldvnk.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "717357215116-l9dsncs7lj301ecuf0tgdkralvh01h2s.apps.googleusercontent.com",
         "EXPO_USE_PNPM": "1"
