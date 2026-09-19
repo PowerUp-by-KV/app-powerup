@@ -230,7 +230,9 @@ export function McqActivity({
   const options = (current.options ?? []).map(asOption);
 
   const handleSubmit = () => {
-    if (selected === null) return;
+    // Once a question is answered lastResult is set; without this guard a second
+    // tap on Submit re-counted the correct answer, storing scores like 167%.
+    if (selected === null || lastResult !== null) return;
 
     const correctAnswerStr = current.correct_answer ?? "";
     const correctIndex = options.findIndex((opt, i) => isMatch(opt, i, correctAnswerStr));
@@ -265,7 +267,7 @@ export function McqActivity({
       return;
     }
     const totalCorrect = result.totalCorrect;
-    const score = Math.round((totalCorrect / mcqs.length) * 100);
+    const score = Math.min(100, Math.round((totalCorrect / mcqs.length) * 100));
     onComplete({ passed: score >= 70, score });
   };
 
@@ -490,7 +492,7 @@ export function McqActivity({
         <View style={{ marginTop: 24 }}>
           <Pressable
             onPress={handleSubmit}
-            disabled={selected === null}
+            disabled={selected === null || lastResult !== null}
             style={
               {
                 borderRadius: 10,
