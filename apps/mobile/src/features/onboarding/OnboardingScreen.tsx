@@ -398,51 +398,43 @@ export default function OnboardingScreen() {
             await submitFinalAnswers();
           }
           return;
-        } catch {
+        } catch (uploadErr) {
           setIsUploading(false);
-          showAlert(
-            "Upload Failed",
-            "Could not upload and extract your resume. You can try again or continue onboarding without it.",
-            [
-              { text: "Try Again", style: "cancel" },
-              {
-                text: "Continue Without Resume",
-                onPress: async () => {
-                  // Clear the file answer so we proceed with only questionnaire answers
-                  dispatch(
-                    updateField({
-                      field: question.question_key as any,
-                      value: "",
-                    }),
-                  );
-                  setResumeUploaded(false);
-                  if (stepNumber < flattenedQuestions.length) {
-                    dispatch(nextStep());
-                  } else {
-                    await submitFinalAnswers();
-                  }
-                },
+          // The backend rejects files over 2 MB (413) and anything that is not a PDF
+          // (415). This used to be swallowed into a generic message, so learners had
+          // no idea why the upload failed or what to change.
+          const status = (uploadErr as { status?: number | string })?.status;
+          console.warn("Onboarding resume upload failed:", uploadErr);
+          const reason =
+            status === 413
+              ? "Your resume is larger than 2 MB. Please upload a smaller PDF."
+              : status === 415
+                ? "Only PDF resumes are supported. Please upload your resume as a PDF."
+                : "Could not upload and extract your resume. You can try again or continue onboarding without it.";
+          showAlert("Upload Failed", reason, [
+            { text: "Try Again", style: "cancel" },
+            {
+              text: "Continue Without Resume",
+              onPress: async () => {
+                // Clear the file answer so we proceed with only questionnaire answers
+                dispatch(
+                  updateField({
+                    field: question.question_key as any,
+                    value: "",
+                  }),
+                );
+                setResumeUploaded(false);
+                if (stepNumber < flattenedQuestions.length) {
+                  dispatch(nextStep());
+                } else {
+                  await submitFinalAnswers();
+                }
               },
-            ],
-          );
+            },
+          ]);
           return;
         }
       }
-    }
-
-    if (stepNumber < flattenedQuestions.length) {
-      dispatch(nextStep());
-    } else {
-      await submitFinalAnswers();
-    }
-  };
-
-  const handleSkip = async () => {
-    if (!question) return;
-
-    dispatch(updateField({ field: question.question_key as any, value: "null" }));
-    if (question.input_type === "file") {
-      setResumeUploaded(false);
     }
 
     if (stepNumber < flattenedQuestions.length) {
@@ -610,15 +602,6 @@ export default function OnboardingScreen() {
             </Text>
           )}
         </TouchableOpacity>
-
-        {/* Secondary Navigation Actions */}
-        {isFileQuestion ? (
-          <TouchableOpacity onPress={handleSkip} className="mt-5 py-2">
-            <Text className="text-sm font-bold text-slate-400 hover:text-slate-500 transition-colors">
-              Skip for now
-            </Text>
-          </TouchableOpacity>
-        ) : null}
       </ScrollView>
     </View>
   );
