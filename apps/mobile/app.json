@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.gowthamcoder.apppowerup",
+      "package": "com.powerup.app",
       "allowBackup": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
