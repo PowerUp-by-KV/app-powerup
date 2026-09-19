@@ -593,19 +593,6 @@ export function LearningJourneyScreen() {
     );
   }, [modulesData]);
 
-  const trialModule = useMemo(() => {
-    if (!modulesData?.length) return null;
-    return (
-      modulesData.find(
-        (m) =>
-          m.order_index === 0 ||
-          (m as any).module_no === 0 ||
-          m.title?.toLowerCase().includes("trial") ||
-          m.id === "b7d78cff-0952-4a8d-9326-52a3bcb98206",
-      ) || null
-    );
-  }, [modulesData]);
-
   const {
     data: progression,
     isError: progressionError,
@@ -704,41 +691,9 @@ export function LearningJourneyScreen() {
     return 0;
   }, [isFreeCompleted, freeTotalActivities, freeCompletedActivities]);
 
-  const isTrialUnlocked = isFreeCompleted;
-
-  const trialDays = useMemo(() => {
-    if (!trialModule?.id) return [];
-    return moduleDaysData[trialModule.id] || [];
-  }, [trialModule?.id, moduleDaysData]);
-
-  const trialTotalActivities = useMemo(() => {
-    return trialDays.reduce((acc, d) => acc + (d.total_activities || 0), 0);
-  }, [trialDays]);
-
-  const trialCompletedActivities = useMemo(() => {
-    return trialDays.reduce((acc, d) => acc + (d.completed_activities || 0), 0);
-  }, [trialDays]);
-
-  const isTrialCompleted = useMemo(() => {
-    if (!isTrialUnlocked || !trialDays.length) return false;
-    return (
-      trialDays.every((d) => d.is_completed) ||
-      (trialTotalActivities > 0 && trialCompletedActivities >= trialTotalActivities)
-    );
-  }, [isTrialUnlocked, trialDays, trialTotalActivities, trialCompletedActivities]);
-
-  const trialProgressPct = useMemo(() => {
-    if (isTrialCompleted) return 100;
-    if (!isTrialUnlocked) return 0;
-    if (trialTotalActivities > 0) {
-      return Math.min(100, Math.round((trialCompletedActivities / trialTotalActivities) * 100));
-    }
-    return 0;
-  }, [isTrialCompleted, isTrialUnlocked, trialTotalActivities, trialCompletedActivities]);
-
-  const isAssessmentUnlocked = isFreeCompleted && isTrialCompleted;
-  // Prerequisites flag (Free Content & Trial Content must be 100% completed)
-  const isPrerequisitesMet = isFreeCompleted && isTrialCompleted;
+  const isAssessmentUnlocked = isFreeCompleted;
+  // Prerequisite: Free Content must be 100% completed
+  const isPrerequisitesMet = isFreeCompleted;
 
   const allDaysList = useMemo<CombinedModuleDay[]>(() => {
     const daysByModuleNo: Record<number, ModuleDay[]> = {};
@@ -819,7 +774,7 @@ export function LearningJourneyScreen() {
     if (!isAssessmentUnlocked) {
       showAlert(
         "Stage Locked 🔒",
-        "Please complete your Free Content and Trial Content activities first to unlock your Diagnostic Assessment!",
+        "Please complete your Free Content activities first to unlock your Diagnostic Assessment!",
       );
       return;
     }
@@ -852,7 +807,7 @@ export function LearningJourneyScreen() {
         if (!isPrerequisitesMet) {
           showAlert(
             "Stage Locked 🔒",
-            `Please complete Free Content and Trial Content to unlock and resume Day ${item.globalDayNumber}!`,
+            `Please complete Free Content to unlock and resume Day ${item.globalDayNumber}!`,
           );
         } else {
           showAlert(
@@ -1007,75 +962,6 @@ export function LearningJourneyScreen() {
     triggerGetModuleDays,
   ]);
 
-  const handleTrialContentPress = useCallback(async () => {
-    if (!isTrialUnlocked) {
-      showAlert(
-        "Stage Locked 🔒",
-        "Please complete your Free Content activities first to unlock Trial Content!",
-      );
-      return;
-    }
-
-    let targetModule = trialModule;
-    if (!targetModule?.id && modulesData?.length) {
-      targetModule =
-        modulesData.find(
-          (m) =>
-            m.order_index === 0 ||
-            (m as any).module_no === 0 ||
-            m.title?.toLowerCase().includes("trial") ||
-            m.id === "b7d78cff-0952-4a8d-9326-52a3bcb98206",
-        ) || null;
-    }
-
-    if (!targetModule?.id) {
-      refetchPath();
-      showAlert("Trial Content", "Loading trial content... Please try again in a moment.");
-      return;
-    }
-
-    let days = moduleDaysData[targetModule.id];
-    if (!days || !days.length) {
-      try {
-        days = await triggerGetModuleDays(targetModule.id, true).unwrap();
-      } catch (err) {
-        console.warn("Failed to fetch days for trialModule:", err);
-      }
-    }
-
-    const firstDay = days?.[0];
-    if (firstDay) {
-      handleDayTap({
-        isLocked: false,
-        isCompleted: firstDay.is_completed,
-        globalDayNumber: firstDay.day_number || 0,
-        overrideDayLabel: "Trial Content",
-        dayObj: {
-          ...firstDay,
-          module_no: targetModule.order_index,
-          module_title: targetModule.title,
-          module_id: targetModule.id,
-        },
-      });
-    } else {
-      router.push({
-        pathname: `/learning-journey/module/${targetModule.id}` as never,
-        params: {
-          module_id: targetModule.id,
-          day_number: "Trial Content",
-        },
-      });
-    }
-  }, [
-    isTrialUnlocked,
-    trialModule,
-    modulesData,
-    moduleDaysData,
-    handleDayTap,
-    router,
-    refetchPath,
-    triggerGetModuleDays,
-  ]);
   const isPathLoading =
     gate.canEnter &&
     (pathFetching ||
@@ -1241,7 +1127,7 @@ export function LearningJourneyScreen() {
       ? `Done · ${minutes} min`
       : isLocked
         ? !isPrerequisitesMet
-          ? "Complete Free & Trial Content to unlock"
+          ? "Complete Free Content to unlock"
           : "Complete previous stages to unlock"
         : `Tap to start · ~${minutes} min`;
 
@@ -1430,125 +1316,7 @@ export function LearningJourneyScreen() {
             </View>
           </Pressable>
 
-          {/* Item 2: Trial Content */}
-          <Pressable
-            onPress={handleTrialContentPress}
-            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-          >
-            <View style={timelineStyles.stageRow}>
-              {/* Connector line segment going down */}
-              <View
-                style={{
-                  position: "absolute",
-                  top: 36,
-                  left: 17,
-                  width: 3,
-                  bottom: -32,
-                  backgroundColor: isTrialCompleted ? "#3b82f6" : "#cbd5e1",
-                  zIndex: 1,
-                }}
-              />
-              <View style={{ width: 36, marginRight: 16, zIndex: 3, alignItems: "center" }}>
-                <View
-                  style={[
-                    timelineStyles.stageIconCircle,
-                    isTrialCompleted
-                      ? timelineStyles.stageCircleCompleted
-                      : !isTrialUnlocked
-                        ? timelineStyles.stageCircleLocked
-                        : trialCompletedActivities > 0
-                          ? timelineStyles.stageCircleInProgress
-                          : timelineStyles.stageCircleLocked,
-                  ]}
-                >
-                  <Feather
-                    name={!isTrialUnlocked ? "lock" : isTrialCompleted ? "check" : "play"}
-                    size={16}
-                    color="white"
-                  />
-                </View>
-              </View>
-              <View style={timelineStyles.stageContent}>
-                <View style={timelineStyles.stageHeaderRow}>
-                  <Text
-                    className={`flex-1 text-lg font-bold ${
-                      !isTrialUnlocked
-                        ? isDark
-                          ? "text-slate-500"
-                          : "text-slate-400"
-                        : isDark
-                          ? "text-slate-200"
-                          : "text-slate-800"
-                    }`}
-                  >
-                    Trial Content
-                  </Text>
-                  <View
-                    style={[
-                      timelineStyles.statusBadge,
-                      !isTrialUnlocked
-                        ? timelineStyles.badgeLocked
-                        : isTrialCompleted
-                          ? timelineStyles.badgeCompleted
-                          : trialCompletedActivities > 0
-                            ? timelineStyles.badgeInProgress
-                            : timelineStyles.badgeLocked,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        timelineStyles.badgeText,
-                        {
-                          color: !isTrialUnlocked
-                            ? "#4f46e5"
-                            : isTrialCompleted
-                              ? "#15803d"
-                              : trialCompletedActivities > 0
-                                ? "#b45309"
-                                : "#4f46e5",
-                        },
-                      ]}
-                    >
-                      {!isTrialUnlocked
-                        ? "Locked"
-                        : isTrialCompleted
-                          ? "Completed"
-                          : trialCompletedActivities > 0
-                            ? "In Progress"
-                            : "Start"}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={timelineStyles.stageSubtitle}>
-                  {trialModule?.title ?? "Behaviour in Workplace"}
-                </Text>
-
-                <View
-                  style={[timelineStyles.progressBarBg, isDark && { backgroundColor: "#2d2d3a" }]}
-                >
-                  <LinearGradient
-                    colors={["#3b82f6", "#22c55e", "#84cc16"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[timelineStyles.progressBarFill, { width: `${trialProgressPct}%` }]}
-                  />
-                </View>
-
-                <View style={timelineStyles.progressLabelRow}>
-                  <Text style={timelineStyles.progressLabelText}>
-                    {!isTrialUnlocked
-                      ? "Complete Free Content to unlock"
-                      : trialTotalActivities > 0
-                        ? `${trialCompletedActivities}/${trialTotalActivities} lessons completed`
-                        : `${trialProgressPct}% completed`}
-                  </Text>
-                  <Text style={timelineStyles.progressLabelPercent}>{trialProgressPct}%</Text>
-                </View>
-              </View>
-            </View>
-          </Pressable>
-
-          {/* Item 3: Diagnostic Assessment */}
+          {/* Item 2: Diagnostic Assessment */}
           <Pressable
             onPress={
               isDiagnosticComplete
