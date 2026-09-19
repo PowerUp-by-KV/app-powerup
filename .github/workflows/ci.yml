@@ -80,9 +80,12 @@ jobs:
     needs: quality
     # Gated like the Android EAS job rather than run per-commit: a macOS runner is
     # slow and metered, and the risk it guards against lands at merge time.
+    # Build only when code actually lands on qa (or on manual dispatch). This also
+    # ran on pull requests targeting qa, so every promotion spent two builds -- one
+    # for the PR's merge ref that nobody installs, and one for the merge itself --
+    # against a limited EAS quota (and macOS minutes for the iOS job).
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/qa') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'qa') ||
       github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
@@ -118,9 +121,12 @@ jobs:
     needs: quality
     # Run on push to qa (post-merge) AND on PRs targeting qa, so a dev→qa PR
     # produces a verifiable APK before it is merged.
+    # Build only when code actually lands on qa (or on manual dispatch). This also
+    # ran on pull requests targeting qa, so every promotion spent two builds -- one
+    # for the PR's merge ref that nobody installs, and one for the merge itself --
+    # against a limited EAS quota (and macOS minutes for the iOS job).
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/qa') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'qa') ||
       github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4

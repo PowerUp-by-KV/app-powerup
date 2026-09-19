@@ -224,19 +224,19 @@ export const DynamicOnboardingForm: React.FC<Props> = ({
             <TouchableOpacity
               onPress={async () => {
                 try {
+                  // Match the backend: /onboarding/resume/extract accepts PDF only (415
+                  // otherwise) and at most 2 MB (413). The picker used to allow Word files
+                  // and 10 MB, so those uploads could only ever fail.
                   const res: any = await DocumentPicker.getDocumentAsync({
-                    type: [
-                      "application/pdf",
-                      "application/msword",
-                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    ],
+                    type: ["application/pdf"],
+                    copyToCacheDirectory: true,
                   });
                   if (res.assets && res.assets.length > 0) {
                     const asset = res.assets[0];
                     const sizeMB = (asset.size || 0) / (1024 * 1024);
 
-                    if (sizeMB > 10) {
-                      showAlert("File too large", "Please upload a resume smaller than 10MB");
+                    if (sizeMB > 2) {
+                      showAlert("File too large", "Please upload a PDF resume smaller than 2 MB.");
                       return;
                     }
 
