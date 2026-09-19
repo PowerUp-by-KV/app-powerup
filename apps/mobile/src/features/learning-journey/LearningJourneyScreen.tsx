@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   RefreshControl,
@@ -49,6 +48,7 @@ import { useLearningJourneyGate } from "@/hooks/useLearningJourneyGate";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 import { GamifiedMascotLoader } from "@/components/GamifiedMascotLoader";
 import { OfflineGameView } from "@/components/OfflineGameView";
+import { showAlert } from "@/utils/alert";
 
 interface PreAssessmentModalProps {
   visible: boolean;
@@ -817,7 +817,7 @@ export function LearningJourneyScreen() {
 
   const handleStartOrResumeAssessment = async () => {
     if (!isAssessmentUnlocked) {
-      Alert.alert(
+      showAlert(
         "Stage Locked 🔒",
         "Please complete your Free Content and Trial Content activities first to unlock your Diagnostic Assessment!",
       );
@@ -832,7 +832,7 @@ export function LearningJourneyScreen() {
       });
     } catch (err: unknown) {
       console.error("Start/resume assessment session failed:", err);
-      Alert.alert("Error", "Could not start assessment. Please try again.");
+      showAlert("Error", "Could not start assessment. Please try again.");
     } finally {
       setIsStartingSession(false);
     }
@@ -850,12 +850,12 @@ export function LearningJourneyScreen() {
 
       if (item.isLocked && !item.isCompleted) {
         if (!isPrerequisitesMet) {
-          Alert.alert(
+          showAlert(
             "Stage Locked 🔒",
             `Please complete Free Content and Trial Content to unlock and resume Day ${item.globalDayNumber}!`,
           );
         } else {
-          Alert.alert(
+          showAlert(
             "Stage Locked 🔒",
             `Please complete your Diagnostic Assessment to unlock Day ${item.globalDayNumber}!`,
           );
@@ -863,7 +863,7 @@ export function LearningJourneyScreen() {
         return;
       }
       if (!item.dayObj?.id) {
-        Alert.alert("Error", "Day content is not available yet. Please try refreshing.");
+        showAlert("Error", "Day content is not available yet. Please try refreshing.");
         return;
       }
 
@@ -961,7 +961,7 @@ export function LearningJourneyScreen() {
 
     if (!targetModule?.id) {
       refetchPath();
-      Alert.alert("Free Content", "Loading free content... Please try again in a moment.");
+      showAlert("Free Content", "Loading free content... Please try again in a moment.");
       return;
     }
 
@@ -1009,7 +1009,7 @@ export function LearningJourneyScreen() {
 
   const handleTrialContentPress = useCallback(async () => {
     if (!isTrialUnlocked) {
-      Alert.alert(
+      showAlert(
         "Stage Locked 🔒",
         "Please complete your Free Content activities first to unlock Trial Content!",
       );
@@ -1030,7 +1030,7 @@ export function LearningJourneyScreen() {
 
     if (!targetModule?.id) {
       refetchPath();
-      Alert.alert("Trial Content", "Loading trial content... Please try again in a moment.");
+      showAlert("Trial Content", "Loading trial content... Please try again in a moment.");
       return;
     }
 
@@ -1809,7 +1809,7 @@ export function LearningJourneyScreen() {
                       <Pressable
                         onPress={() => {
                           if (!item.dayObj?.id) {
-                            Alert.alert(
+                            showAlert(
                               "Error",
                               "Day content is not available yet. Please try refreshing.",
                             );
