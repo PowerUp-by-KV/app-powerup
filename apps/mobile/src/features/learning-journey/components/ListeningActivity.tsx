@@ -167,11 +167,25 @@ export function ListeningActivity({ questions, onComplete }: ListeningActivityPr
   };
 
   if (!audioUrl) {
+    // No audio used to be a dead end: this text with no way forward, so the whole
+    // day could not be finished. Keep the learner moving: score the questions as
+    // usual, or continue when there are none (same as the no-MCQ path below).
     return (
-      <View className="flex-1 items-center justify-center p-6">
-        <Text className="text-slate-500 dark:text-zinc-500 text-center">
+      <View className="flex-1 p-6">
+        <Text className="text-slate-500 dark:text-zinc-500 text-center mb-4">
           Audio not available for this activity yet.
         </Text>
+        {mcqs.length > 0 ? (
+          <McqActivity questions={mcqs} onComplete={onComplete} isNested={true} />
+        ) : (
+          <Pressable
+            onPress={() => onComplete({ passed: true, score: 100 })}
+            className="self-center rounded-xl bg-indigo-600 px-6 py-3"
+            accessibilityRole="button"
+          >
+            <Text className="text-white font-semibold">Continue</Text>
+          </Pressable>
+        )}
       </View>
     );
   }

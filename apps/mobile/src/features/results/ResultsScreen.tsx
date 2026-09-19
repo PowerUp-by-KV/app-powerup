@@ -238,6 +238,12 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
 
   const isFetchingResults = isLoading || isPolling || (shouldUseUserId && isUserResultLoading);
   const hasError = error || (shouldUseUserId && userResultError);
+  // A 400 from /complete means the assessment simply isn't finished (the backend
+  // enforces section order). It used to fall through to "Connection Timeout",
+  // telling learners the servers were down when they just had sections left.
+  const errorStatus =
+    error && typeof error === "object" && "status" in error ? error.status : undefined;
+  const isIncompleteAssessment = errorStatus === 400;
 
   if (isFetchingResults) {
     return <GamifiedMascotLoader title={loaderTitle} />;
@@ -282,26 +288,35 @@ export function ResultsScreen({ sessionId: propSessionId }: ResultsScreenProps) 
             </View>
 
             <Text className="text-[20px] font-black text-slate-900 dark:text-white text-center mb-2">
-              Connection Timeout
+              {isIncompleteAssessment ? "Assessment Not Finished" : "Connection Timeout"}
             </Text>
             <Text className="text-[13px] text-slate-500 dark:text-slate-400 text-center leading-[18px] mb-4 px-2">
-              We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we
-              reconnect!
+              {isIncompleteAssessment
+                ? "You still have sections to complete. Finish them to see your results."
+                : "We had trouble reaching our servers. Keep yourself entertained with Dino Dash while we reconnect!"}
             </Text>
 
-            {/* Playable Offline Game View */}
-            <View style={{ width: "100%", marginBottom: 16 }}>
-              <OfflineGameView />
-            </View>
+            {/* Playable Offline Game View: only for genuine connectivity errors */}
+            {!isIncompleteAssessment && (
+              <View style={{ width: "100%", marginBottom: 16 }}>
+                <OfflineGameView />
+              </View>
+            )}
 
             <View
               style={{ flexDirection: "row", gap: 12, width: "100%", justifyContent: "center" }}
             >
               <TouchableOpacity
                 className="flex-1 bg-blue-500 active:bg-blue-600 py-3 rounded-2xl items-center"
-                onPress={handleTryAgain}
+                onPress={
+                  isIncompleteAssessment
+                    ? () => router.replace("/assessment-entry" as never)
+                    : handleTryAgain
+                }
               >
-                <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>Try Again</Text>
+                <Text style={{ color: "#ffffff", fontWeight: "700", fontSize: 14 }}>
+                  {isIncompleteAssessment ? "Continue Assessment" : "Try Again"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
