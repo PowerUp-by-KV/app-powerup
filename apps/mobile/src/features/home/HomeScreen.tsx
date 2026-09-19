@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Platform, Pressable, ScrollView, Text, View, Image } from "react-native";
+import { Pressable, ScrollView, Text, View, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { useThemeToggle } from "@/hooks/useThemeToggle";
 
@@ -213,23 +213,17 @@ export function HomeScreen() {
     if (resumeStatus?.uploaded) {
       router.push(route as never);
     } else {
-      if (Platform.OS === "web") {
-        const wantsToUpload = window.confirm(
-          "Your resume is not uploaded. To enable this feature, please upload your resume. Click OK to upload.",
-        );
-        if (wantsToUpload) {
-          router.push("/onboarding-resume" as never);
-        }
-      } else {
-        showAlert(
-          "Resume Required",
-          "Your resume is not uploaded. To enable this feature, please upload your resume.",
-          [
-            { text: "Cancel", style: "cancel" },
-            { text: "Upload", onPress: () => router.push("/onboarding-resume" as never) },
-          ],
-        );
-      }
+      // showAlert renders an in-app dialog on web, so the old window.confirm branch
+      // (a native browser modal, unstyled and unreachable by UI automation) is no
+      // longer needed; every platform gets the same Cancel / Upload choice.
+      showAlert(
+        "Resume Required",
+        "Your resume is not uploaded. To enable this feature, please upload your resume.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Upload", onPress: () => router.push("/onboarding-resume" as never) },
+        ],
+      );
     }
   };
 
