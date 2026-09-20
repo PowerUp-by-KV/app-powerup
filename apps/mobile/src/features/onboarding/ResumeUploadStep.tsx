@@ -1,16 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { useStartSessionMutation } from "@/services/assessment-api";
-import {
-  useExtractOnboardingResumeMutation,
-  useConfirmOnboardingResumeMutation,
-} from "@/services/onboarding-api";
+import { useConfirmOnboardingResumeMutation } from "@/services/onboarding-api";
 import { showAlert } from "@/utils/alert";
+import { uploadFileToApi } from "@/services/upload-file";
 
 export function ResumeUploadStep() {
   const router = useRouter();
@@ -24,7 +22,7 @@ export function ResumeUploadStep() {
       if (navTimerRef.current) clearTimeout(navTimerRef.current);
     };
   }, []);
-  const [extractResume, { isLoading: isExtracting }] = useExtractOnboardingResumeMutation();
+  const [isExtracting, setIsExtracting] = useState(false);
   const [confirmResume, { isLoading: isConfirming }] = useConfirmOnboardingResumeMutation();
   const [startSession, { isLoading: isStarting }] = useStartSessionMutation();
   const isLoading = isExtracting || isConfirming || isStarting;
@@ -54,22 +52,16 @@ export function ResumeUploadStep() {
 
   const handleContinue = async () => {
     if (!picked || isLoading) return;
+    setIsExtracting(true);
     try {
-      const formData = new FormData();
-      if (Platform.OS === "web" && (picked as unknown as { file?: File }).file) {
-        // On web, use the actual File object from the document picker
-        formData.append("file", (picked as unknown as { file?: File }).file!, picked.name);
-      } else {
-        // On mobile (React Native), use the {uri, name, type} format
-        formData.append("file", {
-          uri: picked.uri,
-          name: picked.name,
-          type: picked.mimeType ?? "application/pdf",
-        } as unknown as File);
-      }
-
-      // 1. Extract resume data and save file
-      const extractRes = await extractResume(formData).unwrap();
+      // 1. Extract resume data and save file. Native uploads go through
+      // FileSystem.uploadAsync: RN's FormData could not read some picked Android
+      // URIs, so the request was never sent at all.
+      const extractRes = await uploadFileToApi<{ resume_id?: string; parsed_data?: unknown }>(
+        "/v1/onboarding/resume/extract",
+        picked.uri,
+        { mimeType: picked.mimeType ?? "application/pdf", fileName: picked.name },
+      );
       const resumeId = extractRes?.resume_id;
       const parsedData = extractRes?.parsed_data;
 
@@ -82,6 +74,7 @@ export function ResumeUploadStep() {
       }
 
       // Show success screen for 2 seconds, then navigate
+      setIsExtracting(false);
       setUploadSuccess(true);
       navTimerRef.current = setTimeout(async () => {
         try {
@@ -91,10 +84,12 @@ export function ResumeUploadStep() {
           router.replace("/(tabs)" as never);
         }
       }, 2000);
-    } catch {
+    } catch (err) {
+      setIsExtracting(false);
       showAlert(
         "Upload failed",
-        "Could not upload and extract your resume. You can try again or continue without it.",
+        (err as { message?: string })?.message ||
+          "Could not upload and extract your resume. You can try again or continue without it.",
         [
           { text: "Try Again", style: "cancel" },
           {
