@@ -24,7 +24,6 @@ import {
 import {
   useGetGroupedQuestionsQuery,
   useSubmitOnboardingMutation,
-  useExtractOnboardingResumeMutation,
   useConfirmOnboardingResumeMutation,
   useGetOnboardingStatusQuery,
 } from "@/services/onboarding-api";
@@ -52,6 +51,7 @@ import Svg, {
 } from "react-native-svg";
 import companyEmployees from "../../../assets/mascot/company-employees.json";
 import { showAlert } from "@/utils/alert";
+import { uploadFileToApi } from "@/services/upload-file";
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -72,7 +72,6 @@ export default function OnboardingScreen() {
     refetch: refetchQuestions,
   } = useGetGroupedQuestionsQuery();
   const [submitOnboarding, { isLoading: isSubmitting }] = useSubmitOnboardingMutation();
-  const [extractResume] = useExtractOnboardingResumeMutation();
   const [confirmResume] = useConfirmOnboardingResumeMutation();
   const [, { isLoading: isStarting }] = useStartSessionMutation();
 
@@ -361,23 +360,17 @@ export default function OnboardingScreen() {
         try {
           const fileName = ((formData as Record<string, any>)[`${question.question_key}Name`] ||
             "resume.pdf") as string;
-          const fd = new FormData();
-
           const fileType = ((formData as Record<string, any>)[`${question.question_key}Type`] ||
             "application/pdf") as string;
-          if (Platform.OS === "web") {
-            const r = await fetch(fileUri);
-            const blob = await r.blob();
-            fd.append("file", new File([blob], fileName, { type: fileType }));
-          } else {
-            // React Native FormData accepts an object with { uri, name, type }
-            // even though the standard DOM FormData type does not. Cast through
-            // unknown to avoid the mismatch without using `any`.
-            fd.append("file", { uri: fileUri, name: fileName, type: fileType } as unknown as Blob);
-          }
 
-          // 1. Extract resume data and save file
-          const extractRes = await extractResume(fd).unwrap();
+          // 1. Extract resume data and save file. Native uploads go through
+          // FileSystem.uploadAsync: RN's FormData could not read some picked
+          // Android URIs, so the request was never sent at all.
+          const extractRes = await uploadFileToApi<{ resume_id?: string; parsed_data?: unknown }>(
+            "/v1/onboarding/resume/extract",
+            fileUri,
+            { mimeType: fileType, fileName },
+          );
           const resumeId = extractRes?.resume_id;
           const parsedData = extractRes?.parsed_data;
 
@@ -410,7 +403,8 @@ export default function OnboardingScreen() {
               ? "Your resume is larger than 2 MB. Please upload a smaller PDF."
               : status === 415
                 ? "Only PDF resumes are supported. Please upload your resume as a PDF."
-                : "Could not upload and extract your resume. You can try again or continue onboarding without it.";
+                : (uploadErr as { message?: string })?.message ||
+                  "Could not upload and extract your resume. You can try again or continue onboarding without it.";
           showAlert("Upload Failed", reason, [
             { text: "Try Again", style: "cancel" },
             {
